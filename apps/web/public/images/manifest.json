@@ -1,0 +1,326 @@
+{
+  "phone-aurora": {
+    "file": "/images/products/phone-aurora.jpg",
+    "photographer": "He Junhui",
+    "unsplashId": "6Yf0GrRXUwc",
+    "alt": "Dark graphite smartphone lying face down, showing its rear camera module"
+  },
+  "phone-nova": {
+    "file": "/images/products/phone-nova.jpg",
+    "photographer": "Jakub Żerdzicki",
+    "unsplashId": "Z-vPf7KBuT8",
+    "alt": "Smartphone with a pink gradient screen on a pink and purple background"
+  },
+  "tablet-slate": {
+    "file": "/images/products/tablet-slate.jpg",
+    "photographer": "Tony Sebastian",
+    "unsplashId": "7sWm1yRJZhg",
+    "alt": "Tablet with stylus displaying an illustration, resting on an orange folio case"
+  },
+  "laptop-air": {
+    "file": "/images/products/laptop-air.jpg",
+    "photographer": "Giorgio Trovato",
+    "unsplashId": "8krX0HkXw8c",
+    "alt": "Thin silver laptop opened on a white surface"
+  },
+  "laptop-pro": {
+    "file": "/images/products/laptop-pro.jpg",
+    "photographer": "James McKinven",
+    "unsplashId": "B3FwR-Hf9w8",
+    "alt": "Laptop with a misty forest wallpaper on a dark desk beside a candle"
+  },
+  "headphones-studio": {
+    "file": "/images/products/headphones-studio.jpg",
+    "photographer": "Sam Grozyan",
+    "unsplashId": "P7KF3cTRKcE",
+    "alt": "Black over-ear wireless headphones on a light gray surface"
+  },
+  "earbuds-pods": {
+    "file": "/images/products/earbuds-pods.jpg",
+    "photographer": "Aaina Sharma",
+    "unsplashId": "rI2MXeP6sss",
+    "alt": "White wireless earbuds in an open charging case"
+  },
+  "speaker-boom": {
+    "file": "/images/products/speaker-boom.jpg",
+    "photographer": "Nicolas J Leclercq",
+    "unsplashId": "gbG65gRAGx4",
+    "alt": "Compact white portable speaker with a leather strap on a wooden table"
+  },
+  "watch-smart": {
+    "file": "/images/products/watch-smart.jpg",
+    "photographer": "pratik prasad",
+    "unsplashId": "FPEBZJLD8Rs",
+    "alt": "Smartwatch with a white strap showing the time on its display"
+  },
+  "camera-mirrorless": {
+    "file": "/images/products/camera-mirrorless.jpg",
+    "photographer": "Maddy",
+    "unsplashId": "InK0X-GDjrQ",
+    "alt": "Black mirrorless camera with a zoom lens on a white background"
+  },
+  "monitor-ultra": {
+    "file": "/images/products/monitor-ultra.jpg",
+    "photographer": "Rohit",
+    "unsplashId": "KZnfwqi-B0U",
+    "alt": "Computer monitor with a warm gradient screen on a clean white desk"
+  },
+  "keyboard-mech": {
+    "file": "/images/products/keyboard-mech.jpg",
+    "photographer": "Stefen Tan",
+    "unsplashId": "KYw1eUx1J7Y",
+    "alt": "Compact mechanical keyboard with gray keycaps on white marble"
+  },
+  "tee-classic": {
+    "file": "/images/products/tee-classic.jpg",
+    "photographer": "mockupbee",
+    "unsplashId": "4rUYuwJ2vGw",
+    "alt": "Plain white crew neck t-shirt laid flat on a light gray background"
+  },
+  "jacket-denim": {
+    "file": "/images/products/jacket-denim.jpg",
+    "photographer": "Caio Coelho",
+    "unsplashId": "QRN47la37gw",
+    "alt": "Dark wash denim jacket with a corduroy collar on a wooden hanger"
+  },
+  "dress-summer": {
+    "file": "/images/products/dress-summer.jpg",
+    "photographer": "Nathan Walker",
+    "unsplashId": "C0j_IxemcLo",
+    "alt": "White floral lace dress with sheer sleeves on a wooden hanger"
+  },
+  "kurta-ethnic": {
+    "file": "/images/products/kurta-ethnic.jpg",
+    "photographer": "Zayed Ahmed Zadu",
+    "unsplashId": "t6G7GyZHCrs",
+    "alt": "Red printed kurta with a mandarin collar displayed on a mannequin"
+  },
+  "sneakers-white": {
+    "file": "/images/products/sneakers-white.jpg",
+    "photographer": "Mukesh Naik",
+    "unsplashId": "jVerIoX3y7c",
+    "alt": "Single white low top sneaker on a bright white background"
+  },
+  "shoes-running": {
+    "file": "/images/products/shoes-running.jpg",
+    "photographer": "Tanaphong Toochinda",
+    "unsplashId": "WWDMEVcGPbU",
+    "alt": "Pair of silver and gray running shoes on a gray studio backdrop"
+  },
+  "bag-leather": {
+    "file": "/images/products/bag-leather.jpg",
+    "photographer": "personalgraphic.com",
+    "unsplashId": "IFlg3kFbR0E",
+    "alt": "Tan leather handbag with buckled straps on a white background"
+  },
+  "watch-analog": {
+    "file": "/images/products/watch-analog.jpg",
+    "photographer": "Saif71.com",
+    "unsplashId": "brqTWpFkmSQ",
+    "alt": "Analog wristwatch with a navy dial and gold case on a white surface"
+  },
+  "sunglasses-aviator": {
+    "file": "/images/products/sunglasses-aviator.jpg",
+    "photographer": "Kiran CK",
+    "unsplashId": "lSl94SZHRgA",
+    "alt": "Black framed sunglasses with gradient lenses on a white background"
+  },
+  "backpack-urban": {
+    "file": "/images/products/backpack-urban.jpg",
+    "photographer": "Sun Lingyan",
+    "unsplashId": "_H0fjILH5Vw",
+    "alt": "Navy blue backpack standing on a sunlit floor"
+  },
+  "sofa-oslo": {
+    "file": "/images/products/sofa-oslo.jpg",
+    "photographer": "Martin Péchy",
+    "unsplashId": "bpg-ngqrPc8",
+    "alt": "Cognac leather sofa with slim metal legs in a sunlit room"
+  },
+  "chair-lounge": {
+    "file": "/images/products/chair-lounge.jpg",
+    "photographer": "Kevin Shek",
+    "unsplashId": "kcxZ-YUZ8VE",
+    "alt": "Cream boucle lounge chair with rounded shape on a beige backdrop"
+  },
+  "lamp-arc": {
+    "file": "/images/products/lamp-arc.jpg",
+    "photographer": "Karolina Grabowska",
+    "unsplashId": "ulh3-dLSXjI",
+    "alt": "Cream ceramic table lamp on a wooden sideboard with books and decor"
+  },
+  "vase-ceramic": {
+    "file": "/images/products/vase-ceramic.jpg",
+    "photographer": "Jocelyn Morales",
+    "unsplashId": "giRMqme_f-Q",
+    "alt": "Round beige ceramic donut vase on a neutral background"
+  },
+  "cushions-linen": {
+    "file": "/images/products/cushions-linen.jpg",
+    "photographer": "Veronika Martinelli",
+    "unsplashId": "3M87xUEEdfE",
+    "alt": "White and rust linen cushions stacked on a stool"
+  },
+  "cookware-pan": {
+    "file": "/images/products/cookware-pan.jpg",
+    "photographer": "Cooker King",
+    "unsplashId": "Mv3JygH8eXQ",
+    "alt": "Nonstick frying pan with a wooden handle on a white background"
+  },
+  "coffee-maker": {
+    "file": "/images/products/coffee-maker.jpg",
+    "photographer": "Declan Cronin",
+    "unsplashId": "0aVDGglPI3U",
+    "alt": "White espresso machine with a matching coffee grinder on a marble counter"
+  },
+  "mugs-stone": {
+    "file": "/images/products/mugs-stone.jpg",
+    "photographer": "Vladimir Gladkov",
+    "unsplashId": "NPPIq1XFdck",
+    "alt": "Speckled stoneware mugs and cups on a white shelf"
+  },
+  "airfryer-crisp": {
+    "file": "/images/products/airfryer-crisp.jpg",
+    "photographer": "BINGYEN STUDIO",
+    "unsplashId": "0up6XtJN5CA",
+    "alt": "Compact countertop ovens with baked snacks on a kitchen counter"
+  },
+  "blender-pro": {
+    "file": "/images/products/blender-pro.jpg",
+    "photographer": "Andrea Niosi",
+    "unsplashId": "LbJ_jSAepKM",
+    "alt": "Blender jar filled with greens and fruit on a white kitchen counter"
+  },
+  "serum-glow": {
+    "file": "/images/products/serum-glow.jpg",
+    "photographer": "Point Normal",
+    "unsplashId": "GjJZ5HBl2qQ",
+    "alt": "Amber glass serum bottle with a dropper on an orange background"
+  },
+  "perfume-noir": {
+    "file": "/images/products/perfume-noir.jpg",
+    "photographer": "Fulvio Ciccolo",
+    "unsplashId": "iDDGJt3veps",
+    "alt": "Clear glass perfume bottle with a black cap on a marble surface"
+  },
+  "lipstick-velvet": {
+    "file": "/images/products/lipstick-velvet.jpg",
+    "photographer": "Qasim Malick",
+    "unsplashId": "Yh9FrbN5Bts",
+    "alt": "Red lipstick in a gold and red case on a red background"
+  },
+  "cream-hydra": {
+    "file": "/images/products/cream-hydra.jpg",
+    "photographer": "Eveling Salazar",
+    "unsplashId": "01YhA5XDDLk",
+    "alt": "Open jar of white face cream floating above a stone"
+  },
+  "coffee-beans": {
+    "file": "/images/products/coffee-beans.jpg",
+    "photographer": "With Mahdy",
+    "unsplashId": "wizWrRZJXSg",
+    "alt": "Kraft paper coffee bag on a white table against a beige wall"
+  },
+  "tea-assam": {
+    "file": "/images/products/tea-assam.jpg",
+    "photographer": "charlesdeluvio",
+    "unsplashId": "alYWLBuIhTk",
+    "alt": "Close up of twisted black tea leaves with golden tips"
+  },
+  "almonds-premium": {
+    "file": "/images/products/almonds-premium.jpg",
+    "photographer": "Mockupo",
+    "unsplashId": "8LvXmMZuAU0",
+    "alt": "White bowl filled with whole almonds"
+  },
+  "oil-olive": {
+    "file": "/images/products/oil-olive.jpg",
+    "photographer": "Roberta Sorge",
+    "unsplashId": "uOBApnN_K7w",
+    "alt": "Glass cruet of olive oil with olives and olive branches"
+  },
+  "books-stack": {
+    "file": "/images/products/books-stack.jpg",
+    "photographer": "Studio Media",
+    "unsplashId": "9DaOYUYnOls",
+    "alt": "Open book resting on a stack of hardcover books on a beige background"
+  },
+  "book-novel": {
+    "file": "/images/products/book-novel.jpg",
+    "photographer": "Faune Magazine",
+    "unsplashId": "sh-_WiOrlR8",
+    "alt": "Minimal gray covered book on a white surface"
+  },
+  "yoga-mat": {
+    "file": "/images/products/yoga-mat.jpg",
+    "photographer": "Samantha Sheppard",
+    "unsplashId": "b8Q5fHBsyik",
+    "alt": "Green yoga mat with two cork yoga blocks"
+  },
+  "dumbbells-hex": {
+    "file": "/images/products/dumbbells-hex.jpg",
+    "photographer": "VD Photography",
+    "unsplashId": "Q2lsONmwsOQ",
+    "alt": "Pair of black hex dumbbells on a glossy white floor"
+  },
+  "cricket-bat": {
+    "file": "/images/products/cricket-bat.jpg",
+    "photographer": "Chirayu Trivedi",
+    "unsplashId": "iDTDvSDEVjw",
+    "alt": "Red leather cricket ball on a black background"
+  },
+  "bicycle-city": {
+    "file": "/images/products/bicycle-city.jpg",
+    "photographer": "Liza Pooor",
+    "unsplashId": "UaHV4WzVArk",
+    "alt": "Light blue city bicycle parked against a bright blue wall"
+  },
+  "toys-wooden": {
+    "file": "/images/products/toys-wooden.jpg",
+    "photographer": "Galina Kondratenko",
+    "unsplashId": "XhaRWN6xOBo",
+    "alt": "Wooden bear family puzzle beside a small glowing wooden house"
+  },
+  "teddy-bear": {
+    "file": "/images/products/teddy-bear.jpg",
+    "photographer": "Izabelly Marques",
+    "unsplashId": "8xpfM2QHJSE",
+    "alt": "Fluffy beige teddy bear with a green ribbon bow"
+  },
+  "hero-electronics": {
+    "file": "/images/banners/hero-electronics.jpg",
+    "photographer": "Ales Nesetril",
+    "unsplashId": "Im7lZjxeLhg",
+    "alt": "Partly open laptop glowing with colorful light in a dark room"
+  },
+  "hero-fashion": {
+    "file": "/images/banners/hero-fashion.jpg",
+    "photographer": "jagadshd",
+    "unsplashId": "2LPms6PqZdc",
+    "alt": "Folded garments on a wooden ladder rack beside dried pampas grass"
+  },
+  "hero-home": {
+    "file": "/images/banners/hero-home.jpg",
+    "photographer": "Imagine Reality Studio",
+    "unsplashId": "4UJdTZdwh8o",
+    "alt": "Calm beige living room with a sectional sofa and framed art"
+  },
+  "hero-festive": {
+    "file": "/images/banners/hero-festive.jpg",
+    "photographer": "wilson mathew",
+    "unsplashId": "KIrCjwEH5dA",
+    "alt": "Lit clay diya with warm bokeh lights in the dark"
+  },
+  "promo-beauty": {
+    "file": "/images/banners/promo-beauty.jpg",
+    "photographer": "Content Pixie",
+    "unsplashId": "WdJ4WnLxyDs",
+    "alt": "White serum bottle with a gold collar on a soft neutral backdrop"
+  },
+  "promo-sports": {
+    "file": "/images/banners/promo-sports.jpg",
+    "photographer": "Alessio Soggetti",
+    "unsplashId": "GYr9A2CPMhY",
+    "alt": "Trail runner on a grassy ridge above misty mountains"
+  }
+}

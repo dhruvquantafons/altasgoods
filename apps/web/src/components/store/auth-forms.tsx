@@ -1,0 +1,292 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { Checkbox, Field, Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
+const OTP_LENGTH = 6;
+const RESEND_AFTER = 30;
+
+function validMobile(v: string) {
+  return /^[6-9]\d{9}$/.test(v);
+}
+
+function formatMobile(v: string) {
+  return v.length > 5 ? `${v.slice(0, 5)} ${v.slice(5)}` : v;
+}
+
+/* --------------------------------- Mobile ------------------------------- */
+
+function MobileInput({ value, onChange, error }: { value: string; onChange: (v: string) => void; error?: string | null }) {
+  return (
+    <Field label="Mobile number" htmlFor="mobile" error={error ?? undefined}>
+      <div className="flex">
+        <span className="flex h-12 items-center rounded-l-lg border border-r-0 border-line-strong bg-ink-50 px-3.5 text-[15px] font-medium text-ink-700">+91</span>
+        <input
+          id="mobile"
+          name="mobile"
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          autoFocus
+          value={formatMobile(value)}
+          onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 10))}
+          aria-invalid={!!error}
+          placeholder="98765 43210"
+          className="h-12 min-w-0 flex-1 rounded-r-lg border border-line-strong bg-white px-3.5 text-[15px] tracking-wide text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none aria-invalid:border-danger-500"
+        />
+      </div>
+    </Field>
+  );
+}
+
+/* ----------------------------------- OTP -------------------------------- */
+
+function OtpStep({ mobile, onBack, onVerified, cta }: { mobile: string; onBack: () => void; onVerified: () => void; cta: string }) {
+  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [left, setLeft] = useState(RESEND_AFTER);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [resent, setResent] = useState(false);
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (left <= 0) return;
+    const t = setTimeout(() => setLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+
+  const fill = (start: number, text: string) => {
+    const chars = text.replace(/\D/g, "").slice(0, OTP_LENGTH - start).split("");
+    if (!chars.length) return;
+    setDigits((d) => {
+      const n = [...d];
+      chars.forEach((c, i) => (n[start + i] = c));
+      return n;
+    });
+    refs.current[Math.min(OTP_LENGTH - 1, start + chars.length)]?.focus();
+    setError(null);
+  };
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const code = digits.join("");
+    if (code.length < OTP_LENGTH) return setError(`Enter all ${OTP_LENGTH} digits of the code`);
+    if (code === "000000") return setError("That code is incorrect. Check the SMS and try again.");
+    setBusy(true);
+    setTimeout(onVerified, 600);
+  };
+
+  return (
+    <form onSubmit={submit} noValidate>
+      <button type="button" onClick={onBack} className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-ink-900">
+        <ArrowLeft size={16} aria-hidden="true" /> Change number
+      </button>
+      <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Enter the code</h1>
+      <p className="mt-2 text-[15px] text-ink-600">
+        We sent a 6 digit code to <span className="font-semibold text-ink-900">+91 {formatMobile(mobile)}</span>. It expires in 10 minutes.
+      </p>
+      <fieldset className="mt-7">
+        <legend className="sr-only">One-time code</legend>
+        <div className="flex justify-between gap-2">
+          {digits.map((d, i) => (
+            <input
+              key={i}
+              ref={(el) => {
+                refs.current[i] = el;
+              }}
+              value={d}
+              inputMode="numeric"
+              autoComplete={i === 0 ? "one-time-code" : "off"}
+              aria-label={`Digit ${i + 1} of ${OTP_LENGTH}`}
+              aria-invalid={!!error}
+              autoFocus={i === 0}
+              maxLength={OTP_LENGTH}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "");
+                if (v.length > 1) return fill(i, v);
+                setDigits((x) => {
+                  const n = [...x];
+                  n[i] = v;
+                  return n;
+                });
+                setError(null);
+                if (v && i < OTP_LENGTH - 1) refs.current[i + 1]?.focus();
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                fill(i, e.clipboardData.getData("text"));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Backspace" && !digits[i] && i > 0) refs.current[i - 1]?.focus();
+                if (e.key === "ArrowLeft" && i > 0) refs.current[i - 1]?.focus();
+                if (e.key === "ArrowRight" && i < OTP_LENGTH - 1) refs.current[i + 1]?.focus();
+              }}
+              className={cn(
+                "size-12 rounded-xl border bg-white text-center font-display text-xl font-semibold text-ink-900 tabular-nums transition-colors focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none sm:size-14",
+                error ? "border-danger-500" : d ? "border-ink-400" : "border-line-strong",
+              )}
+            />
+          ))}
+        </div>
+      </fieldset>
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-danger-600">
+          {error}
+        </p>
+      )}
+      <p className="mt-3 text-xs text-ink-500">Demo: any 6 digits work except 000000.</p>
+      <button type="submit" disabled={busy} className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-400">
+        {busy && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
+        {busy ? "Verifying" : cta}
+      </button>
+      <p className="mt-5 text-center text-sm text-ink-600">
+        {left > 0 ? (
+          <>
+            Resend code in <span className="font-semibold text-ink-900 tabular-nums">0:{String(left).padStart(2, "0")}</span>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setLeft(RESEND_AFTER);
+              setResent(true);
+              setDigits(Array(OTP_LENGTH).fill(""));
+              refs.current[0]?.focus();
+            }}
+            className="font-semibold text-brand-700 hover:underline"
+          >
+            Resend code by SMS
+          </button>
+        )}
+      </p>
+      {resent && left > 0 && <p className="mt-1 text-center text-xs text-success-700">A new code is on its way</p>}
+      <p className="mt-6 flex items-start gap-2 rounded-xl bg-ink-50 px-3.5 py-3 text-xs leading-relaxed text-ink-600">
+        <ShieldCheck size={15} className="mt-px shrink-0 text-success-600" aria-hidden="true" />
+        BluBuy will never call you to ask for this code. Do not share it with anyone.
+      </p>
+    </form>
+  );
+}
+
+/* --------------------------------- Login -------------------------------- */
+
+export function LoginForm({ next }: { next: string }) {
+  const router = useRouter();
+  const [mobile, setMobile] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState<"mobile" | "otp">("mobile");
+  const [sending, setSending] = useState(false);
+
+  if (step === "otp") return <OtpStep mobile={mobile} onBack={() => setStep("mobile")} onVerified={() => router.push(next)} cta="Verify and sign in" />;
+
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!validMobile(mobile)) return setError("Enter a valid 10 digit Indian mobile number");
+        setError(null);
+        setSending(true);
+        setTimeout(() => {
+          setSending(false);
+          setStep("otp");
+        }, 500);
+      }}
+    >
+      <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Sign in or create an account</h1>
+      <p className="mt-2 text-[15px] text-ink-600">Use your mobile number. We will send you a one-time code, no password needed.</p>
+      <div className="mt-8">
+        <MobileInput value={mobile} onChange={setMobile} error={error} />
+      </div>
+      <button type="submit" disabled={sending} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-400">
+        {sending && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
+        {sending ? "Sending code" : "Send code"}
+      </button>
+      <p className="mt-5 text-xs leading-relaxed text-ink-500">
+        By continuing you agree to BluBuy&apos;s{" "}
+        <Link href="/policies/terms" className="font-medium text-brand-700 hover:underline">
+          Terms of use
+        </Link>{" "}
+        and acknowledge the{" "}
+        <Link href="/policies/privacy" className="font-medium text-brand-700 hover:underline">
+          Privacy notice
+        </Link>
+        . We use your number to sign you in and send order updates. Promotional messages are off unless you turn them on.
+      </p>
+      <div className="mt-8 border-t border-line pt-6 text-center text-sm text-ink-600">
+        New to BluBuy?{" "}
+        <Link href="/signup" className="font-semibold text-brand-700 hover:underline">
+          Create an account
+        </Link>
+      </div>
+    </form>
+  );
+}
+
+/* --------------------------------- Signup ------------------------------- */
+
+export function SignupForm() {
+  const router = useRouter();
+  const [f, setF] = useState({ name: "", mobile: "", email: "", promos: false });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [step, setStep] = useState<"details" | "otp">("details");
+
+  if (step === "otp") return <OtpStep mobile={f.mobile} onBack={() => setStep("details")} onVerified={() => router.push("/")} cta="Verify and create account" />;
+
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        const errs: Record<string, string> = {};
+        if (f.name.trim().length < 2) errs.name = "Enter your full name";
+        if (!validMobile(f.mobile)) errs.mobile = "Enter a valid 10 digit Indian mobile number";
+        if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) errs.email = "Enter a valid email address, or leave it empty";
+        setErrors(errs);
+        if (!Object.keys(errs).length) setStep("otp");
+      }}
+    >
+      <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Create your BluBuy account</h1>
+      <p className="mt-2 text-[15px] text-ink-600">Three details and a code. That is all.</p>
+      <div className="mt-8 flex flex-col gap-4">
+        <Field label="Full name" htmlFor="su-name" required error={errors.name}>
+          <Input id="su-name" autoComplete="name" inputSize="lg" value={f.name} onChange={(e) => setF((x) => ({ ...x, name: e.target.value }))} aria-invalid={!!errors.name} />
+        </Field>
+        <MobileInput value={f.mobile} onChange={(v) => setF((x) => ({ ...x, mobile: v }))} error={errors.mobile} />
+        <Field label="Email (optional)" htmlFor="su-email" error={errors.email} hint="For invoices and order receipts">
+          <Input id="su-email" type="email" autoComplete="email" inputSize="lg" value={f.email} onChange={(e) => setF((x) => ({ ...x, email: e.target.value }))} aria-invalid={!!errors.email} />
+        </Field>
+        <Checkbox
+          checked={f.promos}
+          onChange={(e) => setF((x) => ({ ...x, promos: e.target.checked }))}
+          label="Send me offers and sale reminders"
+          description="Optional. You can change this any time in Account, then Notifications."
+        />
+      </div>
+      <button type="submit" className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700">
+        Continue
+      </button>
+      <p className="mt-5 text-xs leading-relaxed text-ink-500">
+        By creating an account you agree to BluBuy&apos;s{" "}
+        <Link href="/policies/terms" className="font-medium text-brand-700 hover:underline">
+          Terms of use
+        </Link>{" "}
+        and acknowledge the{" "}
+        <Link href="/policies/privacy" className="font-medium text-brand-700 hover:underline">
+          Privacy notice
+        </Link>{" "}
+        under the Digital Personal Data Protection Act, 2023.
+      </p>
+      <div className="mt-8 border-t border-line pt-6 text-center text-sm text-ink-600">
+        Already have an account?{" "}
+        <Link href="/login" className="font-semibold text-brand-700 hover:underline">
+          Sign in
+        </Link>
+      </div>
+    </form>
+  );
+}

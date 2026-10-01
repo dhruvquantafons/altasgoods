@@ -1,0 +1,144 @@
+import Link from "next/link";
+import { Inbox, Search } from "lucide-react";
+import { AutoSubmitForm } from "@/components/logistics/ops-client";
+import { one, qs } from "@/components/logistics/ops-ui";
+import { CATEGORIES, CHANNEL, slaText, slaTone } from "@/components/support/meta";
+import { TicketInbox, type InboxRow } from "@/components/support/ticket-inbox";
+import { buttonClasses } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input, Select } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/misc";
+import { PageHeader } from "@/components/ui/page-header";
+import { TabLinks } from "@/components/ui/tabs";
+import { tickets } from "@/lib/mock";
+import { careAgents, CURRENT_AGENT, isActiveTicket, PRIORITY_POLICY, ticketSla, ticketThread } from "@/lib/mock/ops-extra";
+import { TICKET_PRIORITY, TICKET_STATUS, type TicketPriority } from "@/lib/status";
+import type { Ticket } from "@/lib/types";
+import { timeAgo } from "@/lib/utils";
+
+export const metadata = { title: "Ticket inbox" };
+
+const VIEWS: { key: string; label: string; match: (t: Ticket) => boolean }[] = [
+  { key: "open", label: "All open", match: isActiveTicket },
+  { key: "mine", label: "Assigned to me", match: (t) => isActiveTicket(t) && t.assignee === CURRENT_AGENT.name },
+  { key: "unassigned", label: "Unassigned", match: (t) => isActiveTicket(t) && !t.assignee },
+  { key: "escalated", label: "Escalated", match: (t) => t.status === "escalated" },
+  { key: "awaiting", label: "Awaiting customer", match: (t) => t.status === "awaiting_customer" },
+  { key: "resolved", label: "Resolved", match: (t) => t.status === "resolved" || t.status === "closed" },
+];
+
+export default async function TicketsPage(props: PageProps<"/support/tickets">) {
+  const sp = await props.searchParams;
+  const view = VIEWS.find((v) => v.key === one(sp.view)) ?? VIEWS[0]!;
+  const q = (one(sp.q) ?? "").trim().toLowerCase();
+  const priority = one(sp.priority) ?? "";
+  const category = one(sp.category) ?? "";
+  const channel = one(sp.channel) ?? "";
+
+  const base = tickets.filter(
+    (t) =>
+      (!q || t.id.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q) || t.customerName.toLowerCase().includes(q) || (t.orderId ?? "").toLowerCase().includes(q)) &&
+      (!priority || t.priority === priority) &&
+      (!category || t.category === category) &&
+      (!channel || t.channel === channel),
+  );
+  const list = base
+    .filter(view.match)
+    .map((t) => ({ t, sla: ticketSla(t) }))
+    .sort((a, b) => (view.key === "resolved" ? +new Date(b.t.updatedAt) - +new Date(a.t.updatedAt) : (a.sla.state === "paused" ? 1e6 : a.sla.minsLeft) - (b.sla.state === "paused" ? 1e6 : b.sla.minsLeft)));
+
+  const rows: InboxRow[] = list.map(({ t, sla }) => {
+    const thread = ticketThread(t);
+    const last = [...thread].reverse().find((m) => m.kind !== "note" && m.kind !== "system") ?? thread.at(-1)!;
+    return {
+      id: t.id,
+      subject: t.subject,
+      preview: `${last.kind === "customer" ? "" : `${last.author}: `}${last.body}`,
+      customer: t.customerName,
+      orderId: t.orderId,
+      category: t.category,
+      channel: CHANNEL[t.channel].label,
+      priority: TICKET_PRIORITY[t.priority],
+      status: TICKET_STATUS[t.status],
+      pcode: PRIORITY_POLICY[t.priority].code,
+      sla: slaText(sla),
+      slaTone: slaTone(sla),
+      assignee: t.assignee,
+      updated: timeAgo(last.at),
+      closed: !isActiveTicket(t),
+    };
+  });
+
+  const params = { view: view.key === "open" ? undefined : view.key, q: q || undefined, priority: priority || undefined, category: category || undefined, channel: channel || undefined };
+  const filtered = Boolean(q || priority || category || channel);
+  const agentOptions = careAgents
+    .filter((a) => a.presence !== "offline")
+    .map((a) => ({ name: a.name, label: `${a.fullName}, ${a.level} (${tickets.filter((t) => isActiveTicket(t) && t.assignee === a.name).length} open)` }));
+
+  return (
+    <>
+      <PageHeader
+        title="Ticket inbox"
+        description="Every customer ticket across chat, email, phone and app, with SLA countdowns."
+        actions={
+          <Link href={rows[0] ? `/support/tickets/${rows[0].id}` : "/support/tickets"} className={buttonClasses({ variant: "primary" })}>
+            Pick next ticket
+          </Link>
+        }
+      />
+
+      <Card className="overflow-hidden">
+        <div className="px-5 pt-1">
+          <TabLinks
+            active={view.key}
+            items={VIEWS.map((v) => ({ key: v.key, label: v.label, href: `/support/tickets${qs({ ...params, view: v.key === "open" ? undefined : v.key })}`, count: base.filter(v.match).length }))}
+          />
+        </div>
+        <AutoSubmitForm action="/support/tickets" className="flex flex-wrap items-center gap-2 px-5 py-3.5">
+          {view.key !== "open" && <input type="hidden" name="view" value={view.key} />}
+          <Input name="q" defaultValue={q} icon={Search} inputSize="sm" placeholder="Search ticket, customer or order" aria-label="Search tickets" className="w-full sm:w-72" />
+          <Select name="priority" defaultValue={priority} selectSize="sm" aria-label="Priority" className="w-[calc(50%-4px)] sm:w-36">
+            <option value="">All priorities</option>
+            {(Object.keys(TICKET_PRIORITY) as TicketPriority[]).reverse().map((p) => (
+              <option key={p} value={p}>
+                {TICKET_PRIORITY[p].label} ({PRIORITY_POLICY[p].code})
+              </option>
+            ))}
+          </Select>
+          <Select name="category" defaultValue={category} selectSize="sm" aria-label="Category" className="w-[calc(50%-4px)] sm:w-44">
+            <option value="">All categories</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </Select>
+          <Select name="channel" defaultValue={channel} selectSize="sm" aria-label="Channel" className="w-full sm:w-36">
+            <option value="">All channels</option>
+            {(Object.keys(CHANNEL) as Ticket["channel"][]).map((c) => (
+              <option key={c} value={c}>
+                {CHANNEL[c].label}
+              </option>
+            ))}
+          </Select>
+          <button type="submit" className={buttonClasses({ variant: "secondary", size: "sm" })}>
+            Search
+          </button>
+          {filtered && (
+            <Link href={`/support/tickets${qs({ view: params.view })}`} className="px-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
+              Clear filters
+            </Link>
+          )}
+        </AutoSubmitForm>
+        {rows.length === 0 ? (
+          <EmptyState icon={Inbox} title="Nothing in this view" description={filtered ? "No tickets match these filters. Clear them to see the full queue." : "The queue is clear. New tickets will appear here."} className="border-t border-line" />
+        ) : (
+          <TicketInbox key={`${view.key}-${q}-${priority}-${category}-${channel}`} rows={rows} agents={agentOptions} />
+        )}
+        <div className="border-t border-line px-5 py-3 text-[13px] text-ink-500">
+          {rows.length} ticket{rows.length === 1 ? "" : "s"} in {view.label.toLowerCase()}. First response targets: P1 15 min, P2 1 h, P3 4 h, P4 24 h.
+        </div>
+      </Card>
+    </>
+  );
+}
