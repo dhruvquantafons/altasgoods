@@ -157,10 +157,8 @@ export default async function FeedbackPage(props: PageProps<"/seller/feedback">)
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Stars value={f.rating} size={13} />
                     <span className="text-xs text-ink-500">
-                      {f.buyer}, {timeAgo(f.at)}, order{" "}
-                      <Link href={`/seller/orders/${f.orderId}`} className="font-mono hover:text-brand-700">
-                        {f.orderId}
-                      </Link>
+                      {/* sample feedback: order ids are not real orders, so they are shown, not linked */}
+                      {f.buyer}, {timeAgo(f.at)}, order <span className="font-mono">{f.orderId}</span>
                     </span>
                     {f.rating <= 2 && !f.struck && <Badge size="sm" tone="warning">Counts toward ODR</Badge>}
                     {f.struck && <Badge size="sm" tone="neutral">Excluded, delivery by BluBuy</Badge>}

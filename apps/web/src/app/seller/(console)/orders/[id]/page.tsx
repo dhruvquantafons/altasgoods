@@ -13,14 +13,16 @@ import { Timeline, type TimelineItem } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { RATE_CARD_VERSION } from "@/lib/mock";
-import { getListing, ORDER_STAGES, SELLER, sellerReturns, settlementEstimate, type SellerLine } from "@/lib/mock/seller-extra";
+import { getListing, ORDER_STAGES, SELLER, settlementEstimate, type SellerLine } from "@/lib/mock/seller-extra";
 import { CourierSimulator } from "@/components/seller/orders/courier-simulator";
 import { uiItemStatus } from "@/lib/api/format";
-import { loadSellerOrder, toSellerLine } from "@/lib/api/seller-orders";
+import { daysSince, deliveredAtOf, loadSellerOrder, toSellerLine } from "@/lib/api/seller-orders";
+import { loadSellerReturns } from "@/lib/api/seller-returns";
 import type { ApiOrderItemStatus } from "@/lib/api/types";
 import type { FeeLine, Order } from "@/lib/types";
 import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/status";
-import { formatDate, formatDateTime, formatINR, formatWeekday, NOW } from "@/lib/utils";
+import { currentTime } from "@/lib/api/support";
+import { formatDate, formatDateTime, formatINR, formatWeekday } from "@/lib/utils";
 
 const feeOf = (fees: FeeLine[], prefix: string) => fees.filter((f) => f.label.startsWith(prefix)).reduce((a, f) => a + f.amount, 0);
 
@@ -92,9 +94,13 @@ function packagingTips(subcategory: string) {
 
 export default async function OrderDetailPage(props: PageProps<"/seller/orders/[id]">) {
   const { id } = await props.params;
+  const now = currentTime();
   const api = await loadSellerOrder(decodeURIComponent(id));
   const lines = api.items.map((it) => ({
-    ...toSellerLine({ ...it, orderId: api.id, placedAt: api.placedAt, paymentMethod: api.paymentMethod, shipTo: { name: api.shipTo.name, city: api.shipTo.city, pincode: api.shipTo.pincode } }),
+    ...toSellerLine(
+      { ...it, orderId: api.id, placedAt: api.placedAt, paymentMethod: api.paymentMethod, shipTo: { name: api.shipTo.name, city: api.shipTo.city, pincode: api.shipTo.pincode } },
+      deliveredAtOf(api.events, it.id),
+    ),
     state: api.shipTo.state,
   }));
   if (!lines.length) notFound();
@@ -127,8 +133,8 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
   const listing = getListing(primary.productId);
   const stage = ORDER_STAGES.find((s) => s.key === primary.stage)!;
   const otherItems = order.items.length - lines.length;
-  const ret = sellerReturns.find((r) => r.orderId === order.id);
-  const daysSinceDelivery = primary.deliveredAt ? Math.floor((NOW.getTime() - new Date(primary.deliveredAt).getTime()) / 86400_000) : undefined;
+  const ret = (await loadSellerReturns().catch(() => [])).find((r) => r.orderId === order.id && r.status !== "CANCELLED");
+  const daysSinceDelivery = primary.deliveredAt ? daysSince(primary.deliveredAt) : undefined;
   const preShip = ["placed", "confirmed", "packed", "ready_to_ship"].includes(primary.status);
   // real fee lines from the API once the order is confirmed; dates still estimated from the payout rules
   const estimates = lines.map((l) => {
@@ -190,7 +196,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
             />
             <ul className="mt-3 divide-y divide-line border-t border-line">
               {lines.map((l) => (
-                <li key={l.lineId} className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start">
+                <li key={l.itemId} className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start">
                   <ProductImage src={l.image} alt={l.title} size={72} rounded="lg" />
                   <div className="min-w-0 flex-1">
                     <Link href={`/seller/catalog/${l.productId}`} className="text-sm font-medium text-ink-900 hover:text-brand-700">
@@ -215,7 +221,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
                       {l.fc && <span className="font-mono text-[11px] text-ink-500">{l.fc}</span>}
                       {l.dispatchBy && l.channel === "ship" && (
                         <span className="text-xs text-ink-500">
-                          Dispatch by {formatDateTime(l.dispatchBy)}, <SlaText dueAt={l.dispatchBy} className="text-xs" />
+                          Dispatch by {formatDateTime(l.dispatchBy)}, <SlaText dueAt={l.dispatchBy} now={now} className="text-xs" />
                         </span>
                       )}
                     </div>
@@ -253,7 +259,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
                   ]}
                   total={{ label: est.estimated ? "Estimated settlement" : "Settlement", value: est.net, hint: `${Math.round((est.net / primary.total) * 1000) / 10}% of the item price` }}
                 />
-                <SettlementBox estimated={est.estimated} eligibleOn={est.eligibleOn} payoutOn={est.payoutOn} holdDays={est.holdDays} cod={primary.cod} />
+                <SettlementBox estimated={est.estimated} eligibleOn={est.eligibleOn} payoutOn={est.payoutOn} holdDays={est.holdDays} cod={primary.cod} now={now} />
               </div>
             ) : (
               <>
@@ -263,7 +269,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
                       <TR className="hover:bg-transparent">
                         <TH>Line</TH>
                         {estimates.map(({ line }) => (
-                          <TH key={line.lineId} align="right">
+                          <TH key={line.itemId} align="right">
                             <Mono className="text-[12px]">-{line.lineId.split("-").at(-1)}</Mono>
                           </TH>
                         ))}
@@ -292,7 +298,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
                       <TR className="bg-ink-50/50">
                         <TD className="font-medium text-ink-900">{estimates[0]!.est.estimated ? "Estimated settlement" : "Settlement"}</TD>
                         {estimates.map(({ line, est: e }) => (
-                          <TD key={line.lineId} align="right" className="font-medium text-ink-900">
+                          <TD key={line.itemId} align="right" className="font-medium text-ink-900">
                             {formatINR(e.net)}
                           </TD>
                         ))}
@@ -304,7 +310,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
                   </Table>
                 </TableContainer>
                 <div className="px-5 py-4">
-                  <SettlementBox estimated={est.estimated} eligibleOn={est.eligibleOn} payoutOn={est.payoutOn} holdDays={est.holdDays} cod={primary.cod} inline />
+                  <SettlementBox estimated={est.estimated} eligibleOn={est.eligibleOn} payoutOn={est.payoutOn} holdDays={est.holdDays} cod={primary.cod} now={now} inline />
                 </div>
               </>
             )}
@@ -388,7 +394,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
 
         {/* Side column */}
         <div className="flex min-w-0 flex-col gap-6">
-          <NextStep line={primary} returnId={ret?.id} />
+          <NextStep line={primary} returnId={ret?.id} now={now} />
 
           <Card>
             <CardHeader title="Customer" description="Contact details are masked. Use Messages to reach the buyer." />
@@ -486,6 +492,7 @@ function SettlementBox({
   holdDays,
   cod,
   inline,
+  now,
 }: {
   estimated: boolean;
   eligibleOn: string;
@@ -493,10 +500,11 @@ function SettlementBox({
   holdDays: number;
   cod: boolean;
   inline?: boolean;
+  now: number;
 }) {
   const body = (
     <>
-      <p className="text-xs font-medium text-ink-500">{estimated ? "Expected payout" : NOW > new Date(payoutOn) ? "Paid in the payout run of" : "Payout run"}</p>
+      <p className="text-xs font-medium text-ink-500">{estimated ? "Expected payout" : now > Date.parse(payoutOn) ? "Paid in the payout run of" : "Payout run"}</p>
       <p className="mt-1 text-[15px] font-semibold text-ink-900">{formatWeekday(payoutOn)}</p>
       <p className="mt-2 text-xs leading-relaxed text-ink-500">
         {estimated ? "Estimate based on the promised delivery date. " : ""}
@@ -508,7 +516,7 @@ function SettlementBox({
   return <div className="h-fit rounded-xl border border-line bg-ink-50/60 p-4">{body}</div>;
 }
 
-function NextStep({ line, returnId }: { line: SellerLine; returnId?: string }) {
+function NextStep({ line, returnId, now }: { line: SellerLine; returnId?: string; now: number }) {
   if (line.channel === "fulfilled") {
     return (
       <Card className="border-brand-100 bg-brand-50/40">
@@ -539,7 +547,7 @@ function NextStep({ line, returnId }: { line: SellerLine; returnId?: string }) {
           <p className="mt-1 text-[15px] font-semibold text-ink-900">{s.title}</p>
           {s.due && (
             <p className="mt-2 flex flex-wrap items-center gap-x-2 text-[13px] text-ink-600">
-              Due {formatDateTime(s.due)} <SlaText dueAt={s.due} />
+              Due {formatDateTime(s.due)} <SlaText dueAt={s.due} now={now} />
             </p>
           )}
           <p className="mt-3 text-[13px] leading-relaxed text-ink-600">{s.body}</p>

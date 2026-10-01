@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Headset } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { SellerSignIn } from "@/components/seller/seller-sign-in";
+import { currentUser } from "@/lib/api/server";
+import { formatPhone } from "@/lib/onboarding";
 
 export const metadata: Metadata = {
   title: { default: "Start selling", template: "%s | BluBuy Seller Hub" },
   description: "Register as a seller on BluBuy: verify your business, add a pickup address and bank account, and start listing.",
 };
 
-export default function RegisterLayout({ children }: { children: React.ReactNode }) {
+export default async function RegisterLayout({ children }: { children: React.ReactNode }) {
+  const user = await currentUser();
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur-md">
@@ -19,9 +22,8 @@ export default function RegisterLayout({ children }: { children: React.ReactNode
               <Headset size={15} aria-hidden="true" />
               Help: 1800 419 2600
             </a>
-            <Link href="/seller" className="rounded-lg px-2 py-1.5 text-[13px] font-medium text-brand-700 hover:bg-brand-50">
-              Already selling? Sign in
-            </Link>
+            {user && !user.sellers.length && <span className="hidden text-[13px] text-ink-500 md:inline">Signed in as {user.name ?? formatPhone(user.phone)}</span>}
+            <SellerSignIn className="rounded-lg px-2 py-1.5 text-[13px] font-medium text-brand-700 hover:bg-brand-50">Already selling? Sign in</SellerSignIn>
           </div>
         </div>
       </header>

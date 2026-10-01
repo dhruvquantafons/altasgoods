@@ -501,8 +501,8 @@ export function KycQueue({ items, decided, initialOpenId, categories }: { items:
             {app.notes.length > 0 && (
               <Section title="Reviewer notes" icon={FileText}>
                 <ul className="flex flex-col gap-3">
-                  {app.notes.map((n) => (
-                    <li key={n.at} className="text-[13px]">
+                  {app.notes.map((n, i) => (
+                    <li key={`${i}-${n.at}`} className="text-[13px]">
                       <p className="text-ink-800">{n.body}</p>
                       <p className="mt-0.5 text-xs text-ink-500">
                         {n.byName ?? "BluBuy staff"}, {formatDateTime(n.at)}

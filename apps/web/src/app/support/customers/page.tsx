@@ -9,8 +9,8 @@ import { Input, Select } from "@/components/ui/input";
 import { Avatar, EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { customers, tickets } from "@/lib/mock";
-import { isActiveTicket } from "@/lib/mock/ops-extra";
+import { tickets } from "@/lib/api/support";
+import { customers } from "@/lib/mock";
 import type { Customer } from "@/lib/types";
 import { cn, formatDate, formatINR } from "@/lib/utils";
 
@@ -39,7 +39,8 @@ export default async function CustomersPage(props: PageProps<"/support/customers
     .filter((c) => (!q || matches(c, q)) && (!plus || (plus === "yes" ? c.plusMember : !c.plusMember)) && (!risk || (risk === "high" ? c.riskScore >= 70 : c.status !== "active")))
     .sort((a, b) => b.lifetimeValue - a.lifetimeValue);
   const paged = rows.slice((page - 1) * PAGE, page * PAGE);
-  const openTickets = (name: string) => tickets.filter((t) => t.customerName === name && isActiveTicket(t)).length;
+  const { tickets: active } = await tickets({ view: "open" });
+  const openTickets = (name: string) => active.filter((t) => t.customerName === name).length;
   const params = { q: q || undefined, plus: plus || undefined, risk: risk || undefined };
 
   return (

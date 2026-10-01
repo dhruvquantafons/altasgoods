@@ -100,18 +100,19 @@ function evaluate(p: string, o: OriginOption, directory: PincodeEntry[], hubName
 
 /** Pincode serviceability and delivery promise from a chosen fulfilment centre (section 5.2 and 10.3). */
 export function PincodeChecker({ directory, origins, hubNames }: { directory: PincodeEntry[]; origins: OriginOption[]; hubNames: Record<string, string> }) {
+  // no result until a check runs, so Check and the sample chips always visibly produce one
   const [pin, setPin] = useState("560066");
   const [origin, setOrigin] = useState(origins[0]?.id ?? "");
-  const [res, setRes] = useState<Result | null>(() => {
-    const first = origins[0] ? evaluate("560066", origins[0], directory, hubNames) : null;
-    return first && typeof first !== "string" ? first : null;
-  });
+  const [res, setRes] = useState<Result | null>(null);
   const [error, setError] = useState("");
+  // bumps on every check so the result panel replays its entrance even when the answer is unchanged
+  const [runs, setRuns] = useState(0);
 
   function check(value = pin, from = origin) {
     const out = evaluate(value.trim(), origins.find((x) => x.id === from)!, directory, hubNames);
+    setRuns((n) => n + 1);
     if (typeof out === "string") {
-      setError(out);
+      setError(value.trim() ? out : "Enter a 6 digit pincode to check");
       setRes(null);
     } else {
       setError("");
@@ -160,19 +161,24 @@ export function PincodeChecker({ directory, origins, hubNames }: { directory: Pi
           <button
             key={p}
             type="button"
+            aria-label={`Check ${p}`}
             onClick={() => {
               setPin(p);
               check(p);
             }}
-            className="rounded-full border border-line bg-white px-2.5 py-1 font-mono text-xs text-ink-600 hover:border-line-strong hover:text-ink-900"
+            className={cn(
+              "rounded-full border px-2.5 py-1 font-mono text-xs",
+              res?.pin === p ? "border-brand-300 bg-brand-50 text-brand-800" : "border-line bg-white text-ink-600 hover:border-line-strong hover:text-ink-900",
+            )}
           >
             {p}
           </button>
         ))}
       </div>
 
+      {!res && !error && <p className="mt-5 rounded-xl border border-dashed border-line px-4 py-6 text-center text-[13px] text-ink-500">Check a pincode, or pick one above, to see serviceability and the delivery promise.</p>}
       {res && (
-        <div className="mt-5 rounded-xl border border-line bg-ink-50/50 p-4" aria-live="polite">
+        <div key={runs} className="mt-5 rounded-xl border border-line bg-ink-50/50 p-4 animate-fade-in" aria-live="polite">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-mono text-base font-semibold text-ink-900">{res.pin}</p>

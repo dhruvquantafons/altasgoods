@@ -183,3 +183,13 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* hero carousel: the active dot fills while a slide is showing */
+@keyframes hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

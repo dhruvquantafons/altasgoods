@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AccountMobileNav, AccountSidebar } from "@/components/account/account-nav";
 import { accountNotifications, accountReturns, ACCOUNT_PROFILE, wishlistCount } from "@/lib/mock/account-extra";
-import { loadMyOrders, toUiOrder } from "@/lib/api/account-orders";
+import { loadAccountOrders } from "@/lib/api/account-orders";
 import { CURRENT_CUSTOMER } from "@/lib/mock";
 import { isActive } from "@/components/account/lib";
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountLayout({ children }: LayoutProps<"/account">) {
-  const orders = (await loadMyOrders().catch(() => [])).map(toUiOrder);
+  const orders = await loadAccountOrders().catch(() => []);
   const counts = {
     orders: orders.filter((o) => isActive(o.status)).length,
     returns: accountReturns.filter((r) => !["completed", "rejected", "cancelled"].includes(r.status)).length,

@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import { isProduction } from "../config/env.js";
 import { normalizePhone } from "../modules/auth/phone.js";
 import { createDb, type Db } from "./client.js";
+import { seedSupport } from "./seed-support.js";
 import * as t from "./schema.js";
 
 const WEB_MOCK = new URL("../../../web/src/lib/mock/", import.meta.url);
@@ -52,10 +53,14 @@ export async function seed(db: Db) {
   const m = await loadMock();
 
   await db.execute(sql`truncate table refunds, payment_events, payments, order_events, order_items, orders, cart_items, addresses, coupons,
+    return_events, returns, customer_uploads,
+    support_attachments, support_actions, support_events, support_messages, support_tickets,
     kyc_documents, files, seller_application_events, seller_applications,
     offers, products, seller_members, sellers, brands, categories, sessions, otp_challenges, users restart identity cascade`);
   await db.execute(sql`alter sequence order_number_seq restart with 10001`);
   await db.execute(sql`alter sequence seller_application_seq restart with 50001`);
+  await db.execute(sql`alter sequence support_ticket_seq restart with 60001`);
+  await db.execute(sql`alter sequence return_seq restart with 70001`);
 
   await db.insert(t.categories).values(
     m.categories.flatMap((c, i) => [
@@ -192,14 +197,15 @@ export async function seed(db: Db) {
     })),
   );
 
-  return { products: m.products.length, sellers: m.sellers.length, users: insertedShoppers.length + owners.length };
+  const support = await seedSupport(db, insertedShoppers);
+  return { products: m.products.length, sellers: m.sellers.length, users: insertedShoppers.length + owners.length + support.agents, tickets: support.tickets };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { db, pool } = createDb();
   const counts = await seed(db);
   await pool.end();
-  console.log(`Seeded ${counts.products} products, ${counts.sellers} sellers, ${counts.users} users`);
+  console.log(`Seeded ${counts.products} products, ${counts.sellers} sellers, ${counts.users} users, ${counts.tickets} support tickets`);
   if (!process.argv.includes("--no-orders")) {
     const { seedOrders } = await import("./seed-orders.js");
     console.log(`Created ${await seedOrders()} demo orders through the order services`);

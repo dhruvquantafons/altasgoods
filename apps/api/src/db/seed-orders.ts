@@ -15,6 +15,7 @@ import { PaymentsService } from "../modules/commerce/payments/payments.service.j
 import { SandboxPaymentProvider } from "../modules/commerce/payments/sandbox.provider.js";
 import { SellerOrdersService } from "../modules/commerce/seller-orders.service.js";
 import { DevLogisticsService } from "../modules/commerce/dev-logistics.service.js";
+import { ReturnsService } from "../modules/commerce/returns/returns.service.js";
 import { DEMO_CUSTOMER_PHONE, DEMO_SELLER_PHONE } from "./demo.js";
 
 type Target = Exclude<OrderItemStatus, "PENDING"> | "PAYMENT_PENDING";
@@ -122,8 +123,52 @@ export async function seedOrders() {
     await backdate(db, orderId, plan.daysAgo * 86_400_000 + created * 7 * 60_000);
     created++;
   }
+  await seedReturns(db, app.get(ReturnsService));
   await app.close();
   return created;
+}
+
+/** A few returns in different stages, so My Account and Seller Hub show real ones. */
+async function seedReturns(db: Db, svc: ReturnsService) {
+  const delivered = await db
+    .select({ itemId: orderItems.id, userId: orders.userId, phone: users.phone, sellerId: orderItems.sellerId })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(users, eq(users.id, orders.userId))
+    .where(eq(orderItems.status, "DELIVERED"))
+    .orderBy(orderItems.createdAt);
+  const today = new Date().toISOString().slice(0, 10);
+  const base = {
+    qty: 1,
+    reasonCode: "DEFECTIVE",
+    reasonLabel: "Item is defective or not working",
+    fault: "SELLER" as const,
+    resolution: "REFUND" as const,
+    refundTo: "SOURCE" as const,
+    pickupDate: today,
+    pickupSlot: "10 AM to 1 PM",
+    photoIds: [],
+  };
+  const demo = delivered.find((d) => d.phone === DEMO_CUSTOMER_PHONE);
+  const apex = delivered.filter((d) => d.sellerId === "s-apex" && d.phone !== DEMO_CUSTOMER_PHONE);
+  const plans: { line: (typeof delivered)[number] | undefined; stages: ("OUT_FOR_PICKUP" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED")[]; extra?: object }[] = [
+    { line: demo, stages: [], extra: { reasonCode: "NOT_AS_DESCRIBED", reasonLabel: "Item is not as described", comments: "The colour is much darker than the photos." } },
+    { line: apex[0], stages: ["OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"], extra: { comments: "Stops working after a few minutes." } },
+    { line: apex[1], stages: ["OUT_FOR_PICKUP", "PICKED_UP"], extra: { reasonCode: "WRONG_ITEM", reasonLabel: "Received a different item", resolution: "REPLACEMENT", refundTo: undefined } },
+    // left for the seller to decide
+    { line: apex[2], stages: [], extra: { reasonCode: "MISSING_PARTS", reasonLabel: "Parts or accessories are missing", comments: "The charging cable was not in the box." } },
+  ];
+  for (const p of plans) {
+    if (!p.line) continue;
+    try {
+      const r = await svc.create(p.line.userId, { ...base, ...p.extra, orderItemId: p.line.itemId } as Parameters<ReturnsService["create"]>[1]);
+      // demo orders are backdated past the return window, so the seller approves before pickup
+      if (p.stages.length && r.status === "PENDING_SELLER_REVIEW") await svc.decide(p.line.sellerId, r.id, true, "Approved as a goodwill return");
+      for (const to of p.stages) await svc.advance(r.id, to);
+    } catch (e) {
+      console.warn(`Skipped a demo return: ${String(e)}`);
+    }
+  }
 }
 
 /** Shifts every timestamp of an order into the past, keeping their spacing. */

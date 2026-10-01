@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Crown, ShieldAlert } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
-import { durationLabel, formatDay, formatDayTime, KeyRow, maskPhone, minsUntil, Mono } from "@/components/logistics/ops-ui";
+import { durationLabel, formatDay, formatDayTime, KeyRow, maskPhone, Mono } from "@/components/logistics/ops-ui";
 import { CHANNEL, SlaBadge, slaTitle } from "@/components/support/meta";
 import { ReplyComposer } from "@/components/support/reply-composer";
 import { ThreadItem } from "@/components/support/thread";
@@ -12,26 +12,21 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, Progress, Timeline } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
-import { getOrder, sellerName, tickets } from "@/lib/mock";
-import {
-  careAgents,
-  CURRENT_AGENT,
-  isActiveTicket,
-  macros,
-  PRIORITY_POLICY,
-  shipmentForOrder,
-  SUPERVISOR,
-  ticketCustomer,
-  ticketsForCustomer,
-  ticketSla,
-  ticketThread,
-} from "@/lib/mock/ops-extra";
-import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS, SHIPMENT_STATUS, TICKET_PRIORITY, TICKET_STATUS, type TicketPriority, type TicketStatus } from "@/lib/status";
-import { addDays, cn, formatDate, formatINR, formatNumber, NOW, timeAgo } from "@/lib/utils";
+import { currentTime, isActiveTicket, loadAgents, loadTicket, slaOf, tickets, UI_TICKET_STATUS } from "@/lib/api/support";
+import type { TicketDetail } from "@/lib/api/types";
+import { customers, getOrder, sellerName } from "@/lib/mock";
+import { macros, PRIORITY_POLICY, shipmentForOrder } from "@/lib/mock/ops-extra";
+import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS, SHIPMENT_STATUS, TICKET_PRIORITY, TICKET_STATUS, type TicketPriority } from "@/lib/status";
+import { addDays, cn, formatDate, formatINR, formatNumber, timeAgo } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return tickets.map((t) => ({ id: t.id }));
-}
+const EVENT_TEXT: Record<string, (from: string | null, to: string | null) => string> = {
+  CREATED: () => "Ticket created",
+  STATUS: (_f, t) => `Status set to ${t ? (TICKET_STATUS[UI_TICKET_STATUS[t as TicketDetail["status"]]]?.label ?? t) : "none"}`,
+  PRIORITY: (_f, t) => `Priority set to ${t ? (TICKET_PRIORITY[t.toLowerCase() as TicketPriority]?.label ?? t) : "none"}`,
+  ASSIGNEE: (_f, t) => (t ? `Assigned to ${t}` : "Unassigned"),
+  ACTION: (_f, t) => `${(t ?? "").toLowerCase().replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())} raised`,
+  APPROVAL: (_f, t) => `Refund ${t === "APPROVED" ? "approved" : "rejected"}`,
+};
 
 export async function generateMetadata(props: PageProps<"/support/tickets/[id]">) {
   const { id } = await props.params;
@@ -45,37 +40,49 @@ function maskEmail(e: string) {
 
 export default async function TicketWorkspace(props: PageProps<"/support/tickets/[id]">) {
   const { id } = await props.params;
-  const t = tickets.find((x) => x.id === id);
+  const [{ ticket: t, detail }, agents, open] = await Promise.all([loadTicket(id), loadAgents(), tickets({ view: "open" })]);
   if (!t) notFound();
 
-  const sla = ticketSla(t);
-  const thread = ticketThread(t);
+  const now = currentTime();
+  const sla = slaOf(t, now);
+  // orders from the imported history carry full context; live orders come with the ticket's snapshot
   const order = t.orderId ? getOrder(t.orderId) : undefined;
-  const customer = ticketCustomer(t);
+  const snapshot = detail.orderSnapshot;
+  const customer = customers.find((c) => c.id === t.customerRef) ?? customers.find((c) => c.name === t.customerName);
   const shipment = order ? shipmentForOrder(order.id) : undefined;
-  const prior = ticketsForCustomer(t.customerName).filter((x) => x.id !== t.id);
+  const prior = t.customerRef ? (await tickets({ customerRef: t.customerRef })).tickets.filter((x) => x.id !== t.id) : [];
   const active = isActiveTicket(t);
   const firstName = t.customerName.split(" ")[0]!;
-  const queue = tickets.filter(isActiveTicket).sort((a, b) => ticketSla(a).minsLeft - ticketSla(b).minsLeft);
-  const next = queue.find((x) => x.id !== t.id);
+  const queue = open.tickets.map((x) => ({ x, sla: slaOf(x, now) })).sort((a, b) => (a.sla.state === "met" ? 1e9 : a.sla.minsLeft) - (b.sla.state === "met" ? 1e9 : b.sla.minsLeft));
+  const next = queue.find((q) => q.x.id !== t.id)?.x;
 
   const risk = customer?.riskScore ?? 0;
   const riskTone = risk >= 70 ? "danger" : risk >= 40 ? "warning" : "success";
 
+  const contactedLongAgo = now - Date.parse(t.createdAt) > 48 * 3600_000;
   const guarantee: GuaranteeCheck[] = order
     ? [
-        { label: `Within 90 days of the promised date (${formatDay(order.promisedBy)})`, ok: NOW.getTime() - new Date(order.promisedBy).getTime() < 90 * 86_400_000 },
+        { label: `Within 90 days of the promised date (${formatDay(order.promisedBy)})`, ok: now - new Date(order.promisedBy).getTime() < 90 * 86_400_000 },
         order.status === "delivered" || order.status === "return_requested"
           ? { label: "Delivered: claim covers damaged, defective, wrong or different items", ok: true }
-          : { label: "Not delivered by the promised date plus 3 days", ok: NOW.getTime() > addDays(order.promisedBy, 3).getTime() },
-        { label: "Customer contacted the seller or opened a return at least 48 hours ago", ok: minsUntil(t.createdAt) < -48 * 60 },
+          : { label: "Not delivered by the promised date plus 3 days", ok: now > addDays(order.promisedBy, 3).getTime() },
+        { label: "Customer contacted the seller or opened a return at least 48 hours ago", ok: contactedLongAgo },
       ]
-    : [];
+    : snapshot
+      ? [
+          { label: "Order placed on BluBuy within the last 90 days", ok: true },
+          { label: "Customer contacted the seller or opened a return at least 48 hours ago", ok: contactedLongAgo },
+        ]
+      : [];
 
-  const statusOptions = (Object.keys(TICKET_STATUS) as TicketStatus[]).map((k) => ({ value: k, label: TICKET_STATUS[k].label }));
-  const priorityOptions = (Object.keys(TICKET_PRIORITY) as TicketPriority[]).reverse().map((k) => ({ value: k, label: `${TICKET_PRIORITY[k].label} (${PRIORITY_POLICY[k].code})` }));
-  const agentOptions = careAgents.map((a) => ({ value: a.name, label: `${a.fullName}, ${a.level}` }));
+  const statusOptions = [detail.status, ...detail.allowedStatuses].map((k) => ({ value: k, label: TICKET_STATUS[UI_TICKET_STATUS[k]].label }));
+  const priorityOptions = (["URGENT", "HIGH", "NORMAL", "LOW"] as const).map((k) => {
+    const ui = k.toLowerCase() as TicketPriority;
+    return { value: k, label: `${TICKET_PRIORITY[ui].label} (${PRIORITY_POLICY[ui].code})` };
+  });
+  const agentOptions = agents.map((a) => ({ value: a.id, label: `${a.name}, ${a.level}` }));
   const channel = CHANNEL[t.channel];
+  const thread = detail.messages;
 
   return (
     <>
@@ -110,20 +117,24 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
           <Card>
             <CardHeader title="Conversation" description={`Started ${formatDayTime(t.createdAt)} by ${channel.label.toLowerCase()}, ${t.category.toLowerCase()}`} />
             <ol className="flex flex-col gap-4 px-5 pt-4 pb-5">
-              {thread.map((m, i) => (
-                <ThreadItem key={i} item={{ kind: m.kind, author: m.author, body: m.body, time: formatDayTime(m.at) }} />
+              {thread.map((m) => (
+                <ThreadItem
+                  key={m.id}
+                  item={{ kind: m.kind.toLowerCase() as "customer" | "agent" | "system" | "note", author: m.author, body: m.body, time: formatDayTime(m.at), attachments: m.attachments }}
+                />
               ))}
             </ol>
             <ReplyComposer
+              ticketId={t.id}
               channel={channel.label}
-              agentName={CURRENT_AGENT.name}
+              disabled={detail.status === "CLOSED"}
               macros={macros.map((m) => ({ id: m.id, title: m.title, category: m.category, body: m.body }))}
               context={{
                 first_name: firstName,
-                order_id: order?.id ?? "your order",
-                agent_name: CURRENT_AGENT.fullName.split(" ")[0]!,
-                promise_date: order ? formatDay(addDays(NOW, 2)) : "the new date",
-                refund_amount: order ? formatINR(order.total) : "the amount",
+                order_id: t.orderId ?? "your order",
+                agent_name: detail.you.name.split(" ")[0]!,
+                promise_date: formatDay(addDays(new Date(now), 2)),
+                refund_amount: snapshot ? formatINR(snapshot.total) : "the amount",
               }}
             />
           </Card>
@@ -140,7 +151,7 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
               <KeyRow label="Resolve by">
                 <span className={cn(sla.resolutionBreached ? "text-danger-700" : "text-ink-900")}>{formatDayTime(sla.resolutionDueAt)}</span>
               </KeyRow>
-              <KeyRow label="First response">{sla.respondedAt ? timeAgo(sla.respondedAt) : <span className="text-warning-700">Not yet</span>}</KeyRow>
+              <KeyRow label="First response">{sla.respondedAt ? timeAgo(sla.respondedAt, now) : <span className="text-warning-700">Not yet</span>}</KeyRow>
             </dl>
             {sla.resolutionBreached && (
               <p className="mx-5 mb-4 rounded-lg bg-danger-50 px-3 py-2 text-xs text-danger-700">Resolution target passed. Escalate or resolve today.</p>
@@ -149,7 +160,16 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
           <Card>
             <CardHeader title="Ticket" />
             <div className="px-5 pt-3 pb-5">
-              <TicketControls status={t.status} priority={t.priority} assignee={t.assignee} statuses={statusOptions} priorities={priorityOptions} agents={agentOptions} />
+              <TicketControls
+                key={`${detail.status}-${detail.priority}-${detail.assignee?.id ?? ""}`}
+                ticketId={t.id}
+                status={detail.status}
+                priority={detail.priority}
+                assigneeId={detail.assignee?.id}
+                statuses={statusOptions}
+                priorities={priorityOptions}
+                agents={agentOptions}
+              />
             </div>
           </Card>
           <Card>
@@ -157,23 +177,28 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
             <div className="px-5 pt-3 pb-5">
               <TicketActions
                 ticketId={t.id}
-                level={CURRENT_AGENT.level}
-                limit={CURRENT_AGENT.refundLimit}
-                supervisor={SUPERVISOR.name}
+                level={detail.you.level}
+                limit={detail.you.refundLimitPaise / 100}
                 guarantee={guarantee}
                 customerFirstName={firstName}
-                order={
-                  order && {
-                    id: order.id,
-                    total: order.total,
-                    paymentLabel: PAYMENT_METHOD[order.payment.method],
-                    cod: order.payment.method === "cod",
-                    items: order.items.map((it) => ({ id: it.id, title: it.title, price: it.price, quantity: it.quantity })),
-                    seller: sellerName(order.items[0]!.sellerId),
-                  }
-                }
+                history={detail.actions}
+                closed={detail.status === "CLOSED"}
+                order={t.orderId && snapshot ? { id: t.orderId, ...snapshot } : undefined}
               />
             </div>
+          </Card>
+          <Card>
+            <CardHeader title="Activity" description="Every change is saved and logged" />
+            <ol className="flex flex-col gap-2.5 px-5 pt-3 pb-5">
+              {[...detail.events].reverse().slice(0, 12).map((e, i) => (
+                <li key={`${e.at}-${i}`} className="text-[13px]">
+                  <p className="text-ink-800">{(EVENT_TEXT[e.type] ?? (() => e.type))(e.fromValue, e.toValue)}</p>
+                  <p className="text-xs text-ink-500">
+                    {e.actor}, {formatDayTime(e.at)}
+                  </p>
+                </li>
+              ))}
+            </ol>
           </Card>
         </div>
 
@@ -299,6 +324,33 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                       tone: i === 0 ? (e.status === "delivered" ? "success" : e.status === "undelivered" || e.status === "cancelled" ? "warning" : "brand") : "neutral",
                     }))}
                 />
+              </div>
+            </Card>
+          ) : snapshot && t.orderId ? (
+            <Card>
+              <CardHeader
+                title={
+                  <span className="flex items-center gap-2">
+                    Order <Mono className="text-[13px] font-normal text-ink-600">{t.orderId}</Mono>
+                  </span>
+                }
+                description={`Sold by ${snapshot.seller}`}
+              />
+              <div className="px-5 pt-3 pb-5">
+                <ul className="flex flex-col gap-2">
+                  {snapshot.items.map((it) => (
+                    <li key={it.id} className="text-[13px]">
+                      <p className="line-clamp-2 font-medium text-ink-900">{it.title}</p>
+                      <p className="text-xs text-ink-500">
+                        {it.quantity} x {formatINR(it.price)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                <dl className="mt-3 border-t border-line pt-1">
+                  <KeyRow label="Payment">{snapshot.paymentLabel}</KeyRow>
+                  <KeyRow label="Order total">{formatINR(snapshot.total)}</KeyRow>
+                </dl>
               </div>
             </Card>
           ) : (

@@ -217,7 +217,7 @@ const COPY = {
   staff: { title: "Sign in to BluBuy Control", body: "For BluBuy staff. Use the mobile number on your staff account." },
 };
 
-export function LoginForm({ next, audience = "shopper", denied = false }: { next: string; audience?: keyof typeof COPY; denied?: boolean }) {
+export function LoginForm({ next, audience = "shopper", denied = false, signedInAs }: { next: string; audience?: keyof typeof COPY; denied?: boolean; signedInAs?: string }) {
   const [mobile, setMobile] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
@@ -241,9 +241,10 @@ export function LoginForm({ next, audience = "shopper", denied = false }: { next
     >
       <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">{COPY[audience].title}</h1>
       <p className="mt-2 text-[15px] text-ink-600">{COPY[audience].body}</p>
-      {denied && (
+      {(denied || signedInAs) && (
         <p role="alert" className="mt-4 rounded-xl border border-warning-100 bg-warning-50 px-3.5 py-3 text-[13px] text-warning-700">
-          The account you are signed in with does not have access here. Sign in with a {audience === "staff" ? "BluBuy staff" : "seller"} account.
+          {signedInAs ? `You are signed in as ${signedInAs}, which has no ${audience === "staff" ? "BluBuy staff access" : "seller account"}.` : "The account you are signed in with does not have access here."} Sign in with a{" "}
+          {audience === "staff" ? "BluBuy staff" : "seller"} account to continue.
         </p>
       )}
       <div className="mt-8">

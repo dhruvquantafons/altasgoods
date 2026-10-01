@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
-import { loadMyOrders, toUiOrder } from "@/lib/api/account-orders";
+import { loadAccountOrders } from "@/lib/api/account-orders";
 import type { Order } from "@/lib/types";
 import { cn, NOW } from "@/lib/utils";
 
@@ -81,7 +81,7 @@ export default async function OrdersPage(props: PageProps<"/account/orders">) {
   const range = (RANGES.find((r) => r.key === one(sp.range))?.key ?? "3m") as RangeKey;
   const status = (STATUSES.find((s) => s.key === one(sp.status))?.key ?? "all") as StatusKey;
 
-  const orders = (await loadMyOrders()).map(toUiOrder);
+  const orders = await loadAccountOrders();
   const base = orders.filter((o) => inRange(o, range) && matches(o, q));
   const filtered = base.filter((o) => inStatus(o, status));
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));

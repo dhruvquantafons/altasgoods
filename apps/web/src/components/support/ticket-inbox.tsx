@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ChevronRight, UserPlus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
+import { ChevronRight, Loader2, UserPlus, X } from "lucide-react";
+import { assignTickets } from "@/app/actions/support";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
@@ -30,11 +32,13 @@ export interface InboxRow {
   closed: boolean;
 }
 
-/** Ticket list with row selection and a batch bar for bulk assignment. */
-export function TicketInbox({ rows, agents }: { rows: InboxRow[]; agents: { name: string; label: string }[] }) {
+/** Ticket list with row selection and a batch bar for bulk assignment (saved to the API). */
+export function TicketInbox({ rows, agents, empty }: { rows: InboxRow[]; agents: { id: string; name: string; label: string }[]; empty: ReactNode }) {
+  const router = useRouter();
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [agent, setAgent] = useState(agents[0]?.name ?? "");
+  const [agent, setAgent] = useState(agents[0]?.id ?? "");
   const [assigned, setAssigned] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
   const { show, node } = useToast();
   const all = rows.length > 0 && rows.every((r) => sel.has(r.id));
 
@@ -45,6 +49,14 @@ export function TicketInbox({ rows, agents }: { rows: InboxRow[]; agents: { name
     setSel(n);
   }
 
+  if (!rows.length)
+    return (
+      <>
+        {empty}
+        {node}
+      </>
+    );
+
   return (
     <div>
       <div className={cn("flex min-h-[52px] flex-wrap items-center gap-2 border-y border-line px-5 py-2", sel.size ? "bg-brand-50/60" : "bg-ink-50/40")}>
@@ -53,22 +65,30 @@ export function TicketInbox({ rows, agents }: { rows: InboxRow[]; agents: { name
             <span className="mr-1 text-[13px] font-semibold text-ink-900">{sel.size} selected</span>
             <Select selectSize="sm" value={agent} onChange={(e) => setAgent(e.target.value)} aria-label="Assign to agent" className="w-56">
               {agents.map((a) => (
-                <option key={a.name} value={a.name}>
+                <option key={a.id} value={a.id}>
                   {a.label}
                 </option>
               ))}
             </Select>
             <Button
               size="sm"
-              icon={UserPlus}
-              onClick={() => {
+              icon={busy ? undefined : UserPlus}
+              disabled={busy || !agent}
+              onClick={async () => {
+                const name = agents.find((a) => a.id === agent)?.name ?? "";
+                setBusy(true);
+                const r = await assignTickets([...sel], agent);
+                setBusy(false);
+                if (!r.ok) return show(r.error);
                 const next = { ...assigned };
-                sel.forEach((id) => (next[id] = agent));
+                sel.forEach((id) => (next[id] = name));
                 setAssigned(next);
-                show(`${sel.size} ticket${sel.size === 1 ? "" : "s"} assigned to ${agent}`);
+                show(`${r.data.updated} ticket${r.data.updated === 1 ? "" : "s"} assigned to ${name}`);
                 setSel(new Set());
+                router.refresh();
               }}
             >
+              {busy && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
               Assign
             </Button>
             <Button size="sm" variant="ghost" icon={X} className="ml-auto" onClick={() => setSel(new Set())}>

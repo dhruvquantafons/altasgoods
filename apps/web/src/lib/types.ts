@@ -218,6 +218,8 @@ export interface Order {
   deliveredAt?: string;
   timeline: OrderEvent[];
   channel: "web" | "android" | "ios";
+  /** Returns on this order, present for orders from the API (absent for sample data) */
+  returns?: import("@/lib/mock/account-extra").AccountReturn[];
 }
 
 export interface ReturnRequest {

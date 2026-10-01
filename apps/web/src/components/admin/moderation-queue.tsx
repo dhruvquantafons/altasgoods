@@ -241,7 +241,7 @@ export function ModerationQueue({ items, categoryNames, initialOpenId }: { items
                 </div>
                 <div className="mt-2 grid grid-cols-4 gap-1.5">
                   {item.gallery.map((g, i) => (
-                    <button key={i} type="button" onClick={() => setImageIdx(i)} aria-label={`Show image ${i + 1}`} className={cn("rounded-lg ring-2 ring-offset-1", i === imageIdx ? "ring-brand-500" : "ring-transparent")}>
+                    <button key={i} type="button" onClick={() => setImageIdx(i)} aria-label={`Show image ${i + 1}`} aria-pressed={i === imageIdx} className={cn("rounded-lg ring-2 ring-offset-1", i === imageIdx ? "ring-brand-500" : "ring-transparent")}>
                       <ProductImage src={g} alt="" size={48} rounded="md" />
                     </button>
                   ))}

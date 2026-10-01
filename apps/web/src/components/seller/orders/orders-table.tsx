@@ -81,7 +81,7 @@ const DATE_HEADER: Record<OrderStageKey, string> = {
   returns: "Return",
 };
 
-export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRow[]; stage: OrderStageKey; toolbar: ReactNode; emptyHint: string }) {
+export function OrdersTable({ rows, stage, toolbar, emptyHint, now }: { rows: OrderRow[]; stage: OrderStageKey; toolbar: ReactNode; emptyHint: string; now: number }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [overrides, setOverrides] = useState<Record<string, OrderStatus>>({});
@@ -91,10 +91,11 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRo
   const [slot, setSlot] = useState("today");
   const toast = useToast();
 
-  const statusOf = (r: OrderRow) => overrides[r.lineId] ?? r.status;
-  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.lineId));
+  // selection and overrides are keyed by the API item id, which is unique; lineId is only a readable reference
+  const statusOf = (r: OrderRow) => overrides[r.itemId] ?? r.status;
+  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.itemId));
   const someSelected = selected.size > 0;
-  const chosen = useMemo(() => rows.filter((r) => selected.has(r.lineId)), [rows, selected]);
+  const chosen = useMemo(() => rows.filter((r) => selected.has(r.itemId)), [rows, selected]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -139,7 +140,7 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRo
       const r = await transitionSellerItems(ids, move!.to, action === "cancel" ? reason : undefined);
       if (!r.ok) return toast.show(r.error);
       const done = moving.filter((m) => !r.data.failed.some((f) => f.id === m.itemId));
-      setOverrides((prev) => ({ ...prev, ...Object.fromEntries(done.map((m) => [m.lineId, _to ?? "confirmed"])) }));
+      setOverrides((prev) => ({ ...prev, ...Object.fromEntries(done.map((m) => [m.itemId, _to ?? "confirmed"])) }));
       router.refresh();
       if (r.data.failed.length) return toast.show(`${plural("order", r.data.done)} updated. ${r.data.failed.length} failed: ${r.data.failed[0]!.error}`);
     }
@@ -160,7 +161,7 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRo
       <p className="text-[13px] font-semibold text-ink-900">
         {selected.size} selected
         {!allSelected && (
-          <button type="button" onClick={() => setSelected(new Set(rows.map((r) => r.lineId)))} className="ml-2 font-medium text-brand-700 hover:underline">
+          <button type="button" onClick={() => setSelected(new Set(rows.map((r) => r.itemId)))} className="ml-2 font-medium text-brand-700 hover:underline">
             Select all {rows.length}
           </button>
         )}
@@ -215,7 +216,7 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRo
                     <Checkbox
                       aria-label="Select all orders on this page"
                       checked={allSelected}
-                      onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.lineId)))}
+                      onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.itemId)))}
                     />
                   </TH>
                 )}
@@ -231,13 +232,13 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRo
             <TBody>
               {rows.map((r) => {
                 const status = statusOf(r);
-                const changed = overrides[r.lineId] !== undefined;
-                const isSel = selected.has(r.lineId);
+                const changed = overrides[r.itemId] !== undefined;
+                const isSel = selected.has(r.itemId);
                 return (
-                  <TR key={r.lineId} className={cn(isSel && "bg-brand-50/50 hover:bg-brand-50/70", changed && !isSel && "bg-success-50/40")}>
+                  <TR key={r.itemId} className={cn(isSel && "bg-brand-50/50 hover:bg-brand-50/70", changed && !isSel && "bg-success-50/40")}>
                     {selectable && (
                       <TD className="w-10 pr-0">
-                        <Checkbox aria-label={`Select ${r.lineId}`} checked={isSel} onChange={() => toggle(r.lineId)} />
+                        <Checkbox aria-label={`Select ${r.lineId}`} checked={isSel} onChange={() => toggle(r.itemId)} />
                       </TD>
                     )}
                     <TD>
@@ -279,7 +280,7 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRo
                     <TD>
                       {r.dueAt && !changed ? (
                         <>
-                          <SlaText dueAt={r.dueAt} warnHours={stage === "new" ? 4 : 8} />
+                          <SlaText dueAt={r.dueAt} warnHours={stage === "new" ? 4 : 8} now={now} />
                           <p className="mt-0.5 text-xs text-ink-500">{r.dueLabel}</p>
                         </>
                       ) : r.dueAt && changed ? (

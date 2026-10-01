@@ -867,6 +867,7 @@ const DOC_STATUS: Record<ApplicationDocument["status"], { label: string; tone: "
 function DocumentRow({ kind, label, hint, required, doc, setApp, accept = "application/pdf,image/png,image/jpeg", maxMb = 4 }: { kind: DocumentKind; label: string; hint: string; required: boolean; doc?: ApplicationDocument; setApp: (a: SellerApplication) => void; accept?: string; maxMb?: number }) {
   const input = useRef<HTMLInputElement>(null);
   const a = useAction();
+  const rm = useAction();
   return (
     <li className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
@@ -894,7 +895,7 @@ function DocumentRow({ kind, label, hint, required, doc, setApp, accept = "appli
           </p>
         )}
         {doc?.status === "REJECTED" && doc.note && <p className="mt-1.5 rounded-lg bg-danger-50 px-2.5 py-1.5 text-xs text-danger-700">Reviewer: {doc.note}</p>}
-        {a.error && <p className="mt-1.5 text-xs text-danger-700">{a.error}</p>}
+        {(a.error ?? rm.error) && <p className="mt-1.5 text-xs text-danger-700">{a.error ?? rm.error}</p>}
       </div>
       <div className="flex shrink-0 gap-2">
         <input
@@ -919,19 +920,22 @@ function DocumentRow({ kind, label, hint, required, doc, setApp, accept = "appli
           <Button
             variant="ghost"
             size="sm"
-            icon={Trash2}
+            icon={rm.busy ? undefined : Trash2}
             aria-label={`Remove ${label}`}
-            disabled={a.busy}
+            disabled={a.busy || rm.busy}
             onClick={async () => {
-              const ok = await a.run(() => removeDocument(doc.id));
-              if (ok !== null) {
-                const refreshed = await loadApplication();
-                if (refreshed.ok) setApp(refreshed.data);
-              }
+              // removal succeeds with a null payload, so chain the reload inside run and act on the application it returns
+              const refreshed = await rm.run(async () => {
+                const r = await removeDocument(doc.id);
+                return r.ok ? loadApplication() : r;
+              });
+              if (refreshed) setApp(refreshed);
             }}
-          />
+          >
+            {rm.busy && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
+          </Button>
         )}
-        <Button variant={doc && doc.status !== "REJECTED" ? "ghost" : "secondary"} size="sm" icon={a.busy ? undefined : Upload} disabled={a.busy} onClick={() => input.current?.click()}>
+        <Button variant={doc && doc.status !== "REJECTED" ? "ghost" : "secondary"} size="sm" icon={a.busy ? undefined : Upload} disabled={a.busy || rm.busy} onClick={() => input.current?.click()}>
           {a.busy && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
           {a.busy ? "Uploading" : doc ? "Replace" : "Upload"}
         </Button>
@@ -988,9 +992,12 @@ export function SignatureStep({ app, setApp, next, back }: StepProps) {
 
   async function saveDrawing() {
     const c = canvas.current;
-    if (!c) return false;
-    const blob = await new Promise<Blob | null>((resolve) => c.toBlob(resolve, "image/png"));
-    if (!blob) return false;
+    const blob = c && (await new Promise<Blob | null>((resolve) => c.toBlob(resolve, "image/png")));
+    if (!blob) {
+      setDrawn(false);
+      a.setError("Could not read the signature pad. Please sign again.");
+      return false;
+    }
     return send(new File([blob], "signature.png", { type: "image/png" }));
   }
 
@@ -1020,7 +1027,11 @@ export function SignatureStep({ app, setApp, next, back }: StepProps) {
             type="button"
             role="tab"
             aria-selected={mode === m}
-            onClick={() => setMode(m)}
+            onClick={() => {
+              // the pad unmounts on the Upload tab, so an unsaved drawing cannot survive the switch
+              if (m !== mode) setDrawn(false);
+              setMode(m);
+            }}
             className={cn("inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium", mode === m ? "bg-white text-ink-900 shadow-xs" : "text-ink-500 hover:text-ink-800")}
           >
             {m === "draw" ? <PenLine size={14} aria-hidden="true" /> : <Upload size={14} aria-hidden="true" />}

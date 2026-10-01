@@ -2,7 +2,7 @@ import Link from "next/link";
 import Form from "next/form";
 import { PackageSearch, Search } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
-import { ToastButton, type ActionIcon } from "@/components/logistics/ops-client";
+import { NewTicketButton } from "@/components/support/new-ticket";
 import { formatDay, formatRelativeDay, KeyRow, maskPhone, minsUntil, Mono, one, qs } from "@/components/logistics/ops-ui";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,17 +27,21 @@ function late(o: Order) {
   return [...PRE_SHIP, ...MOVING, "undelivered"].includes(o.status) && minsUntil(o.promisedBy) < 0;
 }
 
-function actionsFor(o: Order): { label: string; message: string; icon?: ActionIcon; primary?: boolean }[] {
-  const list: { label: string; message: string; icon?: ActionIcon; primary?: boolean }[] = [];
-  if (PRE_SHIP.includes(o.status)) list.push({ label: "Cancel on behalf", message: `Cancellation placed for ${o.id}. Full refund to ${PAYMENT_METHOD[o.payment.method]}.`, primary: true });
-  if (MOVING.includes(o.status)) list.push({ label: "Reschedule delivery", message: `Reschedule request sent to BluBuy Logistics for ${o.id}`, icon: "truck", primary: true });
-  if (o.status === "undelivered") list.push({ label: "Schedule re-attempt", message: `Re-attempt for ${o.id} added to tomorrow's runsheet`, icon: "truck", primary: true });
-  if (late(o)) list.push({ label: "Raise logistics investigation", message: `Delay investigation opened with the delivery hub for ${o.id}`, icon: "flag" });
+type Category = "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+
+/** Order actions an agent can raise; each opens a ticket for the team that carries it out. */
+function actionsFor(o: Order): { label: string; subject: string; category: Category; body: string; primary?: boolean }[] {
+  const list: { label: string; subject: string; category: Category; body: string; primary?: boolean }[] = [];
+  if (PRE_SHIP.includes(o.status))
+    list.push({ label: "Cancel on behalf", subject: `Cancel order ${o.id}`, category: "Other", body: `Customer asked to cancel ${o.id} before dispatch. Full refund to ${PAYMENT_METHOD[o.payment.method]}.`, primary: true });
+  if (MOVING.includes(o.status)) list.push({ label: "Reschedule delivery", subject: `Reschedule delivery of ${o.id}`, category: "Delivery", body: `Customer asked to reschedule the delivery of ${o.id}.`, primary: true });
+  if (o.status === "undelivered") list.push({ label: "Schedule re-attempt", subject: `Re-attempt delivery of ${o.id}`, category: "Delivery", body: `Delivery attempt failed for ${o.id}. Customer wants a re-attempt.`, primary: true });
+  if (late(o)) list.push({ label: "Raise logistics investigation", subject: `Delay investigation for ${o.id}`, category: "Delivery", body: `${o.id} is past its promised date. Investigate with the delivery hub.` });
   if (o.status === "delivered") {
-    list.push({ label: "Initiate return", message: `Return created on behalf of the customer for ${o.id}. Pickup scheduled.`, primary: true });
-    list.push({ label: "Not received claim", message: `Delivery investigation opened for ${o.id}. Hub responds within 24 hours.`, icon: "flag" });
+    list.push({ label: "Initiate return", subject: `Return for ${o.id}`, category: "Return and refund", body: `Customer wants to return items from ${o.id}.`, primary: true });
+    list.push({ label: "Not received claim", subject: `Not received: ${o.id}`, category: "Delivery", body: `Marked delivered but the customer says ${o.id} was not received.` });
   }
-  list.push({ label: "Create ticket", message: `Ticket created and linked to ${o.id}`, icon: "message" });
+  list.push({ label: "Create ticket", subject: `Order ${o.id}`, category: "Other", body: "" });
   return list;
 }
 
@@ -165,7 +169,25 @@ export default async function OrderLookupPage(props: PageProps<"/support/orders"
                   <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3.5">
                     <span className="mr-1 text-xs font-medium text-ink-500">Quick actions</span>
                     {actionsFor(o).map((a, i) => (
-                      <ToastButton key={a.label} label={a.label} icon={a.icon} message={a.message} variant={a.primary && i === 0 ? "primary" : "secondary"} />
+                      <NewTicketButton
+                        key={a.label}
+                        label={a.label}
+                        size="sm"
+                        variant={a.primary && i === 0 ? "primary" : "secondary"}
+                        customerName={o.customerName}
+                        customerRef={o.customerId}
+                        orderId={o.id}
+                        orderSnapshot={{
+                          total: o.total,
+                          paymentLabel: PAYMENT_METHOD[o.payment.method],
+                          cod: o.payment.method === "cod",
+                          seller: sellerName(o.items[0]!.sellerId),
+                          items: o.items.map((it) => ({ id: it.id, title: it.title, price: it.price, quantity: it.quantity })),
+                        }}
+                        defaultSubject={a.subject}
+                        defaultCategory={a.category}
+                        defaultBody={a.body}
+                      />
                     ))}
                   </div>
                 </Card>

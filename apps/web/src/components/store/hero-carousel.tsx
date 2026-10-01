@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,42 +20,57 @@ export interface HeroSlideData {
   position?: string;
 }
 
-const INTERVAL = 7000;
+const INTERVAL = 6000;
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+const subscribeMotion = (cb: () => void) => {
+  const mq = window.matchMedia(REDUCED_MOTION);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
 
 /**
- * Accessible hero carousel: live text over a scrim, 7 s slides, pauses on
- * hover and focus, stops for good after any interaction, a visible pause
- * control (WCAG 2.2.2), and no auto-rotation on small screens or with
- * reduced motion.
+ * Accessible hero carousel: live text over a scrim and 6 s slides that keep
+ * rotating like a marketplace banner. Arrows and dots restart the timer;
+ * only the visible pause control (WCAG 2.2.2) or keyboard focus inside the
+ * banner holds it. With reduced motion it starts paused and the play button
+ * starts it.
  */
 export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
   const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(true);
-  const [held, setHeld] = useState(false);
+  // "auto" follows the reduced motion setting; the button sets an explicit choice
+  const [mode, setMode] = useState<"auto" | "playing" | "paused">("auto");
+  const [keyboardHeld, setKeyboardHeld] = useState(false);
+  const [round, setRound] = useState(0);
+  const section = useRef<HTMLElement>(null);
+  const reduced = useSyncExternalStore(subscribeMotion, () => window.matchMedia(REDUCED_MOTION).matches, () => false);
+  const playing = mode === "playing" || (mode === "auto" && !reduced);
+  const running = playing && !keyboardHeld && slides.length > 1;
 
   useEffect(() => {
-    if (!playing || held) return;
-    const t = setInterval(() => {
-      const still = window.matchMedia("(max-width: 767px), (prefers-reduced-motion: reduce)").matches;
-      if (!still) setIndex((i) => (i + 1) % slides.length);
-    }, INTERVAL);
+    if (!running) return;
+    const t = setInterval(() => setIndex((i) => (i + 1) % slides.length), INTERVAL);
     return () => clearInterval(t);
-  }, [playing, held, slides.length]);
+  }, [running, slides.length, round]);
 
   const goTo = (i: number) => {
-    setPlaying(false);
     setIndex((i + slides.length) % slides.length);
+    // restart the full interval for the slide the shopper picked
+    setRound((r) => r + 1);
   };
 
   return (
     <section
+      ref={section}
       aria-roledescription="carousel"
       aria-label="Featured offers"
       className="relative overflow-hidden rounded-2xl bg-ink-900"
-      onMouseEnter={() => setHeld(true)}
-      onMouseLeave={() => setHeld(false)}
-      onFocusCapture={() => setHeld(true)}
-      onBlurCapture={() => setHeld(false)}
+      onFocusCapture={(e) => {
+        if ((e.target as HTMLElement).matches(":focus-visible")) setKeyboardHeld(true);
+      }}
+      onBlurCapture={(e) => {
+        if (!section.current?.contains(e.relatedTarget as Node | null)) setKeyboardHeld(false);
+      }}
     >
       <div className="relative h-[400px] sm:h-[380px] lg:h-[440px]">
         {slides.map((s, i) => {
@@ -132,7 +147,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
       <div className="absolute right-4 bottom-4 z-20 flex items-center gap-1 rounded-full bg-white/90 p-1 shadow-raised ring-1 ring-ink-900/5 backdrop-blur sm:right-6 sm:bottom-6">
         <button
           type="button"
-          onClick={() => setPlaying((p) => !p)}
+          onClick={() => setMode(playing ? "paused" : "playing")}
           aria-label={playing ? "Pause slideshow" : "Play slideshow"}
           className="flex size-8 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100"
         >
@@ -151,7 +166,18 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
               aria-current={i === index ? "true" : undefined}
               className="flex h-6 items-center"
             >
-              <span className={cn("block h-1.5 rounded-full transition-all duration-300", i === index ? "w-6 bg-ink-900" : "w-1.5 bg-ink-300 hover:bg-ink-400")} />
+              {i === index ? (
+                <span className="relative block h-1.5 w-6 overflow-hidden rounded-full bg-ink-300">
+                  {/* fills over the slide's time while the banner rotates */}
+                  <span
+                    key={`${index}-${round}-${running}`}
+                    className="absolute inset-0 origin-left rounded-full bg-ink-900"
+                    style={running ? { animation: `hero-progress ${INTERVAL}ms linear` } : undefined}
+                  />
+                </span>
+              ) : (
+                <span className="block h-1.5 w-1.5 rounded-full bg-ink-300 transition-all duration-300 hover:bg-ink-400" />
+              )}
             </button>
           ))}
         </div>

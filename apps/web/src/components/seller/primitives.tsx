@@ -37,8 +37,8 @@ const slaText: Record<Tone, string> = {
 };
 
 /** Countdown to a deadline; warning under `warnHours`, danger once overdue. Words carry the meaning, colour supports it. */
-export function SlaText({ dueAt, warnHours, className }: { dueAt: string; warnHours?: number; className?: string }) {
-  const sla = slaFor(dueAt, warnHours);
+export function SlaText({ dueAt, warnHours, now, className }: { dueAt: string; warnHours?: number; now?: number; className?: string }) {
+  const sla = slaFor(dueAt, warnHours, now);
   return (
     <span className={cn("inline-flex items-center gap-1 text-[13px] font-medium tabular-nums", slaText[sla.tone], className)}>
       <Clock size={13} strokeWidth={2} aria-hidden="true" />

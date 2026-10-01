@@ -635,13 +635,14 @@ function extraReturn(
   };
 }
 
+// shared returns (lib/mock/orders.ts) are numbered RT-(30412 + 13n), so these hand made ids sit off that grid to stay unique
 const extraReturns: SellerReturn[] = [
-  extraReturn("RT-30711", "p-earbuds-pods", 2, "received", "Product not working", 6, { receivedAt: istAt(NOW, 9, 40).toISOString() }),
-  extraReturn("RT-30698", "p-headphones-studio", 5, "received", "Received a different item", 7, { receivedAt: istAt(NOW, 9, 10, -1).toISOString(), channel: "ship" }),
+  extraReturn("RT-30716", "p-earbuds-pods", 2, "received", "Product not working", 6, { receivedAt: istAt(NOW, 9, 40).toISOString() }),
+  extraReturn("RT-30695", "p-headphones-studio", 5, "received", "Received a different item", 7, { receivedAt: istAt(NOW, 9, 10, -1).toISOString(), channel: "ship" }),
   extraReturn("RT-30684", "p-cookware-pan", 8, "picked_up", "Quality not as expected", 3),
   extraReturn("RT-30652", "p-speaker-boom", 11, "qc_failed", "No longer needed", 12, { grade: "CUSTOMER_DAMAGED", claimId: "SC-26091804", claimBy: fromNow(4).toISOString(), receivedAt: fromNow(-10).toISOString(), channel: "ship" }),
   extraReturn("RT-30640", "p-airfryer-crisp", 14, "completed", "Colour differs from image", 16, { grade: "SELLABLE", receivedAt: fromNow(-12).toISOString() }),
-  extraReturn("RT-30633", "p-laptop-air", 17, "qc_passed", "No longer needed", 9, { grade: "SELLABLE", receivedAt: fromNow(-4).toISOString() }),
+  extraReturn("RT-30636", "p-laptop-air", 17, "qc_passed", "No longer needed", 9, { grade: "SELLABLE", receivedAt: fromNow(-4).toISOString() }),
 ];
 
 function rto(id: string, productId: string, orderIdx: number, status: "rto_in_transit" | "returned_to_seller", daysAgo: number, reasons: string[]): SellerReturn {

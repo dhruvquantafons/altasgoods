@@ -11,15 +11,13 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, EmptyState, Progress } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { customers, orders, returns, tickets } from "@/lib/mock";
+import { tickets } from "@/lib/api/support";
+import { customers, orders, returns } from "@/lib/mock";
 import { customerProfile, maskEmail, maskPhone } from "@/lib/mock/admin-extra";
 import { ORDER_STATUS, PAYMENT_METHOD, TICKET_STATUS } from "@/lib/status";
 import { cn, formatDate, formatDateTime, formatINR, formatNumber, timeAgo } from "@/lib/utils";
 import { Inbox } from "lucide-react";
 
-export function generateStaticParams() {
-  return customers.map((c) => ({ id: c.id }));
-}
 
 export async function generateMetadata(props: PageProps<"/admin/customers/[id]">) {
   const { id } = await props.params;
@@ -34,7 +32,7 @@ export default async function CustomerDetail(props: PageProps<"/admin/customers/
   const p = customerProfile(c.id);
   const myOrders = orders.filter((o) => o.customerId === c.id);
   const myReturns = returns.filter((r) => myOrders.some((o) => o.id === r.orderId));
-  const myTickets = tickets.filter((t) => t.customerName === c.name);
+  const myTickets = (await tickets({ customerRef: c.id })).tickets;
   const addresses = [...new Map(myOrders.map((o) => [`${o.address.line1}-${o.address.pincode}`, o.address])).values()].slice(0, 3);
   const orderCount = Math.max(c.orders, myOrders.length);
   const ltv = Math.max(c.lifetimeValue, myOrders.reduce((a, o) => a + o.total, 0));

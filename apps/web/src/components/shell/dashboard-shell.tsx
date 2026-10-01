@@ -328,8 +328,9 @@ export function DashboardShell({ workspace, nav, user, notifications = [], searc
                     Preferences
                   </Link>
                   <div className="my-1 h-px bg-line" />
+                  {/* no close() here: unmounting the popover on click would drop the form before it submits */}
                   <form action={signOut.bind(null, signOutHref)}>
-                    <button type="submit" onClick={close} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-danger-700 hover:bg-danger-50">
+                    <button type="submit" className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-danger-700 hover:bg-danger-50">
                       <LogOut size={16} aria-hidden="true" />
                       Sign out
                     </button>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { BookText, Lock, Paperclip, Search, Send } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import { BookText, Loader2, Lock, Paperclip, Search, Send, X } from "lucide-react";
+import { sendTicketMessage, uploadTicketAttachment } from "@/app/actions/support";
 import { Button } from "@/components/ui/button";
 import { Select, Textarea } from "@/components/ui/input";
 import { Popover, useToast } from "@/components/ui/interactive";
 import { cn } from "@/lib/utils";
-import { ThreadItem, type ThreadItemData } from "./thread";
 
 export interface ComposerMacro {
   id: string;
@@ -15,46 +16,63 @@ export interface ComposerMacro {
   body: string;
 }
 
-/** Reply composer with macro insertion (placeholders filled from ticket context) and internal notes. */
+type Pending = { id: string; name: string };
+
+/** Reply composer with macro insertion (placeholders filled from ticket context), attachments and internal notes. */
 export function ReplyComposer({
+  ticketId,
   channel,
-  agentName,
   context,
   macros,
   disabled,
 }: {
+  ticketId: string;
   channel: string;
-  agentName: string;
   context: Record<string, string>;
   macros: ComposerMacro[];
   disabled?: boolean;
 }) {
+  const router = useRouter();
   const [mode, setMode] = useState<"reply" | "note">("reply");
   const [text, setText] = useState("");
-  const [after, setAfter] = useState("awaiting_customer");
+  const [after, setAfter] = useState<"PENDING_CUSTOMER" | "OPEN" | "RESOLVED">("PENDING_CUSTOMER");
   const [query, setQuery] = useState("");
-  const [sent, setSent] = useState<ThreadItemData[]>([]);
+  const [files, setFiles] = useState<Pending[]>([]);
+  const [busy, setBusy] = useState<"send" | "attach" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const { show, node } = useToast();
 
   const fill = (body: string) => body.replace(/\{(\w+)\}/g, (m, k: string) => context[k] ?? m);
   const list = macros.filter((m) => !query || `${m.title} ${m.category} ${m.body}`.toLowerCase().includes(query.toLowerCase()));
 
-  function send() {
-    if (!text.trim()) return;
-    setSent((s) => [...s, { kind: mode === "note" ? "note" : "agent", author: agentName, body: text.trim(), time: "Just now" }]);
+  async function send() {
+    if (!text.trim() || busy) return;
+    setBusy("send");
+    setError(null);
+    const r = await sendTicketMessage(ticketId, { kind: mode === "note" ? "NOTE" : "REPLY", body: text.trim(), statusAfter: mode === "reply" ? after : undefined, attachmentIds: files.map((f) => f.id) });
+    setBusy(null);
+    if (!r.ok) return setError(r.error);
     setText("");
-    show(mode === "note" ? "Internal note added. Only BluBuy staff can see it." : `Reply sent by ${channel.toLowerCase()}${after === "awaiting_customer" ? ", status set to Awaiting customer" : after === "resolved" ? ", ticket resolved and CSAT survey queued" : ""}`);
+    setFiles([]);
+    show(mode === "note" ? "Internal note added. Only BluBuy staff can see it." : `Reply sent by ${channel.toLowerCase()}${after === "PENDING_CUSTOMER" ? ", waiting for the customer" : after === "RESOLVED" ? ", ticket resolved" : ""}`);
+    router.refresh();
+  }
+
+  async function attach(file: File) {
+    if (file.size > 4 * 1024 * 1024) return setError("Attachments can be up to 4 MB");
+    setBusy("attach");
+    setError(null);
+    const form = new FormData();
+    form.set("file", file);
+    const r = await uploadTicketAttachment(ticketId, form);
+    setBusy(null);
+    if (!r.ok) return setError(r.error);
+    setFiles((f) => [...f, { id: r.data.id, name: r.data.name }]);
   }
 
   return (
     <div>
-      {sent.length > 0 && (
-        <ol className="flex flex-col gap-4 px-5 pb-4">
-          {sent.map((s, i) => (
-            <ThreadItem key={i} item={s} />
-          ))}
-        </ol>
-      )}
       <div className="border-t border-line p-4 sm:p-5">
         <div className={cn("rounded-xl border bg-white shadow-xs transition-colors focus-within:ring-4", mode === "note" ? "border-warning-200 bg-warning-50/40 focus-within:ring-warning-100" : "border-line-strong focus-within:border-brand-400 focus-within:ring-brand-100")}>
           <div className="flex items-center gap-1 border-b border-line px-2 pt-2" role="tablist" aria-label="Message type">
@@ -88,7 +106,7 @@ export function ReplyComposer({
             aria-label={mode === "note" ? "Internal note" : "Reply to customer"}
             className="min-h-28 rounded-none border-0 bg-transparent shadow-none focus:ring-0"
             onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") send();
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") void send();
             }}
           />
           <div className="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2.5">
@@ -137,26 +155,60 @@ export function ReplyComposer({
                 </div>
               )}
             </Popover>
-            <Button variant="ghost" size="sm" icon={Paperclip} disabled={disabled} onClick={() => show("Attachments open the file picker on a real device")}>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/pdf,image/png,image/jpeg"
+              className="sr-only"
+              // the Attach button opens it; one control per action for screen readers
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void attach(f);
+              }}
+            />
+            <Button variant="ghost" size="sm" icon={busy === "attach" ? undefined : Paperclip} disabled={disabled || busy !== null || files.length >= 5} onClick={() => fileInput.current?.click()}>
+              {busy === "attach" && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
               Attach
             </Button>
             <div className="ml-auto flex items-center gap-2">
               {mode === "reply" && (
                 <>
                   <span className="text-xs text-ink-500">then</span>
-                  <Select selectSize="sm" value={after} onChange={(e) => setAfter(e.target.value)} aria-label="Status after sending" className="w-44">
-                    <option value="awaiting_customer">Awaiting customer</option>
-                    <option value="open">Keep open</option>
-                    <option value="resolved">Resolve</option>
+                  <Select selectSize="sm" value={after} onChange={(e) => setAfter(e.target.value as typeof after)} aria-label="Status after sending" className="w-44">
+                    <option value="PENDING_CUSTOMER">Awaiting customer</option>
+                    <option value="OPEN">Keep open</option>
+                    <option value="RESOLVED">Resolve</option>
                   </Select>
                 </>
               )}
-              <Button size="sm" variant={mode === "note" ? "dark" : "primary"} icon={mode === "note" ? Lock : Send} disabled={disabled || !text.trim()} onClick={send}>
+              <Button size="sm" variant={mode === "note" ? "dark" : "primary"} icon={busy === "send" ? undefined : mode === "note" ? Lock : Send} disabled={disabled || !text.trim() || busy !== null} onClick={send}>
+                {busy === "send" && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
                 {mode === "note" ? "Add note" : "Send"}
               </Button>
             </div>
           </div>
         </div>
+        {files.length > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Attachments to send">
+            {files.map((f) => (
+              <li key={f.id} className="inline-flex items-center gap-1 rounded-lg border border-line bg-white py-1 pr-1 pl-2 text-xs text-ink-800">
+                <Paperclip size={12} className="text-ink-400" aria-hidden="true" />
+                {f.name}
+                <button type="button" aria-label={`Remove ${f.name}`} onClick={() => setFiles((all) => all.filter((x) => x.id !== f.id))} className="rounded p-0.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700">
+                  <X size={12} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {error && (
+          <p role="alert" className="mt-2 text-xs text-danger-700">
+            {error}
+          </p>
+        )}
         <p className="mt-2 text-xs text-ink-500">Ctrl and Enter to send. Placeholders such as the order ID fill in from this ticket.</p>
       </div>
       {node}

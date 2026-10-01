@@ -18,6 +18,11 @@ export interface AssigneeOption {
 
 type Dialog = "reassign" | "reschedule" | "rto" | null;
 
+const REASSIGN_REASONS = { rebalance: "Beat rebalancing", vehicle: "Vehicle breakdown", unwell: "Associate unwell", customer: "Customer asked for a later slot" } as const;
+const SLOTS = { am: "9 AM to 1 PM", pm: "1 PM to 5 PM", eve: "5 PM to 9 PM" } as const;
+const RESCHEDULE_REASONS = { customer: "Customer requested by call", address: "Address details awaited", prepaid: "COD to prepaid link sent", hub: "Hub capacity" } as const;
+const RTO_REASONS = { refused: "Customer refused (confirmed on IVR)", exhausted: "Attempts exhausted", cancelled: "Customer cancelled", oda: "Outside delivery area", damaged: "Damaged in network" } as const;
+
 /** Reassign, reschedule and mark RTO for one shipment (mock actions with confirmation). */
 export function ShipmentActions({
   awb,
@@ -38,24 +43,56 @@ export function ShipmentActions({
 }) {
   const [open, setOpen] = useState<Dialog>(null);
   const [assignee, setAssignee] = useState<string>("");
+  const [reassignReason, setReassignReason] = useState<keyof typeof REASSIGN_REASONS>("rebalance");
   const [date, setDate] = useState(dates[0]?.value ?? "");
-  const [rtoReason, setRtoReason] = useState("");
+  const [slot, setSlot] = useState<keyof typeof SLOTS>("am");
+  const [rescheduleReason, setRescheduleReason] = useState<keyof typeof RESCHEDULE_REASONS>("customer");
+  const [notify, setNotify] = useState(true);
+  const [rtoReason, setRtoReason] = useState<keyof typeof RTO_REASONS | "">("");
   const [rtoNote, setRtoNote] = useState("");
-  const [done, setDone] = useState<{ rto?: boolean }>({});
+  // what has been done here, shown under the buttons (mock: local state only)
+  const [reassigned, setReassigned] = useState<{ id: string; name: string; runsheetId?: string; reason: string } | null>(null);
+  const [rescheduled, setRescheduled] = useState<{ day: string; slot: string; reason: string; notified: boolean } | null>(null);
+  const [rto, setRto] = useState<string | null>(null);
   const { show, node } = useToast();
   const close = () => setOpen(null);
+  const currentId = reassigned?.id ?? currentAssociateId;
 
   return (
     <>
-      <Button variant="secondary" icon={UserRoundCog} disabled={!canAct} onClick={() => setOpen("reassign")}>
+      <Button variant="secondary" icon={UserRoundCog} disabled={!canAct || !!rto} onClick={() => setOpen("reassign")}>
         Reassign
       </Button>
-      <Button variant="secondary" icon={CalendarClock} disabled={!canAct} onClick={() => setOpen("reschedule")}>
+      <Button variant="secondary" icon={CalendarClock} disabled={!canAct || !!rto} onClick={() => setOpen("reschedule")}>
         Reschedule
       </Button>
-      <Button variant="secondary" icon={Undo2} disabled={!canRto || done.rto} onClick={() => setOpen("rto")} className="text-danger-700 hover:bg-danger-50">
-        {done.rto ? "RTO requested" : "Mark RTO"}
+      <Button variant="secondary" icon={Undo2} disabled={!canRto || !!rto} onClick={() => setOpen("rto")} className="text-danger-700 hover:bg-danger-50">
+        {rto ? "RTO requested" : "Mark RTO"}
       </Button>
+      {(reassigned || rescheduled || rto) && (
+        <ul className="w-full max-w-sm basis-full space-y-1 text-xs leading-relaxed text-ink-600 sm:text-right" aria-live="polite">
+          {reassigned && (
+            <li>
+              Reassigned to <span className="font-medium text-ink-900">{reassigned.name}</span>
+              {reassigned.runsheetId ? ` on ${reassigned.runsheetId}` : ""}. Reason: {reassigned.reason}.
+            </li>
+          )}
+          {rescheduled && (
+            <li>
+              Rescheduled to{" "}
+              <span className="font-medium text-ink-900">
+                {rescheduled.day}, {rescheduled.slot}
+              </span>
+              . Reason: {rescheduled.reason}. {rescheduled.notified ? "Customer notified by SMS and WhatsApp." : "Customer not notified."}
+            </li>
+          )}
+          {rto && (
+            <li className="text-danger-700">
+              Marked for RTO on {originLane}. Reason: {rto}.
+            </li>
+          )}
+        </ul>
+      )}
 
       <Modal
         open={open === "reassign"}
@@ -71,8 +108,12 @@ export function ShipmentActions({
               disabled={!assignee}
               onClick={() => {
                 const a = options.find((o) => o.id === assignee);
+                if (!a) return;
+                const reason = REASSIGN_REASONS[reassignReason];
                 close();
-                show(`${awb} moved to ${a?.name}${a?.runsheetId ? ` on ${a.runsheetId}` : ""}`);
+                setReassigned({ id: a.id, name: a.name, runsheetId: a.runsheetId, reason });
+                setAssignee("");
+                show(`${awb} moved to ${a.name}${a.runsheetId ? ` on ${a.runsheetId}` : ""}. Reason: ${reason}.`);
               }}
             >
               Reassign
@@ -84,7 +125,7 @@ export function ShipmentActions({
           <legend className="mb-2 text-[13px] font-medium text-ink-700">Associate</legend>
           <div className="flex flex-col gap-2">
             {options.map((o) => {
-              const current = o.id === currentAssociateId;
+              const current = o.id === currentId;
               return (
                 <label
                   key={o.id}
@@ -114,11 +155,12 @@ export function ShipmentActions({
           </div>
         </fieldset>
         <Field label="Reason" htmlFor="reassign-reason" className="mt-4">
-          <Select id="reassign-reason" defaultValue="rebalance">
-            <option value="rebalance">Beat rebalancing</option>
-            <option value="vehicle">Vehicle breakdown</option>
-            <option value="unwell">Associate unwell</option>
-            <option value="customer">Customer asked for a later slot</option>
+          <Select id="reassign-reason" value={reassignReason} onChange={(e) => setReassignReason(e.target.value as keyof typeof REASSIGN_REASONS)}>
+            {Object.entries(REASSIGN_REASONS).map(([k, label]) => (
+              <option key={k} value={k}>
+                {label}
+              </option>
+            ))}
           </Select>
         </Field>
       </Modal>
@@ -134,9 +176,13 @@ export function ShipmentActions({
               Cancel
             </Button>
             <Button
+              disabled={!date}
               onClick={() => {
+                const day = dates.find((d) => d.value === date)?.label ?? date;
+                const next = { day, slot: SLOTS[slot], reason: RESCHEDULE_REASONS[rescheduleReason], notified: notify };
                 close();
-                show(`Delivery for ${awb} rescheduled to ${dates.find((d) => d.value === date)?.label}`);
+                setRescheduled(next);
+                show(`Delivery for ${awb} rescheduled to ${next.day}, ${next.slot}. Reason: ${next.reason}. ${next.notified ? "The customer has been sent the new slot by SMS and WhatsApp." : "The customer was not notified."}`);
               }}
             >
               Reschedule
@@ -164,22 +210,31 @@ export function ShipmentActions({
         </fieldset>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="Slot" htmlFor="slot">
-            <Select id="slot" defaultValue="am">
-              <option value="am">9 AM to 1 PM</option>
-              <option value="pm">1 PM to 5 PM</option>
-              <option value="eve">5 PM to 9 PM</option>
+            <Select id="slot" value={slot} onChange={(e) => setSlot(e.target.value as keyof typeof SLOTS)}>
+              {Object.entries(SLOTS).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
             </Select>
           </Field>
           <Field label="Reason" htmlFor="resched-reason">
-            <Select id="resched-reason" defaultValue="customer">
-              <option value="customer">Customer requested by call</option>
-              <option value="address">Address details awaited</option>
-              <option value="prepaid">COD to prepaid link sent</option>
-              <option value="hub">Hub capacity</option>
+            <Select id="resched-reason" value={rescheduleReason} onChange={(e) => setRescheduleReason(e.target.value as keyof typeof RESCHEDULE_REASONS)}>
+              {Object.entries(RESCHEDULE_REASONS).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
             </Select>
           </Field>
         </div>
-        <Checkbox className="mt-4" defaultChecked label="Notify the customer by SMS and WhatsApp" description="Includes the new date, slot and a link to change it again." />
+        <Checkbox
+          className="mt-4"
+          checked={notify}
+          onChange={(e) => setNotify(e.target.checked)}
+          label="Notify the customer by SMS and WhatsApp"
+          description="Includes the new date, slot and a link to change it again."
+        />
       </Modal>
 
       <Modal
@@ -196,9 +251,10 @@ export function ShipmentActions({
               variant="danger"
               disabled={!rtoReason || rtoNote.trim().length < 8}
               onClick={() => {
+                if (!rtoReason) return;
                 close();
-                setDone({ rto: true });
-                show(`RTO initiated for ${awb}. Seller and customer notified.`);
+                setRto(RTO_REASONS[rtoReason]);
+                show(`RTO initiated for ${awb}. Reason: ${RTO_REASONS[rtoReason]}. Seller and customer notified.`);
               }}
             >
               Mark RTO
@@ -208,15 +264,15 @@ export function ShipmentActions({
       >
         <div className="flex flex-col gap-4">
           <Field label="Reason" htmlFor="rto-reason" required>
-            <Select id="rto-reason" value={rtoReason} onChange={(e) => setRtoReason(e.target.value)}>
+            <Select id="rto-reason" value={rtoReason} onChange={(e) => setRtoReason(e.target.value as keyof typeof RTO_REASONS)}>
               <option value="" disabled>
                 Choose a reason
               </option>
-              <option value="refused">Customer refused (confirmed on IVR)</option>
-              <option value="exhausted">Attempts exhausted</option>
-              <option value="cancelled">Customer cancelled</option>
-              <option value="oda">Outside delivery area</option>
-              <option value="damaged">Damaged in network</option>
+              {Object.entries(RTO_REASONS).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
             </Select>
           </Field>
           <Field label="Note for the audit log" htmlFor="rto-note" required hint="At least 8 characters. Visible to the seller and Care Desk.">

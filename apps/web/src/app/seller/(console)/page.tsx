@@ -26,17 +26,10 @@ import { IconTile, Progress } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import {
-  CURRENT_SELLER_ID,
-  getSeller,
-  products,
-  productsBySeller,
-  returns,
-  SALE_EVENT,
-  sellerDaily,
-  settlementsForSeller,
-} from "@/lib/mock";
+import { CURRENT_SELLER_ID, getSeller, products, productsBySeller, SALE_EVENT, sellerDaily, settlementsForSeller } from "@/lib/mock";
 import { loadSellerLines } from "@/lib/api/seller-orders";
+import { loadSellerReturns } from "@/lib/api/seller-returns";
+import { currentTime } from "@/lib/api/support";
 import { currentUser } from "@/lib/api/server";
 import { ORDER_STATUS } from "@/lib/status";
 import { formatCompact, formatDate, formatDateShort, formatINR, formatNumber, formatWeekday, istHour, NOW, timeAgo } from "@/lib/utils";
@@ -48,7 +41,7 @@ function pctChange(a: number, b: number) {
 }
 
 export default async function SellerDashboard() {
-  const [{ lines, counts }, user] = await Promise.all([loadSellerLines(), currentUser()]);
+  const [{ lines, counts }, user, sellerReturns] = await Promise.all([loadSellerLines(), currentUser(), loadSellerReturns().catch(() => [])]);
   const toConfirm = counts.NEW ?? 0;
   const toPack = counts.ACCEPTED ?? 0;
   const awaitingPickup = (counts.PACKED ?? 0) + (counts.READY_TO_SHIP ?? 0);
@@ -58,7 +51,7 @@ export default async function SellerDashboard() {
     return <NewSellerHome firstName={(user?.name ?? "there").split(" ")[0]!} store={membership.displayName} counts={{ toConfirm, toPack, awaitingPickup }} />;
   }
   const seller = getSeller(CURRENT_SELLER_ID)!;
-  const myReturns = returns.filter((r) => r.sellerId === CURRENT_SELLER_ID && ["requested", "received"].includes(r.status)).length;
+  const myReturns = sellerReturns.filter((r) => r.status === "PENDING_SELLER_REVIEW" || r.status === "RECEIVED").length;
   const myProducts = productsBySeller(CURRENT_SELLER_ID);
   const suppressed = myProducts.filter((p) => p.listingStatus === "suppressed").length;
   const lowStock = myProducts.filter((p) => (p.offers.find((o) => o.sellerId === CURRENT_SELLER_ID)?.stock ?? 0) < 20).length;
@@ -87,14 +80,15 @@ export default async function SellerDashboard() {
 
   const recent = lines.toSorted((a, b) => b.placedAt.localeCompare(a.placedAt)).slice(0, 6);
   const firstName = (user?.name ?? seller.ownerName).split(" ")[0];
-  const hour = istHour(NOW);
+  const now = currentTime();
+  const hour = istHour(new Date(now));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const todo = [
     { label: "Orders to confirm", value: toConfirm, hint: "Confirm by 2:00 PM to ship today", href: "/seller/orders?tab=new", icon: ShoppingCart, tone: "brand" as const },
     { label: "Ready to pack", value: toPack, hint: "Print labels and invoices", href: "/seller/orders?tab=to_pack", icon: Package, tone: "info" as const },
     { label: "Awaiting pickup", value: awaitingPickup, hint: "Pickup slot 4:00 to 6:00 PM", href: "/seller/orders?tab=ready", icon: Truck, tone: "accent" as const },
-    { label: "Returns to review", value: myReturns, hint: "Inspect received items", href: "/seller/returns", icon: Undo2, tone: "warning" as const },
+    { label: "Returns to review", value: myReturns, hint: "Decide requests, grade received items", href: "/seller/returns", icon: Undo2, tone: "warning" as const },
     { label: "Listings with issues", value: suppressed, hint: "Hidden from search", href: "/seller/catalog?status=suppressed", icon: CircleAlert, tone: "danger" as const },
     { label: "Low stock SKUs", value: lowStock, hint: "Under 20 units left", href: "/seller/inventory?filter=low", icon: Boxes, tone: "neutral" as const },
   ];
@@ -103,7 +97,7 @@ export default async function SellerDashboard() {
     <>
       <PageHeader
         title={`${greeting}, ${firstName}`}
-        description={`Here is what needs your attention today, ${formatWeekday(NOW)}.`}
+        description={`Here is what needs your attention today, ${formatWeekday(new Date(now))}.`}
         actions={
           <>
             <ButtonLink href="/seller/analytics" variant="secondary" icon={Download}>
@@ -247,7 +241,7 @@ export default async function SellerDashboard() {
                 </THead>
                 <TBody>
                   {recent.map((l) => (
-                    <TR key={l.lineId}>
+                    <TR key={l.itemId}>
                       <TD>
                         <Link href={`/seller/orders/${l.orderId}`} className="font-mono text-[13px] font-medium text-brand-700 hover:underline">
                           {l.orderId}
@@ -267,7 +261,7 @@ export default async function SellerDashboard() {
                         <StatusBadge meta={ORDER_STATUS[l.status]} size="sm" />
                       </TD>
                       <TD align="right" className="text-[13px] text-ink-500">
-                        {timeAgo(l.placedAt)}
+                        {timeAgo(l.placedAt, now)}
                       </TD>
                     </TR>
                   ))}

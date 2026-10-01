@@ -1,171 +1,184 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { CircleCheck, CircleX, Info, ShieldCheck, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleX, Repeat, ShieldCheck, TriangleAlert } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
-import { QcCapture, ReturnDecision, SafeClaimForm } from "@/components/seller/returns/return-actions";
-import { AmountRows, Callout, ChannelBadge, InfoGrid, Mono, SlaText } from "@/components/seller/primitives";
+import { PickupSimulator, QcCapture, ReturnDecision } from "@/components/seller/returns/return-actions";
+import { AmountRows, Callout, InfoGrid, Mono, SlaText } from "@/components/seller/primitives";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Timeline, type TimelineItem } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
+import { arrivesByOf, enteredAt, gradeDueOf, loadSellerReturn, reviewDueOf, toSellerReturnRow, valueOf } from "@/lib/api/seller-returns";
+import { currentUser } from "@/lib/api/server";
+import { currentTime } from "@/lib/api/support";
+import type { ApiReturnStatus, ReturnRequest } from "@/lib/api/types";
 import { feesForLine } from "@/lib/mock";
-import { CLAIM_STATUS, getSellerReturn, GRADES, safeClaims, SELLER, sellerReturns, type SellerReturn } from "@/lib/mock/seller-extra";
-import { ORDER_STATUS, RETURN_STATUS, type ReturnStatus } from "@/lib/status";
-import { addDays, formatDate, formatDateTime, formatINR } from "@/lib/utils";
-
-export function generateStaticParams() {
-  return sellerReturns.map((r) => ({ id: r.id }));
-}
+import { GRADES, maskName } from "@/lib/mock/seller-extra";
+import { formatDate, formatDateTime, formatINR } from "@/lib/utils";
 
 export async function generateMetadata(props: PageProps<"/seller/returns/[id]">) {
   const { id } = await props.params;
-  return { title: `Return ${id}` };
+  return { title: `Return ${decodeURIComponent(id)}` };
 }
 
-const FLOW: { status: ReturnStatus; title: string }[] = [
-  { status: "requested", title: "Return requested by the customer" },
-  { status: "approved", title: "Return approved" },
-  { status: "pickup_scheduled", title: "Pickup scheduled" },
-  { status: "picked_up", title: "Picked up after doorstep QC" },
-  { status: "received", title: "Received at your return address" },
-  { status: "qc_passed", title: "Quality check recorded" },
-  { status: "completed", title: "Refund completed" },
-];
+const STEP: Partial<Record<ApiReturnStatus, string>> = {
+  REQUESTED: "Return requested by the customer",
+  PENDING_SELLER_REVIEW: "Outside the return window, sent to you for review",
+  APPROVED: "Return approved",
+  REJECTED: "Return rejected",
+  PICKUP_SCHEDULED: "Pickup scheduled",
+  OUT_FOR_PICKUP: "Out for pickup",
+  PICKUP_FAILED: "Pickup attempt failed",
+  PICKED_UP: "Picked up from the customer",
+  IN_TRANSIT: "On the way to you",
+  RECEIVED: "Received at your return address",
+  QC_PASSED: "Quality check passed",
+  QC_FAILED: "Quality check failed",
+  COMPLETED: "Return completed",
+  CANCELLED: "Cancelled by the customer",
+  LOST: "Lost in transit",
+};
 
-const ORDER_INDEX: Partial<Record<ReturnStatus, number>> = { requested: 0, approved: 1, pickup_scheduled: 2, picked_up: 3, received: 4, qc_passed: 5, qc_failed: 5, refund_initiated: 5, completed: 6, rejected: 0, cancelled: 0 };
+const ACTOR: Record<string, string> = { CUSTOMER: "Customer", SELLER: "You", SYSTEM: "BluBuy", LOGISTICS: "BluBuy Logistics", SUPPORT: "BluBuy Care", ADMIN: "BluBuy" };
 
-function timelineFor(r: SellerReturn): TimelineItem[] {
-  if (r.kind === "rto") {
-    const items: TimelineItem[] = (r.ndr ?? []).map((n, i) => ({ title: `Delivery attempt ${i + 1} failed`, time: formatDateTime(n.at), description: n.reason, tone: "warning" as const }));
-    items.push({ title: "Return to origin started", time: formatDateTime(new Date(new Date(r.requestedAt).getTime() + ((r.ndr?.length ?? 3) - 0.5) * 86400_000)), tone: "danger" });
-    items.push(r.rtoStatus === "returned_to_seller" ? { title: "Received back at Andheri warehouse", time: r.receivedAt ? formatDateTime(r.receivedAt) : undefined, tone: "neutral" } : { title: "Arriving at your warehouse", time: `By ${formatDate(r.expectedBy!)}`, done: false });
-    return items;
-  }
-  const at = ORDER_INDEX[r.status] ?? 0;
-  const plusHours = (iso: string, h: number) => new Date(new Date(iso).getTime() + h * 3600_000).toISOString();
-  const times = [r.requestedAt, plusHours(r.requestedAt, 0.4), plusHours(r.requestedAt, 3.5), r.pickupOn ?? addDays(r.requestedAt, 1).toISOString(), r.receivedAt ?? addDays(r.requestedAt, 4).toISOString(), r.updatedAt, r.updatedAt];
-  return FLOW.map((f, i) => {
-    const done = i <= at;
-    let title = f.title;
-    if (i === 5 && r.grade) title = `Quality check: ${GRADES.find((g) => g.key === r.grade)?.label.toLowerCase()}`;
-    if (i === 6 && r.status === "refund_initiated") title = "Refund initiated";
-    return {
-      title,
-      time: done ? formatDateTime(times[i]!) : i === 3 && r.pickupOn ? `Planned ${formatDate(r.pickupOn)}` : i === 4 && r.expectedBy ? `Expected ${formatDate(r.expectedBy)}` : undefined,
-      done,
-      tone: done && i === 5 && r.status === "qc_failed" ? ("danger" as const) : done && i === 6 ? ("success" as const) : undefined,
-    };
-  });
+/** What happened, then the steps still ahead for an open return. */
+function timelineFor(r: ReturnRequest): TimelineItem[] {
+  const done: TimelineItem[] = r.events.map((e) => ({
+    title: STEP[e.toStatus] ?? e.toStatus,
+    time: `${formatDateTime(e.at)}, ${ACTOR[e.actor] ?? e.actor}`,
+    // the step title already says why a request went to review
+    description: e.toStatus === "PENDING_SELLER_REVIEW" ? undefined : (e.note ?? undefined),
+    done: true,
+    tone: e.toStatus === "QC_FAILED" || e.toStatus === "REJECTED" || e.toStatus === "PICKUP_FAILED" || e.toStatus === "LOST" ? ("danger" as const) : e.toStatus === "COMPLETED" ? ("success" as const) : undefined,
+  }));
+  const ahead: ApiReturnStatus[] = ["PICKUP_SCHEDULED", "PICKED_UP", "RECEIVED", "QC_PASSED", "COMPLETED"];
+  const closed = ["REJECTED", "CANCELLED", "LOST", "COMPLETED", "QC_FAILED"].includes(r.status);
+  if (closed) return done;
+  const from = ahead.findIndex((s) => !r.events.some((e) => e.toStatus === s || (s === "QC_PASSED" && e.toStatus === "QC_FAILED")));
+  const by = arrivesByOf(r);
+  return [
+    ...done,
+    ...(from < 0 ? [] : ahead.slice(from)).map((s) => ({
+      title: s === "QC_PASSED" ? "Quality check" : s === "COMPLETED" ? (r.resolution === "REFUND" ? "Refund completed" : "Replacement sent") : STEP[s]!,
+      time: s === "PICKED_UP" && r.pickupDate ? `Planned ${formatDate(`${r.pickupDate}T12:00:00+05:30`)}` : s === "RECEIVED" && by ? `Expected ${formatDate(by)}` : undefined,
+      done: false,
+    })),
+  ];
 }
 
 export default async function ReturnDetailPage(props: PageProps<"/seller/returns/[id]">) {
   const { id } = await props.params;
-  const r = getSellerReturn(decodeURIComponent(id));
-  if (!r) notFound();
-  const claim = r.claimId ? safeClaims.find((c) => c.id === r.claimId) : undefined;
-  const grade = GRADES.find((g) => g.key === r.grade);
-  const needsGrade = (r.status === "received" && !r.grade) || r.rtoStatus === "returned_to_seller";
-  const canClaim = Boolean(grade?.claimable && !r.claimId && r.claimBy);
-  const fees = r.productId ? feesForLine(r.productId, r.amount, 1, false, SELLER.tier) : [];
+  const [r, user] = await Promise.all([loadSellerReturn(decodeURIComponent(id)), currentUser()]);
+  const now = currentTime();
+  const row = toSellerReturnRow(r);
+  const reviewBy = reviewDueOf(r);
+  const gradeBy = gradeDueOf(r);
+  const receivedAt = enteredAt(r, "RECEIVED");
+  const arrivesBy = arrivesByOf(r);
+  const tier = (user?.sellers.find((s) => s.id === r.sellerId)?.tier ?? "Bronze") as Parameters<typeof feesForLine>[4] & string;
+  const amount = valueOf(r);
+  const fees = feesForLine(r.item.productId, r.item.unitPricePaise / 100, r.qty, false, tier);
   const commission = Math.abs(fees.find((f) => f.label.startsWith("Commission"))?.amount ?? 0);
   const shipping = Math.abs(fees.find((f) => f.label.startsWith("Shipping"))?.amount ?? 0);
   const processingFee = Math.min(50, Math.round(commission * 0.2));
-  const statusMeta = r.kind === "rto" && r.rtoStatus ? ORDER_STATUS[r.rtoStatus] : RETURN_STATUS[r.status];
+  const sellerFault = r.fault === "SELLER";
+  const checked = r.events.findLast((e) => e.toStatus === "QC_PASSED" || e.toStatus === "QC_FAILED");
 
   return (
     <>
       <PageHeader
-        breadcrumbs={[
-          { label: "Returns", href: r.kind === "rto" ? "/seller/returns?tab=rto" : "/seller/returns" },
-          { label: r.id },
-        ]}
+        breadcrumbs={[{ label: "Returns", href: "/seller/returns" }, { label: r.id }]}
         title={
           <span className="flex flex-wrap items-center gap-x-2">
-            {r.kind === "rto" ? "Return to origin" : "Return"} <span className="font-mono text-[20px] font-medium tracking-tight sm:text-[22px]">{r.id}</span>
+            Return <span className="font-mono text-[20px] font-medium tracking-tight sm:text-[22px]">{r.id}</span>
           </span>
         }
         meta={
           <>
-            <StatusBadge meta={statusMeta} />
-            <ChannelBadge channel={r.channel} size="md" />
-            {r.kind === "return" && <Badge tone="neutral">{r.resolution}</Badge>}
-            <span className="text-[13px] text-ink-500">Requested {formatDateTime(r.requestedAt)}</span>
+            <StatusBadge meta={row.status} />
+            <Badge tone="neutral">{row.resolution}</Badge>
+            {r.instantRefund && <Badge tone="info">Instant refund</Badge>}
+            <span className="text-[13px] text-ink-500">Requested {formatDateTime(r.createdAt)}</span>
           </>
         }
-        actions={r.status === "requested" && r.outOfPolicy ? <ReturnDecision returnId={r.id} /> : undefined}
+        actions={row.canDecide ? <ReturnDecision returnId={r.id} /> : undefined}
       />
 
-      {r.status === "requested" && r.outOfPolicy && r.reviewBy && (
+      {row.canDecide && reviewBy && (
         <Callout tone="warning" icon={TriangleAlert} className="mb-6" title="This request is outside the return policy">
-          Decide by {formatDateTime(r.reviewBy)} (<SlaText dueAt={r.reviewBy} className="text-[13px]" />
+          Decide by {formatDateTime(reviewBy)} (
+          <SlaText dueAt={reviewBy} now={now} className="text-[13px]" />
           ). If you do not respond, BluBuy decides on your behalf. Rejected customers can file a BluBuy Guarantee claim.
         </Callout>
       )}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 xl:col-span-2">
+          {process.env.NODE_ENV !== "production" && <PickupSimulator returnId={r.id} status={r.status} />}
+
           <Card>
             <CardHeader title="Item" />
             <div className="flex flex-col gap-4 px-5 pt-3 pb-5 sm:flex-row">
-              <ProductImage src={r.image} alt={r.title} size={80} rounded="lg" />
+              <ProductImage src={r.item.image} alt={r.item.title} size={80} rounded="lg" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-ink-900">{r.title}</p>
+                <p className="text-sm font-medium text-ink-900">{r.item.title}</p>
                 <p className="mt-1 text-xs text-ink-500">
-                  Order{" "}
-                  <Link href={`/seller/orders/${r.orderId}`} className="font-mono text-brand-700 hover:underline">
+                  {[r.item.variant, `Qty ${r.qty}`].filter(Boolean).join(", ")}. Order{" "}
+                  <Link href={`/seller/orders/${r.orderId}`} className="font-mono text-ink-700 hover:text-brand-700 hover:underline">
                     {r.orderId}
                   </Link>
-                  , {r.buyer}
+                  , {maskName(r.customerName)}
                 </p>
                 <blockquote className="mt-3 rounded-lg border-l-2 border-line-strong bg-ink-50/70 px-3 py-2 text-[13px] text-ink-700">
-                  <span className="text-xs text-ink-500">{r.kind === "rto" ? "Reason" : "Customer reason"}</span>
+                  <span className="text-xs text-ink-500">Customer reason</span>
                   <br />
-                  {r.reason}
-                  {r.sellerFault && <span className="ml-2 text-xs text-warning-700">Counts toward your seller-fault return rate</span>}
+                  {r.reasonLabel}
+                  {r.comments && <span className="mt-1 block text-ink-600">&ldquo;{r.comments}&rdquo;</span>}
+                  {sellerFault && <span className="mt-1 block text-xs text-warning-700">Counts toward your seller-fault return rate</span>}
                 </blockquote>
+                {r.photos.length > 0 && (
+                  <div className="mt-3">
+                    <p className="mb-2 text-xs text-ink-500">Customer photos</p>
+                    <ul className="flex flex-wrap gap-2">
+                      {r.photos.map((p) => (
+                        <li key={p.id}>
+                          <a href={`/seller/returns/${r.id}/photos/${p.id}`} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg ring-1 ring-line hover:ring-brand-300">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- streamed from the API behind the session */}
+                            <img src={`/seller/returns/${r.id}/photos/${p.id}`} alt={p.name} className="size-20 object-cover" />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-              <p className="shrink-0 text-sm font-semibold text-ink-900 tabular-nums">{formatINR(r.amount)}</p>
+              <p className="shrink-0 text-sm font-semibold text-ink-900 tabular-nums">{formatINR(amount)}</p>
             </div>
           </Card>
 
-          {needsGrade && <QcCapture grades={GRADES} amount={r.amount} claimDeadline={formatDate(r.claimBy ?? addDays(r.receivedAt ?? r.updatedAt, 14))} />}
+          {r.status === "RECEIVED" && <QcCapture returnId={r.id} grades={GRADES} dueAt={gradeBy ? formatDateTime(gradeBy) : undefined} />}
 
-          {canClaim && (
-            <Card className="border-warning-100">
-              <CardHeader title="File a BluBuy SafeClaim" description={`Graded ${grade?.label.toLowerCase()}. Claims close 14 days after receipt, on ${formatDate(r.claimBy!)}.`} />
-              <div className="p-5">
-                <SafeClaimForm amount={r.amount} gradeLabel={grade!.label} deadline={formatDate(r.claimBy!)} />
+          {checked && (
+            <Card className={r.status === "QC_FAILED" ? "border-warning-100" : undefined}>
+              <CardHeader
+                title={checked.toStatus === "QC_PASSED" ? "Quality check passed" : "Quality check failed"}
+                description={`Recorded ${formatDateTime(checked.at)}`}
+                action={checked.toStatus === "QC_PASSED" ? <CircleCheck size={18} className="text-success-600" aria-label="Passed" /> : <CircleX size={18} className="text-danger-600" aria-label="Failed" />}
+              />
+              <div className="flex flex-col gap-3 px-5 pt-3 pb-5">
+                {r.qcNote && <p className="text-[13px] text-ink-700">{r.qcNote}</p>}
+                {r.status === "QC_FAILED" && (
+                  <Callout tone="neutral" icon={ShieldCheck}>
+                    BluBuy reviews your check and notes before the customer is refunded. SafeClaim filing for damaged, wrong or empty returns goes live with the claims service.
+                  </Callout>
+                )}
               </div>
             </Card>
           )}
 
-          {claim && (
-            <Card>
-              <CardHeader title={`SafeClaim ${claim.id}`} description={`Filed ${formatDate(claim.filedAt)} for ${formatINR(claim.claimed)}`} action={<StatusBadge meta={CLAIM_STATUS[claim.status]} />} />
-              <div className="px-5 pt-3 pb-5">
-                <Callout tone={claim.status === "info_requested" ? "warning" : "neutral"} icon={ShieldCheck}>
-                  {claim.note}
-                </Callout>
-                {claim.decisionBy && <p className="mt-3 text-[13px] text-ink-600">Decision due by {formatDate(claim.decisionBy)}.</p>}
-              </div>
-            </Card>
-          )}
-
-          {r.kind === "return" && r.doorstepQc.length > 0 && (
-            <Card>
-              <CardHeader title="Doorstep quality check" description="Recorded by the pickup associate before collecting the item" />
-              <ul className="grid gap-x-6 gap-y-3 px-5 pt-3 pb-5 sm:grid-cols-2">
-                {r.doorstepQc.map((c) => (
-                  <li key={c.label} className="flex items-start gap-2 text-[13px]">
-                    {c.passed ? <CircleCheck size={16} className="mt-px shrink-0 text-success-600" aria-hidden="true" /> : <CircleX size={16} className="mt-px shrink-0 text-danger-600" aria-hidden="true" />}
-                    <span className={c.passed ? "text-ink-700" : "font-medium text-danger-700"}>
-                      {c.label}
-                      <span className="sr-only">{c.passed ? ", passed" : ", failed"}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+          {r.status === "REJECTED" && r.sellerNote && (
+            <Callout tone="neutral" icon={CircleX} title="Rejected">
+              {r.sellerNote}
+            </Callout>
           )}
 
           <Card>
@@ -183,38 +196,42 @@ export default async function ReturnDetailPage(props: PageProps<"/seller/returns
               <InfoGrid
                 columns={1}
                 items={[
-                  { label: "Reverse AWB", value: <Mono className="text-sm">{r.awb}</Mono> },
-                  ...(r.pickupOn && r.kind === "return" ? [{ label: "Pickup", value: formatDate(r.pickupOn) }] : []),
-                  { label: r.receivedAt ? "Received" : "Expected by", value: r.receivedAt ? formatDateTime(r.receivedAt) : formatDate(r.expectedBy!) },
-                  ...(grade ? [{ label: "Grade", value: grade.label }] : []),
-                  ...(r.claimBy ? [{ label: "SafeClaim window closes", value: formatDate(r.claimBy) }] : []),
-                  { label: "Return address", value: "Andheri warehouse, returns desk" },
+                  { label: "Reverse AWB", value: r.awb ? <Mono className="text-sm">{r.awb}</Mono> : "Assigned when the pickup is booked" },
+                  ...(r.pickupDate ? [{ label: "Pickup", value: `${formatDate(`${r.pickupDate}T12:00:00+05:30`)}${r.pickupSlot ? `, ${r.pickupSlot}` : ""}` }] : []),
+                  { label: "Pickup from", value: `${r.address.city} ${r.address.pincode}` },
+                  ...(receivedAt ? [{ label: "Received", value: formatDateTime(receivedAt) }] : arrivesBy && !["REJECTED", "CANCELLED"].includes(r.status) ? [{ label: "Expected by", value: formatDate(arrivesBy) }] : []),
+                  ...(r.resolution === "REFUND"
+                    ? [{ label: "Refund to the customer", value: `${formatINR(amount)}${r.refundStatus ? `, ${r.refundStatus.toLowerCase()}` : r.instantRefund ? ", at pickup" : ", after your check"}` }]
+                    : [{ label: "Resolution", value: r.resolution === "EXCHANGE" && r.exchangeSize ? `Exchange for size ${r.exchangeSize}` : row.resolution }]),
+                  { label: "Return address", value: "Your registered pickup address" },
                 ]}
               />
             </div>
           </Card>
 
-          {r.kind === "return" && fees.length > 0 && (
+          {r.resolution !== "REFUND" && (
+            <Callout tone="info" icon={Repeat} title={r.resolution === "EXCHANGE" ? "Exchange" : "Replacement"}>
+              No refund is recovered from you. When the item passes your check, the {r.exchangeSize ? `size ${r.exchangeSize} ` : ""}replacement is marked as dispatched to the customer. Replacement units start shipping through your order queue with the logistics integration.
+            </Callout>
+          )}
+
+          {r.resolution === "REFUND" && fees.length > 0 && (
             <Card>
-              <CardHeader title="Settlement impact" description={r.sellerFault ? "Seller-fault return (defective, wrong, missing or not as described)" : "Customer-remorse return"} />
+              <CardHeader title="Settlement impact" description={sellerFault ? "Seller-fault return (defective, wrong, missing or not as described)" : "Customer-remorse return"} />
               <div className="px-5 pt-2 pb-5">
                 <AmountRows
                   rows={[
-                    { label: "Refund recovered from you", value: -r.amount },
-                    { label: r.sellerFault ? "Commission refunded" : "Commission refunded, less processing fee", value: r.sellerFault ? commission : commission - processingFee },
-                    { label: "Reverse shipping fee", value: r.sellerFault ? -shipping : -45 },
+                    { label: "Refund recovered from you", value: -amount },
+                    { label: sellerFault ? "Commission refunded" : "Commission refunded, less processing fee", value: sellerFault ? commission : commission - processingFee },
+                    { label: "Reverse shipping fee", value: sellerFault ? -shipping : -45 },
                     { label: "Fixed fee and forward shipping", value: 0, hint: "Not refunded", muted: true },
                   ]}
                 />
-                <p className="mt-3 text-xs leading-relaxed text-ink-500">Fee reversals carry 18% GST and TCS is reversed in the month of return. Lines net off in your next payout.</p>
+                <p className="mt-3 text-xs leading-relaxed text-ink-500">
+                  An estimate from your {tier} rate card. Fee reversals carry 18% GST and TCS is reversed in the month of return. Lines net off in your next payout.
+                </p>
               </div>
             </Card>
-          )}
-
-          {r.kind === "rto" && (
-            <Callout tone="info" icon={Info} title="RTO charges">
-              The customer did not accept delivery, so commission and the fixed fee are not charged. Forward shipping is charged. Grade the package when it arrives; damage in transit can be claimed.
-            </Callout>
           )}
         </div>
       </div>

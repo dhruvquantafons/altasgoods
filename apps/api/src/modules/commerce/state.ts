@@ -43,6 +43,16 @@ export const ITEM_TRANSITIONS: Partial<Record<OrderItemStatus, Rule[]>> = {
     { to: "RETURN_REQUESTED", actors: ["CUSTOMER", "STAFF"] },
     { to: "CLOSED", actors: ["SYSTEM"] },
   ],
+  // spec 11.3: a withdrawn or rejected return puts the line back to delivered
+  RETURN_REQUESTED: [
+    { to: "RETURN_IN_PROGRESS", actors: ["LOGISTICS", "SYSTEM"] },
+    { to: "DELIVERED", actors: ["CUSTOMER", "SELLER", "SYSTEM", "STAFF"] },
+  ],
+  RETURN_IN_PROGRESS: [
+    { to: "RETURNED", actors: ["SELLER", "SYSTEM", "STAFF"] },
+    { to: "REPLACED", actors: ["SELLER", "SYSTEM", "STAFF"] },
+    { to: "DELIVERED", actors: ["SYSTEM", "STAFF"] },
+  ],
 };
 
 /** Customer facing cancellation is allowed until the parcel leaves with BluBuy Logistics. */

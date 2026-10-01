@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Building2, Headset, Mail, Phone, ShieldCheck, Smartphone } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { SellerSignIn } from "@/components/seller/seller-sign-in";
 import { STORE_CONTAINER } from "./store-header";
 
 interface FooterProps {
@@ -79,9 +80,13 @@ export function StoreFooter({ company, grievance }: FooterProps) {
             <ul className="mt-4 flex flex-col gap-2.5">
               {col.links.map((l) => (
                 <li key={l.label}>
-                  <Link href={l.href} className="text-sm text-brand-100 transition-colors hover:text-white hover:underline hover:underline-offset-4">
-                    {l.label}
-                  </Link>
+                  {l.href === "/seller" ? (
+                    <SellerSignIn className="text-left text-sm text-brand-100 transition-colors hover:text-white hover:underline hover:underline-offset-4">{l.label}</SellerSignIn>
+                  ) : (
+                    <Link href={l.href} className="text-sm text-brand-100 transition-colors hover:text-white hover:underline hover:underline-offset-4">
+                      {l.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CalendarClock, XCircle } from "lucide-react";
+import { CalendarClock, Loader2, XCircle } from "lucide-react";
+import { cancelReturn, rescheduleReturn } from "@/app/actions/returns";
 import { Button } from "@/components/ui/button";
 import { Modal, useToast } from "@/components/ui/interactive";
 import { cn } from "@/lib/utils";
@@ -9,15 +11,19 @@ import { cn } from "@/lib/utils";
 /** Pickup reschedule and withdraw actions for an open return (before pickup). */
 export function ReturnActions({
   returnId,
+  orderId,
   canCancel,
   canReschedule,
   slots,
 }: {
   returnId: string;
+  orderId: string;
   canCancel: boolean;
   canReschedule: boolean;
   slots: { key: string; label: string; windows: string[] }[];
 }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<"cancel" | "reschedule" | null>(null);
   const [slot, setSlot] = useState(slots[0]?.key ?? "");
   const [win, setWin] = useState("");
@@ -48,12 +54,19 @@ export function ReturnActions({
               Keep current slot
             </Button>
             <Button
-              disabled={!win}
-              onClick={() => {
+              disabled={!win || busy}
+              onClick={async () => {
+                if (!chosen) return;
+                setBusy(true);
+                const r = await rescheduleReturn(returnId, orderId, new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date(chosen.key)), win);
+                setBusy(false);
                 setOpen(null);
-                toast.show(`Pickup moved to ${chosen?.label}, ${win}`);
+                if (!r.ok) return toast.show(r.error);
+                toast.show(`Pickup moved to ${chosen.label}, ${win}`);
+                router.refresh();
               }}
             >
+              {busy && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
               Confirm new slot
             </Button>
           </>
@@ -111,11 +124,18 @@ export function ReturnActions({
             </Button>
             <Button
               variant="danger"
-              onClick={() => {
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const r = await cancelReturn(returnId, orderId);
+                setBusy(false);
                 setOpen(null);
+                if (!r.ok) return toast.show(r.error);
                 toast.show("Return request cancelled");
+                router.refresh();
               }}
             >
+              {busy && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
               Cancel request
             </Button>
           </>

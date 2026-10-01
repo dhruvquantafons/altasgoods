@@ -9,9 +9,10 @@ import { ButtonLink } from "@/components/ui/button";
 import { EmptyState, IconTile } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
-import { customerAddresses } from "@/lib/mock";
-import { accountRefunds, accountReturns, pickupSlots, type AccountReturn } from "@/lib/mock/account-extra";
-import { formatINR, NOW } from "@/lib/utils";
+import { loadMyReturns, toAccountReturn } from "@/lib/api/returns";
+import { currentTime } from "@/lib/api/support";
+import { pickupSlots, type AccountReturn } from "@/lib/mock/account-extra";
+import { formatINR } from "@/lib/utils";
 
 export const metadata = { title: "Returns and refunds" };
 
@@ -20,10 +21,14 @@ const OPEN = (r: AccountReturn) => !["completed", "rejected", "cancelled"].inclu
 export default async function ReturnsPage(props: PageProps<"/account/returns">) {
   const sp = await props.searchParams;
   const tab = sp.tab === "refunds" ? "refunds" : "returns";
+  const now = currentTime();
+  const { returns: apiReturns, refunds: accountRefunds } = await loadMyReturns();
+  const accountReturns = apiReturns.map((r) => toAccountReturn(r, "your original payment method"));
   const open = accountReturns.filter(OPEN);
-  const inProgress = accountRefunds.filter((r) => r.status !== "completed" && r.status !== "failed");
-  const refunded90 = accountRefunds.filter((r) => r.status === "completed" && NOW.getTime() - new Date(r.completedAt ?? r.initiatedAt).getTime() < 90 * 86400_000);
-  const slots = pickupSlots().map((s) => ({ key: s.date, label: dayLabel(s.date), windows: s.windows }));
+  // refunds still to be paid by Finance (Credits, cash on delivery) show with returns
+  const inProgress = [...accountRefunds.filter((r) => r.status !== "completed" && r.status !== "failed"), ...accountReturns.filter((r) => r.refund && r.refund.status !== "completed" && r.status === "completed").map((r) => r.refund!)];
+  const refunded90 = accountRefunds.filter((r) => r.status === "completed" && now - new Date(r.completedAt ?? r.initiatedAt).getTime() < 90 * 86400_000);
+  const slots = pickupSlots(4, now).map((s) => ({ key: s.date, label: dayLabel(s.date), windows: s.windows }));
 
   return (
     <>
@@ -110,7 +115,6 @@ export default async function ReturnsPage(props: PageProps<"/account/returns">) 
 function ReturnCard({ r, slots }: { r: AccountReturn; slots: { key: string; label: string; windows: string[] }[] }) {
   const meta = CUSTOMER_RETURN_STATUS[r.status];
   const beforePickup = ["requested", "approved", "pickup_scheduled"].includes(r.status);
-  const addr = customerAddresses.find((a) => a.id === r.pickup?.addressId);
   return (
     <article id={r.id} className="scroll-mt-28 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-card">
       <header className="flex flex-col gap-4 border-b border-line px-5 py-5 sm:flex-row sm:items-start sm:px-6">
@@ -174,12 +178,10 @@ function ReturnCard({ r, slots }: { r: AccountReturn; slots: { key: string; labe
               <p className="mt-2 text-[15px] font-semibold text-ink-900">
                 {dayLabel(r.pickup.date)}, {r.pickup.window}
               </p>
-              {addr && (
-                <p className="mt-1 flex items-start gap-1.5 text-[13px] text-ink-600">
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
-                  {addr.line1}, {addr.city}
-                </p>
-              )}
+              <p className="mt-1 flex items-start gap-1.5 text-[13px] text-ink-600">
+                <MapPin size={14} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
+                Doorstep pickup by BluBuy Logistics
+              </p>
               <p className="mt-2 text-xs text-ink-500">Keep the item packed with its tags, accessories and box.</p>
               {r.replacementEta && <p className="mt-1 text-xs text-ink-500">Replacement expected by {dayLabel(r.replacementEta)}.</p>}
             </div>
@@ -203,7 +205,7 @@ function ReturnCard({ r, slots }: { r: AccountReturn; slots: { key: string; labe
       </div>
 
       <footer className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3.5 sm:px-6">
-        <ReturnActions returnId={r.id} canCancel={beforePickup} canReschedule={r.status === "pickup_scheduled"} slots={slots} />
+        <ReturnActions returnId={r.id} orderId={r.orderId} canCancel={beforePickup && r.status !== "cancelled"} canReschedule={r.status === "pickup_scheduled"} slots={slots} />
         <ButtonLink href={`/account/orders/${r.orderId}`} size="sm" variant="ghost">
           View order
         </ButtonLink>

@@ -19,7 +19,7 @@ import {
 } from "../../db/schema.js";
 import { normalizePhone } from "../auth/phone.js";
 import { ApplicationStore, type Application } from "./applications.store.js";
-import { sniffMime, type FileStore } from "./files.js";
+import { sniffMime, type FileStore } from "../files/file-store.js";
 import { gstinProblem, PAN_HOLDER_TYPES } from "./kyc/india.js";
 import { matchResult, nameMatchScore } from "./kyc/names.js";
 import type { KycProvider, PanLookup } from "./kyc/provider.js";

@@ -22,6 +22,30 @@ export class PaymentsService {
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
   ) {}
 
+  /**
+   * Goodwill or claim refund to the original payment method of a paid order
+   * (Care Desk). Never more than what is still unrefunded.
+   */
+  async refundToSource(tx: Tx, orderId: string, amountPaise: number, reason: string) {
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
+    if (!order) throw notFound("Order");
+    if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
+    const [payment] = await tx.select().from(payments).where(and(eq(payments.orderId, order.id), eq(payments.status, order.paymentStatus)));
+    if (!payment) throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
+    const [{ refunded }] = (await tx.select({ refunded: sql<number>`coalesce(sum(${refunds.amountPaise}), 0)::bigint` }).from(refunds).where(eq(refunds.paymentId, payment.id))) as [{ refunded: number }];
+    const left = order.totalPaise - Number(refunded);
+    if (amountPaise > left) throw conflict("REFUND_TOO_LARGE", `Only ₹${(left / 100).toLocaleString("en-IN")} of this order is left to refund`);
+    const result = await this.provider.refund({ providerRef: payment.providerRef ?? "", amountPaise });
+    const [refund] = await tx
+      .insert(refunds)
+      .values({ paymentId: payment.id, orderId: order.id, amountPaise, status: result.status, reason, completedAt: result.status === "COMPLETED" ? this.clock.now() : null })
+      .returning();
+    const status = Number(refunded) + amountPaise >= order.totalPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
+    await tx.update(payments).set({ status }).where(eq(payments.id, payment.id));
+    await tx.update(orders).set({ paymentStatus: status }).where(eq(orders.id, order.id));
+    return refund!;
+  }
+
   /** Opens a payment attempt with the provider for an unpaid order. */
   async startAttempt(tx: Tx, order: OrderRow) {
     const [payment] = await tx

@@ -15,6 +15,20 @@
       "when": 1790865085164,
       "tag": "0001_seller_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790869438834,
+      "tag": "0002_support",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790870635620,
+      "tag": "0003_returns",
+      "breakpoints": true
     }
   ]
 }

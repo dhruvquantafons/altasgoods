@@ -484,6 +484,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/dev/rate-limits/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevController_resetRateLimits"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/dev/logistics/advance": {
         parameters: {
             query?: never;
@@ -494,6 +510,214 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["DevController_advance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerReturnsController_list"];
+        put?: never;
+        post: operations["CustomerReturnsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/returns/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerReturnsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/returns/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerReturnsController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/returns/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerReturnsController_reschedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerReturnsController_refunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/returns/{id}/photos/{photoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerReturnsController_photo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerReturnsController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/seller/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SellerReturnsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/seller/returns/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SellerReturnsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/seller/returns/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SellerReturnsController_decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/seller/returns/{id}/qc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SellerReturnsController_qc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/seller/returns/{id}/photos/{photoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SellerReturnsController_photo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dev/returns/{id}/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevReturnsController_advance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -734,6 +958,246 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["ReviewController_reopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_list"];
+        put?: never;
+        post: operations["SupportController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_agents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/tickets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["SupportController_update"];
+        trace?: never;
+    };
+    "/v1/support/tickets/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SupportController_bulkAssign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/tickets/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SupportController_message"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/tickets/{id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SupportController_act"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/actions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SupportController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/actions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SupportController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/tickets/{id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SupportController_attach"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/attachments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_attachment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/support/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerSupportController_list"];
+        put?: never;
+        post: operations["CustomerSupportController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/support/tickets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerSupportController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/support/tickets/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerSupportController_reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/support/tickets/{id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerSupportController_attach"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/support/attachments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerSupportController_attachment"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2647,6 +3111,27 @@ export interface operations {
             };
         };
     };
+    DevController_resetRateLimits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cleared: number;
+                    };
+                };
+            };
+        };
+    };
     DevController_advance: {
         parameters: {
             query?: never;
@@ -2661,6 +3146,7 @@ export interface operations {
                     orderItemId: string;
                     /** @enum {string} */
                     to: "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED";
+                    deliveredDaysAgo?: number;
                 };
             };
         };
@@ -2674,6 +3160,980 @@ export interface operations {
                         /** Format: uuid */
                         id: string;
                         status: string;
+                    };
+                };
+            };
+        };
+    };
+    CustomerReturnsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    CustomerReturnsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    orderItemId: string;
+                    /** @default 1 */
+                    qty?: number;
+                    reasonCode: string;
+                    reasonLabel: string;
+                    /** @enum {string} */
+                    fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                    comments?: string;
+                    /** @default [] */
+                    photoIds?: string[];
+                    /** @enum {string} */
+                    resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                    exchangeSize?: string;
+                    /** @enum {string} */
+                    refundTo?: "SOURCE" | "CREDITS" | "BANK";
+                    refundUpi?: string;
+                    pickupDate: string;
+                    pickupSlot: string;
+                    /**
+                     * Format: uuid
+                     * @description Defaults to the order's delivery address
+                     */
+                    addressId?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    CustomerReturnsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    CustomerReturnsController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    CustomerReturnsController_reschedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    pickupDate: string;
+                    pickupSlot: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    CustomerReturnsController_refunds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        orderId: string;
+                        returnId: string | null;
+                        /** @enum {string} */
+                        source: "RETURN" | "CANCELLATION" | "SUPPORT";
+                        title: string;
+                        image: string | null;
+                        amountPaise: number;
+                        method: string;
+                        /** @enum {string} */
+                        status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        completedAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    CustomerReturnsController_photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerReturnsController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description PNG or JPG, up to 4 MB
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        mimeType: string;
+                        sizeBytes: number;
+                    };
+                };
+            };
+        };
+    };
+    SellerReturnsController_list: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    SellerReturnsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    SellerReturnsController_decide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    approve: boolean;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    SellerReturnsController_qc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    pass: boolean;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    SellerReturnsController_photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                photoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DevReturnsController_advance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    to: "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        sellerId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        sellerNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
                     };
                 };
             };
@@ -5193,6 +6653,1414 @@ export interface operations {
                         }[];
                     };
                 };
+            };
+        };
+    };
+    SupportController_list: {
+        parameters: {
+            query?: {
+                view?: "open" | "mine" | "unassigned" | "escalated" | "awaiting" | "resolved" | "all";
+                q?: string;
+                priority?: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                category?: string;
+                channel?: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                customerRef?: string;
+                orderId?: string;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            subject: string;
+                            category: string;
+                            /** @enum {string} */
+                            channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                            /** @enum {string} */
+                            priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                            /** @enum {string} */
+                            status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                            customerName: string;
+                            customerRef: string | null;
+                            orderId: string | null;
+                            assignee: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            /** Format: date-time */
+                            firstResponseAt: string | null;
+                            /** Format: date-time */
+                            lastCustomerAt: string | null;
+                            /** Format: date-time */
+                            resolvedAt: string | null;
+                            lastMessage: {
+                                kind: string;
+                                author: string;
+                                body: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        }[];
+                        total: number;
+                        counts: {
+                            open: number;
+                            mine: number;
+                            unassigned: number;
+                            escalated: number;
+                            awaiting: number;
+                            resolved: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subject: string;
+                    /** @enum {string} */
+                    category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+                    /**
+                     * @default PHONE
+                     * @enum {string}
+                     */
+                    channel?: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                    /** @enum {string} */
+                    priority?: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                    customerName: string;
+                    customerRef?: string;
+                    orderId?: string;
+                    /** @description For orders from the imported history; orders in this database are looked up */
+                    orderSnapshot?: {
+                        total: number;
+                        paymentLabel: string;
+                        cod: boolean;
+                        seller: string;
+                        items: {
+                            id: string;
+                            title: string;
+                            price: number;
+                            quantity: number;
+                        }[];
+                    };
+                    /** @description What the customer reported, in the agent's words */
+                    body: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        customerName: string;
+                        customerRef: string | null;
+                        orderId: string | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** Format: date-time */
+                        firstResponseAt: string | null;
+                        /** Format: date-time */
+                        lastCustomerAt: string | null;
+                        /** Format: date-time */
+                        resolvedAt: string | null;
+                        lastMessage: {
+                            kind: string;
+                            author: string;
+                            body: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        orderSnapshot: {
+                            total: number;
+                            paymentLabel: string;
+                            cod: boolean;
+                            seller: string;
+                            items: {
+                                id: string;
+                                title: string;
+                                price: number;
+                                quantity: number;
+                            }[];
+                        } | null;
+                        messages: {
+                            id: number;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE";
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        events: {
+                            type: string;
+                            fromValue: string | null;
+                            toValue: string | null;
+                            actor: string;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        actions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            status: string;
+                            orderId: string | null;
+                            amountPaise: number | null;
+                            details: {
+                                [key: string]: unknown;
+                            };
+                            createdBy: string;
+                            createdById: string | null;
+                            decidedBy: string | null;
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            canApprove: boolean;
+                        }[];
+                        /** @description Statuses this agent can move the ticket to now */
+                        allowedStatuses: ("NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED")[];
+                        you: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            level: string;
+                            refundLimitPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_agents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        level: string;
+                    }[];
+                };
+            };
+        };
+    };
+    SupportController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        customerName: string;
+                        customerRef: string | null;
+                        orderId: string | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** Format: date-time */
+                        firstResponseAt: string | null;
+                        /** Format: date-time */
+                        lastCustomerAt: string | null;
+                        /** Format: date-time */
+                        resolvedAt: string | null;
+                        lastMessage: {
+                            kind: string;
+                            author: string;
+                            body: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        orderSnapshot: {
+                            total: number;
+                            paymentLabel: string;
+                            cod: boolean;
+                            seller: string;
+                            items: {
+                                id: string;
+                                title: string;
+                                price: number;
+                                quantity: number;
+                            }[];
+                        } | null;
+                        messages: {
+                            id: number;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE";
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        events: {
+                            type: string;
+                            fromValue: string | null;
+                            toValue: string | null;
+                            actor: string;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        actions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            status: string;
+                            orderId: string | null;
+                            amountPaise: number | null;
+                            details: {
+                                [key: string]: unknown;
+                            };
+                            createdBy: string;
+                            createdById: string | null;
+                            decidedBy: string | null;
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            canApprove: boolean;
+                        }[];
+                        /** @description Statuses this agent can move the ticket to now */
+                        allowedStatuses: ("NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED")[];
+                        you: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            level: string;
+                            refundLimitPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status?: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                    /** @enum {string} */
+                    priority?: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                    /** Format: uuid */
+                    assigneeId?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        customerName: string;
+                        customerRef: string | null;
+                        orderId: string | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** Format: date-time */
+                        firstResponseAt: string | null;
+                        /** Format: date-time */
+                        lastCustomerAt: string | null;
+                        /** Format: date-time */
+                        resolvedAt: string | null;
+                        lastMessage: {
+                            kind: string;
+                            author: string;
+                            body: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        orderSnapshot: {
+                            total: number;
+                            paymentLabel: string;
+                            cod: boolean;
+                            seller: string;
+                            items: {
+                                id: string;
+                                title: string;
+                                price: number;
+                                quantity: number;
+                            }[];
+                        } | null;
+                        messages: {
+                            id: number;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE";
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        events: {
+                            type: string;
+                            fromValue: string | null;
+                            toValue: string | null;
+                            actor: string;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        actions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            status: string;
+                            orderId: string | null;
+                            amountPaise: number | null;
+                            details: {
+                                [key: string]: unknown;
+                            };
+                            createdBy: string;
+                            createdById: string | null;
+                            decidedBy: string | null;
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            canApprove: boolean;
+                        }[];
+                        /** @description Statuses this agent can move the ticket to now */
+                        allowedStatuses: ("NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED")[];
+                        you: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            level: string;
+                            refundLimitPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_bulkAssign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                    /** Format: uuid */
+                    assigneeId: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: number;
+                    };
+                };
+            };
+        };
+    };
+    SupportController_message: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    kind: "REPLY" | "NOTE";
+                    body: string;
+                    /**
+                     * @description Status after a reply
+                     * @enum {string}
+                     */
+                    statusAfter?: "PENDING_CUSTOMER" | "OPEN" | "RESOLVED";
+                    /** @default [] */
+                    attachmentIds?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        customerName: string;
+                        customerRef: string | null;
+                        orderId: string | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** Format: date-time */
+                        firstResponseAt: string | null;
+                        /** Format: date-time */
+                        lastCustomerAt: string | null;
+                        /** Format: date-time */
+                        resolvedAt: string | null;
+                        lastMessage: {
+                            kind: string;
+                            author: string;
+                            body: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        orderSnapshot: {
+                            total: number;
+                            paymentLabel: string;
+                            cod: boolean;
+                            seller: string;
+                            items: {
+                                id: string;
+                                title: string;
+                                price: number;
+                                quantity: number;
+                            }[];
+                        } | null;
+                        messages: {
+                            id: number;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE";
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        events: {
+                            type: string;
+                            fromValue: string | null;
+                            toValue: string | null;
+                            actor: string;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        actions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            status: string;
+                            orderId: string | null;
+                            amountPaise: number | null;
+                            details: {
+                                [key: string]: unknown;
+                            };
+                            createdBy: string;
+                            createdById: string | null;
+                            decidedBy: string | null;
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            canApprove: boolean;
+                        }[];
+                        /** @description Statuses this agent can move the ticket to now */
+                        allowedStatuses: ("NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED")[];
+                        you: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            level: string;
+                            refundLimitPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_act: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    kind: "REFUND";
+                    amountPaise: number;
+                    /** @enum {string} */
+                    destination: "SOURCE" | "CREDITS";
+                    /** @enum {string} */
+                    reason: "damaged" | "not_delivered" | "wrong" | "late" | "goodwill";
+                } | {
+                    /** @enum {string} */
+                    kind: "REPLACEMENT";
+                    itemId: string;
+                    /** @enum {string} */
+                    reason: "damaged" | "defective" | "wrong" | "missing";
+                    collectOriginal: boolean;
+                } | {
+                    /** @enum {string} */
+                    kind: "SELLER_ESCALATION";
+                    /** @enum {string} */
+                    issue: "product" | "cancel" | "invoice" | "warranty";
+                    message: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "GUARANTEE_CLAIM";
+                    /** @enum {string} */
+                    claimType: "not_delivered" | "damaged" | "wrong" | "different";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        customerName: string;
+                        customerRef: string | null;
+                        orderId: string | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** Format: date-time */
+                        firstResponseAt: string | null;
+                        /** Format: date-time */
+                        lastCustomerAt: string | null;
+                        /** Format: date-time */
+                        resolvedAt: string | null;
+                        lastMessage: {
+                            kind: string;
+                            author: string;
+                            body: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        orderSnapshot: {
+                            total: number;
+                            paymentLabel: string;
+                            cod: boolean;
+                            seller: string;
+                            items: {
+                                id: string;
+                                title: string;
+                                price: number;
+                                quantity: number;
+                            }[];
+                        } | null;
+                        messages: {
+                            id: number;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE";
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        events: {
+                            type: string;
+                            fromValue: string | null;
+                            toValue: string | null;
+                            actor: string;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        actions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            status: string;
+                            orderId: string | null;
+                            amountPaise: number | null;
+                            details: {
+                                [key: string]: unknown;
+                            };
+                            createdBy: string;
+                            createdById: string | null;
+                            decidedBy: string | null;
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            canApprove: boolean;
+                        }[];
+                        /** @description Statuses this agent can move the ticket to now */
+                        allowedStatuses: ("NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED")[];
+                        you: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            level: string;
+                            refundLimitPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        customerName: string;
+                        customerRef: string | null;
+                        orderId: string | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** Format: date-time */
+                        firstResponseAt: string | null;
+                        /** Format: date-time */
+                        lastCustomerAt: string | null;
+                        /** Format: date-time */
+                        resolvedAt: string | null;
+                        lastMessage: {
+                            kind: string;
+                            author: string;
+                            body: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        orderSnapshot: {
+                            total: number;
+                            paymentLabel: string;
+                            cod: boolean;
+                            seller: string;
+                            items: {
+                                id: string;
+                                title: string;
+                                price: number;
+                                quantity: number;
+                            }[];
+                        } | null;
+                        messages: {
+                            id: number;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE";
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        events: {
+                            type: string;
+                            fromValue: string | null;
+                            toValue: string | null;
+                            actor: string;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        actions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            status: string;
+                            orderId: string | null;
+                            amountPaise: number | null;
+                            details: {
+                                [key: string]: unknown;
+                            };
+                            createdBy: string;
+                            createdById: string | null;
+                            decidedBy: string | null;
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            canApprove: boolean;
+                        }[];
+                        /** @description Statuses this agent can move the ticket to now */
+                        allowedStatuses: ("NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED")[];
+                        you: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            level: string;
+                            refundLimitPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        customerName: string;
+                        customerRef: string | null;
+                        orderId: string | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** Format: date-time */
+                        firstResponseAt: string | null;
+                        /** Format: date-time */
+                        lastCustomerAt: string | null;
+                        /** Format: date-time */
+                        resolvedAt: string | null;
+                        lastMessage: {
+                            kind: string;
+                            author: string;
+                            body: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        orderSnapshot: {
+                            total: number;
+                            paymentLabel: string;
+                            cod: boolean;
+                            seller: string;
+                            items: {
+                                id: string;
+                                title: string;
+                                price: number;
+                                quantity: number;
+                            }[];
+                        } | null;
+                        messages: {
+                            id: number;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE";
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        events: {
+                            type: string;
+                            fromValue: string | null;
+                            toValue: string | null;
+                            actor: string;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        actions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            status: string;
+                            orderId: string | null;
+                            amountPaise: number | null;
+                            details: {
+                                [key: string]: unknown;
+                            };
+                            createdBy: string;
+                            createdById: string | null;
+                            decidedBy: string | null;
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            canApprove: boolean;
+                        }[];
+                        /** @description Statuses this agent can move the ticket to now */
+                        allowedStatuses: ("NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED")[];
+                        you: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            level: string;
+                            refundLimitPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    SupportController_attach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description PDF, PNG or JPG, up to 4 MB
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        mimeType: string;
+                        sizeBytes: number;
+                    };
+                };
+            };
+        };
+    };
+    SupportController_attachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSupportController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        orderId: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        canReply: boolean;
+                        messages: {
+                            id: number;
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM";
+                        }[];
+                    }[];
+                };
+            };
+        };
+    };
+    CustomerSupportController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subject: string;
+                    /** @enum {string} */
+                    category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+                    orderId?: string;
+                    body: string;
+                    /**
+                     * @default CHAT
+                     * @enum {string}
+                     */
+                    channel?: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        orderId: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        canReply: boolean;
+                        messages: {
+                            id: number;
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM";
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    CustomerSupportController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        orderId: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        canReply: boolean;
+                        messages: {
+                            id: number;
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM";
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    CustomerSupportController_reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                    /** @default [] */
+                    attachmentIds?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        subject: string;
+                        category: string;
+                        /** @enum {string} */
+                        channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
+                        /** @enum {string} */
+                        status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
+                        orderId: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        canReply: boolean;
+                        messages: {
+                            id: number;
+                            author: string;
+                            body: string;
+                            attachments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                mimeType: string;
+                                sizeBytes: number;
+                            }[];
+                            /** Format: date-time */
+                            at: string;
+                            /** @enum {string} */
+                            kind: "CUSTOMER" | "AGENT" | "SYSTEM";
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    CustomerSupportController_attach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description PDF, PNG or JPG, up to 4 MB
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        mimeType: string;
+                        sizeBytes: number;
+                    };
+                };
+            };
+        };
+    };
+    CustomerSupportController_attachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

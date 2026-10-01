@@ -367,9 +367,9 @@ export const CANCEL_REASONS = [
 ];
 
 /** Next pickup slots for a return, skipping Sundays. */
-export function pickupSlots(days = 4) {
+export function pickupSlots(days = 4, from = NOW.getTime()) {
   const out: { date: string; windows: string[] }[] = [];
-  let d = new Date(NOW.getTime() + DAY);
+  let d = new Date(from + DAY);
   while (out.length < days) {
     const weekday = new Intl.DateTimeFormat("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" }).format(d);
     if (weekday !== "Sun") out.push({ date: d.toISOString(), windows: ["9 AM to 12 PM", "12 PM to 3 PM", "3 PM to 7 PM"] });

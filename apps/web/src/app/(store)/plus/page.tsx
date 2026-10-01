@@ -1,8 +1,9 @@
 import { BadgeCheck, Check, Coins, Crown, Headset, Minus, Tag, Timer, Truck, Zap } from "lucide-react";
 import { formatDayMonthYear } from "@/components/store/delivery";
+import { PlusPlanAction } from "@/components/store/plus-join";
 import { PlusManage } from "@/components/store/plus-manage";
 import { STORE_CONTAINER } from "@/components/store/store-header";
-import { CURRENT_CUSTOMER } from "@/lib/mock";
+import { currentUser } from "@/lib/api/server";
 import { PLUS_MEMBERSHIP, PLUS_PLANS } from "@/lib/mock/store-extra";
 import { cn, formatINR, formatNumber } from "@/lib/utils";
 
@@ -27,8 +28,10 @@ const COMPARE: [string, string | boolean, string | boolean][] = [
   ["Easy returns and BluBuy Guarantee", true, true],
 ];
 
-export default function PlusPage() {
-  const member = CURRENT_CUSTOMER.plusMember;
+export default async function PlusPage() {
+  // membership comes from the signed-in account; plan details and savings are still sample data (no membership API yet)
+  const user = await currentUser();
+  const member = Boolean(user?.isPlus);
   const m = PLUS_MEMBERSHIP;
   return (
     <div className="pb-16 lg:pb-24">
@@ -117,16 +120,7 @@ export default function PlusPage() {
                     {p.id === "annual" ? `That is ${formatINR(p.perMonth)} a month. ` : ""}
                     {p.note}
                   </p>
-                  <button
-                    type="button"
-                    disabled={current}
-                    className={cn(
-                      "mt-5 h-11 w-full rounded-xl text-sm font-semibold transition-colors",
-                      current ? "bg-ink-100 text-ink-500" : p.best ? "bg-brand-600 text-white hover:bg-brand-700" : "border border-line-strong text-ink-800 hover:bg-ink-50",
-                    )}
-                  >
-                    {current ? "Your current plan" : member ? `Switch to ${p.name.toLowerCase()}` : `Join for ${formatINR(p.price)}`}
-                  </button>
+                  <PlusPlanAction plan={p} best={p.best} mode={!user ? "signed_out" : current ? "current" : member ? "switch" : "join"} />
                 </div>
               );
             })}

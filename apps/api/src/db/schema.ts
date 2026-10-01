@@ -99,8 +99,56 @@ export type RefundStatus = (typeof REFUND_STATUSES)[number];
 export type Actor = "CUSTOMER" | "SELLER" | "SYSTEM" | "PAYMENT" | "LOGISTICS" | "STAFF";
 
 /** BluBuy Control roles from spec section 8.1 that the API knows about so far. */
-export const STAFF_ROLES = ["SUPER_ADMIN", "OPS_ADMIN", "SELLER_VERIFIER", "RISK_ANALYST", "AUDITOR"] as const;
+export const STAFF_ROLES = ["SUPER_ADMIN", "OPS_ADMIN", "SELLER_VERIFIER", "RISK_ANALYST", "AUDITOR", "SUPPORT_AGENT", "SUPPORT_SPECIALIST", "SUPPORT_SUPERVISOR"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
+
+/** Returns, spec section 11.3. */
+export const RETURN_STATUSES = [
+  "REQUESTED",
+  "PENDING_SELLER_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "PICKUP_SCHEDULED",
+  "OUT_FOR_PICKUP",
+  "PICKUP_FAILED",
+  "PICKED_UP",
+  "IN_TRANSIT",
+  "RECEIVED",
+  "QC_PASSED",
+  "QC_FAILED",
+  "COMPLETED",
+  "CANCELLED",
+  "LOST",
+] as const;
+export type ReturnStatus = (typeof RETURN_STATUSES)[number];
+
+/** Support tickets, spec section 11.11. */
+export const TICKET_STATUSES = ["NEW", "OPEN", "PENDING_CUSTOMER", "PENDING_INTERNAL", "ESCALATED", "RESOLVED", "REOPENED", "CLOSED"] as const;
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
+export const TICKET_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;
+export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
+export const TICKET_CHANNELS = ["CHAT", "EMAIL", "PHONE", "APP"] as const;
+export type TicketChannel = (typeof TICKET_CHANNELS)[number];
+export const TICKET_CATEGORIES = ["Delivery", "Return and refund", "Payment", "Product quality", "Account", "Seller dispute", "Other"] as const;
+export type TicketCategory = (typeof TICKET_CATEGORIES)[number];
+export const TICKET_ACTION_KINDS = ["REFUND", "REPLACEMENT", "SELLER_ESCALATION", "GUARANTEE_CLAIM"] as const;
+export type TicketActionKind = (typeof TICKET_ACTION_KINDS)[number];
+
+/** What a ticket knows about its order, so actions can be checked even for imported history. */
+export interface OrderSnapshot {
+  total: number;
+  paymentLabel: string;
+  cod: boolean;
+  seller: string;
+  items: { id: string; title: string; price: number; quantity: number }[];
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+}
 
 /** Seller onboarding, spec section 11.8. The account exists (REGISTERED) once the mobile number is verified. */
 export const APPLICATION_STATUSES = ["KYC_IN_PROGRESS", "SUBMITTED", "UNDER_REVIEW", "ACTION_REQUIRED", "APPROVED", "REJECTED"] as const;
@@ -721,3 +769,202 @@ export const kycDocuments = pgTable(
   },
   (t) => [uniqueIndex("kyc_documents_app_kind_uq").on(t.applicationId, t.kind)],
 );
+
+/* --------------------------------- Support -------------------------------- */
+
+/** Ticket numbers continue after the imported history: TK-60001, TK-60002, ... */
+export const supportTicketSeq = pgSequence("support_ticket_seq", { startWith: 60001 });
+
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: text("id").primaryKey(),
+    subject: text("subject").notNull(),
+    category: text("category").notNull().$type<TicketCategory>(),
+    channel: text("channel").notNull().$type<TicketChannel>(),
+    priority: text("priority").notNull().default("NORMAL").$type<TicketPriority>(),
+    status: text("status").notNull().default("NEW").$type<TicketStatus>(),
+    /** the customer; userId is set for customers with a BluBuy account in this database */
+    customerName: text("customer_name").notNull(),
+    customerRef: text("customer_ref"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** an order in this database, or a reference to an order from the imported history */
+    orderId: text("order_id"),
+    orderSnapshot: jsonb("order_snapshot").$type<OrderSnapshot>(),
+    assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
+    firstResponseAt: ts("first_response_at"),
+    lastCustomerAt: ts("last_customer_at"),
+    resolvedAt: ts("resolved_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("support_tickets_status_idx").on(t.status, t.priority),
+    index("support_tickets_user_idx").on(t.userId),
+    index("support_tickets_assignee_idx").on(t.assigneeId),
+    check("support_tickets_status_ck", inList("status", TICKET_STATUSES)),
+  ],
+);
+
+export const supportMessages = pgTable(
+  "support_messages",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    ticketId: text("ticket_id")
+      .notNull()
+      .references(() => supportTickets.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().$type<"CUSTOMER" | "AGENT" | "SYSTEM" | "NOTE">(),
+    author: text("author").notNull(),
+    authorId: uuid("author_id"),
+    body: text("body").notNull(),
+    attachments: jsonb("attachments").notNull().$type<Attachment[]>().default([]),
+    at: ts("at").notNull().defaultNow(),
+  },
+  (t) => [index("support_messages_ticket_idx").on(t.ticketId, t.at)],
+);
+
+/** Audit trail: every status, priority and assignment change and every action. */
+export const supportEvents = pgTable(
+  "support_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    ticketId: text("ticket_id")
+      .notNull()
+      .references(() => supportTickets.id, { onDelete: "cascade" }),
+    type: text("type").notNull().$type<"CREATED" | "STATUS" | "PRIORITY" | "ASSIGNEE" | "ACTION" | "APPROVAL">(),
+    fromValue: text("from_value"),
+    toValue: text("to_value"),
+    actor: text("actor").notNull(),
+    actorId: uuid("actor_id"),
+    at: ts("at").notNull().defaultNow(),
+  },
+  (t) => [index("support_events_ticket_idx").on(t.ticketId, t.at)],
+);
+
+/** Refunds, replacements, seller escalations and Guarantee claims raised from a ticket. */
+export const supportActions = pgTable(
+  "support_actions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ticketId: text("ticket_id")
+      .notNull()
+      .references(() => supportTickets.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().$type<TicketActionKind>(),
+    status: text("status").notNull(),
+    orderId: text("order_id"),
+    amountPaise: paise("amount_paise"),
+    details: jsonb("details").notNull().$type<Record<string, unknown>>().default({}),
+    createdBy: text("created_by").notNull(),
+    createdById: uuid("created_by_id"),
+    decidedBy: text("decided_by"),
+    decidedById: uuid("decided_by_id"),
+    decidedAt: ts("decided_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("support_actions_ticket_idx").on(t.ticketId)],
+);
+
+/** Files attached to ticket messages (bytes live in the file store). */
+export const supportAttachments = pgTable(
+  "support_attachments",
+  {
+    id: uuid("id").primaryKey(),
+    ticketId: text("ticket_id")
+      .notNull()
+      .references(() => supportTickets.id, { onDelete: "cascade" }),
+    fileId: uuid("file_id")
+      .notNull()
+      .references(() => files.id),
+    name: text("name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    uploadedById: uuid("uploaded_by_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("support_attachments_ticket_idx").on(t.ticketId)],
+);
+
+/* --------------------------------- Returns -------------------------------- */
+
+/** Return numbers: RT-70001, RT-70002, ... */
+export const returnSeq = pgSequence("return_seq", { startWith: 70001 });
+
+/** One return per order line (spec 11.3), from request through pickup, QC and the resolution. */
+export const returns = pgTable(
+  "returns",
+  {
+    id: text("id").primaryKey(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id),
+    orderItemId: uuid("order_item_id")
+      .notNull()
+      .references(() => orderItems.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    sellerId: text("seller_id")
+      .notNull()
+      .references(() => sellers.id),
+    qty: integer("qty").notNull(),
+    reasonCode: text("reason_code").notNull(),
+    reasonLabel: text("reason_label").notNull(),
+    fault: text("fault").notNull().$type<"SELLER" | "LOGISTICS" | "CUSTOMER">(),
+    comments: text("comments"),
+    photos: jsonb("photos").notNull().$type<{ id: string; name: string }[]>().default([]),
+    resolution: text("resolution").notNull().$type<"REFUND" | "REPLACEMENT" | "EXCHANGE">(),
+    exchangeSize: text("exchange_size"),
+    refundTo: text("refund_to").$type<"SOURCE" | "CREDITS" | "BANK">(),
+    refundUpi: text("refund_upi"),
+    refundAmountPaise: paise("refund_amount_paise").notNull().default(0),
+    instantRefund: boolean("instant_refund").notNull().default(false),
+    refundStatus: text("refund_status"),
+    refundId: uuid("refund_id"),
+    status: text("status").notNull().$type<ReturnStatus>(),
+    pickupDate: text("pickup_date"),
+    pickupSlot: text("pickup_slot"),
+    address: jsonb("address").notNull().$type<AddressSnapshot>(),
+    awb: text("awb"),
+    qcNote: text("qc_note"),
+    sellerNote: text("seller_note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("returns_user_idx").on(t.userId, t.createdAt),
+    index("returns_seller_idx").on(t.sellerId, t.status),
+    index("returns_item_idx").on(t.orderItemId),
+    check("returns_status_ck", inList("status", RETURN_STATUSES)),
+  ],
+);
+
+export const returnEvents = pgTable(
+  "return_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    returnId: text("return_id")
+      .notNull()
+      .references(() => returns.id, { onDelete: "cascade" }),
+    fromStatus: text("from_status").$type<ReturnStatus>(),
+    toStatus: text("to_status").notNull().$type<ReturnStatus>(),
+    actor: text("actor").notNull().$type<Actor>(),
+    note: text("note"),
+    at: ts("at").notNull().defaultNow(),
+  },
+  (t) => [index("return_events_return_idx").on(t.returnId, t.at)],
+);
+
+/** Files a shopper uploads (return photos), owned by them until attached. */
+export const customerUploads = pgTable("customer_uploads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  fileId: uuid("file_id")
+    .notNull()
+    .references(() => files.id),
+  name: text("name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  createdAt: createdAt(),
+});

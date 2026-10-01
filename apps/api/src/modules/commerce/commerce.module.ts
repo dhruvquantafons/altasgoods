@@ -9,11 +9,13 @@ import { PaymentsService } from "./payments/payments.service.js";
 import { SandboxPaymentProvider } from "./payments/sandbox.provider.js";
 import { PaymentSweeper } from "./payments/sweeper.js";
 import { QuoteService } from "./quote.service.js";
+import { CustomerReturnsController, DevReturnsController, SellerReturnsController } from "./returns/returns.controllers.js";
+import { ReturnsService } from "./returns/returns.service.js";
 import { SellerOrdersService } from "./seller-orders.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
 
 @Module({
-  controllers: [AddressesController, CartController, OrdersController, PaymentsController, SellerOrdersController, DevController],
+  controllers: [AddressesController, CartController, OrdersController, PaymentsController, SellerOrdersController, DevController, CustomerReturnsController, SellerReturnsController, DevReturnsController],
   providers: [
     AddressesService,
     CartService,
@@ -23,9 +25,10 @@ import { OrderWorkflow } from "./workflow.service.js";
     OrdersService,
     SellerOrdersService,
     DevLogisticsService,
+    ReturnsService,
     PaymentSweeper,
     { provide: PAYMENT_PROVIDER, useClass: SandboxPaymentProvider },
   ],
-  exports: [OrdersService, PaymentsService, SellerOrdersService, OrderWorkflow, CartService, AddressesService],
+  exports: [ReturnsService, OrdersService, PaymentsService, SellerOrdersService, OrderWorkflow, CartService, AddressesService],
 })
 export class CommerceModule {}

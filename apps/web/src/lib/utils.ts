@@ -109,8 +109,9 @@ export function addDays(d: Date | string, days: number) {
 }
 
 /** "5 min ago", "3 h ago", "2 d ago", relative to NOW. */
-export function timeAgo(d: string | Date) {
-  const diff = (NOW.getTime() - new Date(d).getTime()) / 1000;
+/** "3 h ago". The sample data is anchored to NOW; pass `now` for live data from the API. */
+export function timeAgo(d: string | Date, now: number = NOW.getTime()) {
+  const diff = (now - new Date(d).getTime()) / 1000;
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} h ago`;

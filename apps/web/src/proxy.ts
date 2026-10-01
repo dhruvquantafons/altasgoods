@@ -10,7 +10,8 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 const ACCESS = "bb_at";
 const REFRESH = "bb_rt";
-const PROTECTED = [/^\/account(\/|$)/, /^\/checkout(\/|$)/, /^\/order\//, /^\/seller(\/|$)/, /^\/admin(\/|$)/];
+const PROTECTED = [/^\/account(\/|$)/, /^\/checkout(\/|$)/, /^\/order\//, /^\/seller(\/|$)/, /^\/admin(\/|$)/, /^\/support(\/|$)/];
+const STAFF_AREAS = /^\/(admin|support)(\/|$)/;
 const OPEN = [/^\/seller\/register(\/|$)/];
 
 const apiUrl = () => process.env.BLUBUY_API_URL ?? "http://localhost:4000";
@@ -32,8 +33,12 @@ export async function proxy(req: NextRequest) {
   let refreshed: { accessToken: string; refreshToken: string } | null = null;
   let clear = false;
 
+  const path = req.nextUrl.pathname;
   const current = claims(access);
-  if ((!current || current.exp * 1000 < Date.now() + 30_000) && refresh) {
+  // grants live in the token: refresh once when an area needs one the token lacks,
+  // so a seller approved (or staff role granted) since sign in gets straight in
+  const lacksGrant = !!current && ((path.startsWith("/seller") && !OPEN.some((r) => r.test(path)) && !current.sellers.length) || (STAFF_AREAS.test(path) && !current.staff.length));
+  if ((!current || current.exp * 1000 < Date.now() + 30_000 || lacksGrant) && refresh) {
     try {
       const r = await fetch(`${apiUrl()}/v1/auth/refresh`, {
         method: "POST",
@@ -57,7 +62,6 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  const path = req.nextUrl.pathname;
   const session = claims(access);
   const signedIn = !!session && session.exp * 1000 > Date.now();
   let res: NextResponse;
@@ -65,9 +69,9 @@ export async function proxy(req: NextRequest) {
     const url = new URL("/login", req.url);
     url.searchParams.set("next", path + req.nextUrl.search);
     if (path.startsWith("/seller")) url.searchParams.set("as", "seller");
-    if (path.startsWith("/admin")) url.searchParams.set("as", "staff");
+    if (STAFF_AREAS.test(path)) url.searchParams.set("as", "staff");
     res = NextResponse.redirect(url);
-  } else if (signedIn && path.startsWith("/admin") && !session!.staff.length) {
+  } else if (signedIn && STAFF_AREAS.test(path) && !session!.staff.length) {
     const url = new URL("/login", req.url);
     url.searchParams.set("next", path + req.nextUrl.search);
     url.searchParams.set("as", "staff");

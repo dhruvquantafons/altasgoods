@@ -15,7 +15,7 @@ export class DevLogisticsService {
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
   ) {}
 
-  async advance(user: AuthUser, orderItemId: string, to: OrderItemStatus) {
+  async advance(user: AuthUser, orderItemId: string, to: OrderItemStatus, deliveredDaysAgo?: number) {
     const [row] = await this.db
       .select({ orderId: orderItems.orderId, sellerId: orderItems.sellerId, customerId: orders.userId })
       .from(orderItems)
@@ -23,7 +23,11 @@ export class DevLogisticsService {
       .where(eq(orderItems.id, orderItemId));
     // the item's seller or its customer may drive the simulation
     if (!row || (row.customerId !== user.id && !user.sellers.includes(row.sellerId))) throw notFound("Order item");
-    const [item] = await this.db.transaction((tx) => this.workflow.transition(tx, { orderId: row.orderId, itemIds: [orderItemId], to, actor: "LOGISTICS", note: "Simulated courier scan" }));
+    const [item] = await this.db.transaction(async (tx) => {
+      const moved = await this.workflow.transition(tx, { orderId: row.orderId, itemIds: [orderItemId], to, actor: "LOGISTICS", note: "Simulated courier scan" });
+      if (to === "DELIVERED" && deliveredDaysAgo) await tx.update(orderItems).set({ deliveredAt: new Date(Date.now() - deliveredDaysAgo * 86_400_000) }).where(eq(orderItems.id, orderItemId));
+      return moved;
+    });
     return { id: item!.id, status: item!.status };
   }
 }

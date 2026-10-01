@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { ChevronRight, CreditCard, Crown, Mail, Package, PhoneCall, ShieldCheck, Store, Undo2, UserRound } from "lucide-react";
-import { ActionButton } from "@/components/account/action-button";
-import { CUSTOMER_TICKET_STATUS, dateLabel, isActive, itemState, relativeDay, shortTitle, timeLabel } from "@/components/account/lib";
-import { ChatButton, GuaranteeClaimButton, RaiseTicketButton } from "@/components/account/support-forms";
+import { CUSTOMER_TICKET_STATUS, dateLabel, isActive, itemState, shortTitle } from "@/components/account/lib";
+import { CallBackButton, ChatButton, GuaranteeClaimButton, RaiseTicketButton, TicketReplyButton } from "@/components/account/support-forms";
 import { Notice, Panel } from "@/components/account/ui";
 import { ProductImage } from "@/components/commerce/product-image";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { IconTile } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
-import { accountOrders, customerTickets, getAccountOrder, guaranteeClaims } from "@/lib/mock/account-extra";
+import { loadAccountOrders } from "@/lib/api/account-orders";
+import { api, currentUser } from "@/lib/api/server";
+import { currentTime } from "@/lib/api/support";
+import { formatPhone } from "@/lib/onboarding";
 import type { OrderStatus } from "@/lib/status";
-import { formatINR, timeAgo } from "@/lib/utils";
+import { UI_TICKET_STATUS } from "@/lib/support-status";
+import { timeAgo } from "@/lib/utils";
 
 export const metadata = { title: "Help and support" };
 
@@ -45,10 +48,16 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const focusId = one(sp.order);
   const topic = one(sp.topic);
-  const focus = focusId ? getAccountOrder(focusId) : undefined;
-  const recent = [focus, ...accountOrders.filter((o) => o.id !== focus?.id)].filter((o): o is NonNullable<typeof o> => Boolean(o)).slice(0, 4);
-  const orderOptions = accountOrders.slice(0, 12).map((o) => ({ id: o.id, label: `${o.id}, ${shortTitle(o.items[0]!.title)}` }));
-  const openTickets = customerTickets.filter((t) => !["resolved", "closed"].includes(t.status));
+  const [user, myOrders, convs] = await Promise.all([currentUser(), loadAccountOrders(), (async () => (await (await api()).GET("/v1/me/support/tickets")).data ?? [])()]);
+  const now = currentTime();
+  const focus = focusId ? myOrders.find((o) => o.id === focusId) : undefined;
+  const recent = [focus, ...myOrders.filter((o) => o.id !== focus?.id)].filter((o): o is NonNullable<typeof o> => Boolean(o)).slice(0, 4);
+  const orderOptions = myOrders.slice(0, 12).map((o) => ({ id: o.id, label: `${o.id}, ${shortTitle(o.items[0]!.title)}` }));
+  const openTickets = convs.filter((t) => !["RESOLVED", "CLOSED"].includes(t.status));
+  const waiting = openTickets.find((t) => t.status === "PENDING_CUSTOMER");
+  const chat = convs.find((t) => t.channel === "CHAT" && t.canReply && t.status !== "RESOLVED");
+  const claims = convs.filter((t) => t.subject.startsWith("BluBuy Guarantee claim"));
+  const firstName = (user?.name ?? "").split(" ")[0];
 
   return (
     <>
@@ -58,20 +67,21 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
         actions={
           <>
             <RaiseTicketButton orders={orderOptions} defaultOrderId={focus?.id} defaultCategory={topic ? TOPIC_CATEGORY[topic] : undefined} autoOpen={Boolean(topic && topic !== "guarantee")} />
-            <ChatButton autoOpen={one(sp.chat) === "1"} orderLabel={focus?.id} />
+            <ChatButton autoOpen={one(sp.chat) === "1"} orderLabel={focus?.id} firstName={firstName} conversation={chat} />
           </>
         }
       />
 
-      {openTickets.some((t) => t.status === "awaiting_customer") && (
+      {waiting && (
         <Notice tone="warning" title="We are waiting for your reply" className="mb-6">
-          Ticket {openTickets.find((t) => t.status === "awaiting_customer")!.id} needs a photo from you so we can finish looking into it.
+          Ticket {waiting.id}, {waiting.subject.toLowerCase()}, needs an answer from you so we can finish looking into it.
         </Notice>
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
           <Panel title="Get help with a recent order" description="Pick an order and tell us what is wrong." bodyClassName="px-0 pb-1 sm:px-0">
+            {recent.length === 0 && <p className="px-5 py-4 text-[13px] text-ink-500 sm:px-6">No orders yet. Questions about anything else go through Raise a ticket or chat.</p>}
             <ul className="divide-y divide-line">
               {recent.map((o) => {
                 const st = itemState(o, o.items[0]!);
@@ -116,8 +126,11 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
           </Panel>
 
           <Panel title="My tickets" description={`${openTickets.length} open`} bodyClassName="px-0 pb-1 sm:px-0">
+            {convs.length === 0 && <p className="px-5 py-4 text-[13px] text-ink-500 sm:px-6">No tickets yet. Anything you raise here shows up with every reply from BluBuy Care.</p>}
             <ul className="divide-y divide-line">
-              {customerTickets.map((t) => (
+              {convs.map((t) => {
+                const last = t.messages.at(-1);
+                return (
                 <li key={t.id} className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-start sm:gap-6 sm:px-6">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -136,23 +149,20 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
                       )}{" "}
                       · Opened {dateLabel(t.createdAt)}
                     </p>
-                    <p className="mt-2 rounded-lg bg-ink-50 px-3 py-2 text-[13px] text-ink-700">
-                      <span className="font-medium text-ink-900">{t.lastFrom}:</span> {t.lastMessage}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-row items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">
-                    <StatusBadge meta={CUSTOMER_TICKET_STATUS[t.status]} size="sm" />
-                    <p className="text-xs text-ink-500">Updated {timeAgo(t.updatedAt)}</p>
-                    {t.responseDueAt && t.status === "in_progress" && (
-                      <p className="text-xs text-ink-500">
-                        Next update by {relativeDay(t.responseDueAt)}, {timeLabel(t.responseDueAt)}
+                    {last && (
+                      <p className="mt-2 line-clamp-3 rounded-lg bg-ink-50 px-3 py-2 text-[13px] whitespace-pre-line text-ink-700">
+                        <span className="font-medium text-ink-900">{last.kind === "CUSTOMER" ? "You" : last.author}:</span> {last.body}
                       </p>
                     )}
-                    {t.status === "awaiting_customer" && <ActionButton label="Reply" icon="message" size="xs" variant="secondary" toast="Reply sent to BluBuy Care" doneLabel="Replied" />}
-                    {t.status === "resolved" && <ActionButton label="Reopen" size="xs" variant="ghost" toast={`Ticket ${t.id} reopened`} doneLabel="Reopened" />}
+                  </div>
+                  <div className="flex shrink-0 flex-row items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">
+                    <StatusBadge meta={CUSTOMER_TICKET_STATUS[UI_TICKET_STATUS[t.status]]} size="sm" />
+                    <p className="text-xs text-ink-500">Updated {timeAgo(t.updatedAt, now)}</p>
+                    {t.status === "RESOLVED" ? <TicketReplyButton ticketId={t.id} label="Reopen" reopen /> : t.canReply && <TicketReplyButton ticketId={t.id} label="Reply" />}
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </Panel>
 
@@ -181,8 +191,8 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
               <p className="mt-1 font-display text-lg font-semibold">Talk to a person, 24 x 7</p>
               <p className="mt-1.5 text-sm text-brand-100">Plus members get priority. Average wait right now is under a minute.</p>
               <div className="mt-4 flex flex-col gap-2">
-                <ChatButton orderLabel={focus?.id} variant="secondary" className="w-full" />
-                <ActionButton label="Request a call-back" icon="phone" variant="ghost" size="md" className="w-full text-white hover:bg-white/10" toast="We will call +91 98450 12345 within 15 minutes" doneLabel="Call-back booked" />
+                <ChatButton orderLabel={focus?.id} firstName={firstName} conversation={chat} variant="secondary" className="w-full" />
+                {user && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}
               </div>
             </div>
           </section>
@@ -197,18 +207,18 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
               <li>· We decide within 7 days and refund you directly</li>
             </ul>
             <GuaranteeClaimButton orders={orderOptions} defaultOrderId={focus?.id} autoOpen={topic === "guarantee"} className="mt-4 w-full" />
-            {guaranteeClaims.length > 0 && (
+            {claims.length > 0 && (
               <div className="mt-5 border-t border-line pt-4">
-                <p className="text-xs font-semibold tracking-wide text-ink-500 uppercase">Past claims</p>
-                {guaranteeClaims.map((c) => (
+                <p className="text-xs font-semibold tracking-wide text-ink-500 uppercase">Your claims</p>
+                {claims.map((c) => (
                   <div key={c.id} className="mt-2.5">
-                    <p className="text-[13px] font-medium text-ink-900">{c.title}</p>
+                    <p className="text-[13px] font-medium text-ink-900">{c.subject.replace("BluBuy Guarantee claim: ", "")}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
-                      <Badge size="sm" tone="success" dot>
-                        {c.status}, {formatINR(c.amount)} refunded
+                      <Badge size="sm" tone={c.status === "RESOLVED" || c.status === "CLOSED" ? "success" : "info"} dot>
+                        {CUSTOMER_TICKET_STATUS[UI_TICKET_STATUS[c.status]].label}
                       </Badge>
                       <span>
-                        <span className="font-mono">{c.id}</span> · {dateLabel(c.decidedAt)}
+                        <span className="font-mono">{c.id}</span>, {c.orderId ?? ""}, {dateLabel(c.createdAt)}
                       </span>
                     </p>
                   </div>

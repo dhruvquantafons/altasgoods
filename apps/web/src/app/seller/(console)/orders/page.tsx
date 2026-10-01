@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableFooter } from "@/components/ui/table";
 import { TabLinks } from "@/components/ui/tabs";
-import { ORDER_STAGES, slaFor, istAt, type SellerLine } from "@/lib/mock/seller-extra";
+import { slaFor } from "@/components/seller/shared";
+import { ORDER_STAGES, istAt, type SellerLine } from "@/lib/mock/seller-extra";
 import { loadSellerLines } from "@/lib/api/seller-orders";
 import { PAYMENT_METHOD } from "@/lib/status";
-import { formatDate, formatDateTime, formatWeekday, NOW, timeAgo } from "@/lib/utils";
+import { currentTime } from "@/lib/api/support";
+import { formatDate, formatDateTime, formatWeekday, timeAgo } from "@/lib/utils";
 
 export const metadata = { title: "Orders" };
 
@@ -22,7 +24,7 @@ const RANGES = [
   { key: "30d", label: "Last 30 days", days: 30 },
 ];
 
-function rowFor(l: SellerLine, stage: OrderStageKey): OrderRow {
+function rowFor(l: SellerLine, stage: OrderStageKey, now: number): OrderRow {
   const pay = l.cod ? "COD" : `Prepaid, ${PAYMENT_METHOD[l.payment].replace("Credit / Debit card", "card").replace("Net banking", "net banking")}`;
   const base: OrderRow = {
     lineId: l.lineId,
@@ -42,7 +44,7 @@ function rowFor(l: SellerLine, stage: OrderStageKey): OrderRow {
     buyer: l.buyer,
     city: l.city,
     pincode: l.pincode,
-    placed: timeAgo(l.placedAt),
+    placed: timeAgo(l.placedAt, now),
     awb: l.awb,
   };
   if (stage === "new" && l.acceptBy) return { ...base, dueAt: l.acceptBy, dueLabel: formatDateTime(l.acceptBy) };
@@ -64,12 +66,15 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
   const channel = ["fulfilled", "ship"].includes(one(sp.channel)) ? one(sp.channel) : "all";
   const range = RANGES.find((r) => r.key === one(sp.range)) ?? RANGES[0]!;
 
-  const startOfToday = istAt(NOW, 0, 0).getTime();
+  // live orders are judged against the real clock
+  const now = currentTime();
+  const today = new Date(now);
+  const startOfToday = istAt(today, 0, 0).getTime();
   const filtered = sellerLines.filter((l) => {
     if (channel !== "all" && l.channel !== channel) return false;
     if (range.days !== Infinity) {
       const t = new Date(l.placedAt).getTime();
-      const from = range.days === 0 ? startOfToday : NOW.getTime() - range.days * 86400_000;
+      const from = range.days === 0 ? startOfToday : now - range.days * 86400_000;
       if (t < from) return false;
     }
     if (q) {
@@ -80,7 +85,7 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
   });
 
   const def = ORDER_STAGES.find((s) => s.key === stage)!;
-  const rows = filtered.filter((l) => l.stage === stage).map((l) => rowFor(l, stage));
+  const rows = filtered.filter((l) => l.stage === stage).map((l) => rowFor(l, stage, now));
 
   const qs = (patch: Record<string, string>) => {
     const p = new URLSearchParams();
@@ -94,9 +99,9 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
   // summary strip: seller-packed work due today
   const preShip = sellerLines.filter((l) => ["new", "to_pack", "ready"].includes(l.stage));
   const shipLines = preShip.filter((l) => l.channel === "ship");
-  const dueToday = shipLines.filter((l) => l.dispatchBy && new Date(l.dispatchBy).getTime() < istAt(NOW, 23, 59).getTime());
-  const overdue = shipLines.filter((l) => l.dispatchBy && slaFor(l.dispatchBy).overdue);
-  const cutoff = istAt(NOW, 14, 0);
+  const dueToday = shipLines.filter((l) => l.dispatchBy && new Date(l.dispatchBy).getTime() < istAt(today, 23, 59).getTime());
+  const overdue = shipLines.filter((l) => l.dispatchBy && slaFor(l.dispatchBy, 8, now).overdue);
+  const cutoff = istAt(today, 14, 0);
   const awaitingPickup = shipLines.filter((l) => l.status === "packed" || l.status === "ready_to_ship");
 
   const filtersActive = Boolean(q) || channel !== "all" || range.key !== "all";
@@ -148,7 +153,7 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
         <MiniStat label="Awaiting pickup" value={awaitingPickup.length} hint="Slot today, 4:00 to 6:00 PM" />
         <MiniStat
           label="Same-day cutoff"
-          value={NOW < cutoff ? slaFor(cutoff.toISOString()).label.replace(" left", "") : "Passed"}
+          value={today < cutoff ? slaFor(cutoff.toISOString(), 8, now).label.replace(" left", "") : "Passed"}
           hint="Confirm by 2:00 PM to ship today"
         />
       </StatStrip>
@@ -157,6 +162,7 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
 
       <Card className="overflow-hidden">
         <OrdersTable
+          now={now}
           rows={rows}
           stage={stage}
           toolbar={toolbar}

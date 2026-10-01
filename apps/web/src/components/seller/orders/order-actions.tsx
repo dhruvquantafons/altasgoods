@@ -37,7 +37,10 @@ export function OrderActions({
   weightKg: number;
   dims: [number, number, number];
 }) {
-  const [current, setCurrent] = useState<OrderStatus>(status);
+  // a local move shows at once, but only while the server still reports the status it started from;
+  // after router.refresh or a courier scan the prop wins, so the status never goes stale
+  const [moved, setMoved] = useState<{ from: OrderStatus; to: OrderStatus } | null>(null);
+  const current = moved && moved.from === status ? moved.to : status;
   const [dialog, setDialog] = useState<Dialog>(null);
   const [reason, setReason] = useState(CANCEL_REASONS[0]!);
   const toast = useToast();
@@ -63,7 +66,7 @@ export function OrderActions({
     setBusy(false);
     if (!r.ok) return toast.show(r.error);
     if (r.data.failed.length) return toast.show(r.data.failed[0]!.error);
-    setCurrent(to);
+    setMoved({ from: status, to });
     toast.show(message);
     router.refresh();
   }

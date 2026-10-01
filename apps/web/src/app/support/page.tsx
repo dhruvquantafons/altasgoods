@@ -10,22 +10,29 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { tickets } from "@/lib/mock";
-import { careAgents, careDaily, careToday, CURRENT_AGENT, isActiveTicket, ticketSla } from "@/lib/mock/ops-extra";
+import { currentUser } from "@/lib/api/server";
+import { currentTime, loadAgents, slaOf, tickets } from "@/lib/api/support";
+import { careAgents, careDaily, careToday } from "@/lib/mock/ops-extra";
 import { TICKET_PRIORITY } from "@/lib/status";
-import { cn, formatDateShort, formatNumber, formatWeekday, NOW } from "@/lib/utils";
+import { cn, formatDateShort, formatNumber, formatWeekday } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
 const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : 0);
 
-export default function CareDeskOverview() {
-  const active = tickets.filter(isActiveTicket);
+export default async function CareDeskOverview() {
+  const [{ tickets: active }, agents, user] = await Promise.all([tickets({ view: "open" }), loadAgents(), currentUser()]);
+  const now = currentTime();
   const unassigned = active.filter((t) => !t.assignee);
-  const withSla = active.map((t) => ({ t, sla: ticketSla(t) }));
+  const withSla = active.map((t) => ({ t, sla: slaOf(t, now) }));
   const atRisk = withSla.filter((x) => x.sla.state === "breached" || x.sla.state === "at_risk").sort((a, b) => a.sla.minsLeft - b.sla.minsLeft);
   const y = careDaily.at(-1)!;
-  const next = atRisk[0]?.t ?? active[0]!;
+  const next = atRisk[0]?.t ?? active[0];
+  // presence and chat load come from the telephony and chat platform (sample data until it is connected)
+  const roster = agents
+    .filter((a) => a.level !== "Admin")
+    .map((a) => ({ ...a, live: careAgents.find((c) => c.fullName === a.name) }))
+    .map((a) => ({ ...a, presence: a.live?.presence ?? ("online" as const), activeChats: a.live?.activeChats ?? 0, capacity: a.live?.capacity ?? 3, team: a.live?.team ?? "Care Desk" }));
 
   const chart = careDaily.map((d) => ({ label: formatDateShort(d.date), created: d.created, resolved: d.resolved }));
   const byCategory = Object.entries(
@@ -37,22 +44,25 @@ export default function CareDeskOverview() {
     .map(([label, value]) => ({ label, value, href: `/support/tickets?category=${encodeURIComponent(label)}` }))
     .sort((a, b) => b.value - a.value);
   const byChannel = (Object.keys(CHANNEL) as (keyof typeof CHANNEL)[]).map((c) => ({ label: CHANNEL[c].label, value: active.filter((t) => t.channel === c).length }));
-  const online = careAgents.filter((a) => a.presence === "online" || a.presence === "busy");
-  const hour = Math.floor(((NOW.getUTCHours() * 60 + NOW.getUTCMinutes() + 330) % 1440) / 60);
+  const online = roster.filter((a) => a.presence === "online" || a.presence === "busy");
+  const today = new Date(now);
+  const hour = Math.floor(((today.getUTCHours() * 60 + today.getUTCMinutes() + 330) % 1440) / 60);
 
   return (
     <>
       <PageHeader
-        title={`${hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"}, ${CURRENT_AGENT.fullName.split(" ")[0]}`}
-        description={`Care Desk queue health for ${formatWeekday(NOW)}, live as of ${formatTime(NOW)}.`}
+        title={`${hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"}, ${(user?.name ?? "there").split(" ")[0]}`}
+        description={`Care Desk queue health for ${formatWeekday(today)}, live as of ${formatTime(today)}.`}
         actions={
           <>
             <ButtonLink href="/support/tickets" variant="secondary" icon={Inbox}>
               Open inbox
             </ButtonLink>
-            <ButtonLink href={`/support/tickets/${next.id}`} iconRight={ArrowRight}>
-              Pick next ticket
-            </ButtonLink>
+            {next && (
+              <ButtonLink href={`/support/tickets/${next.id}`} iconRight={ArrowRight}>
+                Pick next ticket
+              </ButtonLink>
+            )}
           </>
         }
       />
@@ -129,20 +139,20 @@ export default function CareDeskOverview() {
 
         <div className="flex min-w-0 flex-col gap-6">
           <Card>
-            <CardHeader title="Agent availability" description={`${online.length} of ${careAgents.length} agents signed in`} />
+            <CardHeader title="Agent availability" description={`${online.length} of ${roster.length} agents signed in`} />
             <ul className="mt-2 divide-y divide-line">
-              {careAgents.map((a) => {
-                const load = tickets.filter((t) => isActiveTicket(t) && t.assignee === a.name).length;
+              {roster.map((a) => {
+                const load = active.filter((t) => t.assigneeId === a.id).length;
                 return (
-                  <li key={a.name} className="flex items-center gap-3 px-5 py-2.5">
+                  <li key={a.id} className="flex items-center gap-3 px-5 py-2.5">
                     <span className="relative">
-                      <Avatar name={a.fullName} size="sm" />
+                      <Avatar name={a.name} size="sm" />
                       <Dot tone={PRESENCE[a.presence].tone} className="absolute -right-0.5 -bottom-0.5 size-2.5 ring-2 ring-white" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-medium text-ink-900">
-                        {a.fullName}
-                        {a.name === CURRENT_AGENT.name && <span className="ml-1.5 text-xs font-normal text-ink-500">(you)</span>}
+                        {a.name}
+                        {a.name === user?.name && <span className="ml-1.5 text-xs font-normal text-ink-500">(you)</span>}
                       </p>
                       <p className="truncate text-xs text-ink-500">
                         {a.presence === "online" && a.activeChats >= a.capacity ? "At chat capacity" : PRESENCE[a.presence].label}, {a.level}, {a.team}

@@ -1,8 +1,10 @@
 import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Param, Patch, Post, Put, Query, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
+import type { Redis } from "ioredis";
 import { z } from "zod";
 import { forbidden } from "../../common/errors.js";
+import { REDIS } from "../../common/tokens.js";
 import { isProduction } from "../../config/env.js";
 import { CurrentSeller, CurrentUser, Public, SellerScoped, type AuthUser } from "../auth/auth.guard.js";
 import { AddressesService } from "./addresses.service.js";
@@ -201,7 +203,32 @@ export class SellerOrdersController {
 @ApiBearerAuth()
 @Controller("v1/dev")
 export class DevController {
-  constructor(@Inject(DevLogisticsService) private readonly logistics: DevLogisticsService) {}
+  constructor(
+    @Inject(DevLogisticsService) private readonly logistics: DevLogisticsService,
+    @Inject(REDIS) private readonly redis: Redis,
+  ) {}
+
+  /**
+   * Clears sign in code and verification rate limits, so automated browser
+   * tests can sign the demo accounts in repeatedly. Disabled in production.
+   */
+  @Public()
+  @Post("rate-limits/reset")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: z.object({ cleared: z.number().int() }) })
+  async resetRateLimits() {
+    if (isProduction()) throw forbidden("Development endpoints are disabled in production");
+    const prefix = this.redis.options.keyPrefix ?? "";
+    let cleared = 0;
+    for (const pattern of ["otp:req:*", "email-otp:req:*", "kyc:*"]) {
+      const keys: string[] = [];
+      const stream = this.redis.scanStream({ match: `${prefix}${pattern}`, count: 200 });
+      for await (const batch of stream) keys.push(...(batch as string[]));
+      // scan returns prefixed keys; del adds the prefix again
+      if (keys.length) cleared += await this.redis.del(...keys.map((k) => k.slice(prefix.length)));
+    }
+    return { cleared };
+  }
 
   /** Stands in for BluBuy Logistics scans until phase 3. Disabled in production. */
   @Post("logistics/advance")
@@ -209,6 +236,6 @@ export class DevController {
   @ApiResponse({ status: 200, standardSchema: z.object({ id: z.uuid(), status: z.string() }) })
   advance(@CurrentUser() u: AuthUser, @Body({ schema: s.devAdvanceBody }) body: z.infer<typeof s.devAdvanceBody>) {
     if (isProduction()) throw forbidden("Development endpoints are disabled in production");
-    return this.logistics.advance(u, body.orderItemId, body.to);
+    return this.logistics.advance(u, body.orderItemId, body.to, body.deliveredDaysAgo);
   }
 }

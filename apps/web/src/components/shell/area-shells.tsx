@@ -280,12 +280,12 @@ export function supportNav(c: Counts = {}): NavGroup[] {
   ];
 }
 
-export function SupportShell({ children, notifications, counts }: AreaShellProps) {
+export function SupportShell({ children, notifications, counts, user = { name: "Care Desk agent", role: "BluBuy Care Desk" } }: AreaShellProps & { user?: { name: string; role: string } }) {
   return (
     <DashboardShell
       workspace="support"
       nav={supportNav(counts)}
-      user={{ name: "Revathi Subramanian", role: "Support Team Lead" }}
+      user={user}
       notifications={notifications}
       searchPlaceholder="Search tickets, customers, orders"
       searchAction="/support/tickets"

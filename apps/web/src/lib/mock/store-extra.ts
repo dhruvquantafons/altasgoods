@@ -330,8 +330,10 @@ const FBT: Record<string, string[]> = {
 };
 
 export function frequentlyBoughtWith(p: Product) {
+  // suppressed listings cannot be ordered, so they never appear in (or anchor) a bundle; the curated pairs are filtered too
+  if (!isBrowsable(p)) return [];
   const keys = FBT[p.slug];
-  if (keys) return keys.map((k) => products.find((x) => x.slug === k)!).filter(Boolean);
+  if (keys) return keys.map((k) => products.find((x) => x.slug === k)).filter((x): x is Product => !!x && isBrowsable(x));
   return products
     .filter((x) => x.id !== p.id && x.categoryId === p.categoryId && x.subcategory !== p.subcategory && isBrowsable(x) && inStock(x))
     .sort((a, b) => b.soldLast30d - a.soldLast30d)

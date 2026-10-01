@@ -331,11 +331,8 @@ function Transactions({ q, type, status }: { q: string; type: string; status: st
                   <Mono className="text-[11px] text-ink-500">{l.id}</Mono>
                 </TD>
                 <TD className="max-w-[16rem]">
-                  {l.orderId ? (
-                    <Link href={`/seller/orders/${l.orderId}`} className="text-brand-700 hover:underline">
-                      <Mono className="text-[12px]">{l.lineId ?? l.orderId}</Mono>
-                    </Link>
-                  ) : null}
+                  {/* sample ledger: order ids are not real orders, so they are shown, not linked */}
+                  {l.orderId ? <Mono className="text-[12px] text-ink-700">{l.lineId ?? l.orderId}</Mono> : null}
                   <p className="truncate text-xs text-ink-500">{l.description}</p>
                 </TD>
                 <TD align="right">{l.gross ? <Amount value={l.gross} /> : <span className="text-ink-400">None</span>}</TD>

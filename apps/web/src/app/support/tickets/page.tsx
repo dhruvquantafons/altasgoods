@@ -10,50 +10,45 @@ import { Input, Select } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
-import { tickets } from "@/lib/mock";
-import { careAgents, CURRENT_AGENT, isActiveTicket, PRIORITY_POLICY, ticketSla, ticketThread } from "@/lib/mock/ops-extra";
+import { currentTime, isActiveTicket, loadAgents, slaOf, tickets } from "@/lib/api/support";
+import { PRIORITY_POLICY } from "@/lib/mock/ops-extra";
 import { TICKET_PRIORITY, TICKET_STATUS, type TicketPriority } from "@/lib/status";
 import type { Ticket } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
 
 export const metadata = { title: "Ticket inbox" };
 
-const VIEWS: { key: string; label: string; match: (t: Ticket) => boolean }[] = [
-  { key: "open", label: "All open", match: isActiveTicket },
-  { key: "mine", label: "Assigned to me", match: (t) => isActiveTicket(t) && t.assignee === CURRENT_AGENT.name },
-  { key: "unassigned", label: "Unassigned", match: (t) => isActiveTicket(t) && !t.assignee },
-  { key: "escalated", label: "Escalated", match: (t) => t.status === "escalated" },
-  { key: "awaiting", label: "Awaiting customer", match: (t) => t.status === "awaiting_customer" },
-  { key: "resolved", label: "Resolved", match: (t) => t.status === "resolved" || t.status === "closed" },
-];
+const VIEWS = [
+  { key: "open", label: "All open" },
+  { key: "mine", label: "Assigned to me" },
+  { key: "unassigned", label: "Unassigned" },
+  { key: "escalated", label: "Escalated" },
+  { key: "awaiting", label: "Awaiting customer" },
+  { key: "resolved", label: "Resolved" },
+] as const;
 
 export default async function TicketsPage(props: PageProps<"/support/tickets">) {
   const sp = await props.searchParams;
   const view = VIEWS.find((v) => v.key === one(sp.view)) ?? VIEWS[0]!;
-  const q = (one(sp.q) ?? "").trim().toLowerCase();
+  const q = (one(sp.q) ?? "").trim();
   const priority = one(sp.priority) ?? "";
   const category = one(sp.category) ?? "";
   const channel = one(sp.channel) ?? "";
 
-  const base = tickets.filter(
-    (t) =>
-      (!q || t.id.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q) || t.customerName.toLowerCase().includes(q) || (t.orderId ?? "").toLowerCase().includes(q)) &&
-      (!priority || t.priority === priority) &&
-      (!category || t.category === category) &&
-      (!channel || t.channel === channel),
-  );
-  const list = base
-    .filter(view.match)
-    .map((t) => ({ t, sla: ticketSla(t) }))
-    .sort((a, b) => (view.key === "resolved" ? +new Date(b.t.updatedAt) - +new Date(a.t.updatedAt) : (a.sla.state === "paused" ? 1e6 : a.sla.minsLeft) - (b.sla.state === "paused" ? 1e6 : b.sla.minsLeft)));
+  const [{ tickets: found, counts }, agents] = await Promise.all([tickets({ view: view.key, q, priority, category, channel }), loadAgents()]);
+  const now = currentTime();
+  // waiting and answered tickets go last; the rest by next reply due
+  const rank = (s: ReturnType<typeof slaOf>) => (s.state === "met" ? 2e6 : s.state === "paused" ? 1e6 : s.minsLeft);
+  const list = found
+    .map((t) => ({ t, sla: slaOf(t, now) }))
+    .sort((a, b) => (view.key === "resolved" ? +new Date(b.t.updatedAt) - +new Date(a.t.updatedAt) : rank(a.sla) - rank(b.sla)));
 
   const rows: InboxRow[] = list.map(({ t, sla }) => {
-    const thread = ticketThread(t);
-    const last = [...thread].reverse().find((m) => m.kind !== "note" && m.kind !== "system") ?? thread.at(-1)!;
+    const last = t.lastMessage;
     return {
       id: t.id,
       subject: t.subject,
-      preview: `${last.kind === "customer" ? "" : `${last.author}: `}${last.body}`,
+      preview: last ? `${last.kind === "CUSTOMER" ? "" : `${last.author}: `}${last.body}` : "",
       customer: t.customerName,
       orderId: t.orderId,
       category: t.category,
@@ -64,16 +59,14 @@ export default async function TicketsPage(props: PageProps<"/support/tickets">) 
       sla: slaText(sla),
       slaTone: slaTone(sla),
       assignee: t.assignee,
-      updated: timeAgo(last.at),
+      updated: timeAgo(last?.at ?? t.updatedAt, now),
       closed: !isActiveTicket(t),
     };
   });
 
   const params = { view: view.key === "open" ? undefined : view.key, q: q || undefined, priority: priority || undefined, category: category || undefined, channel: channel || undefined };
   const filtered = Boolean(q || priority || category || channel);
-  const agentOptions = careAgents
-    .filter((a) => a.presence !== "offline")
-    .map((a) => ({ name: a.name, label: `${a.fullName}, ${a.level} (${tickets.filter((t) => isActiveTicket(t) && t.assignee === a.name).length} open)` }));
+  const agentOptions = agents.map((a) => ({ id: a.id, name: a.name, label: `${a.name}, ${a.level}` }));
 
   return (
     <>
@@ -91,7 +84,7 @@ export default async function TicketsPage(props: PageProps<"/support/tickets">) 
         <div className="px-5 pt-1">
           <TabLinks
             active={view.key}
-            items={VIEWS.map((v) => ({ key: v.key, label: v.label, href: `/support/tickets${qs({ ...params, view: v.key === "open" ? undefined : v.key })}`, count: base.filter(v.match).length }))}
+            items={VIEWS.map((v) => ({ key: v.key, label: v.label, href: `/support/tickets${qs({ ...params, view: v.key === "open" ? undefined : v.key })}`, count: counts[v.key] }))}
           />
         </div>
         <AutoSubmitForm action="/support/tickets" className="flex flex-wrap items-center gap-2 px-5 py-3.5">
@@ -130,11 +123,13 @@ export default async function TicketsPage(props: PageProps<"/support/tickets">) 
             </Link>
           )}
         </AutoSubmitForm>
-        {rows.length === 0 ? (
-          <EmptyState icon={Inbox} title="Nothing in this view" description={filtered ? "No tickets match these filters. Clear them to see the full queue." : "The queue is clear. New tickets will appear here."} className="border-t border-line" />
-        ) : (
-          <TicketInbox key={`${view.key}-${q}-${priority}-${category}-${channel}`} rows={rows} agents={agentOptions} />
-        )}
+        {/* stays mounted when the last ticket leaves the view, so its confirmation is still shown */}
+        <TicketInbox
+          key={`${view.key}-${q}-${priority}-${category}-${channel}`}
+          rows={rows}
+          agents={agentOptions}
+          empty={<EmptyState icon={Inbox} title="Nothing in this view" description={filtered ? "No tickets match these filters. Clear them to see the full queue." : "The queue is clear. New tickets will appear here."} className="border-t border-line" />}
+        />
         <div className="border-t border-line px-5 py-3 text-[13px] text-ink-500">
           {rows.length} ticket{rows.length === 1 ? "" : "s"} in {view.label.toLowerCase()}. First response targets: P1 15 min, P2 1 h, P3 4 h, P4 24 h.
         </div>

@@ -28,7 +28,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { getProduct, getSeller } from "@/lib/mock";
 import { addressExtras, BLUCOINS, DELIVERY_ASSOCIATES, myReviews, returnPolicyFor, SECURE_DELIVERY } from "@/lib/mock/account-extra";
-import { loadMyOrder, toUiOrder } from "@/lib/api/account-orders";
+import { loadAccountOrder } from "@/lib/api/account-orders";
 import { PAYMENT_STATUS } from "@/lib/status";
 import type { Order, OrderItem } from "@/lib/types";
 import { formatINR, NOW } from "@/lib/utils";
@@ -47,8 +47,7 @@ function awbFor(awbs: Map<string, string>, sellerId: string) {
 
 export default async function OrderDetailPage(props: PageProps<"/account/orders/[id]">) {
   const { id } = await props.params;
-  const apiOrder = await loadMyOrder(id);
-  const order = toUiOrder(apiOrder);
+  const { raw: apiOrder, order } = await loadAccountOrder(id);
   const awbs = new Map(apiOrder.items.filter((i) => i.awb).map((i) => [i.seller.id, i.awb!]));
   const cancellable = new Set(apiOrder.items.filter((i) => i.canCancel).map((i) => i.id));
   const unpaid = apiOrder.status === "PAYMENT_PENDING" || apiOrder.status === "PAYMENT_FAILED";
@@ -280,7 +279,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
               { label: "Where is my package?", hint: "Live tracking and delivery attempts", href: `/account/support?order=${order.id}&topic=delivery`, icon: Truck },
               mode
                 ? { label: "Cancel an item", hint: "Free before it ships", href: `/account/support?order=${order.id}&topic=cancel`, icon: PackageX }
-                : { label: "Return or replace an item", hint: "Doorstep pickup and quick refunds", href: `/account/support?order=${order.id}`, icon: RotateCcw },
+                : { label: "Return or replace an item", hint: "Doorstep pickup and quick refunds", href: `/account/orders/${order.id}/return`, icon: RotateCcw },
               { label: "Payment or refund question", hint: "Charges, EMI and refund status", href: `/account/support?order=${order.id}&topic=payment`, icon: CreditCard },
               { label: "File a BluBuy Guarantee claim", hint: "If the seller has not resolved it", href: `/account/support?order=${order.id}&topic=guarantee`, icon: ShieldCheck },
             ].map((h) => (
@@ -351,7 +350,7 @@ function ItemRow({ order, item }: { order: Order; item: OrderItem }) {
       {isDelivered && (
         <div className="flex flex-wrap gap-2 sm:w-44 sm:shrink-0 sm:flex-col [&>a]:flex-1 [&>button]:flex-1 sm:[&>a]:flex-none sm:[&>button]:flex-none">
           {ri.eligible && (
-            <ButtonLink href={`/account/support?order=${order.id}&item=${item.id}`} size="sm" variant="secondary" icon={RotateCcw} className="sm:w-full">
+            <ButtonLink href={`/account/orders/${order.id}/return?item=${item.id}`} size="sm" variant="secondary" icon={RotateCcw} className="sm:w-full">
               Return or replace
             </ButtonLink>
           )}

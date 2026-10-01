@@ -165,9 +165,8 @@ export default async function StatementPage(props: PageProps<"/seller/payments/[
                   {tx.map((t) => (
                     <TR key={t.id}>
                       <TD>
-                        <Link href={`/seller/orders/${t.orderId}`} className="text-brand-700 hover:underline">
-                          <Mono className="text-[12px] font-medium">{t.lineId}</Mono>
-                        </Link>
+                        {/* sample settlement: order ids are not real orders, so they are shown, not linked */}
+                        <Mono className="text-[12px] font-medium text-ink-800">{t.lineId}</Mono>
                         <p className="max-w-[13rem] truncate text-xs text-ink-500">{t.description}</p>
                       </TD>
                       <TD className="text-[13px] text-ink-600">{formatDateShort(t.at)}</TD>

@@ -1,22 +1,49 @@
 import type { Metadata } from "next";
 import { SupportShell } from "@/components/shell/area-shells";
-import { tickets } from "@/lib/mock";
+import { currentUser } from "@/lib/api/server";
+import { currentTime, slaOf, tickets } from "@/lib/api/support";
 import type { Notification } from "@/lib/types";
-import { NOW } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: { default: "Care Desk", template: "%s | BluBuy Care Desk" },
 };
 
-const notifications: Notification[] = [
-  { id: "s-1", kind: "alert", title: "2 urgent tickets near SLA breach", body: "Assign or respond within 30 minutes.", at: new Date(NOW.getTime() - 4 * 60_000).toISOString(), read: false, href: "/support/tickets?status=open" },
-  { id: "s-2", kind: "system", title: "Refund policy updated", body: "Big Days return window extended to 14 days for electronics.", at: new Date(NOW.getTime() - 300 * 60_000).toISOString(), read: true, href: "/support/knowledge" },
-];
+const ROLE: Record<string, string> = {
+  SUPPORT_AGENT: "Support Agent L1",
+  SUPPORT_SPECIALIST: "Support Specialist L2",
+  SUPPORT_SUPERVISOR: "Care Desk Supervisor",
+  SUPER_ADMIN: "Super Admin",
+};
 
-export default function SupportLayout({ children }: { children: React.ReactNode }) {
-  const open = tickets.filter((t) => ["open", "in_progress", "escalated"].includes(t.status)).length;
+export default async function SupportLayout({ children }: { children: React.ReactNode }) {
+  const [user, queue] = await Promise.all([currentUser(), tickets({ view: "open" }).catch(() => null)]);
+  const now = currentTime();
+  const urgent = (queue?.tickets ?? []).filter((t) => {
+    const s = slaOf(t, now);
+    return s.state === "breached" || s.state === "at_risk";
+  });
+  const notifications: Notification[] = [
+    ...(urgent.length
+      ? [
+          {
+            id: "s-sla",
+            kind: "alert" as const,
+            title: `${urgent.length} ticket${urgent.length === 1 ? "" : "s"} near or past the reply SLA`,
+            body: "Assign or respond first; they are at the top of the inbox.",
+            at: new Date(now).toISOString(),
+            read: false,
+            href: "/support/tickets",
+          },
+        ]
+      : []),
+    { id: "s-policy", kind: "system", title: "Refund policy updated", body: "Big Days return window extended to 14 days for electronics.", at: new Date(now - 300 * 60_000).toISOString(), read: true, href: "/support/knowledge" },
+  ];
   return (
-    <SupportShell notifications={notifications} counts={{ open }}>
+    <SupportShell
+      notifications={notifications}
+      counts={{ open: queue?.counts.open || undefined }}
+      user={user ? { name: user.name ?? user.phone, role: user.staffRoles.map((r) => ROLE[r]).filter(Boolean).join(", ") || "BluBuy staff" } : undefined}
+    >
       {children}
     </SupportShell>
   );

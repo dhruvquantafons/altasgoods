@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -121,7 +122,9 @@ export function Gallery({ views, badge }: { views: GalleryView[]; badge?: string
         {badge && <span className="pointer-events-none absolute top-3 left-3 rounded-md bg-ink-900 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white">{badge}</span>}
       </div>
 
-      {viewer && (
+      {/* portalled to the body: the sticky gallery column would otherwise trap it under the buy box */}
+      {viewer &&
+        createPortal(
         <div className="fixed inset-0 z-[80] flex flex-col bg-white animate-fade-in" role="dialog" aria-modal="true" aria-label="Image viewer">
           <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-6">
             <p className="text-sm font-medium text-ink-700 tabular-nums">
@@ -166,8 +169,9 @@ export function Gallery({ views, badge }: { views: GalleryView[]; badge?: string
               </button>
             ))}
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </div>
   );
 }

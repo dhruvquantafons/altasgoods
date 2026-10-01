@@ -51,11 +51,12 @@ export function Rail({ children, label, className }: { children: ReactNode; labe
             type="button"
             onClick={() => scroll(d === "prev" ? -1 : 1)}
             aria-label={d === "prev" ? `Scroll ${label} back` : `Scroll ${label} forward`}
-            tabIndex={hidden ? -1 : 0}
+            disabled={hidden}
             className={cn(
               "absolute top-[34%] z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-800 shadow-raised transition-all hover:bg-ink-50 lg:flex",
               d === "prev" ? "-left-5" : "-right-5",
-              hidden ? "pointer-events-none opacity-0" : "opacity-100",
+              // invisible at the ends, so it is out of the way for pointers and screen readers alike
+              hidden ? "invisible opacity-0" : "opacity-100",
             )}
           >
             {d === "prev" ? <ChevronLeft size={20} aria-hidden="true" /> : <ChevronRight size={20} aria-hidden="true" />}

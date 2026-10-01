@@ -1,0 +1,58 @@
+{
+  "id": "RT-70004",
+  "userId": "7c774eee-615e-4d6f-9f1f-178ddf3f4075",
+  "orderId": "BB-261001-10025",
+  "orderItemId": "651d3135-7ab0-4c11-a6db-8363f00147eb",
+  "sellerId": "s-apex",
+  "item": {
+    "title": "Hearth Tri-Ply Stainless Steel Frying Pan, 26 cm",
+    "image": "/images/products/cookware-pan.jpg",
+    "variant": "",
+    "unitPricePaise": 219900,
+    "productId": "p-cookware-pan"
+  },
+  "customerName": "Aisha Saxena",
+  "qty": 1,
+  "reasonCode": "MISSING_PARTS",
+  "reasonLabel": "Parts or accessories are missing",
+  "fault": "SELLER",
+  "comments": "The charging cable was not in the box.",
+  "photos": [],
+  "resolution": "REFUND",
+  "exchangeSize": null,
+  "refundTo": "SOURCE",
+  "refundAmountPaise": 219900,
+  "instantRefund": true,
+  "refundStatus": null,
+  "status": "PENDING_SELLER_REVIEW",
+  "pickupDate": "2026-10-01",
+  "pickupSlot": "10 AM to 1 PM",
+  "address": {
+    "name": "Demo Customer",
+    "city": "Pune",
+    "pincode": "411001",
+    "line1": "124, MG Road"
+  },
+  "awb": null,
+  "qcNote": null,
+  "sellerNote": null,
+  "cancellable": true,
+  "events": [
+    {
+      "fromStatus": null,
+      "toStatus": "REQUESTED",
+      "actor": "CUSTOMER",
+      "note": "Parts or accessories are missing",
+      "at": "2026-10-01T16:21:05.679Z"
+    },
+    {
+      "fromStatus": "REQUESTED",
+      "toStatus": "PENDING_SELLER_REVIEW",
+      "actor": "SYSTEM",
+      "note": "Outside the return window, the seller reviews within 48 hours",
+      "at": "2026-10-01T16:21:05.680Z"
+    }
+  ],
+  "createdAt": "2026-10-01T16:21:05.679Z",
+  "updatedAt": "2026-10-01T16:21:05.680Z"
+}

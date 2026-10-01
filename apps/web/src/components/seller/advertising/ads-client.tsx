@@ -277,6 +277,7 @@ export function CreateCampaign({ products }: { products: { id: string; title: st
     { text: "anc earbuds under 5000", match: "Phrase", bid: 11 },
   ]);
   const [kw, setKw] = useState("");
+  const [kwNote, setKwNote] = useState("");
   const [budget, setBudget] = useState(1500);
   const [name, setName] = useState("Diwali: Audio");
   const toast = useToast();
@@ -395,15 +396,34 @@ export function CreateCampaign({ products }: { products: { id: string; title: st
                   className="flex gap-2"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (kw.trim()) setKeywords([...keywords, { text: kw.trim().toLowerCase(), match: "Phrase", bid: 8 }]);
+                    const text = kw.trim().toLowerCase().replace(/\s+/g, " ");
+                    if (!text) return setKwNote("Type a keyword first");
+                    // one row per keyword: a repeat would clash with the existing row (change its match type instead)
+                    if (keywords.some((k) => k.text === text)) return setKwNote(`"${text}" is already in the list. Change its match type or bid instead.`);
+                    setKeywords([...keywords, { text, match: "Phrase", bid: 8 }]);
                     setKw("");
+                    setKwNote("");
                   }}
                 >
-                  <Input value={kw} onChange={(e) => setKw(e.target.value)} placeholder="Add a keyword, for example noise cancelling earbuds" aria-label="Add keyword" className="flex-1" />
+                  <Input
+                    value={kw}
+                    onChange={(e) => {
+                      setKw(e.target.value);
+                      if (kwNote) setKwNote("");
+                    }}
+                    placeholder="Add a keyword, for example noise cancelling earbuds"
+                    aria-label="Add keyword"
+                    className="flex-1"
+                  />
                   <Button type="submit" variant="secondary" icon={Plus}>
                     Add
                   </Button>
                 </form>
+                {kwNote && (
+                  <p className="-mt-2 text-xs text-warning-700" role="status">
+                    {kwNote}
+                  </p>
+                )}
                 <ul className="divide-y divide-line rounded-xl border border-line">
                   {keywords.map((k, i) => (
                     <li key={k.text} className="flex flex-wrap items-center gap-3 px-3.5 py-2.5">

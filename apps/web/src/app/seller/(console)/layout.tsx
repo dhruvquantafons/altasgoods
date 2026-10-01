@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Info } from "lucide-react";
 import { SellerShell } from "@/components/shell/area-shells";
 import { loadSellerLines, pendingCount } from "@/lib/api/seller-orders";
+import { loadSellerReturns } from "@/lib/api/seller-returns";
 import { currentUser } from "@/lib/api/server";
-import { CURRENT_SELLER_ID, getSeller, returns, sellerNotifications } from "@/lib/mock";
+import { CURRENT_SELLER_ID, getSeller, sellerNotifications } from "@/lib/mock";
 
 export const metadata: Metadata = {
   title: { default: "Seller Hub", template: "%s | BluBuy Seller Hub" },
@@ -12,17 +13,21 @@ export const metadata: Metadata = {
 const ROLE: Record<string, string> = { OWNER: "Owner", MANAGER: "Manager", OPERATIONS: "Operations", CATALOG: "Catalog", FINANCE: "Finance", READ_ONLY: "Viewer" };
 
 export default async function SellerConsoleLayout({ children }: { children: React.ReactNode }) {
-  const [user, pending] = await Promise.all([
+  const [user, pending, openReturns] = await Promise.all([
     currentUser(),
     loadSellerLines().then(
       (r) => pendingCount(r.counts),
+      () => undefined,
+    ),
+    // requests to decide and items to grade
+    loadSellerReturns().then(
+      (r) => r.filter((x) => x.status === "PENDING_SELLER_REVIEW" || x.status === "RECEIVED").length,
       () => undefined,
     ),
   ]);
   const membership = user?.sellers[0];
   // seeded sellers share ids with the sample data; sellers who joined through onboarding have none yet
   const sample = getSeller(membership?.id ?? CURRENT_SELLER_ID);
-  const openReturns = sample ? returns.filter((r) => r.sellerId === sample.id && ["requested", "approved", "pickup_scheduled", "picked_up", "received"].includes(r.status)).length : 0;
   return (
     <SellerShell
       store={{

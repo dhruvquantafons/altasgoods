@@ -331,8 +331,10 @@ export default function HubOverviewPage() {
           <Card>
             <CardHeader title="Exceptions" description="Act on these first" action={<Badge tone="warning">{exceptions.length}</Badge>} />
             <ul className="mt-2 divide-y divide-line">
-              {exceptions.slice(0, 7).map((e) => (
-                <li key={e.title}>
+              {/* every exception is listed: the badge counts them all, and the last ones (cash, shorts) are as urgent */}
+              {exceptions.map((e) => (
+                // titles repeat (one "Fake attempt reported" per disputed NDR), the detail names the AWB
+                <li key={`${e.title}|${e.detail}`}>
                   <Link href={e.href} className="flex gap-3 px-5 py-3 transition-colors hover:bg-ink-50/70">
                     <IconTile icon={e.icon} tone={e.tone} size="sm" />
                     <span className="min-w-0 flex-1">

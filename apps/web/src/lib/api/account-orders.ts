@@ -2,6 +2,7 @@ import "server-only";
 import type { Address, Order as UiOrder, OrderEvent, OrderItem as UiOrderItem } from "@/lib/types";
 import type { OrderStatus as UiStatus, PaymentMethod as UiMethod, PaymentStatus as UiPaymentStatus } from "@/lib/status";
 import { uiItemStatus } from "./format";
+import { loadMyReturns, toAccountReturn } from "./returns";
 import { api, unwrap } from "./server";
 import type { Order } from "./types";
 
@@ -100,6 +101,21 @@ export async function loadMyOrders() {
   const list = unwrap(await client.GET("/v1/me/orders", { params: { query: { pageSize: 50 } } }));
   const details = await Promise.all(list.items.map((o) => client.GET("/v1/me/orders/{id}", { params: { path: { id: o.id } } }).then((r) => r.data)));
   return details.filter((d): d is Order => !!d);
+}
+
+/** The shopper's orders in the account screens' shape, each with its returns. */
+export async function loadAccountOrders() {
+  const [raw, { returns }] = await Promise.all([loadMyOrders(), loadMyReturns()]);
+  return raw.map((o) => withReturns(toUiOrder(o), returns));
+}
+
+export async function loadAccountOrder(id: string) {
+  const [raw, { returns }] = await Promise.all([loadMyOrder(id), loadMyReturns()]);
+  return { raw, order: withReturns(toUiOrder(raw), returns) };
+}
+
+function withReturns(order: UiOrder, returns: Awaited<ReturnType<typeof loadMyReturns>>["returns"]): UiOrder {
+  return { ...order, returns: returns.filter((r) => r.orderId === order.id).map((r) => toAccountReturn(r, "your original payment method")) };
 }
 
 export async function loadMyOrder(id: string) {

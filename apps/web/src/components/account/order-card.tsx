@@ -93,7 +93,8 @@ export function OrderCard({ order }: { order: Order }) {
 function OrderItemRow({ order, item, first }: { order: Order; item: OrderItem; first: boolean }) {
   const st = itemState(order, item);
   const ri = returnInfo(order, item);
-  const mode = cancelMode(order.status);
+  // live orders can be cancelled only until they ship; after that the customer refuses or returns them
+  const mode = order.returns && ["shipped", "in_transit"].includes(order.status) ? null : cancelMode(order.status);
   const slug = getProduct(item.productId)?.slug;
   const active = isActive(order.status);
   const delivered = item.status === "delivered" || item.status === "return_requested" || item.status === "returned";

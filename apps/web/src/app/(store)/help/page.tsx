@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import Form from "next/form";
-import { ChevronDown, Clock, Headset, Mail, MessageCircle, PhoneCall, Scale, Search, ShieldCheck } from "lucide-react";
+import { ChevronDown, Clock, Headset, LogIn, Mail, MessageCircle, PhoneCall, Scale, Search, ShieldCheck } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
 import { NamedIcon } from "@/components/store/icons";
 import { formatDayMonth } from "@/components/store/delivery";
 import { STORE_CONTAINER } from "@/components/store/store-header";
-import { CURRENT_CUSTOMER, myOrders } from "@/lib/mock";
+import { loadMyOrders, toUiOrder } from "@/lib/api/account-orders";
+import { currentUser } from "@/lib/api/server";
 import { COMPANY, GRIEVANCE_OFFICER, HELP_FAQS, HELP_TOPICS } from "@/lib/mock/store-extra";
 import { ORDER_STATUS } from "@/lib/status";
 import { cn, formatINR } from "@/lib/utils";
@@ -36,15 +37,17 @@ export default async function HelpPage(props: PageProps<"/help">) {
   const sp = await props.searchParams;
   const q = (typeof sp.q === "string" ? sp.q : "").trim();
   const faqs = q ? HELP_FAQS.filter((f) => `${f.q} ${f.a} ${f.group}`.toLowerCase().includes(q.toLowerCase())) : HELP_FAQS;
-  const recent = myOrders.slice(0, 3);
-  const first = CURRENT_CUSTOMER.name.split(" ")[0];
+  // the shopper's real recent orders (newest first), so every chip opens an order that exists
+  const user = await currentUser();
+  const recent = user ? (await loadMyOrders().catch(() => [])).slice(0, 3).map(toUiOrder) : [];
+  const first = user?.name?.split(" ")[0];
 
   return (
     <div className="pb-16 lg:pb-24">
       <div className="border-b border-line bg-gradient-to-b from-brand-50/70 to-white">
         <div className={cn(STORE_CONTAINER, "py-10 lg:py-14")}>
           <p className="text-sm font-semibold text-brand-700">BluBuy help centre</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink-900 lg:text-[40px]">How can we help, {first}?</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink-900 lg:text-[40px]">How can we help{first ? `, ${first}` : ""}?</h1>
           <Form action="/help" scroll={false} className="mt-6 flex max-w-2xl gap-2">
             <label htmlFor="help-q" className="sr-only">
               Search help articles
@@ -68,6 +71,17 @@ export default async function HelpPage(props: PageProps<"/help">) {
 
       <div className={cn(STORE_CONTAINER, "mt-10")}>
         {/* Order aware help */}
+        {!q && !user && (
+          <Link href="/login?next=/help" className="flex items-center gap-3 rounded-2xl border border-line p-4 transition-colors hover:border-ink-300">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+              <LogIn size={19} aria-hidden="true" />
+            </span>
+            <span>
+              <span className="block text-sm font-semibold text-ink-900">Need help with an order?</span>
+              <span className="mt-0.5 block text-[13px] text-ink-500">Sign in to see your recent orders and fix an issue in a couple of taps.</span>
+            </span>
+          </Link>
+        )}
         {!q && recent.length > 0 && (
           <section aria-labelledby="help-orders">
             <h2 id="help-orders" className="text-lg font-semibold text-ink-900">
@@ -239,7 +253,7 @@ export default async function HelpPage(props: PageProps<"/help">) {
               <ul className="mt-4 flex flex-col gap-2.5">
                 {[
                   { icon: MessageCircle, title: "Chat with us", body: "Typical reply in 2 minutes", href: "/contact" },
-                  { icon: PhoneCall, title: "Request a call back", body: "We call you within 15 minutes", href: "/contact" },
+                  { icon: PhoneCall, title: "Request a call back", body: "Pick a time, we call you", href: "/contact#call-back" },
                   { icon: Headset, title: `Call ${COMPANY.customerCare}`, body: `Toll free, ${COMPANY.customerCareHours}`, href: `tel:${COMPANY.customerCare.replace(/\s/g, "")}` },
                   { icon: Mail, title: COMPANY.email, body: "Reply within 24 hours", href: `mailto:${COMPANY.email}` },
                 ].map((c) => (

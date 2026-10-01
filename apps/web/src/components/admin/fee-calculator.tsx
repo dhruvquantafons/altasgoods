@@ -29,6 +29,9 @@ const ZONES: { key: Zone; label: string }[] = [
 
 const rupees = (paise: number) => formatINR(paise / 100, { paise: true });
 
+/** Days after delivery before a sale is eligible for payout (spec 13.9, same as PAYOUT_HOLD_DAYS in the mock rate card). */
+const HOLD_DAYS: Record<Tier, number> = { Platinum: 2, Gold: 3, Silver: 5, Bronze: 7 };
+
 /**
  * Seller net proceeds for one item under the live rate card (spec 13 and 14.1).
  * Every line is computed in paise and rounded per line, never on the total.
@@ -65,7 +68,15 @@ export function FeeCalculator({ config, defaults }: { config: FeeCalcConfig; def
     { label: `Commission (${pct}%)`, hint: pct === 0 ? `0% band up to ${formatINR(config.freeUpto)}` : `${cat.name}, items above ${formatINR(config.freeUpto)}`, value: commission },
     { label: "Fixed fee", hint: `${slab.upTo === null ? "Above ₹5,000" : `Up to ${formatINR(slab.upTo)}`} slab ₹${slab.fee}${config.tierFixed[tier] ? ` + ${tier} ₹${config.tierFixed[tier]}` : ""}`, value: fixed },
     { label: "Shipping fee", hint: `₹${shipBase}${config.tierShipDiscount[tier] ? ` less ${config.tierShipDiscount[tier]}% ${tier} discount` : ""}`, value: shipping },
+    // spec 13: no separate collection fee; gateway and COD costs are absorbed by BluBuy, so this line is always zero
+    { label: payment === "cod" ? "COD collection fee" : "Payment gateway fee", hint: "Absorbed by BluBuy, never charged to sellers or customers", value: 0 },
   ];
+  // what COD does change is timing: the item also waits for the cash to be remitted (spec 13.9 and 10.8)
+  const hold = HOLD_DAYS[tier];
+  const payout =
+    payment === "cod"
+      ? { when: `Delivered + ${hold} days, and the COD cash remitted`, hint: "BluBuy Logistics banks the cash and reconciles it to the order before the item becomes eligible. Then the next Monday, Wednesday or Friday payout run." }
+      : { when: `Delivered + ${hold} days`, hint: `${tier} tier hold, then the next Monday, Wednesday or Friday payout run.` };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
@@ -129,7 +140,7 @@ export function FeeCalculator({ config, defaults }: { config: FeeCalcConfig; def
             ))}
           </div>
         </Field>
-        <Field label="Payment" htmlFor={`${id}-p`} hint={payment === "cod" ? "No COD fee for sellers or customers; BluBuy absorbs collection costs." : "Gateway costs are absorbed by BluBuy."}>
+        <Field label="Payment" htmlFor={`${id}-p`} hint={payment === "cod" ? "No COD fee for sellers or customers. COD changes only when the payout becomes eligible." : "Gateway costs are absorbed by BluBuy, so fees are the same for COD."}>
           <div id={`${id}-p`} role="radiogroup" aria-label="Payment" className="grid grid-cols-2 gap-1 rounded-lg bg-ink-100 p-1">
             {(["prepaid", "cod"] as const).map((p) => (
               <button key={p} type="button" role="radio" aria-checked={payment === p} onClick={() => setPayment(p)} className={cn("h-8 rounded-md text-[13px] font-medium transition-colors", payment === p ? "bg-white text-ink-900 shadow-xs" : "text-ink-500 hover:text-ink-800")}>
@@ -194,6 +205,11 @@ export function FeeCalculator({ config, defaults }: { config: FeeCalcConfig; def
             <dd className="font-semibold text-ink-900 tabular-nums">{rupees(net)}</dd>
           </div>
         </dl>
+        <div className="mt-4 rounded-lg bg-white px-3.5 py-3 text-[13px] ring-1 ring-line">
+          <p className="text-ink-500">{payment === "cod" ? "Cash on delivery" : "Prepaid"}: eligible for payout</p>
+          <p className="mt-0.5 font-medium text-ink-900">{payout.when}</p>
+          <p className="mt-0.5 text-xs text-ink-500">{payout.hint}</p>
+        </div>
       </div>
     </div>
   );

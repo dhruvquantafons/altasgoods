@@ -28,6 +28,8 @@ const SECTIONS = [
   { id: "maintenance", label: "Maintenance banner" },
 ];
 
+const INITIAL_METHODS: Record<string, boolean> = { UPI: true, "Credit and debit cards": true, "Net banking": true, Wallets: true, "Card EMI": true, "Cash on delivery": true, "BluBuy Pay Later": false };
+
 function Rupee(props: ComponentProps<typeof Input>) {
   return <Input type="number" min={0} suffix="INR" {...props} />;
 }
@@ -38,7 +40,7 @@ export function SettingsForm({ data }: { data: SettingsData }) {
   const [dirty, setDirty] = useState(false);
   const [maintenance, setMaintenance] = useState(data.maintenance.enabled);
   const [message, setMessage] = useState(data.maintenance.message);
-  const [methods, setMethods] = useState<Record<string, boolean>>({ UPI: true, "Credit and debit cards": true, "Net banking": true, Wallets: true, "Card EMI": true, "Cash on delivery": true, "BluBuy Pay Later": false });
+  const [methods, setMethods] = useState(INITIAL_METHODS);
   const { show, node } = useToast();
   const touch = () => setDirty(true);
 
@@ -265,7 +267,9 @@ export function SettingsForm({ data }: { data: SettingsData }) {
               variant="ghost"
               size="sm"
               onClick={() => {
+                // the form key resets uncontrolled fields; controlled ones (switches, banner text) are reset here
                 setVersion((v) => v + 1);
+                setMethods(INITIAL_METHODS);
                 setMaintenance(data.maintenance.enabled);
                 setMessage(data.maintenance.message);
                 setDirty(false);

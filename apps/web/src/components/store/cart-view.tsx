@@ -12,10 +12,13 @@ import { computeTotals, couponBlocker, couponValue, priceLines, type PricedLine 
 import { percentOff } from "./price";
 import type { CartCatalog, CouponLite } from "./types";
 
-export function CartView({ catalog, coupons, plus, children }: { catalog: CartCatalog; coupons: CouponLite[]; plus: boolean; children?: ReactNode }) {
+export function CartView({ catalog, coupons: all, plus, children }: { catalog: CartCatalog; coupons: CouponLite[]; plus: boolean; children?: ReactNode }) {
   const cart = useCart();
   const { pincode } = usePincode();
   const info = lookupPincode(pincode);
+  // The cart cannot see order history, so a first-order coupon (BLUFIRST) was always blocked here, even on a first order.
+  // Like UPI-only coupons, it can be applied in the cart; the checkout quote from the API decides and says so if it does not apply.
+  const coupons = all.map((c) => (c.firstOrderOnly ? { ...c, firstOrderOnly: undefined, description: `${c.description}. Checked against your orders at checkout.` } : c));
   const totals = computeTotals(cart.active, catalog, { couponCode: cart.coupon, coupons, plus });
   const saved = priceLines(cart.saved, catalog);
   const empty = totals.lines.length === 0;

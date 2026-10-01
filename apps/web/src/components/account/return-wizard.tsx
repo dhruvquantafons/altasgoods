@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import { createReturn, uploadReturnPhoto } from "@/app/actions/returns";
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,6 +11,7 @@ import {
   CircleCheck,
   ImageIcon,
   Info,
+  Loader2,
   MapPin,
   PackageCheck,
   Pencil,
@@ -132,7 +135,12 @@ export function ReturnWizard({
   const [itemId, setItemId] = useState(firstEligible?.id ?? "");
   const [reasonCode, setReasonCode] = useState("");
   const [comment, setComment] = useState("");
-  const [photos, setPhotos] = useState<string[]>([]);
+  const router = useRouter();
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [photos, setPhotos] = useState<{ id: string; name: string }[]>([]);
+  const [busy, setBusy] = useState<"photo" | "submit" | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [created, setCreated] = useState<{ id: string; status: string } | null>(null);
   const [resolution, setResolution] = useState<Resolution | "">("");
   const [size, setSize] = useState("");
   const [refundTo, setRefundTo] = useState<"original" | "credits" | "bank">(payment.isCod || payment.creditsOnly ? "credits" : "original");
@@ -141,7 +149,7 @@ export function ReturnWizard({
   const [slotKey, setSlotKey] = useState(slots[0]?.key ?? "");
   const [pickupWindow, setPickupWindow] = useState("");
   const [showErrors, setShowErrors] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const submitted = created !== null;
 
   const item = items.find((i) => i.id === itemId);
   const reason = reasons.find((r) => r.code === reasonCode);
@@ -201,6 +209,33 @@ export function ReturnWizard({
         ? "1 to 2 business days after pickup"
         : `${payment.timing} after ${item?.instantRefund ? "pickup" : "the seller's quality check"}`;
 
+  async function submit() {
+    if (!item || !reason || !resolution || !slot) return;
+    setBusy("submit");
+    setSubmitError(null);
+    const r = await createReturn({
+      orderId,
+      orderItemId: item.id,
+      qty: item.quantity,
+      reasonCode: reason.code,
+      reasonLabel: reason.label,
+      fault: reason.fault.toUpperCase() as "SELLER" | "LOGISTICS" | "CUSTOMER",
+      comments: comment.trim() || undefined,
+      photoIds: photos.map((p) => p.id),
+      resolution: resolution.toUpperCase() as "REFUND" | "REPLACEMENT" | "EXCHANGE",
+      exchangeSize: resolution === "exchange" ? size : undefined,
+      refundTo: resolution === "refund" ? (refundTo === "original" ? "SOURCE" : refundTo === "credits" ? "CREDITS" : "BANK") : undefined,
+      refundUpi: resolution === "refund" && refundTo === "bank" ? upi : undefined,
+      pickupDate: new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date(slot.key)),
+      pickupSlot: pickupWindow,
+      addressId: address?.id,
+    });
+    setBusy(null);
+    if (!r.ok) return setSubmitError(r.error);
+    setCreated({ id: r.data.id, status: r.data.status });
+    router.refresh();
+  }
+
   if (submitted && item) {
     return (
       <section className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-10 text-center shadow-card sm:px-10">
@@ -211,7 +246,15 @@ export function ReturnWizard({
           {resolution === "refund" ? "Return requested" : resolution === "exchange" ? "Exchange requested" : "Replacement requested"}
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-ink-600">
-          Request <span className="font-mono text-[13px] text-ink-900">RT-31042</span> is approved. We have sent the details to your mobile and email.
+          {created?.status === "PENDING_SELLER_REVIEW" ? (
+            <>
+              Request <span className="font-mono text-[13px] text-ink-900">{created.id}</span> is outside the return window, so the seller reviews it within 48 hours. We will let you know as soon as they decide.
+            </>
+          ) : (
+            <>
+              Request <span className="font-mono text-[13px] text-ink-900">{created?.id}</span> is approved and the pickup is booked. We have sent the details to your mobile and email.
+            </>
+          )}
         </p>
         <div className="mx-auto mt-8 grid max-w-2xl gap-3 text-left sm:grid-cols-3">
           <div className="rounded-xl border border-line p-4">
@@ -333,27 +376,49 @@ export function ReturnWizard({
                   <p className="mt-0.5 text-xs text-ink-500">Show the issue and the shipping label. Up to 4 photos, JPG or PNG.</p>
                   <div className="mt-3 flex flex-wrap gap-3">
                     {photos.map((p) => (
-                      <div key={p} className="relative flex size-20 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-ink-50 text-ink-400">
+                      <div key={p.id} className="relative flex size-20 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-ink-50 text-ink-400">
                         <ImageIcon size={20} aria-hidden="true" />
-                        <span className="max-w-[4.5rem] truncate text-[10px] text-ink-500">{p}</span>
+                        <span className="max-w-[4.5rem] truncate text-[10px] text-ink-500">{p.name}</span>
                         <button
                           type="button"
-                          onClick={() => setPhotos((ps) => ps.filter((x) => x !== p))}
+                          onClick={() => setPhotos((ps) => ps.filter((x) => x.id !== p.id))}
                           className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full border border-line bg-white text-ink-500 shadow-xs hover:text-ink-900"
-                          aria-label={`Remove ${p}`}
+                          aria-label={`Remove ${p.name}`}
                         >
                           <X size={12} aria-hidden="true" />
                         </button>
                       </div>
                     ))}
+                    <input
+                      ref={photoInput}
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      className="sr-only"
+                      aria-label="Add a photo"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!f) return;
+                        if (f.size > 4 * 1024 * 1024) return setSubmitError("Photos can be up to 4 MB");
+                        setBusy("photo");
+                        setSubmitError(null);
+                        const form = new FormData();
+                        form.set("file", f);
+                        const r = await uploadReturnPhoto(form);
+                        setBusy(null);
+                        if (!r.ok) return setSubmitError(r.error);
+                        setPhotos((ps) => [...ps, r.data]);
+                      }}
+                    />
                     {photos.length < 4 && (
                       <button
                         type="button"
-                        onClick={() => setPhotos((ps) => [...ps, `photo-${ps.length + 1}.jpg`])}
+                        disabled={busy === "photo"}
+                        onClick={() => photoInput.current?.click()}
                         className="flex size-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-line-strong text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
                       >
-                        <Camera size={20} aria-hidden="true" />
-                        <span className="text-[11px] font-medium">Add photo</span>
+                        {busy === "photo" ? <Loader2 size={20} className="animate-spin" aria-hidden="true" /> : <Camera size={20} aria-hidden="true" />}
+                        <span className="text-[11px] font-medium">{busy === "photo" ? "Adding" : "Add photo"}</span>
                       </button>
                     )}
                   </div>
@@ -573,9 +638,9 @@ export function ReturnWizard({
             </div>
           )}
 
-          {err && (
+          {(err || submitError) && (
             <p role="alert" className="mt-5 rounded-lg bg-danger-50 px-3.5 py-2.5 text-[13px] text-danger-700">
-              {err}
+              {err ?? submitError}
             </p>
           )}
         </div>
@@ -595,7 +660,10 @@ export function ReturnWizard({
               Continue
             </Button>
           ) : (
-            <Button onClick={() => setSubmitted(true)}>Submit request</Button>
+            <Button disabled={busy !== null} onClick={submit}>
+              {busy === "submit" && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
+              Submit request
+            </Button>
           )}
         </div>
       </section>

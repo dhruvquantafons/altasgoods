@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "api:types": "openapi-typescript ../../packages/openapi/openapi.json -o src/lib/api/schema.d.ts"
+    "api:types": "openapi-typescript ../../packages/openapi/openapi.json -o src/lib/api/schema.d.ts",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -20,6 +22,7 @@
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -29,6 +32,7 @@
     "eslint-config-next": "16.3.8",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   }
 }

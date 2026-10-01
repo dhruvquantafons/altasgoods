@@ -42,7 +42,8 @@ export function parseFilters(sp: SearchParamsRecord): Filters {
     q: one(sp.q).trim().slice(0, 80),
     cat: one(sp.cat),
     sub: one(sp.sub),
-    brands: one(sp.brand).split(",").filter(Boolean),
+    // a hand-edited URL can repeat a brand (?brand=a,a); keep each once so filter chips stay unique
+    brands: [...new Set(one(sp.brand).split(",").map((b) => b.trim()).filter(Boolean))],
     price: one(sp.price),
     min: one(sp.min).replace(/\D/g, ""),
     max: one(sp.max).replace(/\D/g, ""),
@@ -490,7 +491,7 @@ export function ListingView({
             <div className="mb-6 flex flex-wrap items-center gap-2">
               {chips.map((c) => (
                 <Link
-                  key={c.label}
+                  key={`${c.label}|${c.href}`}
                   href={c.href}
                   scroll={false}
                   className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line-strong bg-white pr-2 pl-3 text-[13px] font-medium text-ink-800 transition-colors hover:border-ink-400"

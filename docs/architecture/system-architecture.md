@@ -122,8 +122,8 @@ BluBuy/
 | Phase | Scope | Exit criteria |
 |---|---|---|
 | 1. Dashboards (done) | Every web surface designed and built against mock data | All routes render; design system and state machines agreed |
-| 2. Core backend (built locally) | Identity and OTP, catalog and search, offers, cart and checkout, payments, orders, seller onboarding and KYC | A real order placed and paid end to end on staging. Done locally with sandbox payment and KYC providers; real providers and a staging deploy remain |
-| 3. Fulfilment and money | Seller order processing (accept, pack, ready to ship, AWB and fee breakdown already built in phase 2), labels and invoices, logistics integration (courier partners first, spec D6), returns, settlements and payouts, fee invoices | Seller paid for a delivered order; a return refunded |
+| 2. Core backend (built locally) | Identity and OTP, catalog and search, offers, cart and checkout, payments, orders, seller onboarding and KYC; pulled forward from later phases: customer returns with seller decisions and quality checks, and Care Desk tickets with refunds and supervisor approval | A real order placed and paid end to end on staging. Done locally with sandbox payment and KYC providers; real providers and a staging deploy remain |
+| 3. Fulfilment and money | Seller order processing (accept, pack, ready to ship, AWB and fee breakdown already built in phase 2), labels and invoices, logistics integration (courier partners first, spec D6), reverse pickups for the returns built in phase 2, SafeClaim, settlements and payouts, fee invoices | Seller paid for a delivered order; a return refunded |
 | 4. Flutter customer app | Browse, search, product, cart, checkout, orders, returns, account | Store listing ready on Play Store and App Store |
-| 5. Operations depth | Hub Console and Rider app on live data, Care Desk on live tickets, risk rules, ads, promotions engine | Pilot city running on BluBuy Logistics |
+| 5. Operations depth | Hub Console and Rider app on live data, Care Desk depth (macros, knowledge base, team performance on live data; tickets are live since phase 2), risk rules, ads, promotions engine | Pilot city running on BluBuy Logistics |
 | 6. Scale | Search relevance, recommendations, Hindi, seller app, BluBuy Local and Business | Per spec phase 2 items |

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Coins, Crown, IndianRupee, Inbox, ShieldAlert, ShoppingBag } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
-import { ToastButton } from "@/components/logistics/ops-client";
+import { NewTicketButton, RevealContact } from "@/components/support/new-ticket";
 import { KeyRow, maskPhone, MetricTile, Mono } from "@/components/logistics/ops-ui";
 import { RiskPill, SlaBadge } from "@/components/support/meta";
 import { Badge, StatusBadge } from "@/components/ui/badge";
@@ -11,13 +11,11 @@ import { Avatar, Progress } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { customers, refunds, returns } from "@/lib/mock";
-import { isActiveTicket, ordersForCustomer, ticketsForCustomer, ticketSla } from "@/lib/mock/ops-extra";
+import { currentTime, isActiveTicket, slaOf, tickets } from "@/lib/api/support";
+import { ordersForCustomer } from "@/lib/mock/ops-extra";
 import { ORDER_STATUS, PAYMENT_METHOD, REFUND_STATUS, RETURN_STATUS, TICKET_STATUS } from "@/lib/status";
 import { cn, formatDate, formatINR, formatNumber, NOW, timeAgo } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return customers.map((c) => ({ id: c.id }));
-}
 
 export async function generateMetadata(props: PageProps<"/support/customers/[id]">) {
   const { id } = await props.params;
@@ -30,7 +28,8 @@ export default async function CustomerSupportView(props: PageProps<"/support/cus
   if (!c) notFound();
 
   const orders = ordersForCustomer(c.id);
-  const tix = ticketsForCustomer(c.name);
+  const tix = (await tickets({ customerRef: c.id })).tickets;
+  const now = currentTime();
   const open = tix.filter(isActiveTicket);
   const rets = returns.filter((r) => r.customerName === c.name);
   const refs = refunds.filter((r) => r.customerName === c.name);
@@ -71,8 +70,8 @@ export default async function CustomerSupportView(props: PageProps<"/support/cus
         }
         actions={
           <>
-            <ToastButton label="Reveal contact" size="md" message="Reveal requested. Logged to the audit trail with your role." />
-            <ToastButton label="New ticket" icon="message" variant="primary" size="md" message={`Draft ticket created for ${c.name}`} />
+            <RevealContact phone={c.phone} email={c.email} />
+            <NewTicketButton customerName={c.name} customerRef={c.id} />
           </>
         }
       />
@@ -154,7 +153,7 @@ export default async function CustomerSupportView(props: PageProps<"/support/cus
                       </div>
                       <div className="flex items-center gap-2">
                         <StatusBadge meta={TICKET_STATUS[t.status]} size="sm" />
-                        {isActiveTicket(t) && <SlaBadge sla={ticketSla(t)} />}
+                        {isActiveTicket(t) && <SlaBadge sla={slaOf(t, now)} />}
                       </div>
                     </Link>
                   </li>

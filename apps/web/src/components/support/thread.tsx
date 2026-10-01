@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { Lock, Paperclip } from "lucide-react";
 import { Avatar } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +7,29 @@ export interface ThreadItemData {
   author: string;
   body: string;
   time: string;
+  attachments?: { id: string; name: string }[];
+  /** where attachments download from: Care Desk or the customer's own account */
+  attachmentBase?: string;
+}
+
+function Files({ item }: { item: ThreadItemData }) {
+  if (!item.attachments?.length) return null;
+  return (
+    <span className="mt-2 flex flex-wrap gap-1.5">
+      {item.attachments.map((a) => (
+        <a
+          key={a.id}
+          href={`${item.attachmentBase ?? "/support/attachments"}/${a.id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 rounded-lg border border-line bg-white px-2 py-1 text-xs font-medium text-brand-700 hover:border-brand-200"
+        >
+          <Paperclip size={12} aria-hidden="true" />
+          {a.name}
+        </a>
+      ))}
+    </span>
+  );
 }
 
 /** One entry in the agent conversation: customer left, agent right, internal notes highlighted, system events centred. */
@@ -31,7 +54,8 @@ export function ThreadItem({ item }: { item: ThreadItemData }) {
           </span>
           <span className="text-ink-500">{item.time}</span>
         </p>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-800">{item.body}</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed whitespace-pre-line text-ink-800">{item.body}</p>
+        <Files item={item} />
       </li>
     );
   const agent = item.kind === "agent";
@@ -50,6 +74,7 @@ export function ThreadItem({ item }: { item: ThreadItemData }) {
           )}
         >
           {item.body}
+          <Files item={item} />
         </div>
       </div>
     </li>

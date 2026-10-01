@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CircleAlert, CircleCheck, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ interface Scan {
   code: string;
   ok: boolean;
   text: string;
+  /** scan sequence number, so a repeated code still gets its own row key */
+  seq: number;
 }
 
 /**
@@ -36,15 +38,18 @@ export function ScanReceive({
   const [received, setReceived] = useState<string[]>([]);
   const [extraShipments, setExtraShipments] = useState(0);
   const [log, setLog] = useState<Scan[]>([]);
+  const [empty, setEmpty] = useState(false);
+  const seq = useRef(0);
 
   const bagCount = bagsReceived + received.length;
   const shipCount = Math.min(shipments, shipmentsScanned + extraShipments);
 
   function scan(raw: string) {
     const code = raw.trim().toUpperCase();
-    if (!code) return;
+    if (!code) return setEmpty(true);
+    setEmpty(false);
     const bag = pendingBags.find((b) => b.id === code);
-    let entry: Scan;
+    let entry: Omit<Scan, "seq">;
     if (bag && !received.includes(bag.id)) {
       setReceived((r) => [...r, bag.id]);
       setExtraShipments((n) => n + bag.shipments);
@@ -57,7 +62,9 @@ export function ScanReceive({
     } else {
       entry = { code, ok: false, text: "Not on this manifest. Flag as excess or check the label." };
     }
-    setLog((l) => [entry, ...l].slice(0, 5));
+    seq.current += 1;
+    const row = { ...entry, seq: seq.current };
+    setLog((l) => [row, ...l].slice(0, 5));
     setValue("");
   }
 
@@ -96,8 +103,12 @@ export function ScanReceive({
         <Input
           icon={ScanLine}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setEmpty(false);
+          }}
           placeholder="Scan bag ID or AWB"
+          aria-invalid={empty || undefined}
           aria-label={`Scan bag ID or AWB for ${lineHaulId}`}
           className="flex-1"
           autoComplete="off"
@@ -106,6 +117,11 @@ export function ScanReceive({
           Receive
         </Button>
       </form>
+      {empty && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-danger-700" role="alert">
+          <CircleAlert size={13} aria-hidden="true" /> Scan or type a bag ID (like {next?.id ?? pendingBags[0]?.id ?? "the bag tag"}) or an AWB (BBL and 10 digits) first.
+        </p>
+      )}
       {next && (
         <button type="button" onClick={() => scan(next.id)} className="mt-2 text-xs font-medium text-brand-700 hover:text-brand-800">
           Simulate handheld scan of {next.id}
@@ -114,8 +130,8 @@ export function ScanReceive({
 
       {log.length > 0 && (
         <ul className="mt-3 flex flex-col gap-1.5" aria-live="polite">
-          {log.map((s, i) => (
-            <li key={`${s.code}-${i}`} className={cn("flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs", s.ok ? "bg-success-50 text-success-700" : "bg-danger-50 text-danger-700")}>
+          {log.map((s) => (
+            <li key={`${s.code}-${s.seq}`} className={cn("flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs", s.ok ? "bg-success-50 text-success-700" : "bg-danger-50 text-danger-700")}>
               {s.ok ? <CircleCheck size={14} className="mt-px shrink-0" aria-hidden="true" /> : <CircleAlert size={14} className="mt-px shrink-0" aria-hidden="true" />}
               <span>
                 <span className="font-mono font-medium">{s.code}</span> {s.text}

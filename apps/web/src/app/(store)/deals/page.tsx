@@ -23,7 +23,8 @@ export default async function DealsPage(props: PageProps<"/deals">) {
   const minOff = Number(typeof sp.off === "string" ? sp.off : 0) || 0;
   const match = (id: string) => {
     const p = getProduct(id);
-    if (!p) return false;
+    // suppressed listings cannot be bought, so their deal tiles are not shown
+    if (!p || !isBrowsable(p)) return false;
     const o = featuredOffer(p);
     return (!cat || p.categoryId === `cat-${cat}`) && percentOff(o.price, o.mrp) >= minOff;
   };

@@ -28,6 +28,9 @@ export async function verifyOtp(input: { challengeId: string; code: string; name
   try {
     const r = await publicApi().POST("/v1/auth/otp/verify", { body: input });
     if (!r.data) return failure(r.error, "Could not verify the code");
+    // switching accounts: end the previous session on the server too
+    const previous = (await cookies()).get(REFRESH_COOKIE)?.value;
+    if (previous) await publicApi().POST("/v1/auth/logout", { body: { refreshToken: previous } }).catch(() => undefined);
     await setSession(r.data);
     return { ok: true, data: { user: r.data.user, isNewUser: r.data.isNewUser } };
   } catch {

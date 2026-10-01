@@ -1,8 +1,7 @@
 import { Module } from "@nestjs/common";
-import { FILE_STORE, KYC_PROVIDER } from "../../common/tokens.js";
+import { KYC_PROVIDER } from "../../common/tokens.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { ApplicationStore } from "./applications.store.js";
-import { PostgresFileStore } from "./files.js";
 import { SandboxKycProvider } from "./kyc/sandbox.provider.js";
 import { OnboardingService } from "./onboarding.service.js";
 import { ReviewService } from "./review.service.js";
@@ -17,7 +16,6 @@ import { OnboardingController, ReviewController } from "./sellers.controllers.js
     OnboardingService,
     ReviewService,
     { provide: KYC_PROVIDER, useClass: SandboxKycProvider },
-    { provide: FILE_STORE, useClass: PostgresFileStore },
   ],
   exports: [OnboardingService, ReviewService],
 })

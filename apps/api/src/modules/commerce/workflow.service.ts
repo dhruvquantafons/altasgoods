@@ -63,7 +63,8 @@ export class OrderWorkflow {
       }
       if (args.to === "READY_TO_SHIP" && !item.awb) patch.awb = `BBL${randomInt(1_000_000_000, 9_999_999_999)}`;
       if (args.to === "SHIPPED" && !item.shippedAt) patch.shippedAt = now;
-      if (args.to === "DELIVERED") patch.deliveredAt = now;
+      // a line back from a withdrawn return keeps its original delivery date
+      if (args.to === "DELIVERED" && !item.deliveredAt) patch.deliveredAt = now;
 
       const [row] = await tx.update(orderItems).set(patch).where(eq(orderItems.id, item.id)).returning();
       updated.set(item.id, row!);

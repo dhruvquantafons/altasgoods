@@ -1,14 +1,21 @@
 import { notFound } from "next/navigation";
 import { PackageX } from "lucide-react";
-import { dayLabel, deliveredAt, paymentLabel, refundTiming, returnInfo } from "@/components/account/lib";
+import { dayLabel, refundTiming } from "@/components/account/lib";
 import { ReturnWizard, type WizardItem } from "@/components/account/return-wizard";
 import { ProductImage } from "@/components/commerce/product-image";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
-import { customerAddresses, getProduct } from "@/lib/mock";
-import { getAccountOrder, pickupSlots, RETURN_REASONS } from "@/lib/mock/account-extra";
-import { NOW } from "@/lib/utils";
+import { loadMyOrder, toUiOrder } from "@/lib/api/account-orders";
+import { api } from "@/lib/api/server";
+import { currentTime } from "@/lib/api/support";
+import { getProduct } from "@/lib/mock";
+import { pickupSlots, returnPolicyFor, RETURN_REASONS } from "@/lib/mock/account-extra";
+import { PAYMENT_METHOD } from "@/lib/status";
+
+const DAY = 86_400_000;
+/** Damage, defect and wrong item claims stay open this long after delivery; the seller reviews late ones (spec 11.3). */
+const CLAIM_DAYS = 90;
 
 export const metadata = { title: "Return or replace" };
 
@@ -17,26 +24,39 @@ const HIGH_RISK = ["cat-mobiles"];
 export default async function ReturnPage(props: PageProps<"/account/orders/[id]/return">) {
   const { id } = await props.params;
   const sp = await props.searchParams;
-  const order = getAccountOrder(id);
-  if (!order) notFound();
+  const client = await api();
+  const [raw, myReturns, addressBook] = await Promise.all([loadMyOrder(id), client.GET("/v1/me/returns").then((r) => r.data ?? []), client.GET("/v1/me/addresses").then((r) => r.data ?? [])]);
+  if (!raw) notFound();
+  const order = toUiOrder(raw);
+  const now = currentTime();
+  const delivered = order.deliveredAt;
 
-  const delivered = deliveredAt(order);
-  const items: WizardItem[] = order.items.map((it) => {
+  const items: WizardItem[] = raw.items.map((it) => {
     const product = getProduct(it.productId);
-    const ri = returnInfo(order, it);
-    const policy = ri.policy;
-    const changeOfMindOpen = Boolean(delivered) && policy.resolutions.includes("refund") && new Date(delivered!).getTime() + policy.days * 86400_000 >= NOW.getTime();
-    const amount = it.price * it.quantity;
+    const policy = returnPolicyFor(product);
+    const open = myReturns.find((r) => r.orderItemId === it.id && !["CANCELLED", "REJECTED", "COMPLETED"].includes(r.status));
+    const deliveredOn = it.deliveredAt ? Date.parse(it.deliveredAt) : null;
+    const windowEnds = deliveredOn ? deliveredOn + Math.max(policy.days, 7) * DAY : null;
+    const changeOfMindOpen = windowEnds !== null && policy.resolutions.includes("refund") && windowEnds >= now;
+    const eligible = it.status === "DELIVERED" && !open && deliveredOn !== null && deliveredOn + CLAIM_DAYS * DAY >= now;
+    const blockedReason = open
+      ? `Return ${open.id} is already open for this item`
+      : it.status !== "DELIVERED"
+        ? "Returns open once the item is delivered"
+        : !eligible
+          ? "This item is past its return and claim window"
+          : undefined;
+    const amount = (it.unitPricePaise * it.qty) / 100;
     return {
       id: it.id,
       title: it.title,
       image: it.image,
-      variant: it.variant,
-      quantity: it.quantity,
+      variant: it.variant || undefined,
+      quantity: it.qty,
       amount,
-      eligible: ri.eligible,
-      blockedReason: ri.reason,
-      windowLabel: ri.windowEndsAt ? dayLabel(ri.windowEndsAt) : undefined,
+      eligible,
+      blockedReason,
+      windowLabel: windowEnds && windowEnds >= now ? dayLabel(new Date(windowEnds).toISOString()) : undefined,
       policySummary: policy.summary,
       policyNote: policy.note,
       resolutions: policy.resolutions,
@@ -70,20 +90,20 @@ export default async function ReturnPage(props: PageProps<"/account/orders/[id]/
           items={items}
           initialItemId={itemParam}
           reasons={RETURN_REASONS}
-          addresses={customerAddresses.map((a) => ({
+          addresses={addressBook.map((a) => ({
             id: a.id,
             name: a.name,
-            type: a.type === "home" ? "Home" : a.type === "work" ? "Work" : "Other",
+            type: a.type === "HOME" ? "Home" : a.type === "WORK" ? "Work" : "Other",
             lines: [a.line1, a.line2, `${a.city} ${a.pincode}`].filter(Boolean).join(", "),
             phone: a.phone,
-            isDefault: Boolean(a.isDefault),
+            isDefault: a.isDefault,
           }))}
-          slots={pickupSlots().map((s) => {
+          slots={pickupSlots(4, now).map((s) => {
             const label = dayLabel(s.date);
             const [weekday, date] = label.split(", ");
             return { key: s.date, weekday: weekday!, date: date!, full: label, windows: s.windows };
           })}
-          payment={{ label: paymentLabel(method), timing: refundTiming(method), isCod: method === "cod", creditsOnly: method === "wallet" || method === "giftcard" }}
+          payment={{ label: PAYMENT_METHOD[method], timing: refundTiming(method), isCod: method === "cod", creditsOnly: method === "wallet" || method === "giftcard" }}
         />
       ) : (
         <section className="rounded-[var(--radius-card)] border border-line bg-surface shadow-card">

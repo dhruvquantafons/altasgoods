@@ -244,7 +244,9 @@ export function AddProductWizard({
   const [images, setImages] = useState<number>(0);
   const [theme, setTheme] = useState("none");
   const [values, setValues] = useState<Record<string, string[]>>({ Colour: ["Graphite", "Silver"], Size: ["S", "M", "L"], Storage: ["128 GB", "256 GB"] });
-  const [newValue, setNewValue] = useState("");
+  // the value being typed and any duplicate warning, per axis (colour and size each have their own box)
+  const [newValue, setNewValue] = useState<Record<string, string>>({});
+  const [valueNote, setValueNote] = useState<Record<string, string>>({});
   const [offer, setOffer] = useState<OfferState>({ price: 0, mrp: 0, stock: 0, channel: "ship", handling: 1, sku: "APX-NEW-0001" });
   const [compliance, setCompliance] = useState({ hsn: "", gst: 18, origin: "India", manufacturer: "", packer: "Apex Retail Private Limited, Unit 14, Marol Industrial Estate, Andheri East, Mumbai 400072", gtin: "", exempt: false });
   const [agree, setAgree] = useState(false);
@@ -662,16 +664,37 @@ export function AddProductWizard({
                     className="flex items-center gap-1.5"
                     onSubmit={(e) => {
                       e.preventDefault();
-                      if (newValue.trim()) setValues({ ...values, [axis]: [...(values[axis] ?? []), newValue.trim()] });
-                      setNewValue("");
+                      const v = (newValue[axis] ?? "").trim().replace(/\s+/g, " ");
+                      if (!v) return setValueNote({ ...valueNote, [axis]: "Type a value first" });
+                      // values double as variant names and keys, so an exact repeat (any case) is not added twice
+                      const existing = (values[axis] ?? []).find((x) => x.toLowerCase() === v.toLowerCase());
+                      if (existing) return setValueNote({ ...valueNote, [axis]: `${existing} is already added` });
+                      setValues({ ...values, [axis]: [...(values[axis] ?? []), v] });
+                      setNewValue({ ...newValue, [axis]: "" });
+                      setValueNote({ ...valueNote, [axis]: "" });
                     }}
                   >
-                    <Input inputSize="sm" value={newValue} onChange={(e) => setNewValue(e.target.value)} placeholder={`Add ${axis.toLowerCase()}`} aria-label={`Add ${axis.toLowerCase()} value`} className="w-36" />
+                    <Input
+                      inputSize="sm"
+                      value={newValue[axis] ?? ""}
+                      onChange={(e) => {
+                        setNewValue({ ...newValue, [axis]: e.target.value });
+                        if (valueNote[axis]) setValueNote({ ...valueNote, [axis]: "" });
+                      }}
+                      placeholder={`Add ${axis.toLowerCase()}`}
+                      aria-label={`Add ${axis.toLowerCase()} value`}
+                      className="w-36"
+                    />
                     <Button type="submit" size="sm" variant="ghost" icon={Plus}>
                       Add
                     </Button>
                   </form>
                 </div>
+                {valueNote[axis] && (
+                  <p className="mt-1.5 text-xs text-warning-700" role="status">
+                    {valueNote[axis]}
+                  </p>
+                )}
               </div>
             ))}
             {combos.length > 0 && (
@@ -687,7 +710,7 @@ export function AddProductWizard({
                   </thead>
                   <tbody className="divide-y divide-line">
                     {combos.map((c, i) => (
-                      <tr key={c.join("-")}>
+                      <tr key={JSON.stringify(c)}>
                         <td className="px-4 py-2.5 text-ink-900">{c.join(", ")}</td>
                         <td className="px-4 py-2.5 font-mono text-ink-700">{`APX-NEW-${String(i + 1).padStart(2, "0")}`}</td>
                         <td className="px-4 py-2.5 text-right text-ink-500">Set in Offer</td>

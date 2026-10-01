@@ -1,10 +1,10 @@
 # BluBuy
 
-BluBuy is a multi-vendor marketplace for India, modelled on how Amazon.in and Flipkart work end to end: shoppers, sellers, BluBuy staff, logistics teams and support agents each get their own workspace. Phase 1 built every dashboard and storefront screen against realistic mock data. Phase 2 adds the core backend (`apps/api`) and moves the buying journey, seller registration and KYC, and seller order processing onto it. The research and specification for everything, including the Flutter apps that come next, live in `docs/`.
+BluBuy is a multi-vendor marketplace for India, modelled on how Amazon.in and Flipkart work end to end: shoppers, sellers, BluBuy staff, logistics teams and support agents each get their own workspace. Phase 1 built every dashboard and storefront screen against realistic mock data. Phase 2 adds the core backend (`apps/api`) and moves the buying journey, seller registration and KYC, seller order processing, returns and the Care Desk onto it. The research and specification for everything, including the Flutter apps that come next, live in `docs/`.
 
 ## Run it
 
-Sign in, search, cart, checkout and payment, My Account orders, seller registration, seller application review in BluBuy Control and Seller Hub orders use the API, which needs PostgreSQL 16 and Redis. Other screens still render the shared sample data, which uses the same ids and prices as the seeded database.
+Sign in, search, cart, checkout and payment, My Account orders, returns and support, seller registration, seller application review in BluBuy Control, Seller Hub orders and returns, and the Care Desk use the API, which needs PostgreSQL 16 and Redis. Other screens still render the shared sample data, which uses the same ids and prices as the seeded database.
 
 ```bash
 # 1. API (see apps/api/README.md for details)
@@ -23,10 +23,11 @@ Demo accounts (outside production the one-time code is shown on the sign in page
 
 | Who | Mobile | Try |
 |---|---|---|
-| Shopper (Ananya Sharma) | 98450 12345 | Shop, check out, track and cancel orders |
-| Seller (Rohan Mehta, Apex Retail) | 98200 11223 | Process orders in Seller Hub |
+| Shopper (Ananya Sharma) | 98450 12345 | Shop, check out, track and cancel orders, return items, chat with BluBuy Care |
+| Seller (Rohan Mehta, Apex Retail) | 98200 11223 | Process orders and returns in Seller Hub |
 | BluBuy staff (Kavya Iyer) | 98110 12345 | Review seller applications at `/admin/sellers/approvals`; BluBuy Control needs a staff account |
 | Applicant (Lakshmi Nair) | 97000 11004 | Fix the change a verifier requested and resubmit |
+| Care agent (Revathi Subramanian, L2) | 98110 20001 | Work tickets at `/support`; the supervisor (98110 20099) approves refunds above an agent's limit |
 | Anyone new | any other number | Register as a seller at `/seller/register` |
 
 Open `http://localhost:3000/portals` to reach every workspace. The KYC checks run against a sandbox; its test values are listed in `apps/api/README.md`.
@@ -51,12 +52,13 @@ Open `http://localhost:3000/portals` to reach every workspace. The KYC checks ru
 | Catalog and search | Categories, brands, products, offers and the buy box from PostgreSQL; typo tolerant search ranked by the API |
 | Cart and checkout | Cart kept in the browser and synced to the account across devices, saved addresses, a server priced quote (coupons, delivery fees, Plus, COD limits) |
 | Orders and payments | Idempotent order placement with stock reservation, a sandbox payment gateway with signed webhooks, retry after a failed payment, a 30 minute payment window with automatic release, refunds on cancellation |
-| My Account | Order list and detail from the API, live tracking states and AWB, cancel whole orders or single items |
+| My Account | Order list and detail from the API, live tracking states and AWB, cancel whole orders or single items; a return wizard with photo upload, refund or replacement and a pickup slot, then cancel or reschedule the pickup; returns and refunds history; conversations with BluBuy Care, tickets, Guarantee claims and call back requests |
 | Seller registration and KYC | An 11 step wizard that saves every step: mobile sign in, email verification, GSTIN lookup with check digit validation, PAN name match, ₹1 penny drop with name match, documents by business type, a drawn or uploaded signature, categories, Brand Registry, agreement and submission. Automatic checks and duplicate screening run on submission; a status page tracks the review |
 | BluBuy Control | Staff only sign in; the seller application queue with live SLAs, check results and risk flags; a review panel with every check, documents and history; approve (creates the seller account), request changes on specific items, reject with a reason, reopen after the cool-off |
-| Seller Hub | Live order queue, dashboard counts and sidebar badge; accept, pack and ready to ship one by one or in bulk; AWB assignment; the real fee and settlement breakdown per line; a development only courier simulator for pickup, out for delivery and delivered; a getting started home for newly approved sellers |
+| Seller Hub | Live order queue, dashboard counts and sidebar badge; accept, pack and ready to ship one by one or in bulk; AWB assignment; the real fee and settlement breakdown per line; a development only courier simulator for pickup, out for delivery and delivered; a getting started home for newly approved sellers. Returns: approve or reject late requests within 48 hours, see the customer's photos, record the quality check (a pass releases the refund, a fail goes to BluBuy), with a development only pickup simulator |
+| Care Desk | Staff only; the ticket inbox with reply SLAs and bulk assignment; a ticket workspace where status, priority, assignee, replies, internal notes and attachments are saved and logged; refunds to the original payment within the agent's limit, with supervisor approval above it; open a ticket from the order lookup |
 
-The API has 41 passing tests, including the rate card's worked example and the whole onboarding lifecycle. See `apps/api/README.md` for the design.
+Tests: 58 API tests (unit and integration, including the rate card's worked example and the onboarding, support and returns lifecycles), 28 web unit tests for the API adapters, and Playwright browser tests (`npm run test:e2e` in `apps/web`) for checkout and payment, cancellation, returns from request to quality check, seller order processing, application approval, Care Desk changes, access control, plus crawlers that open every page and press every button in every workspace. See `apps/api/README.md` for the design.
 
 ### Phase 1: every workspace
 
@@ -77,7 +79,7 @@ Quality gates passing: TypeScript strict with zero errors in both apps, ESLint c
 
 ```
 apps/api/                 NestJS 12 API on PostgreSQL and Redis (phase 2)
-  src/modules/            auth, catalog, commerce (cart, checkout, orders, payments), sellers (onboarding, KYC, review)
+  src/modules/            auth, catalog, commerce (cart, checkout, orders, payments, returns), sellers (onboarding, KYC, review), support, files
   src/db/                 Drizzle schema, SQL migrations, demo seed
   test/                   unit and integration tests
 packages/openapi/         the API contract the web and Flutter clients are generated from
@@ -86,6 +88,8 @@ apps/web/                 Next.js 16 web app with every workspace
   src/components/         design system (ui, charts, shell) and area components
   src/lib/                domain types, state machines, formatting, mock data
   public/images/          product and banner photography (Unsplash, see CREDITS.md)
+  tests/unit/             Vitest tests for the API adapters, with fixtures captured from the API
+  tests/e2e/              Playwright journeys and the page and button crawlers
 docs/
   research/01-marketplace-workflows.md   how Amazon.in and Flipkart work, and the BluBuy spec
   research/02-ui-design-system.md        UI research and the design system rationale
@@ -104,4 +108,4 @@ docs/
 
 ## Next steps
 
-See `docs/architecture/system-architecture.md` for the phased roadmap. Still open from phase 2: moving the category and product pages onto the API, and real KYC, SMS, email and payment providers in place of the sandboxes. Then phase 3: listings for new sellers, logistics integration, returns, settlements and payouts, followed by the Flutter customer app.
+See `docs/architecture/system-architecture.md` for the phased roadmap. Still open from phase 2: moving the category and product pages onto the API, and real KYC, SMS, email and payment providers in place of the sandboxes. Still on sample data: Seller Hub listings, inventory, pricing, ads, promotions, analytics and payments, SafeClaims, most of BluBuy Control apart from seller applications, and the Hub Console. Then phase 3: listings for new sellers, logistics integration, settlements and payouts, followed by the Flutter customer app.

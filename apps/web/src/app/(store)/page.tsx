@@ -15,6 +15,7 @@ import {
   BRAND_SPOTLIGHTS,
   DEALS_OF_THE_DAY,
   HERO_SLIDES,
+  isBrowsable,
   PLUS_PLANS,
   PROMO_TILES,
   recommendedForYou,
@@ -27,7 +28,8 @@ export const metadata = {
 };
 
 export default function HomePage() {
-  const deals = DEALS_OF_THE_DAY.map((d) => ({ deal: d, product: getProduct(d.productId)! })).filter((x) => x.product);
+  // suppressed listings cannot be bought, so their deal tiles are not shown (they would fail at order placement)
+  const deals = DEALS_OF_THE_DAY.map((d) => ({ deal: d, product: getProduct(d.productId)! })).filter((x) => x.product && isBrowsable(x.product));
   const best = bestSellers();
   const recommended = recommendedForYou();
   const dealEnds = DEALS_OF_THE_DAY[0]!.endsAt;

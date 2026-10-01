@@ -43,6 +43,15 @@ export type ApplicationReview = Json<"/v1/admin/seller-applications/{id}", "get"
 export type ApplicationQueue = Json<"/v1/admin/seller-applications", "get">;
 export type ApplicationSummary = ApplicationQueue["items"][number];
 export type EmailOtp = Json<"/v1/me/email/otp", "post">;
+export type TicketList = Json<"/v1/support/tickets", "get">;
+export type TicketSummary = TicketList["items"][number];
+export type TicketDetail = Json<"/v1/support/tickets/{id}", "get">;
+export type TicketAction = TicketDetail["actions"][number];
+export type ApiTicketStatus = TicketSummary["status"];
+export type CareAgentRow = Json<"/v1/support/agents", "get">[number];
+export type CustomerTicket = Json<"/v1/me/support/tickets/{id}", "get">;
+export type ReturnRequest = Json<"/v1/me/returns/{id}", "get">;
+export type ApiReturnStatus = ReturnRequest["status"];
 
 /** RFC 7807 problem returned by every failing API call. */
 export interface Problem {

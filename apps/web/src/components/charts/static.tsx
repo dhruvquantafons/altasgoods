@@ -67,7 +67,7 @@ export function BarList({
   const total = items.reduce((a, i) => a + i.value, 0) || 1;
   return (
     <ul className={cn("flex flex-col gap-3", className)}>
-      {items.map((it) => {
+      {items.map((it, i) => {
         const label = (
           <span className="truncate text-[13px] text-ink-700 group-hover:text-ink-900">
             {it.label}
@@ -75,7 +75,8 @@ export function BarList({
           </span>
         );
         return (
-          <li key={it.label} className="group">
+          // labels can repeat (two sellers or products with the same name), so the index keeps keys unique
+          <li key={`${it.label}-${i}`} className="group">
             <div className="mb-1.5 flex items-baseline justify-between gap-3">
               {it.href ? <Link href={it.href}>{label}</Link> : label}
               <span className="shrink-0 text-[13px] font-medium text-ink-900 tabular-nums">

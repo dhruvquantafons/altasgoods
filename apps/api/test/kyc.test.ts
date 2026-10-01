@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { samplePdf, sampleSignaturePng } from "../src/db/sample-files.js";
-import { sniffMime } from "../src/modules/sellers/files.js";
+import { sniffMime } from "../src/modules/files/file-store.js";
 import { gstinCheckChar, gstinProblem } from "../src/modules/sellers/kyc/india.js";
 import { matchResult, nameMatchScore } from "../src/modules/sellers/kyc/names.js";
 import { SandboxKycProvider } from "../src/modules/sellers/kyc/sandbox.provider.js";

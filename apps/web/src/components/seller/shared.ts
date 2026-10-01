@@ -26,9 +26,9 @@ export function formatDuration(ms: number) {
   return `${m} min`;
 }
 
-/** Countdown relative to NOW: neutral, warning under `warnHours`, danger once overdue. */
-export function slaFor(dueAt: string | Date, warnHours = 8): { label: string; tone: Tone; overdue: boolean } {
-  const ms = new Date(dueAt).getTime() - NOW.getTime();
+/** Countdown relative to `now` (the sample clock unless given): neutral, warning under `warnHours`, danger once overdue. */
+export function slaFor(dueAt: string | Date, warnHours = 8, now: number = NOW.getTime()): { label: string; tone: Tone; overdue: boolean } {
+  const ms = new Date(dueAt).getTime() - now;
   if (ms < 0) return { label: `Overdue by ${formatDuration(ms)}`, tone: "danger", overdue: true };
   return { label: `${formatDuration(ms)} left`, tone: ms < warnHours * 3600_000 ? "warning" : "neutral", overdue: false };
 }

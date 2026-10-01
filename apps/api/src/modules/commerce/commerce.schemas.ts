@@ -251,4 +251,9 @@ export const transitionBody = z.object({
 });
 export const transitionResult = z.object({ results: z.array(z.object({ id: z.uuid(), ok: z.boolean(), status: z.enum(ORDER_ITEM_STATUSES).nullable(), error: z.string().nullable() })) });
 
-export const devAdvanceBody = z.object({ orderItemId: z.uuid(), to: z.enum(["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "RTO_IN_TRANSIT", "RTO_RECEIVED"]) });
+export const devAdvanceBody = z.object({
+  orderItemId: z.uuid(),
+  to: z.enum(["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "RTO_IN_TRANSIT", "RTO_RECEIVED"]),
+  /** with DELIVERED: dates the delivery this many days back, to exercise return windows */
+  deliveredDaysAgo: z.number().int().min(1).max(120).optional(),
+});

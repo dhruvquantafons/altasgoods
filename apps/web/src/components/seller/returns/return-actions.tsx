@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Camera, Check, CircleCheck, FileVideo, ShieldCheck, Upload, X } from "lucide-react";
+import { Camera, Check, CircleCheck, FileVideo, FlaskConical, Loader2, PackageCheck, ShieldCheck, Truck, Upload, X } from "lucide-react";
+import { decideReturn, gradeReturn, simulateReturnScan } from "@/app/actions/returns";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
 import { cn, formatINR } from "@/lib/utils";
 
@@ -14,31 +16,47 @@ const REJECT_REASONS = ["Outside the return window", "Item is non-returnable onc
 
 /** Decision on an out-of-policy return request (48 hours, then BluBuy decides). */
 export function ReturnDecision({ returnId, size = "md" }: { returnId: string; size?: "sm" | "md" }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [decided, setDecided] = useState<null | "approved" | "rejected">(null);
+  const [busy, setBusy] = useState<null | "approve" | "reject">(null);
+  const [error, setError] = useState<string | null>(null);
   const [reason, setReason] = useState(REJECT_REASONS[0]!);
+  const [message, setMessage] = useState("");
+  const [decided, setDecided] = useState<null | "approved" | "rejected">(null);
   const toast = useToast();
+
+  const decide = async (approve: boolean) => {
+    setBusy(approve ? "approve" : "reject");
+    setError(null);
+    const note = approve ? undefined : [reason, message.trim()].filter(Boolean).join(". ");
+    const r = await decideReturn(returnId, approve, note);
+    setBusy(null);
+    if (!r.ok) return approve ? toast.show(r.error) : setError(r.error);
+    setOpen(false);
+    setDecided(approve ? "approved" : "rejected");
+    toast.show(approve ? `${returnId} approved. The pickup is booked and the customer has been told.` : `${returnId} rejected. The customer has been told why.`);
+    // let the confirmation show before the list moves the return on
+    setTimeout(() => router.refresh(), 1500);
+  };
+
   if (decided)
     return (
-      <span className={cn("inline-flex items-center gap-1.5 text-[13px] font-medium", decided === "approved" ? "text-success-700" : "text-ink-600")}>
-        <CircleCheck size={15} aria-hidden="true" /> {decided === "approved" ? "Approved" : "Rejected"}
-      </span>
+      <>
+        <span className={cn("inline-flex items-center gap-1.5 text-[13px] font-medium", decided === "approved" ? "text-success-700" : "text-ink-600")}>
+          <CircleCheck size={15} aria-hidden="true" /> {decided === "approved" ? "Approved, pickup booked" : "Rejected"}
+        </span>
+        {toast.node}
+      </>
     );
+
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button size={size === "sm" ? "xs" : "md"} variant="secondary" icon={X} onClick={() => setOpen(true)}>
+        <Button size={size === "sm" ? "xs" : "md"} variant="secondary" icon={X} disabled={!!busy} onClick={() => setOpen(true)}>
           Reject
         </Button>
-        <Button
-          size={size === "sm" ? "xs" : "md"}
-          icon={Check}
-          onClick={() => {
-            setDecided("approved");
-            toast.show(`${returnId} approved. BluBuy schedules the pickup and tells the customer.`);
-          }}
-        >
-          Approve
+        <Button size={size === "sm" ? "xs" : "md"} icon={Check} disabled={!!busy} onClick={() => decide(true)}>
+          {busy === "approve" ? "Approving" : "Approve"}
         </Button>
       </div>
       <Modal
@@ -51,15 +69,8 @@ export function ReturnDecision({ returnId, size = "md" }: { returnId: string; si
             <Button variant="secondary" onClick={() => setOpen(false)}>
               Back
             </Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                setOpen(false);
-                setDecided("rejected");
-                toast.show(`${returnId} rejected. The customer has been told why.`);
-              }}
-            >
-              Reject return
+            <Button variant="danger" disabled={!!busy} onClick={() => decide(false)}>
+              {busy === "reject" ? "Rejecting" : "Reject return"}
             </Button>
           </>
         }
@@ -73,8 +84,13 @@ export function ReturnDecision({ returnId, size = "md" }: { returnId: string; si
             </Select>
           </Field>
           <Field label="Message to the customer" htmlFor={`rej-msg-${returnId}`} hint="Shown with the decision. No links, phone numbers or emails.">
-            <Textarea id={`rej-msg-${returnId}`} className="min-h-20" />
+            <Textarea id={`rej-msg-${returnId}`} className="min-h-20" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={400} />
           </Field>
+          {error && (
+            <p role="alert" className="text-[13px] text-danger-700">
+              {error}
+            </p>
+          )}
         </div>
       </Modal>
       {toast.node}
@@ -180,86 +196,125 @@ export interface GradeOption {
   claimable: boolean;
 }
 
-/** Receipt quality check: grade, notes and photos; claimable grades open the SafeClaim form. */
-export function QcCapture({ grades, amount, claimDeadline }: { grades: GradeOption[]; amount: number; claimDeadline: string }) {
+/** Grades where the customer's return stands and they are refunded; the rest go to BluBuy for review. */
+const ACCEPTS = ["SELLABLE", "DEFECTIVE", "CARRIER_DAMAGED"];
+
+/** Receipt quality check: the grade and notes are saved with the return and decide what happens to the refund. */
+export function QcCapture({ returnId, grades, dueAt }: { returnId: string; grades: GradeOption[]; dueAt?: string }) {
+  const router = useRouter();
   const [grade, setGrade] = useState<string>("");
-  const [photos, setPhotos] = useState(0);
-  const [saved, setSaved] = useState(false);
-  const [restock, setRestock] = useState(true);
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const toast = useToast();
   const chosen = grades.find((g) => g.key === grade);
+  const pass = ACCEPTS.includes(grade);
+  const needsNotes = Boolean(chosen && !pass && notes.trim().length < 5);
+
+  const save = async () => {
+    if (!chosen) return;
+    setBusy(true);
+    setError(null);
+    const r = await gradeReturn(returnId, pass, [chosen.label, notes.trim()].filter(Boolean).join(". "));
+    setBusy(false);
+    if (!r.ok) return setError(r.error);
+    toast.show(pass ? "Check recorded. The customer's refund is released." : "Check recorded. BluBuy reviews it before the refund is released.");
+    router.refresh();
+  };
 
   return (
     <Card className="border-brand-100">
-      <CardHeader
-        title={saved ? "Quality check recorded" : "Record the quality check"}
-        description={saved ? `Graded as ${chosen?.label.toLowerCase()}.` : "Grade within 48 hours of receipt. Ungraded returns pass QC automatically and you lose the right to claim."}
-      />
-      <div className="p-5">
-        {!saved ? (
-          <div className="flex flex-col gap-5">
-            <fieldset>
-              <legend className="mb-2 text-[13px] font-medium text-ink-700">Condition on receipt</legend>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {grades.map((g) => (
-                  <label
-                    key={g.key}
-                    className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors", grade === g.key ? "border-brand-300 bg-brand-50/50" : "border-line hover:bg-ink-50")}
-                  >
-                    <input type="radio" name="qc-grade" checked={grade === g.key} onChange={() => setGrade(g.key)} className="mt-1 accent-brand-600" />
-                    <span>
-                      <span className="block text-[13px] font-medium text-ink-900">{g.label}</span>
-                      <span className="block text-xs text-ink-500">{g.description}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <div>
-              <p className="mb-2 text-[13px] font-medium text-ink-700">Photos at receipt</p>
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: photos }, (_, i) => (
-                  <span key={i} className="flex size-16 items-center justify-center rounded-lg bg-ink-100 text-[11px] text-ink-500">
-                    IMG_{2041 + i}
-                  </span>
-                ))}
-                <button type="button" onClick={() => setPhotos((p) => p + 1)} className="flex size-16 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line-strong text-[11px] text-ink-500 hover:border-brand-300 hover:text-brand-700">
-                  <Camera size={16} aria-hidden="true" />
-                  Add
-                </button>
-              </div>
-            </div>
-            {grade === "SELLABLE" && <Checkbox checked={restock} onChange={(e) => setRestock(e.target.checked)} label="Add the unit back to sellable stock" description="Stock at Andheri warehouse goes up by one" />}
-            <Field label="Notes" htmlFor="qc-notes">
-              <Textarea id="qc-notes" className="min-h-16" placeholder="Serial number, visible damage, missing parts" />
-            </Field>
-            <div className="flex items-center justify-end gap-3">
-              {!grade && <p className="text-xs text-ink-500">Choose a grade to continue</p>}
-              <Button
-                disabled={!grade || (chosen?.claimable && photos === 0)}
-                onClick={() => {
-                  setSaved(true);
-                  toast.show(chosen?.claimable ? "Graded. You can now file a SafeClaim for this return." : "Graded as sellable. The refund is released to the customer.");
-                }}
+      <CardHeader title="Record the quality check" description={`Grade within 48 hours of receipt${dueAt ? `, by ${dueAt}` : ""}. Ungraded returns pass automatically.`} />
+      <div className="flex flex-col gap-5 p-5">
+        <fieldset>
+          <legend className="mb-2 text-[13px] font-medium text-ink-700">Condition on receipt</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {grades.map((g) => (
+              <label
+                key={g.key}
+                className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors", grade === g.key ? "border-brand-300 bg-brand-50/50" : "border-line hover:bg-ink-50")}
               >
-                Save grade
-              </Button>
-            </div>
-            {chosen?.claimable && photos === 0 && <p className="-mt-3 text-right text-xs text-warning-700">Add at least one photo for a claimable grade.</p>}
+                <input type="radio" name="qc-grade" checked={grade === g.key} onChange={() => setGrade(g.key)} className="mt-1 accent-brand-600" />
+                <span>
+                  <span className="block text-[13px] font-medium text-ink-900">{g.label}</span>
+                  <span className="block text-xs text-ink-500">{g.description}</span>
+                </span>
+              </label>
+            ))}
           </div>
-        ) : chosen?.claimable ? (
-          <div>
-            <p className="mb-4 text-[13px] text-ink-600">This grade is eligible for BluBuy SafeClaim. File by {claimDeadline} with the evidence below.</p>
-            <SafeClaimForm amount={amount} gradeLabel={chosen.label} deadline={claimDeadline} />
-          </div>
-        ) : (
-          <p className="flex items-center gap-2 text-[13px] text-success-700">
-            <CircleCheck size={16} aria-hidden="true" />
-            Recorded{restock && grade === "SELLABLE" ? " and returned to stock" : ""}. No further action needed.
+        </fieldset>
+        {chosen && (
+          <p className={cn("rounded-lg px-3 py-2 text-[13px]", pass ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700")}>
+            {pass ? "The return passes the check and the customer is refunded." : "The return fails the check. BluBuy reviews your notes before the customer is refunded."}
           </p>
         )}
+        <Field label="Notes" htmlFor="qc-notes" required={Boolean(chosen && !pass)} hint={chosen && !pass ? "Describe what is wrong; BluBuy reads this" : undefined}>
+          <Textarea id="qc-notes" className="min-h-16" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} placeholder="Serial number, visible damage, missing parts" />
+        </Field>
+        {error && (
+          <p role="alert" className="text-[13px] text-danger-700">
+            {error}
+          </p>
+        )}
+        <div className="flex items-center justify-end gap-3">
+          {!grade && <p className="text-xs text-ink-500">Choose a grade to continue</p>}
+          {needsNotes && <p className="text-xs text-warning-700">Add a note for a failed check</p>}
+          <Button disabled={!grade || needsNotes || busy} onClick={save}>
+            {busy ? "Saving" : "Save check"}
+          </Button>
+        </div>
       </div>
       {toast.node}
     </Card>
+  );
+}
+
+/* ----------------------------- Pickup simulator ---------------------------- */
+
+type Scan = "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED";
+const SCANS: Record<string, { to: Scan; label: string }[] | undefined> = {
+  PICKUP_SCHEDULED: [{ to: "OUT_FOR_PICKUP", label: "Scan out for pickup" }],
+  OUT_FOR_PICKUP: [
+    { to: "PICKED_UP", label: "Scan picked up" },
+    { to: "PICKUP_FAILED", label: "Pickup failed" },
+  ],
+  PICKUP_FAILED: [{ to: "OUT_FOR_PICKUP", label: "Re-attempt pickup" }],
+  PICKED_UP: [{ to: "IN_TRANSIT", label: "Scan in transit" }],
+  IN_TRANSIT: [{ to: "RECEIVED", label: "Scan received" }],
+};
+
+/** Development only: stands in for BluBuy Logistics reverse pickup scans until that integration is live. */
+export function PickupSimulator({ returnId, status }: { returnId: string; status: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState<Scan | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const scans = SCANS[status];
+  if (!scans) return null;
+
+  const scan = async (to: Scan) => {
+    setBusy(to);
+    setError(null);
+    const r = await simulateReturnScan(returnId, to);
+    setBusy(null);
+    if (!r.ok) return setError(r.error);
+    router.refresh();
+  };
+
+  return (
+    <div className="rounded-[var(--radius-card)] border border-dashed border-accent-300 bg-accent-50/60 px-5 py-4">
+      <p className="flex items-center gap-2 text-[13px] font-semibold text-accent-800">
+        <FlaskConical size={15} aria-hidden="true" /> Pickup simulator (development only)
+      </p>
+      <p className="mt-0.5 text-xs text-ink-600">Stands in for BluBuy Logistics reverse pickup scans.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {scans.map((s) => (
+          <Button key={s.to} size="sm" variant="secondary" icon={s.to === "RECEIVED" ? PackageCheck : Truck} disabled={!!busy} onClick={() => scan(s.to)}>
+            {busy === s.to ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : null}
+            {s.label}
+          </Button>
+        ))}
+      </div>
+      {error && <p className="mt-2 text-xs text-danger-700">{error}</p>}
+    </div>
   );
 }

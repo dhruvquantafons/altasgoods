@@ -117,8 +117,10 @@ export const CUSTOMER_REFUND_STATUS: Record<RefundStatus, StatusMeta> = {
 
 export const CUSTOMER_TICKET_STATUS: Record<TicketStatus, StatusMeta> = {
   ...TICKET_STATUS,
+  open: label("Received", "info"),
   awaiting_customer: label("Awaiting your reply", "warning"),
-  escalated: label("Escalated", "warning"),
+  pending_internal: label("We are looking into it", "info"),
+  escalated: label("With a specialist", "warning"),
 };
 
 export interface ItemState {
@@ -138,8 +140,12 @@ function arrivalHeadline(order: Order) {
 }
 
 /** Everything a list or detail row needs to show the state of one item. */
+/** The open or latest return of a line: from the API for live orders, else the sample data. */
+const returnOf = (order: Order, item: OrderItem) =>
+  order.returns ? (order.returns.find((r) => r.itemId === item.id && r.status !== "cancelled") ?? order.returns.find((r) => r.itemId === item.id)) : returnForItem(order.id, item.id);
+
 export function itemState(order: Order, item: OrderItem): ItemState {
-  const ret = returnForItem(order.id, item.id);
+  const ret = returnOf(order, item);
   if (ret && ret.status !== "cancelled") {
     const refundDone = ret.refund?.status === "completed";
     if (ret.status === "rejected") return { meta: label("Return not accepted", "danger"), headline: "Return closed after the doorstep check", ret };
@@ -247,13 +253,15 @@ export interface ReturnInfo {
 
 export function returnInfo(order: Order, item: OrderItem): ReturnInfo {
   const policy = returnPolicyFor(getProduct(item.productId));
-  const existing = returnForItem(order.id, item.id);
+  const existing = returnOf(order, item);
+  // live orders are judged against the real clock, sample orders against the demo clock
+  const now = order.returns ? Date.now() : NOW.getTime();
   if (existing && existing.status !== "cancelled") return { eligible: false, policy, reason: "A return is already open for this item" };
   if (item.status !== "delivered") return { eligible: false, policy, reason: "Returns open once the item is delivered" };
   const d = deliveredAt(order);
   if (!d) return { eligible: false, policy, reason: "Returns open once the item is delivered" };
   const ends = new Date(new Date(d).getTime() + Math.max(policy.days, 7) * DAY);
-  if (ends.getTime() < NOW.getTime()) return { eligible: false, policy, windowEndsAt: ends.toISOString(), reason: `Return window closed on ${shortDate(ends)}` };
+  if (ends.getTime() < now) return { eligible: false, policy, windowEndsAt: ends.toISOString(), reason: `Return window closed on ${shortDate(ends)}` };
   return { eligible: true, policy, windowEndsAt: ends.toISOString() };
 }
 

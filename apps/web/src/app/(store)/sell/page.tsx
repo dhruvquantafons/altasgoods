@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgePercent, Banknote, ChevronDown, Clock, GraduationCap, Megaphone, ShieldCheck, Users } from "lucide-react";
+import { SellerSignIn } from "@/components/seller/seller-sign-in";
 import { NamedIcon } from "@/components/store/icons";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import {
@@ -51,9 +52,7 @@ export default function SellPage() {
               <Link href="/seller/register" className="inline-flex h-12 items-center gap-2 rounded-xl bg-accent-400 px-6 text-[15px] font-semibold text-ink-950 hover:bg-accent-300">
                 Start selling <ArrowRight size={17} aria-hidden="true" />
               </Link>
-              <Link href="/seller" className="inline-flex h-12 items-center rounded-xl px-5 text-[15px] font-semibold text-white ring-1 ring-white/25 hover:bg-white/10">
-                Seller Hub login
-              </Link>
+              <SellerSignIn className="inline-flex h-12 items-center rounded-xl px-5 text-[15px] font-semibold text-white ring-1 ring-white/25 hover:bg-white/10">Seller Hub login</SellerSignIn>
             </div>
             <p className="mt-4 text-[13px] text-brand-200">Takes about 10 minutes. Keep your GSTIN or PAN, bank details and pickup address handy.</p>
           </div>

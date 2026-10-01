@@ -14,12 +14,12 @@ const METHOD: Record<SellerItem["paymentMethod"], UiMethod> = { UPI: "upi", CARD
  * Every line is treated as seller shipped for now; automated BluBuy Fulfilled
  * processing arrives with the logistics phase.
  */
-export function toSellerLine(i: SellerItem): SellerLine {
+export function toSellerLine(i: SellerItem, deliveredAt?: string): SellerLine {
   const status = uiItemStatus(i.status);
   const product = getProduct(i.productId);
   return {
-    // readable and stable reference for screens and labels; itemId is what the API takes
-    lineId: `${i.orderId}-${i.id.slice(0, 4).toUpperCase()}`,
+    // readable and stable reference for screens and labels; itemId is what the API takes and what lists key by
+    lineId: `${i.orderId}-${i.id.slice(0, 8).toUpperCase()}`,
     orderId: i.orderId,
     itemId: i.id,
     productId: i.productId,
@@ -49,7 +49,18 @@ export function toSellerLine(i: SellerItem): SellerLine {
     payment: METHOD[i.paymentMethod],
     cod: i.paymentMethod === "COD",
     promisedBy: i.promisedBy,
+    deliveredAt,
   };
+}
+
+/** When an item was delivered, from the order's status events (the item rows carry no delivered date). */
+export function deliveredAtOf(events: { orderItemId: string | null; toStatus: string; at: string }[], itemId: string) {
+  return events.findLast((e) => e.orderItemId === itemId && e.toStatus === "DELIVERED")?.at;
+}
+
+/** Whole days since an API time, on the real clock (API times are real, unlike the mock NOW). */
+export function daysSince(iso: string) {
+  return Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 86_400_000));
 }
 
 /** Every order line of the signed-in seller (all statuses), most urgent first. Shared by the layout and page in one request. */
@@ -63,7 +74,7 @@ export const loadSellerLines = cache(async () => {
     counts = r.counts;
     if (items.length >= r.total) break;
   }
-  return { lines: items.map(toSellerLine), counts };
+  return { lines: items.map((i) => toSellerLine(i)), counts };
 });
 
 /** Lines waiting on the seller: to accept, to pack, or to hand over. */

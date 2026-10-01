@@ -272,15 +272,17 @@ export const NDR_REASON: Record<NdrReason, string> = {
 
 /* ------------------------------- Support ----------------------------- */
 
-export type TicketStatus = "open" | "in_progress" | "awaiting_customer" | "escalated" | "resolved" | "closed";
+export type TicketStatus = "open" | "in_progress" | "awaiting_customer" | "pending_internal" | "escalated" | "resolved" | "reopened" | "closed";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
 export const TICKET_STATUS: StatusMap<TicketStatus> = {
   open: { label: "Open", tone: "info" },
   in_progress: { label: "In progress", tone: "brand" },
   awaiting_customer: { label: "Awaiting customer", tone: "neutral" },
+  pending_internal: { label: "Pending internal", tone: "accent" },
   escalated: { label: "Escalated", tone: "danger" },
   resolved: { label: "Resolved", tone: "success" },
+  reopened: { label: "Reopened", tone: "warning" },
   closed: { label: "Closed", tone: "neutral" },
 };
 

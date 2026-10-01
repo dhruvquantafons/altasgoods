@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Briefcase, Building2, Clock, Headset, Mail, MessageCircle, Newspaper, Package, PhoneCall, Scale, Store } from "lucide-react";
+import { CallbackRequest } from "@/components/store/callback-request";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
+import { currentUser } from "@/lib/api/server";
 import { COMPANY, GRIEVANCE_OFFICER } from "@/lib/mock/store-extra";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +13,7 @@ export const metadata: Metadata = { title: "Contact us" };
 const channels = [
   { icon: Package, title: "Help with an order", body: "Track, cancel, return or report a problem. Fastest for anything about an order.", cta: "Go to your orders", href: "/account/orders" },
   { icon: MessageCircle, title: "Chat with us", body: "Talk to a person from Help in the app or on the web. Typical reply in 2 minutes.", cta: "Start a chat", href: "/account/support" },
-  { icon: PhoneCall, title: `Call ${COMPANY.customerCare}`, body: `Toll free, ${COMPANY.customerCareHours}. Or ask us to call you back within 15 minutes.`, cta: "Call now", href: `tel:${COMPANY.customerCare.replace(/\s/g, "")}` },
+  { icon: PhoneCall, title: `Call ${COMPANY.customerCare}`, body: `Toll free, ${COMPANY.customerCareHours}. Or ask us to call you back, below.`, cta: "Call now", href: `tel:${COMPANY.customerCare.replace(/\s/g, "")}` },
   { icon: Mail, title: COMPANY.email, body: "For anything that needs attachments or a written record. Reply within 24 hours.", cta: "Write to us", href: `mailto:${COMPANY.email}` },
 ];
 
@@ -21,7 +23,10 @@ const teams = [
   { icon: Briefcase, title: "Careers", body: "See open roles and how we hire.", href: "/careers", cta: "Open roles" },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  // signed-in shoppers get their number filled in for a call back
+  const user = await currentUser();
+  const phone = user?.phone.replace(/\D/g, "").slice(-10) ?? "";
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero
@@ -52,6 +57,14 @@ export default function ContactPage() {
             </div>
           ))}
         </div>
+
+        <section id="call-back" aria-labelledby="call-back-heading" className="mt-6 scroll-mt-28 rounded-2xl border border-line bg-white p-6 lg:p-8">
+          <h2 id="call-back-heading" className="flex items-center gap-2 text-lg font-semibold text-ink-900">
+            <PhoneCall size={18} className="text-brand-600" aria-hidden="true" /> Request a call back
+          </h2>
+          <p className="mt-1 mb-5 text-sm text-ink-500">Tell us your number and a time that suits you. Calls are made {COMPANY.customerCareHours}.</p>
+          <CallbackRequest careNumber={COMPANY.customerCare} defaultPhone={phone} signedIn={Boolean(user)} />
+        </section>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <section aria-labelledby="other-teams" className="rounded-2xl border border-line bg-white p-6 lg:p-8">

@@ -27,6 +27,12 @@ export interface RunAssociate {
   note: string;
 }
 
+/** RS-WFD-261001-16 plus n gives RS-WFD-261001-(16 + n). */
+function bumpId(id: string, n: number) {
+  const m = /^(.*-)(\d+)$/.exec(id);
+  return m ? `${m[1]}${Number(m[2]) + n}` : `${id}-${n + 1}`;
+}
+
 /** Create runsheet: pick a beat, choose shipments ready for last mile, assign an associate and a start time. */
 export function CreateRunsheet({
   nextId,
@@ -44,10 +50,14 @@ export function CreateRunsheet({
   const [picked, setPicked] = useState<Set<string> | null>(null);
   const [da, setDa] = useState("");
   const [start, setStart] = useState("13:00");
+  // runsheets made in this session: each takes the next id, and its shipments leave the ready pool
+  const [made, setMade] = useState(0);
+  const [assigned, setAssigned] = useState<Set<string>>(new Set());
   const { show, node } = useToast();
+  const runId = bumpId(nextId, made);
 
   const beatObj = beats.find((b) => b.code === beat);
-  const pool = useMemo(() => shipments.filter((s) => s.pincode === beatObj?.pincode), [shipments, beatObj]);
+  const pool = useMemo(() => shipments.filter((s) => s.pincode === beatObj?.pincode && !assigned.has(s.id)), [shipments, beatObj, assigned]);
   const selected = picked ?? new Set(pool.map((s) => s.id));
   const chosen = pool.filter((s) => selected.has(s.id));
   const cod = chosen.reduce((a, s) => a + (s.cod ? s.codAmount : 0), 0);
@@ -71,7 +81,7 @@ export function CreateRunsheet({
         open={open}
         onClose={() => setOpen(false)}
         size="lg"
-        title="Create runsheet"
+        title={`Create runsheet ${runId}`}
         description="Shipments at hub and sorted to a beat are ready for the last mile. Promised-today shipments are listed first."
         footer={
           <>
@@ -85,7 +95,9 @@ export function CreateRunsheet({
               disabled={!assoc || chosen.length === 0}
               onClick={() => {
                 setOpen(false);
-                show(`${nextId} created for ${assoc?.name} with ${chosen.length} stops, dispatch at ${start === "11:00" ? "11:00 am" : start === "13:00" ? "1:00 pm" : "3:00 pm"}`);
+                show(`${runId} created for ${assoc?.name} with ${chosen.length} stops, dispatch at ${start === "11:00" ? "11:00 am" : start === "13:00" ? "1:00 pm" : "3:00 pm"}`);
+                setMade((n) => n + 1);
+                setAssigned((prev) => new Set([...prev, ...chosen.map((s) => s.id)]));
                 setPicked(null);
                 setDa("");
               }}
