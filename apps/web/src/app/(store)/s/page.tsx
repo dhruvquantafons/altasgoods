@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ListingView, parseFilters, didYouMean } from "@/components/store/listing";
-import { brands, categories, getCategory, products, searchProducts } from "@/lib/mock";
+import { searchCatalog } from "@/lib/api/catalog";
+import { brands, categories, getCategory, products } from "@/lib/mock";
 
 export async function generateMetadata(props: PageProps<"/s">): Promise<Metadata> {
   const sp = await props.searchParams;
@@ -11,7 +12,7 @@ export async function generateMetadata(props: PageProps<"/s">): Promise<Metadata
 
 export default async function SearchPage(props: PageProps<"/s">) {
   const f = parseFilters(await props.searchParams);
-  const base = f.q ? searchProducts(f.q) : products;
+  const { products: base, ranked } = f.q ? await searchCatalog(f.q) : { products, ranked: false };
   const suggestion = f.q && base.length === 0 ? didYouMean(f.q, [...brands.map((b) => b.name), ...categories.map((c) => c.name), ...products.map((p) => p.title)]) : null;
   const cat = f.cat ? getCategory(f.cat) : undefined;
 
@@ -31,6 +32,7 @@ export default async function SearchPage(props: PageProps<"/s">) {
   return (
     <ListingView
       base={base}
+      ranked={ranked}
       filters={f}
       basePath="/s"
       mode="search"

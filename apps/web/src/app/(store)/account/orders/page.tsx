@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
-import { accountOrders, accountReturns } from "@/lib/mock/account-extra";
+import { loadMyOrders, toUiOrder } from "@/lib/api/account-orders";
 import type { Order } from "@/lib/types";
 import { cn, NOW } from "@/lib/utils";
 
@@ -34,7 +34,8 @@ type RangeKey = (typeof RANGES)[number]["key"];
 type StatusKey = (typeof STATUSES)[number]["key"];
 
 const PAGE_SIZE = 8;
-const withReturns = new Set(accountReturns.map((r) => r.orderId));
+// returns are not in the API yet
+const withReturns = new Set<string>();
 
 function inRange(o: Order, range: RangeKey) {
   const t = new Date(o.placedAt).getTime();
@@ -80,7 +81,8 @@ export default async function OrdersPage(props: PageProps<"/account/orders">) {
   const range = (RANGES.find((r) => r.key === one(sp.range))?.key ?? "3m") as RangeKey;
   const status = (STATUSES.find((s) => s.key === one(sp.status))?.key ?? "all") as StatusKey;
 
-  const base = accountOrders.filter((o) => inRange(o, range) && matches(o, q));
+  const orders = (await loadMyOrders()).map(toUiOrder);
+  const base = orders.filter((o) => inRange(o, range) && matches(o, q));
   const filtered = base.filter((o) => inStatus(o, status));
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const page = Math.min(pages, Math.max(1, Number(one(sp.page)) || 1));

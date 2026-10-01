@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "sourceMap": true },
+  "include": ["src"],
+  "exclude": ["src/db/seed.ts", "src/db/reset.ts", "src/openapi.ts"]
+}

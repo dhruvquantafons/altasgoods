@@ -127,7 +127,8 @@ function relevance(p: Product, q: string) {
   return s * 1e6 + p.rating * Math.log10(p.ratingCount + 10) * 1e3 + (p.assured ? 500 : 0);
 }
 
-export function sortProducts(list: Product[], sort: string, q: string) {
+/** `ranked` keeps the incoming order for relevance, for lists already ranked by the API. */
+export function sortProducts(list: Product[], sort: string, q: string, ranked = false) {
   const arr = list.slice();
   const price = (p: Product) => featuredOffer(p).price;
   switch (sort) {
@@ -144,7 +145,7 @@ export function sortProducts(list: Product[], sort: string, q: string) {
     case "rating":
       return arr.sort((a, b) => b.rating - a.rating || b.ratingCount - a.ratingCount);
     default:
-      return arr.sort((a, b) => relevance(b, q) - relevance(a, q));
+      return ranked ? arr : arr.sort((a, b) => relevance(b, q) - relevance(a, q));
   }
 }
 
@@ -402,8 +403,10 @@ export function ListingView({
   crumbs,
   intro,
   emptyHint,
+  ranked,
 }: {
   base: Product[];
+  ranked?: boolean;
   filters: Filters;
   basePath: string;
   mode: "search" | "category";
@@ -412,7 +415,7 @@ export function ListingView({
   intro?: ReactNode;
   emptyHint?: ReactNode;
 }) {
-  const results = sortProducts(applyFilters(base, f), f.sort, f.q);
+  const results = sortProducts(applyFilters(base, f), f.sort, f.q, ranked);
   const sponsored = f.sort === "relevance" ? results.filter((p) => SPONSORED_PRODUCT_IDS.includes(p.id) && inStock(p)).slice(0, 2) : [];
   const organic = results.filter((p) => !sponsored.includes(p));
   const ordered = [...sponsored, ...organic];

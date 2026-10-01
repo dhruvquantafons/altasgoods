@@ -96,12 +96,13 @@ export function SellerShell({
   notifications,
   counts,
   store,
-}: AreaShellProps & { store: { name: string; tier: string; city: string; status: string } }) {
+  user = { name: "Rohan Mehta", role: "Owner, Apex Retail" },
+}: AreaShellProps & { store: { name: string; tier: string; city: string; status: string }; user?: { name: string; role: string } }) {
   return (
     <DashboardShell
       workspace="seller"
       nav={sellerNav(counts)}
-      user={{ name: "Rohan Mehta", role: "Owner, Apex Retail" }}
+      user={user}
       notifications={notifications}
       searchPlaceholder="Search orders, SKUs, listings"
       searchAction="/seller/orders"
@@ -187,12 +188,12 @@ export function adminNav(c: Counts = {}): NavGroup[] {
   ];
 }
 
-export function AdminShell({ children, notifications, counts }: AreaShellProps) {
+export function AdminShell({ children, notifications, counts, user = { name: "BluBuy staff", role: "BluBuy Control" } }: AreaShellProps & { user?: { name: string; role: string } }) {
   return (
     <DashboardShell
       workspace="admin"
       nav={adminNav(counts)}
-      user={{ name: "Rawahul Islam", role: "Super Admin" }}
+      user={user}
       notifications={notifications}
       searchPlaceholder="Search orders, customers, AWB"
       searchAction="/admin/orders"

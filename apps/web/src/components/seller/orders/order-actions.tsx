@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { transitionSellerItems } from "@/app/actions/seller";
 import { Ban, Check, ClipboardList, MapPin, MessageSquare, Printer, Star, Truck, Undo2 } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
@@ -24,7 +26,9 @@ export function OrderActions({
   daysSinceDelivery,
   weightKg,
   dims,
+  itemIds,
 }: {
+  itemIds: string[];
   status: OrderStatus;
   sellerPacked: boolean;
   orderId: string;
@@ -38,10 +42,30 @@ export function OrderActions({
   const [reason, setReason] = useState(CANCEL_REASONS[0]!);
   const toast = useToast();
 
-  function move(to: OrderStatus, message: string) {
-    setCurrent(to);
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const API_TO: Partial<Record<OrderStatus, "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "CANCELLED">> = {
+    confirmed: "ACCEPTED",
+    packed: "PACKED",
+    ready_to_ship: "READY_TO_SHIP",
+    cancelled: "CANCELLED",
+  };
+
+  /** Moves this order's lines forward in the API, then reloads the page data. */
+  async function move(to: OrderStatus, message: string) {
     setDialog(null);
+    // requesting a pickup does not change the item status; logistics picks it up
+    if (to === current) return toast.show(message);
+    const apiTo = API_TO[to];
+    if (!apiTo) return;
+    setBusy(true);
+    const r = await transitionSellerItems(itemIds, apiTo, to === "cancelled" ? reason : undefined);
+    setBusy(false);
+    if (!r.ok) return toast.show(r.error);
+    if (r.data.failed.length) return toast.show(r.data.failed[0]!.error);
+    setCurrent(to);
     toast.show(message);
+    router.refresh();
   }
 
   const canCancel = sellerPacked && ["placed", "confirmed", "packed", "ready_to_ship"].includes(current);
@@ -52,7 +76,7 @@ export function OrderActions({
   );
 
   let primary: React.ReactNode = null;
-  let secondary: React.ReactNode = null;
+  const secondary: React.ReactNode = null;
 
   if (!sellerPacked) {
     primary = (
@@ -62,33 +86,23 @@ export function OrderActions({
     );
   } else if (current === "placed") {
     primary = (
-      <Button icon={Check} onClick={() => move("confirmed", "Order confirmed. Pack it and generate the label before the dispatch by time.")}>
+      <Button icon={Check} disabled={busy} onClick={() => move("confirmed", "Order confirmed. Pack it and generate the label before the dispatch by time.")}>
         Confirm order
       </Button>
     );
   } else if (current === "confirmed") {
     primary = (
-      <Button icon={Printer} onClick={() => move("packed", "Invoice and shipping label generated. The PDF has been downloaded.")}>
+      <Button icon={Printer} disabled={busy} onClick={() => move("packed", "Invoice and shipping label generated. The PDF has been downloaded.")}>
         Generate label and invoice
       </Button>
     );
   } else if (current === "packed") {
-    secondary = (
-      <Button variant="ghost" icon={Undo2} onClick={() => move("confirmed", "Label voided. Generate a new one after repacking.")}>
-        Void label
-      </Button>
-    );
     primary = (
       <Button icon={ClipboardList} onClick={() => setDialog("rts")}>
         Mark ready to ship
       </Button>
     );
   } else if (current === "ready_to_ship") {
-    secondary = (
-      <Button variant="ghost" icon={Undo2} onClick={() => move("packed", "Removed from the manifest. Mark it ready again before the pickup slot.")}>
-        Unmark ready to ship
-      </Button>
-    );
     primary = (
       <Button icon={Truck} onClick={() => setDialog("pickup")}>
         Request pickup

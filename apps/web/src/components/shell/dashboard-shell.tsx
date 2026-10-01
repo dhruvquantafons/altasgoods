@@ -10,6 +10,7 @@ import { Avatar, Kbd } from "@/components/ui/misc";
 import { Popover } from "@/components/ui/interactive";
 import type { Notification } from "@/lib/types";
 import { cn, timeAgo } from "@/lib/utils";
+import { signOut } from "@/app/actions/auth";
 import { WORKSPACES, type Workspace } from "./workspaces";
 
 export interface NavItem {
@@ -238,9 +239,11 @@ export function DashboardShell({ workspace, nav, user, notifications = [], searc
             <p className="truncate text-[13px] font-semibold text-ink-900">{user.name}</p>
             <p className="truncate text-[11px] text-ink-500">{user.role}</p>
           </div>
-          <Link href={signOutHref} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700" aria-label="Sign out">
-            <LogOut size={16} />
-          </Link>
+          <form action={signOut.bind(null, signOutHref)}>
+            <button type="submit" className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700" aria-label="Sign out">
+              <LogOut size={16} />
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -325,10 +328,12 @@ export function DashboardShell({ workspace, nav, user, notifications = [], searc
                     Preferences
                   </Link>
                   <div className="my-1 h-px bg-line" />
-                  <Link href={signOutHref} onClick={close} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-danger-700 hover:bg-danger-50">
-                    <LogOut size={16} aria-hidden="true" />
-                    Sign out
-                  </Link>
+                  <form action={signOut.bind(null, signOutHref)}>
+                    <button type="submit" onClick={close} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-danger-700 hover:bg-danger-50">
+                      <LogOut size={16} aria-hidden="true" />
+                      Sign out
+                    </button>
+                  </form>
                 </div>
               )}
             </Popover>

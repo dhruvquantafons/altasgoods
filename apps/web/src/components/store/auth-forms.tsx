@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Code2, Loader2, ShieldCheck } from "lucide-react";
+import { requestOtp, verifyOtp } from "@/app/actions/auth";
+import type { OtpChallenge } from "@/lib/api/types";
 import { Checkbox, Field, Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const OTP_LENGTH = 6;
-const RESEND_AFTER = 30;
+
+const minutesUntil = (iso: string) => Math.max(1, Math.round((new Date(iso).getTime() - Date.now()) / 60_000));
+
+/** Full navigation after sign in, so the header and cart render with the new session. */
+const go = (to: string) => window.location.assign(to);
 
 function validMobile(v: string) {
   return /^[6-9]\d{9}$/.test(v);
@@ -45,9 +50,25 @@ function MobileInput({ value, onChange, error }: { value: string; onChange: (v: 
 
 /* ----------------------------------- OTP -------------------------------- */
 
-function OtpStep({ mobile, onBack, onVerified, cta }: { mobile: string; onBack: () => void; onVerified: () => void; cta: string }) {
+function OtpStep({
+  mobile,
+  challenge: initial,
+  name,
+  onBack,
+  onVerified,
+  cta,
+}: {
+  mobile: string;
+  challenge: OtpChallenge;
+  name?: string;
+  onBack: () => void;
+  onVerified: () => void;
+  cta: string;
+}) {
+  const [challenge, setChallenge] = useState(initial);
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
-  const [left, setLeft] = useState(RESEND_AFTER);
+  const [left, setLeft] = useState(initial.resendAfterSeconds);
+  const [expiresMin, setExpiresMin] = useState(() => minutesUntil(initial.expiresAt));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resent, setResent] = useState(false);
@@ -71,13 +92,28 @@ function OtpStep({ mobile, onBack, onVerified, cta }: { mobile: string; onBack: 
     setError(null);
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     const code = digits.join("");
     if (code.length < OTP_LENGTH) return setError(`Enter all ${OTP_LENGTH} digits of the code`);
-    if (code === "000000") return setError("That code is incorrect. Check the SMS and try again.");
     setBusy(true);
-    setTimeout(onVerified, 600);
+    const r = await verifyOtp({ challengeId: challenge.challengeId, code, name });
+    if (r.ok) return onVerified();
+    setBusy(false);
+    setError(r.error);
+    if (r.code === "OTP_LOCKED" || r.code === "OTP_EXPIRED") setDigits(Array(OTP_LENGTH).fill(""));
+  };
+
+  const resend = async () => {
+    setError(null);
+    const r = await requestOtp(mobile);
+    if (!r.ok) return setError(r.error);
+    setChallenge(r.data);
+    setExpiresMin(minutesUntil(r.data.expiresAt));
+    setLeft(r.data.resendAfterSeconds);
+    setResent(true);
+    setDigits(Array(OTP_LENGTH).fill(""));
+    refs.current[0]?.focus();
   };
 
   return (
@@ -87,7 +123,7 @@ function OtpStep({ mobile, onBack, onVerified, cta }: { mobile: string; onBack: 
       </button>
       <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Enter the code</h1>
       <p className="mt-2 text-[15px] text-ink-600">
-        We sent a 6 digit code to <span className="font-semibold text-ink-900">+91 {formatMobile(mobile)}</span>. It expires in 10 minutes.
+        We sent a 6 digit code to <span className="font-semibold text-ink-900">+91 {formatMobile(mobile)}</span>. It expires in {expiresMin} minutes.
       </p>
       <fieldset className="mt-7">
         <legend className="sr-only">One-time code</legend>
@@ -138,7 +174,17 @@ function OtpStep({ mobile, onBack, onVerified, cta }: { mobile: string; onBack: 
           {error}
         </p>
       )}
-      <p className="mt-3 text-xs text-ink-500">Demo: any 6 digits work except 000000.</p>
+      {challenge.devCode && (
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-dashed border-line-strong bg-ink-50 px-3.5 py-2.5">
+          <p className="flex items-center gap-2 text-xs text-ink-600">
+            <Code2 size={15} className="text-ink-400" aria-hidden="true" />
+            Development code: <span className="font-mono text-sm font-semibold tracking-widest text-ink-900">{challenge.devCode}</span>
+          </p>
+          <button type="button" onClick={() => fill(0, challenge.devCode!)} className="text-xs font-semibold text-brand-700 hover:underline">
+            Fill it in
+          </button>
+        </div>
+      )}
       <button type="submit" disabled={busy} className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-400">
         {busy && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
         {busy ? "Verifying" : cta}
@@ -149,16 +195,7 @@ function OtpStep({ mobile, onBack, onVerified, cta }: { mobile: string; onBack: 
             Resend code in <span className="font-semibold text-ink-900 tabular-nums">0:{String(left).padStart(2, "0")}</span>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setLeft(RESEND_AFTER);
-              setResent(true);
-              setDigits(Array(OTP_LENGTH).fill(""));
-              refs.current[0]?.focus();
-            }}
-            className="font-semibold text-brand-700 hover:underline"
-          >
+          <button type="button" onClick={resend} className="font-semibold text-brand-700 hover:underline">
             Resend code by SMS
           </button>
         )}
@@ -174,31 +211,41 @@ function OtpStep({ mobile, onBack, onVerified, cta }: { mobile: string; onBack: 
 
 /* --------------------------------- Login -------------------------------- */
 
-export function LoginForm({ next }: { next: string }) {
-  const router = useRouter();
+const COPY = {
+  shopper: { title: "Sign in or create an account", body: "Use your mobile number. We will send you a one-time code, no password needed." },
+  seller: { title: "Sign in to Seller Hub", body: "Use the mobile number registered to your seller account." },
+  staff: { title: "Sign in to BluBuy Control", body: "For BluBuy staff. Use the mobile number on your staff account." },
+};
+
+export function LoginForm({ next, audience = "shopper", denied = false }: { next: string; audience?: keyof typeof COPY; denied?: boolean }) {
   const [mobile, setMobile] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<"mobile" | "otp">("mobile");
+  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [sending, setSending] = useState(false);
 
-  if (step === "otp") return <OtpStep mobile={mobile} onBack={() => setStep("mobile")} onVerified={() => router.push(next)} cta="Verify and sign in" />;
+  if (challenge) return <OtpStep mobile={mobile} challenge={challenge} onBack={() => setChallenge(null)} onVerified={() => go(next)} cta="Verify and sign in" />;
 
   return (
     <form
       noValidate
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         if (!validMobile(mobile)) return setError("Enter a valid 10 digit Indian mobile number");
         setError(null);
         setSending(true);
-        setTimeout(() => {
-          setSending(false);
-          setStep("otp");
-        }, 500);
+        const r = await requestOtp(mobile);
+        setSending(false);
+        if (r.ok) setChallenge(r.data);
+        else setError(r.error);
       }}
     >
-      <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Sign in or create an account</h1>
-      <p className="mt-2 text-[15px] text-ink-600">Use your mobile number. We will send you a one-time code, no password needed.</p>
+      <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">{COPY[audience].title}</h1>
+      <p className="mt-2 text-[15px] text-ink-600">{COPY[audience].body}</p>
+      {denied && (
+        <p role="alert" className="mt-4 rounded-xl border border-warning-100 bg-warning-50 px-3.5 py-3 text-[13px] text-warning-700">
+          The account you are signed in with does not have access here. Sign in with a {audience === "staff" ? "BluBuy staff" : "seller"} account.
+        </p>
+      )}
       <div className="mt-8">
         <MobileInput value={mobile} onChange={setMobile} error={error} />
       </div>
@@ -217,12 +264,14 @@ export function LoginForm({ next }: { next: string }) {
         </Link>
         . We use your number to sign you in and send order updates. Promotional messages are off unless you turn them on.
       </p>
-      <div className="mt-8 border-t border-line pt-6 text-center text-sm text-ink-600">
-        New to BluBuy?{" "}
-        <Link href="/signup" className="font-semibold text-brand-700 hover:underline">
-          Create an account
-        </Link>
-      </div>
+      {audience !== "staff" && (
+        <div className="mt-8 border-t border-line pt-6 text-center text-sm text-ink-600">
+          {audience === "seller" ? "Not selling on BluBuy yet?" : "New to BluBuy?"}{" "}
+          <Link href={audience === "seller" ? "/seller/register" : "/signup"} className="font-semibold text-brand-700 hover:underline">
+            {audience === "seller" ? "Start selling" : "Create an account"}
+          </Link>
+        </div>
+      )}
     </form>
   );
 }
@@ -230,24 +279,27 @@ export function LoginForm({ next }: { next: string }) {
 /* --------------------------------- Signup ------------------------------- */
 
 export function SignupForm() {
-  const router = useRouter();
   const [f, setF] = useState({ name: "", mobile: "", email: "", promos: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [step, setStep] = useState<"details" | "otp">("details");
+  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
 
-  if (step === "otp") return <OtpStep mobile={f.mobile} onBack={() => setStep("details")} onVerified={() => router.push("/")} cta="Verify and create account" />;
+  if (challenge)
+    return <OtpStep mobile={f.mobile} challenge={challenge} name={f.name.trim()} onBack={() => setChallenge(null)} onVerified={() => go("/")} cta="Verify and create account" />;
 
   return (
     <form
       noValidate
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         const errs: Record<string, string> = {};
         if (f.name.trim().length < 2) errs.name = "Enter your full name";
         if (!validMobile(f.mobile)) errs.mobile = "Enter a valid 10 digit Indian mobile number";
         if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) errs.email = "Enter a valid email address, or leave it empty";
         setErrors(errs);
-        if (!Object.keys(errs).length) setStep("otp");
+        if (Object.keys(errs).length) return;
+        const r = await requestOtp(f.mobile);
+        if (r.ok) setChallenge(r.data);
+        else setErrors({ mobile: r.error });
       }}
     >
       <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Create your BluBuy account</h1>

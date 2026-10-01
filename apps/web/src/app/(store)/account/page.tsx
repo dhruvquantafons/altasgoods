@@ -1,3 +1,4 @@
+import { loadMyOrders, toUiOrder } from "@/lib/api/account-orders";
 import Link from "next/link";
 import { ArrowRight, Coins, Crown, Heart, Package, ShieldCheck, Undo2, Wallet } from "lucide-react";
 import { dateLabel, greeting, isActive, itemState, shortDate, trackIndex } from "@/components/account/lib";
@@ -9,7 +10,6 @@ import { IconTile } from "@/components/ui/misc";
 import { CURRENT_CUSTOMER, getProduct } from "@/lib/mock";
 import {
   ACCOUNT_PROFILE,
-  accountOrders,
   accountReturns,
   BLUCOINS,
   CREDITS,
@@ -26,7 +26,8 @@ import { formatINR, formatNumber } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
-export default function AccountOverviewPage() {
+export default async function AccountOverviewPage() {
+  const accountOrders = (await loadMyOrders()).map(toUiOrder);
   const active = accountOrders.filter((o) => isActive(o.status));
   const arriving = [...active].sort((a, b) => trackIndex(b.status) - trackIndex(a.status) || +new Date(a.promisedBy) - +new Date(b.promisedBy)).slice(0, 4);
   const recent = accountOrders.filter((o) => !isActive(o.status)).slice(0, 4);

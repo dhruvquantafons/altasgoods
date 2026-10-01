@@ -1,6 +1,6 @@
 # BluBuy System Architecture (proposal v1)
 
-Status: proposal for review. The web dashboards are built (phase 1, mock data). This document describes how the backend and the Flutter apps plug in without rewriting the screens.
+Status: phase 1 (every web dashboard on mock data) is done. Phase 2 is built locally: the NestJS API in `apps/api` covers identity, catalog and search, cart, checkout, payments (sandbox gateway), orders, seller onboarding and KYC (sandbox checks) with staff review, and seller order processing. The storefront, My Account, seller registration, the BluBuy Control application queue and Seller Hub orders run on it. This document describes how the backend and the Flutter apps plug in without rewriting the screens.
 
 ## 1. Surfaces and who uses them
 
@@ -63,14 +63,15 @@ Why a modular monolith first: one team, one deploy, transactions across orders, 
 
 ## 3. How the web app connects to the API
 
-The web app reads everything from `apps/web/src/lib/mock`. Each export maps to an endpoint, so the swap is mechanical:
+Screens started on `apps/web/src/lib/mock`; each export maps to an endpoint and screens move over one at a time. `apps/web/src/lib/api/` holds the typed client (generated from `packages/openapi/openapi.json` with `npm run api:types`), adapters from API shapes to the screen types, and the session cookies. Server Components call the API with the user's session; mutations go through Server Actions in `apps/web/src/app/actions/`, so tokens stay in httpOnly cookies and never reach the browser. `src/proxy.ts` refreshes expiring access tokens and guards signed-in areas.
 
-| Mock export | Endpoint (planned) |
-|---|---|
-| `products`, `getProduct`, `searchProducts` | `GET /v1/products`, `GET /v1/products/{slug}`, `GET /v1/search?q=` |
-| `categories`, `brands` | `GET /v1/categories`, `GET /v1/brands` |
-| `orders`, `getOrder`, `myOrders` | `GET /v1/orders`, `GET /v1/orders/{id}`, `GET /v1/me/orders` |
-| `sellerOrderLines(sellerId)` | `GET /v1/seller/order-items?status=` |
+| Mock export | Endpoint | Status |
+|---|---|---|
+| `products`, `getProduct`, `searchProducts` | `GET /v1/products`, `GET /v1/products/{slug}` | Search ranking and checkout pricing on the API; cards, category and product pages still render the shared sample data (same ids and prices as the seed) |
+| `categories`, `brands` | `GET /v1/categories`, `GET /v1/brands` | Endpoints live; screens still on sample data |
+| `orders`, `getOrder`, `myOrders` | `GET /v1/me/orders`, `GET /v1/me/orders/{id}` | Live in My Account and the order confirmation |
+| `sellerOrderLines(sellerId)` | `GET /v1/seller/order-items`, `GET /v1/seller/orders/{id}`, `POST /v1/seller/order-items/transition` | Live in Seller Hub orders, order detail, dashboard and sidebar counts |
+| `kycApplications` | `/v1/me/seller-application` (wizard, checks, documents, submit), `/v1/admin/seller-applications` (queue and decisions) | Live in seller registration, the status page and BluBuy Control approvals |
 | `returns`, `refunds` | `GET /v1/returns`, `GET /v1/refunds` |
 | `settlementsForSeller`, `allSettlements` | `GET /v1/seller/settlements`, `GET /v1/admin/payouts` |
 | `feesForLine`, rate card constants | `POST /v1/fees/estimate`, `GET /v1/rate-cards/current` |
@@ -78,7 +79,7 @@ The web app reads everything from `apps/web/src/lib/mock`. Each export maps to a
 | `tickets` | `GET /v1/support/tickets` |
 | `platformDaily`, `sellerDaily` | `GET /v1/analytics/platform/daily`, `GET /v1/seller/analytics/daily` |
 
-Plan: introduce `src/lib/api/` with typed fetchers generated from OpenAPI, keep the function names identical to the mock exports, and switch imports page by page. Server Components call the API directly with the user's session; client components only call it for mutations (Server Actions or route handlers).
+Rows without a status column are still planned. Cart, addresses, checkout quote, order placement and payment are live too (`/v1/cart`, `/v1/me/addresses`, `/v1/checkout/quote`, `/v1/orders`, `/v1/payments/{id}`).
 
 ## 4. Core flows (backend responsibilities)
 
@@ -105,7 +106,7 @@ All status changes are written through the state machines in spec section 11 (th
 BluBuy/
   apps/
     web/        Next.js, every web workspace (built)
-    api/        NestJS modular monolith (next)
+    api/        NestJS modular monolith (built, phase 2)
     mobile/     Flutter customer app (next)
     rider/      Flutter delivery associate app (later)
   packages/
@@ -121,8 +122,8 @@ BluBuy/
 | Phase | Scope | Exit criteria |
 |---|---|---|
 | 1. Dashboards (done) | Every web surface designed and built against mock data | All routes render; design system and state machines agreed |
-| 2. Core backend | Identity and OTP, catalog and search, offers, cart and checkout, payments, orders, seller onboarding and KYC | A real order placed and paid end to end on staging |
-| 3. Fulfilment and money | Seller order processing, labels and invoices, logistics integration (courier partners first, spec D6), returns, settlements and payouts, fee invoices | Seller paid for a delivered order; a return refunded |
+| 2. Core backend (built locally) | Identity and OTP, catalog and search, offers, cart and checkout, payments, orders, seller onboarding and KYC | A real order placed and paid end to end on staging. Done locally with sandbox payment and KYC providers; real providers and a staging deploy remain |
+| 3. Fulfilment and money | Seller order processing (accept, pack, ready to ship, AWB and fee breakdown already built in phase 2), labels and invoices, logistics integration (courier partners first, spec D6), returns, settlements and payouts, fee invoices | Seller paid for a delivered order; a return refunded |
 | 4. Flutter customer app | Browse, search, product, cart, checkout, orders, returns, account | Store listing ready on Play Store and App Store |
 | 5. Operations depth | Hub Console and Rider app on live data, Care Desk on live tickets, risk rules, ads, promotions engine | Pilot city running on BluBuy Logistics |
 | 6. Scale | Search relevance, recommendations, Hindi, seller app, BluBuy Local and Business | Per spec phase 2 items |

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { loadServerCart, syncCart, type LineInput } from "@/app/actions/store";
 import { CircleCheck } from "lucide-react";
 import type { CartLine } from "./types";
 import { DEFAULT_PINCODE } from "./delivery";
@@ -72,16 +73,19 @@ export interface CartState {
 }
 
 
-/** The signed-in shopper's server cart, used as the deterministic first render. */
-const DEFAULT_CART: CartState = {
-  lines: [
-    { key: lineKey("p-headphones-studio", "s-apex", "Graphite"), productId: "p-headphones-studio", sellerId: "s-apex", qty: 1, variant: "Graphite" },
-    { key: lineKey("p-coffee-beans", "s-greenleaf"), productId: "p-coffee-beans", sellerId: "s-greenleaf", qty: 2 },
-    { key: lineKey("p-vase-ceramic", "s-kiln"), productId: "p-vase-ceramic", sellerId: "s-kiln", qty: 1 },
-    { key: lineKey("p-lamp-arc", "s-terra"), productId: "p-lamp-arc", sellerId: "s-terra", qty: 1, saved: true },
-  ],
-  coupon: null,
-};
+/** A new browser starts with an empty cart; a signed-in account's cart is merged in after sign in. */
+const DEFAULT_CART: CartState = { lines: [], coupon: null };
+
+/** Union of two carts by line, keeping the larger quantity. */
+function mergeLines(local: CartLine[], server: LineInput[]): CartLine[] {
+  const byKey = new Map(local.map((l) => [l.key, l]));
+  for (const s of server) {
+    const key = lineKey(s.productId, s.sellerId, s.variant);
+    const mine = byKey.get(key);
+    byKey.set(key, mine ? { ...mine, qty: Math.max(mine.qty, s.qty) } : { key, productId: s.productId, sellerId: s.sellerId, qty: s.qty, variant: s.variant, saved: s.saved });
+  }
+  return [...byKey.values()];
+}
 
 const cartStore = createPersistedStore<CartState>("blubuy.cart.v1", DEFAULT_CART, (raw) => {
   if (!raw || typeof raw !== "object" || !Array.isArray((raw as CartState).lines)) return null;
@@ -128,9 +132,30 @@ interface CartApi {
 
 const CartContext = createContext<CartApi | null>(null);
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children, signedIn = false }: { children: ReactNode; signedIn?: boolean }) {
   const state = usePersisted(cartStore);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [merged, setMerged] = useState(false);
+  const merging = useRef(false);
+
+  // After sign in: merge the account's cart into this browser's cart once.
+  useEffect(() => {
+    if (!signedIn || merging.current) return;
+    merging.current = true;
+    loadServerCart().then((r) => {
+      if (r.ok) cartStore.write({ ...cartStore.read(), lines: mergeLines(cartStore.read().lines, r.data) });
+      setMerged(true);
+    });
+  }, [signedIn]);
+
+  // Then mirror every change to the account, so the app and other devices see it.
+  useEffect(() => {
+    if (!signedIn || !merged) return;
+    const t = setTimeout(() => {
+      syncCart(state.lines.map((l) => ({ productId: l.productId, sellerId: l.sellerId, qty: l.qty, variant: l.variant, saved: l.saved })));
+    }, 600);
+    return () => clearTimeout(t);
+  }, [state.lines, signedIn, merged]);
 
   useEffect(() => {
     if (!toast) return;

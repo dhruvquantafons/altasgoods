@@ -1,5 +1,6 @@
 "use client";
 
+import { signOut } from "@/app/actions/auth";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
@@ -311,6 +312,7 @@ export function WishlistLink() {
 /* ------------------------------ Account menu ---------------------------- */
 
 interface Customer {
+  signedIn: boolean;
   firstName: string;
   plus: boolean;
   bluCoins: number;
@@ -355,8 +357,8 @@ export function AccountMenu({ customer }: { customer: Customer }) {
     { href: "/account/orders", label: "Orders and returns", icon: Package },
     { href: "/account/wishlist", label: "Wishlist", icon: Heart },
     { href: "/plus", label: "BluBuy Plus", icon: Crown, note: customer.plus ? "Member" : undefined },
-    { href: "/account/rewards", label: "BluCoins", icon: Coins, note: formatNumber(customer.bluCoins) },
-    { href: "/account/wallet", label: "BluBuy Credits", icon: Wallet, note: `₹${formatNumber(customer.credits)}` },
+    { href: "/account/rewards", label: "BluCoins", icon: Coins, note: customer.signedIn ? formatNumber(customer.bluCoins) : undefined },
+    { href: "/account/wallet", label: "BluBuy Credits", icon: Wallet, note: customer.signedIn ? `₹${formatNumber(customer.credits)}` : undefined },
     { href: "/help", label: "Help centre", icon: HelpCircle },
   ];
 
@@ -371,7 +373,7 @@ export function AccountMenu({ customer }: { customer: Customer }) {
       >
         <UserRound size={21} strokeWidth={1.8} className="text-ink-800 lg:hidden" aria-hidden="true" />
         <span className="hidden flex-col leading-tight lg:flex">
-          <span className="text-xs text-ink-500">Hello, {customer.firstName}</span>
+          <span className="text-xs text-ink-500">{customer.signedIn ? `Hello, ${customer.firstName}` : "Hello, sign in"}</span>
           <span className="flex items-center gap-1 text-sm font-semibold text-ink-900">
             Account and lists <ChevronDown size={14} className={cn("transition-transform", open && "rotate-180")} aria-hidden="true" />
           </span>
@@ -380,6 +382,19 @@ export function AccountMenu({ customer }: { customer: Customer }) {
       </button>
       {open && (
         <div id={menuId} className="absolute top-full right-0 z-50 mt-1.5 w-72 rounded-2xl border border-line bg-white p-2 shadow-pop animate-fade-in">
+          {!customer.signedIn ? (
+            <div className="rounded-xl bg-ink-50 p-3">
+              <Link href="/login" className="flex h-10 w-full items-center justify-center rounded-lg bg-brand-600 text-sm font-semibold text-white hover:bg-brand-700">
+                Sign in
+              </Link>
+              <p className="mt-2 text-center text-xs text-ink-500">
+                New to BluBuy?{" "}
+                <Link href="/signup" className="font-semibold text-brand-700 hover:underline">
+                  Create an account
+                </Link>
+              </p>
+            </div>
+          ) : (
           <div className="flex items-center gap-3 rounded-xl bg-ink-50 px-3 py-3">
             <span className="flex size-10 items-center justify-center rounded-full bg-brand-100 font-display text-sm font-semibold text-brand-800">
               {customer.firstName[0]}
@@ -397,6 +412,7 @@ export function AccountMenu({ customer }: { customer: Customer }) {
               )}
             </div>
           </div>
+          )}
           <ul className="mt-1.5">
             {links.map((l) => (
               <li key={l.href}>
@@ -408,12 +424,14 @@ export function AccountMenu({ customer }: { customer: Customer }) {
               </li>
             ))}
           </ul>
-          <div className="mt-1.5 border-t border-line pt-1.5">
-            <Link href="/login" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-600 hover:bg-ink-50 hover:text-ink-900">
-              <LogOut size={17} strokeWidth={1.8} className="text-ink-500" aria-hidden="true" />
-              Not {customer.firstName}? Sign out
-            </Link>
-          </div>
+          {customer.signedIn && (
+            <form action={signOut.bind(null, "/")} className="mt-1.5 border-t border-line pt-1.5">
+              <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink-600 hover:bg-ink-50 hover:text-ink-900">
+                <LogOut size={17} strokeWidth={1.8} className="text-ink-500" aria-hidden="true" />
+                Not {customer.firstName}? Sign out
+              </button>
+            </form>
+          )}
         </div>
       )}
     </div>
@@ -466,7 +484,7 @@ export function DeliverTo({ addresses, name, variant = "bar" }: { addresses: Add
       >
         <MapPin size={15} strokeWidth={1.9} className="shrink-0 text-ink-500" aria-hidden="true" />
         <span className="truncate">
-          Deliver to {name}, <span className="font-semibold text-ink-900">{info?.city ?? "India"} {pincode}</span>
+          Deliver to {name ? `${name}, ` : ""}<span className="font-semibold text-ink-900">{info?.city ?? "India"} {pincode}</span>
         </span>
         <ChevronDown size={14} className="shrink-0 text-ink-400" aria-hidden="true" />
       </button>
@@ -567,11 +585,11 @@ export function MobileNav({ categories, customer }: { categories: NavCategory[];
               </button>
             </div>
             <div className="flex-1 overflow-y-auto scrollbar-thin">
-              <Link href="/account" className="flex items-center gap-3 bg-brand-950 px-4 py-4 text-white">
-                <span className="flex size-10 items-center justify-center rounded-full bg-white/10 font-display font-semibold">{customer.firstName[0]}</span>
+              <Link href={customer.signedIn ? "/account" : "/login"} className="flex items-center gap-3 bg-brand-950 px-4 py-4 text-white">
+                <span className="flex size-10 items-center justify-center rounded-full bg-white/10 font-display font-semibold">{customer.signedIn ? customer.firstName[0] : <UserRound size={18} aria-hidden="true" />}</span>
                 <span className="flex-1">
-                  <span className="block text-sm font-semibold">Hello, {customer.firstName}</span>
-                  <span className="block text-xs text-brand-200">{customer.plus ? "BluBuy Plus member" : "Your account"}</span>
+                  <span className="block text-sm font-semibold">{customer.signedIn ? `Hello, ${customer.firstName}` : "Sign in"}</span>
+                  <span className="block text-xs text-brand-200">{customer.signedIn ? (customer.plus ? "BluBuy Plus member" : "Your account") : "Orders, wishlist and faster checkout"}</span>
                 </span>
                 <ChevronRight size={18} className="text-brand-200" aria-hidden="true" />
               </Link>
@@ -619,12 +637,16 @@ export function MobileNav({ categories, customer }: { categories: NavCategory[];
                     {l.label}
                   </Link>
                 ))}
-                <Link href="/login" className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-ink-600 hover:bg-ink-50">
-                  <span className="flex size-8 items-center justify-center text-ink-500">
-                    <LogOut size={18} strokeWidth={1.8} aria-hidden="true" />
-                  </span>
-                  Sign out
-                </Link>
+                {customer.signedIn && (
+                  <form action={signOut.bind(null, "/")}>
+                    <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-sm text-ink-600 hover:bg-ink-50">
+                      <span className="flex size-8 items-center justify-center text-ink-500">
+                        <LogOut size={18} strokeWidth={1.8} aria-hidden="true" />
+                      </span>
+                      Sign out
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </div>

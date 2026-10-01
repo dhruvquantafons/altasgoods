@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { cancelOrder } from "@/app/actions/store";
 import { useState } from "react";
 import { CircleCheck, Download, Info, ShoppingCart, XCircle } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
@@ -57,6 +59,9 @@ export function CancelOrderButton({
   const [refundTo, setRefundTo] = useState<RefundOption["key"]>(refundOptions[0]?.key ?? "original");
   const [done, setDone] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const router = useRouter();
 
   const amount = items.filter((i) => selected.includes(i.id)).reduce((a, i) => a + i.amount, 0);
   const chosen = refundOptions.find((r) => r.key === refundTo);
@@ -91,9 +96,17 @@ export function CancelOrderButton({
               </Button>
               <Button
                 variant="danger"
-                onClick={() => {
+                disabled={busy}
+                onClick={async () => {
                   setTouched(true);
-                  if (valid) setDone(true);
+                  if (!valid) return;
+                  setBusy(true);
+                  setApiError(null);
+                  const r = await cancelOrder(orderId, [reason, note.trim()].filter(Boolean).join(": "), selected);
+                  setBusy(false);
+                  if (!r.ok) return setApiError(r.error);
+                  setDone(true);
+                  router.refresh();
                 }}
               >
                 {mode === "cancel" ? `Cancel ${selected.length > 1 ? `${selected.length} items` : "item"}` : "Request cancellation"}
@@ -102,6 +115,11 @@ export function CancelOrderButton({
           )
         }
       >
+        {apiError && !done && (
+          <p role="alert" className="mb-4 rounded-xl bg-danger-50 px-3.5 py-2.5 text-[13px] text-danger-700">
+            {apiError}
+          </p>
+        )}
         {done ? (
           <div className="flex flex-col items-center py-4 text-center">
             <span className="flex size-12 items-center justify-center rounded-full bg-success-50 text-success-600">

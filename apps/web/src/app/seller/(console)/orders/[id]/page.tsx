@@ -13,16 +13,11 @@ import { Timeline, type TimelineItem } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { RATE_CARD_VERSION } from "@/lib/mock";
-import {
-  getListing,
-  getSellerOrder,
-  ORDER_STAGES,
-  SELLER,
-  sellerLines,
-  sellerReturns,
-  settlementEstimate,
-  type SellerLine,
-} from "@/lib/mock/seller-extra";
+import { getListing, ORDER_STAGES, SELLER, sellerReturns, settlementEstimate, type SellerLine } from "@/lib/mock/seller-extra";
+import { CourierSimulator } from "@/components/seller/orders/courier-simulator";
+import { uiItemStatus } from "@/lib/api/format";
+import { loadSellerOrder, toSellerLine } from "@/lib/api/seller-orders";
+import type { ApiOrderItemStatus } from "@/lib/api/types";
 import type { FeeLine, Order } from "@/lib/types";
 import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/status";
 import { formatDate, formatDateTime, formatINR, formatWeekday, NOW } from "@/lib/utils";
@@ -38,10 +33,6 @@ const FEE_ROWS: { label: string; get: (l: SellerLine, fees: FeeLine[]) => number
   { label: "TCS (0.5%)", get: (_, f) => feeOf(f, "TCS") },
   { label: "TDS u/s 194-O (0.1%)", get: (_, f) => feeOf(f, "TDS") },
 ];
-
-export function generateStaticParams() {
-  return [...new Set(sellerLines.map((l) => l.orderId))].map((id) => ({ id }));
-}
 
 export async function generateMetadata(props: PageProps<"/seller/orders/[id]">) {
   const { id } = await props.params;
@@ -101,9 +92,36 @@ function packagingTips(subcategory: string) {
 
 export default async function OrderDetailPage(props: PageProps<"/seller/orders/[id]">) {
   const { id } = await props.params;
-  const data = getSellerOrder(decodeURIComponent(id));
-  if (!data) notFound();
-  const { order, lines } = data;
+  const api = await loadSellerOrder(decodeURIComponent(id));
+  const lines = api.items.map((it) => ({
+    ...toSellerLine({ ...it, orderId: api.id, placedAt: api.placedAt, paymentMethod: api.paymentMethod, shipTo: { name: api.shipTo.name, city: api.shipTo.city, pincode: api.shipTo.pincode } }),
+    state: api.shipTo.state,
+  }));
+  if (!lines.length) notFound();
+  const firstItem = api.items[0]!.id;
+  const order: Order = {
+    id: api.id,
+    customerId: "",
+    customerName: api.shipTo.name,
+    placedAt: api.placedAt,
+    items: lines.map((l) => ({ id: l.lineId, productId: l.productId, title: l.title, image: l.image, variant: l.variant, sellerId: SELLER.id, quantity: l.quantity, price: l.price, mrp: l.mrp, status: l.status })),
+    status: lines[0]!.status,
+    payment: { method: lines[0]!.payment, status: api.paymentMethod === "COD" ? "cod_pending" : "captured", txnId: "" },
+    address: { id: "ship-to", name: api.shipTo.name, phone: "", line1: "", city: api.shipTo.city, state: api.shipTo.state, pincode: api.shipTo.pincode, type: "home" },
+    subtotal: lines.reduce((a, l) => a + l.total, 0),
+    discount: 0,
+    shippingFee: 0,
+    platformFee: 0,
+    total: lines.reduce((a, l) => a + l.total, 0),
+    promisedBy: lines[0]!.promisedBy,
+    timeline: api.events
+      .filter((e) => e.orderItemId === firstItem && e.toStatus !== "NEW")
+      .map((e) => ({ status: uiItemStatus(e.toStatus as ApiOrderItemStatus), label: e.toStatus, at: e.at, note: e.note ?? undefined })),
+    channel: "web",
+  };
+  // placed time first, then the seller's journey
+  order.timeline.unshift({ status: "placed", label: "Order placed", at: api.placedAt });
+  const apiItems = new Map(api.items.map((i) => [i.id, i]));
   const shipLines = lines.filter((l) => l.channel !== "fulfilled");
   const primary = shipLines[0] ?? lines[0]!;
   const listing = getListing(primary.productId);
@@ -112,7 +130,14 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
   const ret = sellerReturns.find((r) => r.orderId === order.id);
   const daysSinceDelivery = primary.deliveredAt ? Math.floor((NOW.getTime() - new Date(primary.deliveredAt).getTime()) / 86400_000) : undefined;
   const preShip = ["placed", "confirmed", "packed", "ready_to_ship"].includes(primary.status);
-  const estimates = lines.map((l) => ({ line: l, est: settlementEstimate(l) }));
+  // real fee lines from the API once the order is confirmed; dates still estimated from the payout rules
+  const estimates = lines.map((l) => {
+    const base = settlementEstimate(l);
+    const it = apiItems.get(l.itemId);
+    if (!it?.fees) return { line: l, est: base };
+    const fees = it.fees.map((f) => ({ label: f.label, amount: f.amountPaise / 100 }));
+    return { line: l, est: { ...base, fees, deductions: fees.reduce((a, f) => a + f.amount, 0), net: (it.netSettlementPaise ?? 0) / 100 } };
+  });
   const cancelled = primary.status === "cancelled";
   const yourTotal = lines.reduce((a, l) => a + l.total, 0);
 
@@ -148,9 +173,12 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
             daysSinceDelivery={daysSinceDelivery}
             weightKg={listing?.weightKg ?? 1}
             dims={listing?.dims ?? [24, 20, 10]}
+            itemIds={lines.filter((l) => l.status === primary.status).map((l) => l.itemId)}
           />
         }
       />
+
+      {process.env.NODE_ENV !== "production" && <CourierSimulator items={api.items.map((i) => ({ id: i.id, title: i.title, status: i.status }))} />}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 xl:col-span-2">
@@ -369,13 +397,17 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
                 columns={1}
                 items={[
                   { label: "Name", value: primary.buyer },
-                  { label: "Phone", value: <Mono className="text-sm">{primary.buyerPhone}</Mono> },
+                  { label: "Phone", value: primary.buyerPhone ? <Mono className="text-sm">{primary.buyerPhone}</Mono> : <span className="text-ink-500">Masked</span> },
                   {
                     label: "Ship to",
                     value: (
                       <>
-                        {primary.addressLine}
-                        <br />
+                        {primary.addressLine && (
+                          <>
+                            {primary.addressLine}
+                            <br />
+                          </>
+                        )}
                         {primary.city}, {primary.state} <Mono className="text-sm font-medium">{primary.pincode}</Mono>
                       </>
                     ),
@@ -395,7 +427,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
                   { label: "Method", value: PAYMENT_METHOD[order.payment.method] },
                   { label: "Status", value: <StatusBadge meta={PAYMENT_STATUS[order.payment.status]} size="sm" /> },
                   { label: "Your items", value: <span className="font-medium tabular-nums">{formatINR(yourTotal)}</span> },
-                  { label: "Transaction", value: <Mono className="text-sm">{order.payment.txnId}</Mono> },
+                  ...(order.payment.txnId ? [{ label: "Transaction", value: <Mono className="text-sm">{order.payment.txnId}</Mono> }] : []),
                 ]}
               />
               {primary.cod && (

@@ -27,7 +27,8 @@ import { IconTile } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { categoryMix, funnel, orders, paymentMix, platformDaily, regionMix, SALE_EVENT, sellers } from "@/lib/mock";
-import { CATALOG_QUEUE_TOTAL, gatewayStats, hourlyOrdersYesterday, kycApplications, opsSnapshot, ordersPerMinute, saleEvents } from "@/lib/mock/admin-extra";
+import { CATALOG_QUEUE_TOTAL, gatewayStats, hourlyOrdersYesterday, opsSnapshot, ordersPerMinute, saleEvents } from "@/lib/mock/admin-extra";
+import { loadKycSummary } from "@/lib/api/review";
 import { ORDER_STATUS, PAYMENT_METHOD, SELLER_STATUS, type Tone } from "@/lib/status";
 import type { LucideIcon } from "lucide-react";
 import { cn, formatCompact, formatDateShort, formatINR, formatNumber, formatTime, formatWeekday, NOW, timeAgo } from "@/lib/utils";
@@ -37,7 +38,7 @@ export const metadata = { title: "Overview" };
 type Day = (typeof platformDaily)[number];
 const sum = (arr: Day[], k: "gmv" | "orders" | "newCustomers" | "returns" | "visitors") => arr.reduce((a, d) => a + d[k], 0);
 
-export default function AdminOverview() {
+export default async function AdminOverview() {
   const today = platformDaily.at(-1)!;
   const yesterday = platformDaily.at(-2)!;
   const completed = platformDaily.slice(0, -1);
@@ -72,15 +73,21 @@ export default function AdminOverview() {
     return { method: m, rate: rows.reduce((a, g) => a + g.success24h * g.volume24h, 0) / vol, degraded: rows.some((g) => g.status !== "operational") };
   });
 
-  const openKyc = kycApplications.filter((k) => ["submitted", "under_review", "action_required"].includes(k.status));
-  const oldestKycDays = Math.max(...openKyc.filter((k) => k.status !== "action_required").map((k) => Math.floor((NOW.getTime() - new Date(k.submittedAt).getTime()) / 86_400_000)));
+  const kyc = await loadKycSummary();
 
   const alerts: { icon: LucideIcon; tone: Tone; title: string; detail: string; href: string; cta: string }[] = [
     { icon: CreditCard, tone: "danger", title: `UPI success ${upi15.toFixed(1)}%, last 15 min`, detail: "Collect requests degraded at Kanakpay", href: "/admin/payments", cta: "Gateway health" },
     { icon: Timer, tone: "warning", title: `${formatNumber(opsSnapshot.slaBreaches)} items past dispatch-by`, detail: `${formatNumber(opsSnapshot.dispatchAtRisk)} more at risk before 6 pm`, href: "/admin/orders?view=attention", cta: "Review orders" },
     { icon: RotateCcw, tone: "danger", title: `${opsSnapshot.refundsFailed} refunds failed at the bank`, detail: "Retry or reroute to BluBuy Credits", href: "/admin/returns?refund=failed", cta: "Fix refunds" },
     { icon: PackageCheck, tone: "warning", title: `${CATALOG_QUEUE_TOTAL} listings awaiting QC`, detail: `Oldest ${opsSnapshot.oldestQcHours} h against a 48 h target`, href: "/admin/catalog", cta: "Open queue" },
-    { icon: Building2, tone: "info", title: `${openKyc.length} seller applications open`, detail: `Oldest awaiting review: ${oldestKycDays} days`, href: "/admin/sellers/approvals", cta: "Review KYC" },
+    {
+      icon: Building2,
+      tone: "info",
+      title: `${kyc?.open ?? 0} seller applications open`,
+      detail: kyc?.oldestDays != null ? `Oldest awaiting review: ${kyc.oldestDays === 0 ? "under a day" : `${kyc.oldestDays} ${kyc.oldestDays === 1 ? "day" : "days"}`}` : "None awaiting review",
+      href: "/admin/sellers/approvals",
+      cta: "Review KYC",
+    },
     { icon: ScrollText, tone: "info", title: `${opsSnapshot.claimsDueToday} Guarantee claims due today`, detail: "7 day decision clock", href: "/admin/disputes", cta: "Open claims" },
   ];
 

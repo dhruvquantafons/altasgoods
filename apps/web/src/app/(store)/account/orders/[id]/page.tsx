@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+
 import {
   Banknote,
   ChevronRight,
@@ -27,14 +27,11 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { getProduct, getSeller } from "@/lib/mock";
-import { accountOrders, addressExtras, BLUCOINS, DELIVERY_ASSOCIATES, getAccountOrder, myReviews, returnPolicyFor, SECURE_DELIVERY } from "@/lib/mock/account-extra";
+import { addressExtras, BLUCOINS, DELIVERY_ASSOCIATES, myReviews, returnPolicyFor, SECURE_DELIVERY } from "@/lib/mock/account-extra";
+import { loadMyOrder, toUiOrder } from "@/lib/api/account-orders";
 import { PAYMENT_STATUS } from "@/lib/status";
 import type { Order, OrderItem } from "@/lib/types";
 import { formatINR, NOW } from "@/lib/utils";
-
-export function generateStaticParams() {
-  return accountOrders.map((o) => ({ id: o.id }));
-}
 
 export async function generateMetadata(props: PageProps<"/account/orders/[id]">) {
   const { id } = await props.params;
@@ -43,19 +40,24 @@ export async function generateMetadata(props: PageProps<"/account/orders/[id]">)
 
 const reviewed = new Set(myReviews.map((r) => r.slug));
 
-function awbFor(order: Order, sellerId: string) {
-  const digits = order.id.replace(/\D/g, "");
-  return `BBL${digits.slice(0, 10)}${sellerId.length % 10}`;
+/** Real AWB once the seller hands the package over; null before that. */
+function awbFor(awbs: Map<string, string>, sellerId: string) {
+  return awbs.get(sellerId) ?? null;
 }
 
 export default async function OrderDetailPage(props: PageProps<"/account/orders/[id]">) {
   const { id } = await props.params;
-  const order = getAccountOrder(id);
-  if (!order) notFound();
+  const apiOrder = await loadMyOrder(id);
+  const order = toUiOrder(apiOrder);
+  const awbs = new Map(apiOrder.items.filter((i) => i.awb).map((i) => [i.seller.id, i.awb!]));
+  const cancellable = new Set(apiOrder.items.filter((i) => i.canCancel).map((i) => i.id));
+  const unpaid = apiOrder.status === "PAYMENT_PENDING" || apiOrder.status === "PAYMENT_FAILED";
+  const openPayment = apiOrder.payments.find((p) => p.status === "CREATED" || p.status === "PENDING" || p.status === "FAILED");
 
   const sellerIds = [...new Set(order.items.map((it) => it.sellerId))];
   const packages = sellerIds.map((sid) => ({ sellerId: sid, items: order.items.filter((it) => it.sellerId === sid) }));
-  const mode = cancelMode(order.status);
+  const mode = cancellable.size ? cancelMode(order.status) ?? "cancel" : null;
+  const cancelInput = { ...cancelProps(order), items: cancelProps(order).items.filter((it) => cancellable.has(it.id)) };
   const secure = needsSecureDelivery(order);
   const associate = DELIVERY_ASSOCIATES[order.id];
   const cancelled = CANCELLED_STATUSES.includes(order.status);
@@ -89,13 +91,22 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
         actions={
           <>
             {invoiceAvailable(order) && <InvoiceButton orderId={order.id} size="md" label="Download invoice" />}
-            {mode && <CancelOrderButton mode={mode} size="md" {...cancelProps(order)} />}
+            {mode && <CancelOrderButton mode="cancel" size="md" {...cancelInput} />}
             <ButtonLink href={`/account/support?order=${order.id}`} variant="ghost" icon={LifeBuoy}>
               Need help
             </ButtonLink>
           </>
         }
       />
+
+      {unpaid && openPayment && (
+        <Notice tone="warning" icon={CircleAlert} title="Payment pending" className="mb-6">
+          Complete the payment to confirm this order. Unpaid orders are released 30 minutes after they are placed.{" "}
+          <Link href={`/checkout/pay/${openPayment.id}`} className="font-semibold text-brand-700 hover:underline">
+            Complete payment
+          </Link>
+        </Notice>
+      )}
 
       {order.status === "out_for_delivery" && secure && <SecureDeliveryBanner otp={SECURE_DELIVERY.otp} promisedBy={order.promisedBy} className="mb-6" />}
 
@@ -152,7 +163,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                 </ul>
 
                 <div className="mt-2">
-                  <TrackingHistory order={order} awb={awbFor(order, pkg.sellerId)} />
+                  <TrackingHistory order={order} awb={awbFor(awbs, pkg.sellerId) ?? "Assigned at pickup"} />
                 </div>
               </Panel>
             );
@@ -269,7 +280,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
               { label: "Where is my package?", hint: "Live tracking and delivery attempts", href: `/account/support?order=${order.id}&topic=delivery`, icon: Truck },
               mode
                 ? { label: "Cancel an item", hint: "Free before it ships", href: `/account/support?order=${order.id}&topic=cancel`, icon: PackageX }
-                : { label: "Return or replace an item", hint: "Doorstep pickup and quick refunds", href: `/account/orders/${order.id}/return`, icon: RotateCcw },
+                : { label: "Return or replace an item", hint: "Doorstep pickup and quick refunds", href: `/account/support?order=${order.id}`, icon: RotateCcw },
               { label: "Payment or refund question", hint: "Charges, EMI and refund status", href: `/account/support?order=${order.id}&topic=payment`, icon: CreditCard },
               { label: "File a BluBuy Guarantee claim", hint: "If the seller has not resolved it", href: `/account/support?order=${order.id}&topic=guarantee`, icon: ShieldCheck },
             ].map((h) => (
@@ -340,7 +351,7 @@ function ItemRow({ order, item }: { order: Order; item: OrderItem }) {
       {isDelivered && (
         <div className="flex flex-wrap gap-2 sm:w-44 sm:shrink-0 sm:flex-col [&>a]:flex-1 [&>button]:flex-1 sm:[&>a]:flex-none sm:[&>button]:flex-none">
           {ri.eligible && (
-            <ButtonLink href={`/account/orders/${order.id}/return?item=${item.id}`} size="sm" variant="secondary" icon={RotateCcw} className="sm:w-full">
+            <ButtonLink href={`/account/support?order=${order.id}&item=${item.id}`} size="sm" variant="secondary" icon={RotateCcw} className="sm:w-full">
               Return or replace
             </ButtonLink>
           )}

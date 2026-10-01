@@ -13,10 +13,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabLinks } from "@/components/ui/tabs";
 import { categories, sellers } from "@/lib/mock";
-import { kycApplications } from "@/lib/mock/admin-extra";
+import { loadKycSummary } from "@/lib/api/review";
 import { SELLER_STATUS } from "@/lib/status";
 import type { Seller } from "@/lib/types";
-import { formatCompact, formatDate, formatNumber, NOW } from "@/lib/utils";
+import { formatCompact, formatDate, formatNumber } from "@/lib/utils";
 
 export const metadata = { title: "Sellers" };
 
@@ -48,8 +48,8 @@ export default async function SellersPage(props: PageProps<"/admin/sellers">) {
   const rows = base.filter(TABS.find((t) => t.key === tab)!.match).sort((a, b) => b.gmv30d - a.gmv30d);
 
   const active = sellers.filter((s) => s.status === "active");
-  const openKyc = kycApplications.filter((k) => ["submitted", "under_review", "action_required"].includes(k.status));
-  const oldest = Math.max(...openKyc.filter((k) => k.status !== "action_required").map((k) => Math.floor((NOW.getTime() - new Date(k.submittedAt).getTime()) / 86_400_000)));
+  const kyc = await loadKycSummary();
+  const openKyc = kyc?.open ?? 0;
   const gmv = sellers.reduce((a, s) => a + s.gmv30d, 0);
   const top3 = [...sellers].sort((a, b) => b.gmv30d - a.gmv30d).slice(0, 3).reduce((a, s) => a + s.gmv30d, 0);
   const avgHealth = Math.round(active.reduce((a, s) => a + s.health.score, 0) / active.length);
@@ -70,21 +70,23 @@ export default async function SellersPage(props: PageProps<"/admin/sellers">) {
         className="mb-6"
         items={[
           { label: "Active sellers", value: active.length, hint: `${formatNumber(active.reduce((a, s) => a + s.liveListings, 0))} live listings` },
-          { label: "Onboarding", value: sellers.filter((s) => ONBOARDING.includes(s.status)).length, hint: `${openKyc.length} awaiting KYC decision`, href: "/admin/sellers?status=onboarding" },
+          { label: "Onboarding", value: sellers.filter((s) => ONBOARDING.includes(s.status)).length, hint: `${openKyc} awaiting KYC decision`, href: "/admin/sellers?status=onboarding" },
           { label: "On hold or suspended", value: sellers.filter((s) => ["on_hold", "suspended"].includes(s.status)).length, hint: "payouts held", href: "/admin/sellers?status=on_hold" },
           { label: "Seller GMV, 30 days", value: formatCompact(gmv, true), hint: `top 3 sellers ${((top3 / gmv) * 100).toFixed(0)}% of GMV` },
           { label: "Average Seller Health", value: avgHealth, hint: `${HEALTH_BAND[healthBand(avgHealth)].label}, active sellers` },
         ]}
       />
 
-      {openKyc.length > 0 && (
+      {openKyc > 0 && (
         <Link href="/admin/sellers/approvals" className="group mb-6 flex items-center gap-4 rounded-[var(--radius-card)] border border-brand-100 bg-brand-50/60 px-5 py-4 transition-colors hover:bg-brand-50">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-brand-600 ring-1 ring-brand-100">
             <Building2 size={19} strokeWidth={1.8} aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-ink-900">{openKyc.length} seller applications need a KYC decision</span>
-            <span className="block text-[13px] text-ink-600">Oldest has waited {oldest} days. GSTIN, PAN and penny drop checks have already run.</span>
+            <span className="block text-sm font-semibold text-ink-900">{openKyc} seller applications need a KYC decision</span>
+            <span className="block text-[13px] text-ink-600">
+              {kyc?.oldestDays != null ? `Oldest has waited ${kyc.oldestDays === 0 ? "under a day" : `${kyc.oldestDays} ${kyc.oldestDays === 1 ? "day" : "days"}`}. ` : ""}GSTIN, PAN and penny drop checks have already run.
+            </span>
           </span>
           <ArrowRight size={17} className="shrink-0 text-brand-600 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
         </Link>

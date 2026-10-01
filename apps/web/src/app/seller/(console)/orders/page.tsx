@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableFooter } from "@/components/ui/table";
 import { TabLinks } from "@/components/ui/tabs";
-import { ORDER_STAGES, sellerLines, slaFor, istAt, type SellerLine } from "@/lib/mock/seller-extra";
+import { ORDER_STAGES, slaFor, istAt, type SellerLine } from "@/lib/mock/seller-extra";
+import { loadSellerLines } from "@/lib/api/seller-orders";
 import { PAYMENT_METHOD } from "@/lib/status";
 import { formatDate, formatDateTime, formatWeekday, NOW, timeAgo } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ function rowFor(l: SellerLine, stage: OrderStageKey): OrderRow {
   const pay = l.cod ? "COD" : `Prepaid, ${PAYMENT_METHOD[l.payment].replace("Credit / Debit card", "card").replace("Net banking", "net banking")}`;
   const base: OrderRow = {
     lineId: l.lineId,
+    itemId: l.itemId,
     orderId: l.orderId,
     title: l.title,
     image: l.image,
@@ -55,6 +57,7 @@ function rowFor(l: SellerLine, stage: OrderStageKey): OrderRow {
 
 export default async function OrdersPage(props: PageProps<"/seller/orders">) {
   const sp = await props.searchParams;
+  const { lines: sellerLines } = await loadSellerLines();
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const stage = (ORDER_STAGES.some((s) => s.key === one(sp.tab)) ? one(sp.tab) : "new") as OrderStageKey;
   const q = one(sp.q).trim().toLowerCase();

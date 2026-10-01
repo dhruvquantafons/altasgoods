@@ -18,6 +18,7 @@ import {
 import { AreaChart } from "@/components/charts/area-chart";
 import { BarList } from "@/components/charts/static";
 import { ProductImage } from "@/components/commerce/product-image";
+import { NewSellerHome } from "@/components/seller/new-seller-home";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -33,9 +34,10 @@ import {
   returns,
   SALE_EVENT,
   sellerDaily,
-  sellerOrderLines,
   settlementsForSeller,
 } from "@/lib/mock";
+import { loadSellerLines } from "@/lib/api/seller-orders";
+import { currentUser } from "@/lib/api/server";
 import { ORDER_STATUS } from "@/lib/status";
 import { formatCompact, formatDate, formatDateShort, formatINR, formatNumber, formatWeekday, istHour, NOW, timeAgo } from "@/lib/utils";
 
@@ -45,12 +47,17 @@ function pctChange(a: number, b: number) {
   return b ? ((a - b) / b) * 100 : 0;
 }
 
-export default function SellerDashboard() {
+export default async function SellerDashboard() {
+  const [{ lines, counts }, user] = await Promise.all([loadSellerLines(), currentUser()]);
+  const toConfirm = counts.NEW ?? 0;
+  const toPack = counts.ACCEPTED ?? 0;
+  const awaitingPickup = (counts.PACKED ?? 0) + (counts.READY_TO_SHIP ?? 0);
+  const membership = user?.sellers[0];
+  // sellers who joined through onboarding have no sales history in the sample analytics
+  if (membership && !getSeller(membership.id)) {
+    return <NewSellerHome firstName={(user?.name ?? "there").split(" ")[0]!} store={membership.displayName} counts={{ toConfirm, toPack, awaitingPickup }} />;
+  }
   const seller = getSeller(CURRENT_SELLER_ID)!;
-  const lines = sellerOrderLines(CURRENT_SELLER_ID);
-  const toConfirm = lines.filter(({ item }) => item.status === "placed").length;
-  const toPack = lines.filter(({ item }) => item.status === "confirmed").length;
-  const awaitingPickup = lines.filter(({ item }) => ["packed", "ready_to_ship"].includes(item.status)).length;
   const myReturns = returns.filter((r) => r.sellerId === CURRENT_SELLER_ID && ["requested", "received"].includes(r.status)).length;
   const myProducts = productsBySeller(CURRENT_SELLER_ID);
   const suppressed = myProducts.filter((p) => p.listingStatus === "suppressed").length;
@@ -78,14 +85,15 @@ export default function SellerDashboard() {
     .slice(0, 6)
     .map((p) => ({ label: p.title.split(/[,(]/)[0]!.trim(), value: p.soldLast30d, href: `/seller/catalog/${p.id}` }));
 
-  const recent = lines.slice(0, 6);
+  const recent = lines.toSorted((a, b) => b.placedAt.localeCompare(a.placedAt)).slice(0, 6);
+  const firstName = (user?.name ?? seller.ownerName).split(" ")[0];
   const hour = istHour(NOW);
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const todo = [
-    { label: "Orders to confirm", value: toConfirm, hint: "Confirm by 2:00 PM to ship today", href: "/seller/orders?status=placed", icon: ShoppingCart, tone: "brand" as const },
-    { label: "Ready to pack", value: toPack, hint: "Print labels and invoices", href: "/seller/orders?status=confirmed", icon: Package, tone: "info" as const },
-    { label: "Awaiting pickup", value: awaitingPickup, hint: "Pickup slot 4:00 to 6:00 PM", href: "/seller/orders?status=ready_to_ship", icon: Truck, tone: "accent" as const },
+    { label: "Orders to confirm", value: toConfirm, hint: "Confirm by 2:00 PM to ship today", href: "/seller/orders?tab=new", icon: ShoppingCart, tone: "brand" as const },
+    { label: "Ready to pack", value: toPack, hint: "Print labels and invoices", href: "/seller/orders?tab=to_pack", icon: Package, tone: "info" as const },
+    { label: "Awaiting pickup", value: awaitingPickup, hint: "Pickup slot 4:00 to 6:00 PM", href: "/seller/orders?tab=ready", icon: Truck, tone: "accent" as const },
     { label: "Returns to review", value: myReturns, hint: "Inspect received items", href: "/seller/returns", icon: Undo2, tone: "warning" as const },
     { label: "Listings with issues", value: suppressed, hint: "Hidden from search", href: "/seller/catalog?status=suppressed", icon: CircleAlert, tone: "danger" as const },
     { label: "Low stock SKUs", value: lowStock, hint: "Under 20 units left", href: "/seller/inventory?filter=low", icon: Boxes, tone: "neutral" as const },
@@ -94,7 +102,7 @@ export default function SellerDashboard() {
   return (
     <>
       <PageHeader
-        title={`${greeting}, ${seller.ownerName.split(" ")[0]}`}
+        title={`${greeting}, ${firstName}`}
         description={`Here is what needs your attention today, ${formatWeekday(NOW)}.`}
         actions={
           <>
@@ -238,28 +246,28 @@ export default function SellerDashboard() {
                   </TR>
                 </THead>
                 <TBody>
-                  {recent.map(({ order, item }) => (
-                    <TR key={order.id + item.id}>
+                  {recent.map((l) => (
+                    <TR key={l.lineId}>
                       <TD>
-                        <Link href={`/seller/orders/${order.id}`} className="font-mono text-[13px] font-medium text-brand-700 hover:underline">
-                          {order.id}
+                        <Link href={`/seller/orders/${l.orderId}`} className="font-mono text-[13px] font-medium text-brand-700 hover:underline">
+                          {l.orderId}
                         </Link>
-                        <p className="text-xs text-ink-500">{order.address.city}</p>
+                        <p className="text-xs text-ink-500">{l.city}</p>
                       </TD>
                       <TD>
                         <div className="flex max-w-xs items-center gap-3">
-                          <ProductImage src={item.image} alt="" size={36} rounded="md" />
-                          <span className="truncate text-[13px] text-ink-800">{item.title}</span>
+                          <ProductImage src={l.image} alt="" size={36} rounded="md" />
+                          <span className="truncate text-[13px] text-ink-800">{l.title}</span>
                         </div>
                       </TD>
                       <TD align="right" className="font-medium text-ink-900">
-                        {formatINR(item.price * item.quantity)}
+                        {formatINR(l.total)}
                       </TD>
                       <TD>
-                        <StatusBadge meta={ORDER_STATUS[item.status]} size="sm" />
+                        <StatusBadge meta={ORDER_STATUS[l.status]} size="sm" />
                       </TD>
                       <TD align="right" className="text-[13px] text-ink-500">
-                        {timeAgo(order.placedAt)}
+                        {timeAgo(l.placedAt)}
                       </TD>
                     </TR>
                   ))}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { transitionSellerItems } from "@/app/actions/seller";
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { Ban, Check, ClipboardList, PackageSearch, Printer, Truck, X } from "lucide-react";
@@ -19,6 +21,8 @@ export type OrderStageKey = "new" | "to_pack" | "ready" | "shipped" | "delivered
 
 export interface OrderRow {
   lineId: string;
+  /** the API order item id */
+  itemId: string;
   orderId: string;
   title: string;
   image: string;
@@ -78,6 +82,7 @@ const DATE_HEADER: Record<OrderStageKey, string> = {
 };
 
 export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRow[]; stage: OrderStageKey; toolbar: ReactNode; emptyHint: string }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [overrides, setOverrides] = useState<Record<string, OrderStatus>>({});
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -112,20 +117,40 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint }: { rows: OrderRo
     return ` ${skipped} skipped as not eligible.`;
   }
 
-  function apply(action: Action, to?: OrderStatus, extra = "") {
+  /** UI actions to API transitions (the state machine lives in the API). */
+  const API_TO: Partial<Record<Action, { from: OrderStatus[]; to: "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "CANCELLED" }>> = {
+    confirm: { from: ["placed"], to: "ACCEPTED" },
+    labels: { from: ["confirmed"], to: "PACKED" },
+    manifest: { from: ["packed"], to: "READY_TO_SHIP" },
+    pickup: { from: ["packed"], to: "READY_TO_SHIP" },
+    cancel: { from: ["placed", "confirmed", "packed", "ready_to_ship"], to: "CANCELLED" },
+  };
+
+  async function apply(action: Action, _to?: OrderStatus, extra = "") {
     const { eligible, fulfilled, skipped } = partition(action);
+    const move = API_TO[action];
+    const moving = move ? eligible.filter((r) => move.from.includes(statusOf(r))) : [];
+    const ids = moving.map((r) => r.itemId);
     const n = eligible.length;
-    if (to) setOverrides((prev) => ({ ...prev, ...Object.fromEntries(eligible.map((r) => [r.lineId, to])) }));
-    const plural = (w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+    const plural = (w: string, k = n) => `${k} ${w}${k === 1 ? "" : "s"}`;
+    setSelected(new Set());
+    if (!n) return toast.show(`No eligible orders selected.${skippedNote(fulfilled, skipped)}`);
+    if (ids.length) {
+      const r = await transitionSellerItems(ids, move!.to, action === "cancel" ? reason : undefined);
+      if (!r.ok) return toast.show(r.error);
+      const done = moving.filter((m) => !r.data.failed.some((f) => f.id === m.itemId));
+      setOverrides((prev) => ({ ...prev, ...Object.fromEntries(done.map((m) => [m.lineId, _to ?? "confirmed"])) }));
+      router.refresh();
+      if (r.data.failed.length) return toast.show(`${plural("order", r.data.done)} updated. ${r.data.failed.length} failed: ${r.data.failed[0]!.error}`);
+    }
     const msg: Record<Action, string> = {
       confirm: `${plural("order")} confirmed. Dispatch by dates are locked in.`,
-      labels: `Labels and invoices for ${plural("order")} downloaded as one PDF (4 x 6 in).`,
-      manifest: `Manifest MF-BOM-261001-04 created with ${plural("package")}.`,
+      labels: `${plural("order")} packed. Labels and invoices downloaded as one PDF (4 x 6 in).`,
+      manifest: `${plural("package")} marked ready to ship, with AWB numbers assigned.`,
       pickup: `Pickup requested for ${plural("package")}${extra}.`,
       cancel: `${plural("order")} cancelled. Customers are refunded automatically.`,
     };
-    toast.show(n ? msg[action] + skippedNote(fulfilled, skipped) : `No eligible orders selected.${skippedNote(fulfilled, skipped)}`);
-    setSelected(new Set());
+    toast.show(msg[action] + skippedNote(fulfilled, skipped));
   }
 
   const actions = ACTIONS[stage];

@@ -1,0 +1,214 @@
+import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Param, Patch, Post, Put, Query, Req } from "@nestjs/common";
+import { ApiBearerAuth, ApiHeader, ApiResponse, ApiTags } from "@nestjs/swagger";
+import type { Request } from "express";
+import { z } from "zod";
+import { forbidden } from "../../common/errors.js";
+import { isProduction } from "../../config/env.js";
+import { CurrentSeller, CurrentUser, Public, SellerScoped, type AuthUser } from "../auth/auth.guard.js";
+import { AddressesService } from "./addresses.service.js";
+import { CartService } from "./cart.service.js";
+import * as s from "./commerce.schemas.js";
+import { OrdersService } from "./orders.service.js";
+import { PaymentsService } from "./payments/payments.service.js";
+import { SellerOrdersService } from "./seller-orders.service.js";
+import { DevLogisticsService } from "./dev-logistics.service.js";
+
+const uuidParam = { schema: z.uuid() };
+
+@ApiTags("Addresses")
+@ApiBearerAuth()
+@Controller("v1/me/addresses")
+export class AddressesController {
+  constructor(@Inject(AddressesService) private readonly svc: AddressesService) {}
+
+  @Get()
+  @ApiResponse({ status: 200, standardSchema: z.array(s.addressSchema) })
+  list(@CurrentUser() u: AuthUser) {
+    return this.svc.list(u.id);
+  }
+
+  @Post()
+  @ApiResponse({ status: 201, standardSchema: s.addressSchema })
+  create(@CurrentUser() u: AuthUser, @Body({ schema: s.addressBody }) body: z.infer<typeof s.addressBody>) {
+    return this.svc.create(u.id, body);
+  }
+
+  @Patch(":id")
+  @ApiResponse({ status: 200, standardSchema: s.addressSchema })
+  update(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.addressPatch }) body: z.infer<typeof s.addressPatch>) {
+    return this.svc.update(u.id, id, body);
+  }
+
+  @Delete(":id")
+  @HttpCode(204)
+  async remove(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string) {
+    await this.svc.remove(u.id, id);
+  }
+}
+
+@ApiTags("Cart")
+@ApiBearerAuth()
+@Controller("v1/cart")
+export class CartController {
+  constructor(@Inject(CartService) private readonly svc: CartService) {}
+
+  @Get()
+  @ApiResponse({ status: 200, standardSchema: s.cartSchema })
+  get(@CurrentUser() u: AuthUser) {
+    return this.svc.get(u.id);
+  }
+
+  @Put()
+  @ApiResponse({ status: 200, standardSchema: s.cartSchema })
+  replace(@CurrentUser() u: AuthUser, @Body({ schema: s.putCartBody }) body: z.infer<typeof s.putCartBody>) {
+    return this.svc.replace(u.id, body.lines);
+  }
+
+  @Post("merge")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.cartSchema })
+  merge(@CurrentUser() u: AuthUser, @Body({ schema: s.putCartBody }) body: z.infer<typeof s.putCartBody>) {
+    return this.svc.merge(u.id, body.lines);
+  }
+
+  @Post("items")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.cartSchema })
+  add(@CurrentUser() u: AuthUser, @Body({ schema: s.addCartItemBody }) body: z.infer<typeof s.addCartItemBody>) {
+    return this.svc.add(u.id, body);
+  }
+
+  @Patch("items/:id")
+  @ApiResponse({ status: 200, standardSchema: s.cartSchema })
+  update(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.patchCartItemBody }) body: z.infer<typeof s.patchCartItemBody>) {
+    return this.svc.update(u.id, id, body);
+  }
+
+  @Delete("items/:id")
+  @ApiResponse({ status: 200, standardSchema: s.cartSchema })
+  remove(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string) {
+    return this.svc.remove(u.id, id);
+  }
+}
+
+@ApiTags("Checkout and orders")
+@ApiBearerAuth()
+@Controller("v1")
+export class OrdersController {
+  constructor(
+    @Inject(OrdersService) private readonly orders: OrdersService,
+    @Inject(PaymentsService) private readonly payments: PaymentsService,
+  ) {}
+
+  @Post("checkout/quote")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.quoteSchema })
+  quote(@CurrentUser() u: AuthUser, @Body({ schema: s.quoteBody }) body: z.infer<typeof s.quoteBody>) {
+    return this.orders.quote(u.id, body);
+  }
+
+  @Post("orders")
+  @ApiResponse({ status: 201, standardSchema: s.placeOrderResponse })
+  place(@CurrentUser() u: AuthUser, @Body({ schema: s.placeOrderBody }) body: z.infer<typeof s.placeOrderBody>, @Headers("idempotency-key") key?: string) {
+    return this.orders.place(u.id, body, key);
+  }
+
+  @Get("me/orders")
+  @ApiResponse({ status: 200, standardSchema: s.orderList })
+  list(@CurrentUser() u: AuthUser, @Query({ schema: s.orderListQuery }) q: z.infer<typeof s.orderListQuery>) {
+    return this.orders.list(u.id, q);
+  }
+
+  @Get("me/orders/:id")
+  @ApiResponse({ status: 200, standardSchema: s.orderSchema })
+  detail(@CurrentUser() u: AuthUser, @Param("id") id: string) {
+    return this.orders.detail(u.id, id);
+  }
+
+  @Post("me/orders/:id/cancel")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.orderSchema })
+  cancel(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body({ schema: s.cancelBody }) body: z.infer<typeof s.cancelBody>) {
+    return this.orders.cancel(u.id, id, body);
+  }
+
+  @Post("me/orders/:id/payments")
+  @ApiResponse({ status: 201, standardSchema: s.paymentSummary.extend({ nextAction: s.nextActionSchema }) })
+  retryPayment(@CurrentUser() u: AuthUser, @Param("id") id: string) {
+    return this.payments.retry(u.id, id);
+  }
+}
+
+@ApiTags("Payments")
+@Controller("v1/payments")
+export class PaymentsController {
+  constructor(@Inject(PaymentsService) private readonly payments: PaymentsService) {}
+
+  @ApiBearerAuth()
+  @Get(":id")
+  @ApiResponse({ status: 200, standardSchema: s.paymentDetailSchema })
+  get(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string) {
+    return this.payments.get(u.id, id);
+  }
+
+  @ApiBearerAuth()
+  @Post(":id/sandbox/complete")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.paymentDetailSchema })
+  sandbox(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.sandboxCompleteBody }) body: z.infer<typeof s.sandboxCompleteBody>) {
+    return this.payments.sandboxComplete(u.id, id, body.outcome);
+  }
+
+  /** Provider webhook. Authenticated by its HMAC signature, not a user token. */
+  @Public()
+  @Post("webhooks/sandbox")
+  @HttpCode(200)
+  async webhook(@Req() req: Request & { rawBody?: Buffer }) {
+    const result = await this.payments.receiveWebhook(req.rawBody ?? Buffer.from(""), req.headers);
+    return { received: true, duplicate: result.duplicate };
+  }
+}
+
+@ApiTags("Seller orders")
+@ApiBearerAuth()
+@ApiHeader({ name: "X-Seller-Id", required: false, description: "Seller account to act for; defaults to your first membership" })
+@SellerScoped()
+@Controller("v1/seller")
+export class SellerOrdersController {
+  constructor(@Inject(SellerOrdersService) private readonly svc: SellerOrdersService) {}
+
+  @Get("order-items")
+  @ApiResponse({ status: 200, standardSchema: s.sellerItemList })
+  list(@CurrentSeller() sellerId: string, @Query({ schema: s.sellerItemsQuery }) q: z.infer<typeof s.sellerItemsQuery>) {
+    return this.svc.list(sellerId, q);
+  }
+
+  @Get("orders/:id")
+  @ApiResponse({ status: 200, standardSchema: s.sellerOrderSchema })
+  order(@CurrentSeller() sellerId: string, @Param("id") id: string) {
+    return this.svc.order(sellerId, id);
+  }
+
+  @Post("order-items/transition")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.transitionResult })
+  transition(@CurrentSeller() sellerId: string, @CurrentUser() u: AuthUser, @Body({ schema: s.transitionBody }) body: z.infer<typeof s.transitionBody>) {
+    return this.svc.transition(sellerId, u.id, body);
+  }
+}
+
+@ApiTags("Development")
+@ApiBearerAuth()
+@Controller("v1/dev")
+export class DevController {
+  constructor(@Inject(DevLogisticsService) private readonly logistics: DevLogisticsService) {}
+
+  /** Stands in for BluBuy Logistics scans until phase 3. Disabled in production. */
+  @Post("logistics/advance")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: z.object({ id: z.uuid(), status: z.string() }) })
+  advance(@CurrentUser() u: AuthUser, @Body({ schema: s.devAdvanceBody }) body: z.infer<typeof s.devAdvanceBody>) {
+    if (isProduction()) throw forbidden("Development endpoints are disabled in production");
+    return this.logistics.advance(u, body.orderItemId, body.to);
+  }
+}

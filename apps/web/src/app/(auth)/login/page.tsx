@@ -7,5 +7,6 @@ export default async function LoginPage(props: PageProps<"/login">) {
   const raw = typeof sp.next === "string" ? sp.next : "/";
   // only allow same-site paths as the post-login destination
   const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
-  return <LoginForm next={next} />;
+  const audience = sp.as === "seller" || sp.as === "staff" ? sp.as : "shopper";
+  return <LoginForm next={next} audience={audience} denied={sp.denied === "1"} />;
 }

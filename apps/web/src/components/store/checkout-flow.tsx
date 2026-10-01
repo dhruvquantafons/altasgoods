@@ -3,7 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createAddress, placeOrder, quoteCheckout } from "@/app/actions/store";
+import { toAddressLite } from "@/lib/api/store-adapters";
+import type { Quote } from "@/lib/api/types";
 import {
   BadgeCheck,
   Banknote,
@@ -31,11 +34,11 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/input";
 import { Stepper } from "@/components/ui/misc";
 import { cn, formatINR, formatNumber } from "@/lib/utils";
 import { useCart } from "./cart-context";
-import { COD_LIMIT, daysFromNow, formatPromise, isValidPincode, lookupPincode, NOW_MS, promiseDays } from "./delivery";
+import { COD_LIMIT, daysFromNow, formatPromise, isValidPincode, lookupPincode, promiseDays } from "./delivery";
 import { PriceDetails } from "./price-details";
-import { bestBankOffer, computeTotals, LAST_ORDER_KEY, type SellerGroup } from "./pricing";
+import { bestBankOffer, computeTotals, type SellerGroup } from "./pricing";
 import { QrArt } from "./qr-art";
-import type { AddressLite, BankOffer, CartCatalog, CartLine, CouponLite, PlacedOrder, WalletLite } from "./types";
+import type { AddressLite, BankOffer, CartCatalog, CartLine, CouponLite, WalletLite } from "./types";
 
 type PayMethod = "upi" | "card" | "netbanking" | "emi" | "paylater" | "cod";
 type Choice = "standard" | "oneday" | "slot1" | "slot2";
@@ -78,7 +81,7 @@ export function CheckoutFlow({
 }) {
   const router = useRouter();
   const cart = useCart();
-  const lines = buyNow ? [buyNow] : cart.active;
+  const lines = useMemo(() => (buyNow ? [buyNow] : cart.active), [buyNow, cart.active]);
 
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState(initialAddresses);
@@ -104,10 +107,49 @@ export function CheckoutFlow({
   const [giftMsg, setGiftMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
+  // one key per checkout attempt: retries and double clicks return the same order
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [quote, setQuote] = useState<Quote | null>(null);
 
   const address = addresses.find((a) => a.id === addressId) ?? addresses[0];
   const info = lookupPincode(address?.pincode ?? "");
-  const totals = computeTotals(lines, catalog, { couponCode: cart.coupon, coupons, plus: wallet.plusMember, method });
+  const localTotals = computeTotals(lines, catalog, { couponCode: cart.coupon, coupons, plus: wallet.plusMember, method });
+
+  // The API prices the order; its quote is the authority for every amount shown.
+  const request = useMemo(
+    () => ({ addressId, couponCode: cart.coupon, method, lines: lines.map((l) => ({ productId: l.productId, sellerId: l.sellerId, qty: l.qty, variant: l.variant })) }),
+    [addressId, cart.coupon, method, lines],
+  );
+  useEffect(() => {
+    if (!request.addressId || !request.lines.length) return;
+    let live = true;
+    quoteCheckout(request).then((r) => {
+      if (!live) return;
+      if (r.ok) setQuote(r.data);
+      else setError(r.error);
+    });
+    return () => {
+      live = false;
+    };
+  }, [request]);
+  const issues = quote?.issues ?? [];
+  const totals = quote
+    ? {
+        ...localTotals,
+        mrpTotal: quote.mrpTotalPaise / 100,
+        priceTotal: quote.subtotalPaise / 100,
+        mrpDiscount: (quote.mrpTotalPaise - quote.subtotalPaise) / 100,
+        couponDiscount: quote.couponDiscountPaise / 100,
+        couponNote: quote.coupon && !quote.coupon.applied ? quote.coupon.message : null,
+        delivery: quote.deliveryFeePaise / 100,
+        total: quote.totalPaise / 100,
+        savings: quote.savingsPaise / 100,
+        groups: localTotals.groups.map((g) => {
+          const shipment = quote.shipments.find((x) => x.seller.id === g.sellerId);
+          return shipment ? { ...g, deliveryFee: shipment.deliveryFeePaise / 100 } : g;
+        }),
+      }
+    : localTotals;
 
   /* ----- money ----- */
   const bankKey = method === "card" && cardMode === "saved" ? "Kaveri Bank" : method === "emi" ? emiBank.split(" ")[0] + " Bank" : undefined;
@@ -138,7 +180,9 @@ export function CheckoutFlow({
   ];
   const coinsEarned = Math.min(100, Math.floor((totals.priceTotal - totals.couponDiscount) / 100) * (wallet.plusMember ? 2 : 1));
   const codBlock =
-    payable > COD_LIMIT
+    quote && !quote.cod.available
+      ? quote.cod.reason
+      : payable > COD_LIMIT
       ? `Pay on delivery is available for orders up to ${formatINR(COD_LIMIT)}`
       : !info?.codAvailable
         ? `Pay on delivery is not available for pincode ${address?.pincode}`
@@ -189,83 +233,26 @@ export function CheckoutFlow({
     return null;
   };
 
-  const paymentLabel = () => {
-    const parts: string[] = [];
-    if (payable > 0)
-      parts.push(
-        method === "upi"
-          ? upiMode === "id"
-            ? `UPI (${upiId})`
-            : "UPI QR"
-          : method === "card"
-            ? cardMode === "saved"
-              ? "Kaveri Bank credit card ending 4821"
-              : `Card ending ${card.number.replace(/\s/g, "").slice(-4)}`
-            : method === "netbanking"
-              ? `Net banking, ${bank}`
-              : method === "emi"
-                ? `${emiMonths} month EMI, ${emiBank}`
-                : method === "paylater"
-                  ? "BluBuy Pay Later"
-                  : "Pay on delivery (cash or UPI)",
-      );
-    if (creditsUsed) parts.push("BluBuy Credits");
-    if (giftUsed) parts.push("Gift card");
-    if (coinsUsed) parts.push("BluCoins");
-    return parts.join(" + ");
-  };
-
-  const place = () => {
+  const place = async () => {
     const err = validatePayment();
     if (err) {
       setError(err);
       return;
     }
+    if (issues.length) {
+      setError(issues.map((i) => i.message).join(". "));
+      return;
+    }
     setError(null);
     setPlacing(true);
-    // order number: date prefix plus a per-device sequence mixed with the basket (the API assigns real ids)
-    let seq = 0;
-    try {
-      seq = Number(window.localStorage.getItem("blubuy.orderSeq.v1") ?? "0") + 1;
-      window.localStorage.setItem("blubuy.orderSeq.v1", String(seq));
-    } catch {
-      /* ignore */
+    const r = await placeOrder({ ...request, addressId: request.addressId, method, idempotencyKey });
+    if (!r.ok) {
+      setPlacing(false);
+      setError(r.error);
+      return;
     }
-    const basket = totals.lines.map((l) => `${l.line.key}:${l.line.qty}`).join(",") + payable + seq;
-    const hash = [...basket].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 17);
-    const id = `BB-261001-${String(10000 + (hash % 90000)).padStart(5, "0")}`;
-    const order: PlacedOrder = {
-      id,
-      placedAt: NOW_MS,
-      items: totals.lines.map((l) => ({
-        title: l.product.title,
-        image: l.product.image,
-        qty: l.line.qty,
-        price: l.unitPrice,
-        seller: l.offer.sellerName,
-        variant: l.line.variant,
-        slug: l.product.slug,
-      })),
-      shipments: totals.groups.map((g) => {
-        const gi = groupInfo(g);
-        return { seller: g.sellerName, date: formatPromise(gi.date), option: gi.optionLabel, items: g.lines.reduce((a, l) => a + l.line.qty, 0) };
-      }),
-      address: address!,
-      paymentLabel: paymentLabel(),
-      payable,
-      savings: totals.savings + bankValue,
-      coinsEarned,
-      cod: method === "cod" && payable > 0,
-    };
-    try {
-      window.localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
-    } catch {
-      /* the confirmation page falls back to the order id alone */
-    }
-    setTimeout(() => {
-      if (!buyNow) cart.removePurchased();
-      router.push(`/order/confirmed?id=${id}`);
-    }, 900);
+    if (!buyNow) cart.removePurchased();
+    router.push(r.data.redirect);
   };
 
   const next = () => {
@@ -343,7 +330,23 @@ export function CheckoutFlow({
             {adding ? (
               <AddressForm
                 onCancel={() => setAdding(false)}
-                onSave={(a) => {
+                onSave={async (a) => {
+                  const saved = await createAddress({
+                    name: a.name,
+                    phone: a.phone,
+                    line1: a.line1,
+                    line2: a.line2,
+                    landmark: a.landmark,
+                    city: a.city,
+                    state: a.state,
+                    pincode: a.pincode,
+                    type: a.type.toUpperCase() as "HOME" | "WORK" | "OTHER",
+                  });
+                  if (!saved.ok) {
+                    setError(saved.error);
+                    return;
+                  }
+                  a = toAddressLite(saved.data);
                   setAddresses((list) => [...list, a]);
                   setAddressId(a.id);
                   setAdding(false);
@@ -472,7 +475,8 @@ export function CheckoutFlow({
 
           {/* 5. Payment */}
           <StepCard n={5} title="Payment" icon={Lock} active={step === 4}>
-            {/* Balances */}
+            {/* Balances (hidden until stored value is priced by the API) */}
+            {(wallet.bluCoins > 0 || wallet.credits > 0 || wallet.giftCard > 0) && (
             <div className="rounded-xl border border-line">
               <p className="border-b border-line px-4 py-3 text-sm font-semibold text-ink-900">Use your BluBuy balance</p>
               <div className="flex flex-col divide-y divide-line">
@@ -502,6 +506,7 @@ export function CheckoutFlow({
                 {giftMsg && <p className="w-full text-xs text-ink-600">{giftMsg}</p>}
               </form>
             </div>
+            )}
 
             {payable === 0 ? (
               <p className="mt-4 flex items-center gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700">
@@ -562,7 +567,7 @@ export function CheckoutFlow({
                   )}
                 </PayOption>
 
-                <PayOption id="card" icon={CreditCard} title="Credit or debit card" sub="Saved cards are tokenised, we never store card numbers" method={method} setMethod={setMethod} badge={totals.total >= 5000 ? "10% off with Kaveri Bank" : undefined}>
+                <PayOption id="card" icon={CreditCard} title="Credit or debit card" sub="Saved cards are tokenised, we never store card numbers" method={method} setMethod={setMethod} badge={bankOffers.length && totals.total >= 5000 ? "10% off with Kaveri Bank" : undefined}>
                   <div className="flex flex-col gap-2">
                     <label className={cn("flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5", cardMode === "saved" ? "border-brand-500 bg-brand-50/40" : "border-line")}>
                       <input type="radio" name="card-mode" checked={cardMode === "saved"} onChange={() => setCardMode("saved")} className="size-4 accent-brand-600" />
