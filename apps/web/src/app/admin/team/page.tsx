@@ -53,7 +53,7 @@ export default async function TeamPage(props: PageProps<"/admin/team">) {
 
   return (
     <>
-      <PageHeader title="Team and roles" description="Who can do what in BluBuy Control. Permissions are resource:action pairs bundled into roles; money movement uses maker-checker and every write is audited." actions={<InviteMember roles={adminRoles.map((r) => ({ id: r.id, name: r.name, scope: r.scope }))} />} />
+      <PageHeader title="Team and roles" description="Who can do what in AltasGoods Control. Permissions are resource:action pairs bundled into roles; money movement uses maker-checker and every write is audited." actions={<InviteMember roles={adminRoles.map((r) => ({ id: r.id, name: r.name, scope: r.scope }))} />} />
 
       <KpiStrip
         className="mb-6"

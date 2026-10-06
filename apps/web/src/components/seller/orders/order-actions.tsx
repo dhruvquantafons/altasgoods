@@ -83,7 +83,7 @@ export function OrderActions({
 
   if (!sellerPacked) {
     primary = (
-      <Button variant="secondary" icon={MapPin} onClick={() => toast.show("Tracking opens in BluBuy Logistics. The fulfilment centre handles this order.")}>
+      <Button variant="secondary" icon={MapPin} onClick={() => toast.show("Tracking opens in AltasGoods Logistics. The fulfilment centre handles this order.")}>
         Track shipment
       </Button>
     );
@@ -113,7 +113,7 @@ export function OrderActions({
     );
   } else if (["shipped", "in_transit", "out_for_delivery", "undelivered"].includes(current)) {
     primary = (
-      <Button variant="secondary" icon={MapPin} onClick={() => toast.show("Live tracking shows the latest BluBuy Logistics scan for this AWB.")}>
+      <Button variant="secondary" icon={MapPin} onClick={() => toast.show("Live tracking shows the latest AltasGoods Logistics scan for this AWB.")}>
         Track shipment
       </Button>
     );
@@ -126,7 +126,7 @@ export function OrderActions({
         icon={Star}
         disabled={!allowed}
         title={allowed ? undefined : d < 5 ? `Available ${5 - d} days from now (5 to 30 days after delivery)` : "Only within 30 days of delivery"}
-        onClick={() => toast.show("A neutral review request was sent through BluBuy. You can send it once per order.")}
+        onClick={() => toast.show("A neutral review request was sent through AltasGoods. You can send it once per order.")}
       >
         Request a review
       </Button>
@@ -175,7 +175,7 @@ export function OrderActions({
             </Select>
           </Field>
           <Field label="Note (optional)" htmlFor="od-cancel-note">
-            <Textarea id="od-cancel-note" className="min-h-20" placeholder="Visible to BluBuy support only" />
+            <Textarea id="od-cancel-note" className="min-h-20" placeholder="Visible to AltasGoods support only" />
           </Field>
           <p className="rounded-lg bg-warning-50 px-3 py-2.5 text-[13px] text-warning-700">A ₹60 penalty applies per item (1% above ₹10,000, capped at ₹1,000).</p>
         </div>

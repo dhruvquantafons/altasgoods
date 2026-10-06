@@ -1,5 +1,5 @@
 /**
- * Small pure helpers shared by BluBuy Control pages. No mock imports here so
+ * Small pure helpers shared by AltasGoods Control pages. No mock imports here so
  * client components can use them without bundling the data layer.
  */
 import { NOW } from "@/lib/utils";

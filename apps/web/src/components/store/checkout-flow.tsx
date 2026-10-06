@@ -174,8 +174,8 @@ export function CheckoutFlow({
   const payable = remaining;
   const extra = [
     ...(bankDeal ? [{ label: bankDeal.offer.kind === "UPI offer" ? "UPI offer" : "Bank offer", value: bankValue, note: bankDeal.offer.title }] : []),
-    ...(coinsUsed ? [{ label: "BluCoins", value: coinsUsed, note: `${formatNumber(coinsUsed)} coins redeemed` }] : []),
-    ...(creditsUsed ? [{ label: "BluBuy Credits", value: creditsUsed }] : []),
+    ...(coinsUsed ? [{ label: "AltasCoins", value: coinsUsed, note: `${formatNumber(coinsUsed)} coins redeemed` }] : []),
+    ...(creditsUsed ? [{ label: "AltasGoods Credits", value: creditsUsed }] : []),
     ...(giftUsed ? [{ label: "Gift card balance", value: giftUsed }] : []),
   ];
   const coinsEarned = Math.min(100, Math.floor((totals.priceTotal - totals.couponDiscount) / 100) * (wallet.plusMember ? 2 : 1));
@@ -478,10 +478,10 @@ export function CheckoutFlow({
             {/* Balances (hidden until stored value is priced by the API) */}
             {(wallet.bluCoins > 0 || wallet.credits > 0 || wallet.giftCard > 0) && (
             <div className="rounded-xl border border-line">
-              <p className="border-b border-line px-4 py-3 text-sm font-semibold text-ink-900">Use your BluBuy balance</p>
+              <p className="border-b border-line px-4 py-3 text-sm font-semibold text-ink-900">Use your AltasGoods balance</p>
               <div className="flex flex-col divide-y divide-line">
-                <BalanceRow icon={Coins} label={`BluCoins: ${formatNumber(wallet.bluCoins)} available`} hint={`Use up to ${formatNumber(coinsCap)} coins (10% of order value). 1 coin = ₹1.`} checked={useCoins} disabled={!coinsCap} onChange={setUseCoins} value={coinsUsed} />
-                <BalanceRow icon={Wallet} label={`BluBuy Credits: ${formatINR(wallet.credits)}`} hint="Refund credits, never expire" checked={useCredits} disabled={!wallet.credits} onChange={setUseCredits} value={creditsUsed} />
+                <BalanceRow icon={Coins} label={`AltasCoins: ${formatNumber(wallet.bluCoins)} available`} hint={`Use up to ${formatNumber(coinsCap)} coins (10% of order value). 1 coin = ₹1.`} checked={useCoins} disabled={!coinsCap} onChange={setUseCoins} value={coinsUsed} />
+                <BalanceRow icon={Wallet} label={`AltasGoods Credits: ${formatINR(wallet.credits)}`} hint="Refund credits, never expire" checked={useCredits} disabled={!wallet.credits} onChange={setUseCredits} value={creditsUsed} />
                 <BalanceRow icon={Gift} label={`Gift card balance: ${formatINR(giftBalance)}`} hint="Valid for 1 year from activation" checked={useGift} disabled={!giftBalance} onChange={setUseGift} value={giftUsed} />
               </div>
               <form
@@ -510,7 +510,7 @@ export function CheckoutFlow({
 
             {payable === 0 ? (
               <p className="mt-4 flex items-center gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700">
-                <Check size={16} aria-hidden="true" /> Your BluBuy balance covers this order. No further payment needed.
+                <Check size={16} aria-hidden="true" /> Your AltasGoods balance covers this order. No further payment needed.
               </p>
             ) : (
               <fieldset className="mt-4 overflow-hidden rounded-xl border border-line">
@@ -684,7 +684,7 @@ export function CheckoutFlow({
                   <p className="mt-2 text-xs text-ink-500">No cost EMI: the interest is given to you as an upfront discount by the brand or seller. Bank GST on interest may apply on interest bearing plans.</p>
                 </PayOption>
 
-                <PayOption id="paylater" icon={Wallet} title="BluBuy Pay Later" sub={payLaterBlock ?? `Available limit ${formatINR(wallet.payLaterLimit)}. Pay by 15 Nov, no extra cost.`} method={method} setMethod={setMethod} disabled={!!payLaterBlock}>
+                <PayOption id="paylater" icon={Wallet} title="AltasGoods Pay Later" sub={payLaterBlock ?? `Available limit ${formatINR(wallet.payLaterLimit)}. Pay by 15 Nov, no extra cost.`} method={method} setMethod={setMethod} disabled={!!payLaterBlock}>
                   <p className="text-sm text-ink-600">
                     You will pay {formatINR(payable)} in one bill on 15 Nov, with no interest if paid on time. Offered with our NBFC partner. Late payment charges are shown in your Pay
                     Later agreement.
@@ -693,7 +693,7 @@ export function CheckoutFlow({
 
                 <PayOption id="cod" icon={Banknote} title="Pay on delivery" sub={codBlock ?? "Cash or UPI at your door. No extra charge."} method={method} setMethod={setMethod} disabled={!!codBlock} last>
                   <p className="text-sm text-ink-600">
-                    Keep {formatINR(payable)} ready or pay by scanning the associate&apos;s UPI QR. BluBuy never charges a fee for paying on delivery.
+                    Keep {formatINR(payable)} ready or pay by scanning the associate&apos;s UPI QR. AltasGoods never charges a fee for paying on delivery.
                   </p>
                 </PayOption>
               </fieldset>
@@ -705,7 +705,7 @@ export function CheckoutFlow({
               </p>
             )}
             <div className="mt-5 hidden flex-col gap-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-ink-500">By placing this order you agree to BluBuy&apos;s terms of use and the seller&apos;s return policy.</p>
+              <p className="text-xs text-ink-500">By placing this order you agree to AltasGoods&apos;s terms of use and the seller&apos;s return policy.</p>
               <button type="button" onClick={place} disabled={placing} className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-400">
                 {placing ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Lock size={16} aria-hidden="true" />}
                 {placing ? "Processing payment" : ctaLabel}
@@ -718,11 +718,11 @@ export function CheckoutFlow({
           <PriceDetails totals={totals} extra={extra} plus={wallet.plusMember} totalLabel={step === 4 ? "Amount payable" : "Order total"} />
           <div className="rounded-2xl border border-line bg-white p-4 text-[13px] text-ink-600">
             <p className="flex items-center gap-2 font-semibold text-ink-900">
-              <Coins size={15} className="text-accent-700" aria-hidden="true" /> You will earn {coinsEarned} BluCoins
+              <Coins size={15} className="text-accent-700" aria-hidden="true" /> You will earn {coinsEarned} AltasCoins
             </p>
             <p className="mt-1">Credited after the return window closes{wallet.plusMember ? ", at 2x with Plus" : ""}.</p>
             <p className="mt-3 flex items-center gap-2 font-semibold text-ink-900">
-              <ShieldCheck size={15} className="text-success-600" aria-hidden="true" /> BluBuy Guarantee
+              <ShieldCheck size={15} className="text-success-600" aria-hidden="true" /> AltasGoods Guarantee
             </p>
             <p className="mt-1">Get the item you ordered or your money back.</p>
           </div>

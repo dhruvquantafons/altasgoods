@@ -43,7 +43,7 @@ export default async function AuditPage(props: PageProps<"/admin/audit">) {
     <>
       <PageHeader
         title="Audit log"
-        description="Every write in BluBuy Control, Care Desk, Hub and FC consoles, with actor, role, reason, IP address and device. PII reveals and exports are logged too."
+        description="Every write in AltasGoods Control, Care Desk, Hub and FC consoles, with actor, role, reason, IP address and device. PII reveals and exports are logged too."
         meta={
           <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-500">
             <Lock size={13} aria-hidden="true" />

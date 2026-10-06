@@ -26,7 +26,7 @@ export interface FcOption {
 
 const STEPS = [{ label: "Products" }, { label: "Destination" }, { label: "Boxes" }, { label: "Review" }];
 
-/** Four-step inbound shipment plan to a BluBuy fulfilment centre. */
+/** Four-step inbound shipment plan to an AltasGoods fulfilment centre. */
 export function InboundWizard({ candidates, centres }: { candidates: InboundCandidate[]; centres: FcOption[] }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -59,7 +59,7 @@ export function InboundWizard({ candidates, centres }: { candidates: InboundCand
         side="right"
         size="lg"
         title="Create inbound shipment"
-        description="Send stock to a BluBuy fulfilment centre so orders ship with the Assured badge."
+        description="Send stock to an AltasGoods fulfilment centre so orders ship with the Assured badge."
         footer={
           <div className="flex w-full items-center justify-between gap-3">
             {step > 0 ? (
@@ -119,7 +119,7 @@ export function InboundWizard({ candidates, centres }: { candidates: InboundCand
 
         {step === 1 && (
           <fieldset className="flex flex-col gap-2.5">
-            <legend className="mb-2 text-[13px] text-ink-600">BluBuy recommends the centre closest to your demand. Choosing another centre costs ₹3 per unit.</legend>
+            <legend className="mb-2 text-[13px] text-ink-600">AltasGoods recommends the centre closest to your demand. Choosing another centre costs ₹3 per unit.</legend>
             {centres.map((c, i) => (
               <label key={c.code} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3", fc === c.code ? "border-brand-300 bg-brand-50/50" : "border-line hover:bg-ink-50")}>
                 <input type="radio" name="fc" checked={fc === c.code} onChange={() => setFc(c.code)} className="mt-1 accent-brand-600" />

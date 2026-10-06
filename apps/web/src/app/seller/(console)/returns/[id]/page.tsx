@@ -38,7 +38,7 @@ const STEP: Partial<Record<ApiReturnStatus, string>> = {
   LOST: "Lost in transit",
 };
 
-const ACTOR: Record<string, string> = { CUSTOMER: "Customer", SELLER: "You", SYSTEM: "BluBuy", LOGISTICS: "BluBuy Logistics", SUPPORT: "BluBuy Care", ADMIN: "BluBuy" };
+const ACTOR: Record<string, string> = { CUSTOMER: "Customer", SELLER: "You", SYSTEM: "AltasGoods", LOGISTICS: "AltasGoods Logistics", SUPPORT: "AltasGoods Care", ADMIN: "AltasGoods" };
 
 /** What happened, then the steps still ahead for an open return. */
 function timelineFor(r: ReturnRequest): TimelineItem[] {
@@ -107,7 +107,7 @@ export default async function ReturnDetailPage(props: PageProps<"/seller/returns
         <Callout tone="warning" icon={TriangleAlert} className="mb-6" title="This request is outside the return policy">
           Decide by {formatDateTime(reviewBy)} (
           <SlaText dueAt={reviewBy} now={now} className="text-[13px]" />
-          ). If you do not respond, BluBuy decides on your behalf. Rejected customers can file a BluBuy Guarantee claim.
+          ). If you do not respond, AltasGoods decides on your behalf. Rejected customers can file an AltasGoods Guarantee claim.
         </Callout>
       )}
 
@@ -168,7 +168,7 @@ export default async function ReturnDetailPage(props: PageProps<"/seller/returns
                 {r.qcNote && <p className="text-[13px] text-ink-700">{r.qcNote}</p>}
                 {r.status === "QC_FAILED" && (
                   <Callout tone="neutral" icon={ShieldCheck}>
-                    BluBuy reviews your check and notes before the customer is refunded. SafeClaim filing for damaged, wrong or empty returns goes live with the claims service.
+                    AltasGoods reviews your check and notes before the customer is refunded. SafeClaim filing for damaged, wrong or empty returns goes live with the claims service.
                   </Callout>
                 )}
               </div>

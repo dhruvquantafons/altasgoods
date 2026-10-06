@@ -114,7 +114,7 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint, now }: { rows: Or
 
   function skippedNote(fulfilled: number, skipped: number) {
     if (!skipped) return "";
-    if (fulfilled === skipped) return ` ${fulfilled} BluBuy Fulfilled ${fulfilled === 1 ? "order was" : "orders were"} skipped: the fulfilment centre handles ${fulfilled === 1 ? "it" : "them"}.`;
+    if (fulfilled === skipped) return ` ${fulfilled} AltasGoods Fulfilled ${fulfilled === 1 ? "order was" : "orders were"} skipped: the fulfilment centre handles ${fulfilled === 1 ? "it" : "them"}.`;
     return ` ${skipped} skipped as not eligible.`;
   }
 
@@ -330,11 +330,11 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint, now }: { rows: Or
               ))}
             </Select>
           </Field>
-          <Field label="Note for BluBuy (optional)" htmlFor="cancel-note">
+          <Field label="Note for AltasGoods (optional)" htmlFor="cancel-note">
             <Textarea id="cancel-note" placeholder="Add details that help the support team" className="min-h-20" />
           </Field>
           <p className="rounded-lg bg-warning-50 px-3 py-2.5 text-[13px] text-warning-700">
-            A ₹60 penalty applies per cancelled item (1% of price above ₹10,000, capped at ₹1,000). BluBuy Fulfilled orders cannot be cancelled here.
+            A ₹60 penalty applies per cancelled item (1% of price above ₹10,000, capped at ₹1,000). AltasGoods Fulfilled orders cannot be cancelled here.
           </p>
         </div>
       </Modal>
@@ -343,7 +343,7 @@ export function OrdersTable({ rows, stage, toolbar, emptyHint, now }: { rows: Or
         open={pickupOpen}
         onClose={() => setPickupOpen(false)}
         title="Request a pickup"
-        description="BluBuy Logistics collects packages marked ready to ship from your default pickup address."
+        description="AltasGoods Logistics collects packages marked ready to ship from your default pickup address."
         footer={
           <>
             <Button variant="secondary" onClick={() => setPickupOpen(false)}>

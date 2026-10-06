@@ -7,7 +7,7 @@ import { toAddressLite } from "@/lib/api/store-adapters";
 import { COMPANY, CUSTOMER_WALLET, GRIEVANCE_OFFICER, navCategories, searchSuggestions } from "@/lib/mock/store-extra";
 
 export const metadata: Metadata = {
-  title: { default: "BluBuy: Shop smarter, live better", template: "%s | BluBuy" },
+  title: { default: "AltasGoods: Shop smarter, live better", template: "%s | AltasGoods" },
 };
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {

@@ -8,7 +8,7 @@ import { ABOUT_MILESTONES, ABOUT_NUMBERS, ABOUT_PRINCIPLES, OFFICES } from "@/li
 import { COMPANY } from "@/lib/mock/store-extra";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "About BluBuy" };
+export const metadata: Metadata = { title: "About AltasGoods" };
 
 const principleIcons = [Scale, CalendarClock, HeartHandshake, Sparkles];
 
@@ -16,10 +16,10 @@ export default function AboutPage() {
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero
-        crumbs={[{ label: "Home", href: "/" }, { label: "About BluBuy" }]}
-        eyebrow="About BluBuy"
+        crumbs={[{ label: "Home", href: "/" }, { label: "About AltasGoods" }]}
+        eyebrow="About AltasGoods"
         title="A calmer way to shop India's best sellers"
-        description="BluBuy is an Indian marketplace built in Bengaluru. We connect customers with thousands of verified sellers and promise three simple things: honest prices, real delivery dates and no hidden charges."
+        description="AltasGoods is an Indian marketplace built in Bengaluru. We connect customers with thousands of verified sellers and promise three simple things: honest prices, real delivery dates and no hidden charges."
       />
 
       <div className={cn(STORE_CONTAINER, "mt-10 lg:mt-14")}>
@@ -46,7 +46,7 @@ export default function AboutPage() {
                 struggled with complex rate cards and slow payouts.
               </p>
               <p>
-                We started BluBuy in 2025 to build the marketplace we wanted to use ourselves. One that is fast and wide in selection, but also honest, calm and fair to the
+                We started AltasGoods in 2025 to build the marketplace we wanted to use ourselves. One that is fast and wide in selection, but also honest, calm and fair to the
                 small businesses that make it work.
               </p>
             </div>
@@ -111,14 +111,14 @@ export default function AboutPage() {
         <section className="mt-16 grid gap-4 lg:mt-20 lg:grid-cols-2">
           <Link href="/careers" className="group flex items-center justify-between rounded-2xl bg-brand-950 p-6 text-white lg:p-8">
             <span>
-              <span className="block font-display text-lg font-semibold">Build BluBuy with us</span>
+              <span className="block font-display text-lg font-semibold">Build AltasGoods with us</span>
               <span className="mt-1 block text-sm text-brand-100">Open roles in engineering, design, operations and more.</span>
             </span>
             <ArrowRight size={20} className="shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>
           <Link href="/sell" className="group flex items-center justify-between rounded-2xl border border-line bg-white p-6 lg:p-8">
             <span>
-              <span className="block font-display text-lg font-semibold text-ink-900">Sell on BluBuy</span>
+              <span className="block font-display text-lg font-semibold text-ink-900">Sell on AltasGoods</span>
               <span className="mt-1 block text-sm text-ink-500">Zero commission on items up to ₹999 and payouts three times a week.</span>
             </span>
             <ArrowRight size={20} className="shrink-0 text-ink-400 transition-transform group-hover:translate-x-1" aria-hidden="true" />

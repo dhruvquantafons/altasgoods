@@ -14,7 +14,7 @@ import { cn, formatINR } from "@/lib/utils";
 
 const REJECT_REASONS = ["Outside the return window", "Item is non-returnable once opened (hygiene)", "Customer-caused damage visible in photos", "Not the item we shipped"];
 
-/** Decision on an out-of-policy return request (48 hours, then BluBuy decides). */
+/** Decision on an out-of-policy return request (48 hours, then AltasGoods decides). */
 export function ReturnDecision({ returnId, size = "md" }: { returnId: string; size?: "sm" | "md" }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -63,7 +63,7 @@ export function ReturnDecision({ returnId, size = "md" }: { returnId: string; si
         open={open}
         onClose={() => setOpen(false)}
         title={`Reject ${returnId}`}
-        description="The customer can still file a BluBuy Guarantee claim, so give a clear, specific reason."
+        description="The customer can still file an AltasGoods Guarantee claim, so give a clear, specific reason."
         footer={
           <>
             <Button variant="secondary" onClick={() => setOpen(false)}>
@@ -123,7 +123,7 @@ export function SafeClaimForm({ amount, gradeLabel, deadline, onDone }: { amount
         <ShieldCheck size={18} className="mt-0.5 shrink-0 text-success-600" aria-hidden="true" />
         <div className="text-[13px]">
           <p className="font-semibold text-success-700">SafeClaim submitted for {formatINR(value)}</p>
-          <p className="mt-0.5 text-ink-700">BluBuy decides within 7 business days. An approved amount is added to your next payout as a SafeClaim reimbursement line.</p>
+          <p className="mt-0.5 text-ink-700">AltasGoods decides within 7 business days. An approved amount is added to your next payout as a SafeClaim reimbursement line.</p>
         </div>
       </div>
     );
@@ -196,7 +196,7 @@ export interface GradeOption {
   claimable: boolean;
 }
 
-/** Grades where the customer's return stands and they are refunded; the rest go to BluBuy for review. */
+/** Grades where the customer's return stands and they are refunded; the rest go to AltasGoods for review. */
 const ACCEPTS = ["SELLABLE", "DEFECTIVE", "CARRIER_DAMAGED"];
 
 /** Receipt quality check: the grade and notes are saved with the return and decide what happens to the refund. */
@@ -218,7 +218,7 @@ export function QcCapture({ returnId, grades, dueAt }: { returnId: string; grade
     const r = await gradeReturn(returnId, pass, [chosen.label, notes.trim()].filter(Boolean).join(". "));
     setBusy(false);
     if (!r.ok) return setError(r.error);
-    toast.show(pass ? "Check recorded. The customer's refund is released." : "Check recorded. BluBuy reviews it before the refund is released.");
+    toast.show(pass ? "Check recorded. The customer's refund is released." : "Check recorded. AltasGoods reviews it before the refund is released.");
     router.refresh();
   };
 
@@ -245,10 +245,10 @@ export function QcCapture({ returnId, grades, dueAt }: { returnId: string; grade
         </fieldset>
         {chosen && (
           <p className={cn("rounded-lg px-3 py-2 text-[13px]", pass ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700")}>
-            {pass ? "The return passes the check and the customer is refunded." : "The return fails the check. BluBuy reviews your notes before the customer is refunded."}
+            {pass ? "The return passes the check and the customer is refunded." : "The return fails the check. AltasGoods reviews your notes before the customer is refunded."}
           </p>
         )}
-        <Field label="Notes" htmlFor="qc-notes" required={Boolean(chosen && !pass)} hint={chosen && !pass ? "Describe what is wrong; BluBuy reads this" : undefined}>
+        <Field label="Notes" htmlFor="qc-notes" required={Boolean(chosen && !pass)} hint={chosen && !pass ? "Describe what is wrong; AltasGoods reads this" : undefined}>
           <Textarea id="qc-notes" className="min-h-16" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} placeholder="Serial number, visible damage, missing parts" />
         </Field>
         {error && (
@@ -283,7 +283,7 @@ const SCANS: Record<string, { to: Scan; label: string }[] | undefined> = {
   IN_TRANSIT: [{ to: "RECEIVED", label: "Scan received" }],
 };
 
-/** Development only: stands in for BluBuy Logistics reverse pickup scans until that integration is live. */
+/** Development only: stands in for AltasGoods Logistics reverse pickup scans until that integration is live. */
 export function PickupSimulator({ returnId, status }: { returnId: string; status: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState<Scan | null>(null);
@@ -305,7 +305,7 @@ export function PickupSimulator({ returnId, status }: { returnId: string; status
       <p className="flex items-center gap-2 text-[13px] font-semibold text-accent-800">
         <FlaskConical size={15} aria-hidden="true" /> Pickup simulator (development only)
       </p>
-      <p className="mt-0.5 text-xs text-ink-600">Stands in for BluBuy Logistics reverse pickup scans.</p>
+      <p className="mt-0.5 text-xs text-ink-600">Stands in for AltasGoods Logistics reverse pickup scans.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {scans.map((s) => (
           <Button key={s.to} size="sm" variant="secondary" icon={s.to === "RECEIVED" ? PackageCheck : Truck} disabled={!!busy} onClick={() => scan(s.to)}>

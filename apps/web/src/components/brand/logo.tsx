@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/** The BluBuy mark: a rounded tile holding a geometric shopping bag that reads as a "b". */
+/** The AltasGoods mark: a rounded tile holding a geometric shopping bag with an "A" motif. */
 export function LogoMark({ className, inverted = false }: { className?: string; inverted?: boolean }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={cn("size-8 shrink-0", className)}>
       <rect width="32" height="32" rx="9" className={inverted ? "fill-white" : "fill-brand-600"} />
       <path
-        d="M11 8.5v15M11 15.5a5 5 0 1 1 0 6.2"
+        d="M16 7L9 25M16 7L23 25M11.5 19h9"
         fill="none"
         strokeWidth="2.6"
         strokeLinecap="round"
@@ -44,7 +44,7 @@ export function Logo({
             inverted ? "text-white" : "text-ink-900",
           )}
         >
-          Blu<span className={inverted ? "text-brand-200" : "text-brand-600"}>Buy</span>
+          Altas<span className={inverted ? "text-brand-200" : "text-brand-600"}>Goods</span>
         </span>
         {label && (
           <span className={cn("mt-1 text-[11px] font-medium tracking-wide", inverted ? "text-brand-100" : "text-ink-500")}>
@@ -56,7 +56,7 @@ export function Logo({
   );
   if (href === null) return content;
   return (
-    <Link href={href} aria-label="BluBuy home" className="rounded-lg">
+    <Link href={href} aria-label="AltasGoods home" className="rounded-lg">
       {content}
     </Link>
   );

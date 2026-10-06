@@ -8,13 +8,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PLUS_MEMBERSHIP, PLUS_PLANS } from "@/lib/mock/account-extra";
 import { formatINR } from "@/lib/utils";
 
-export const metadata = { title: "BluBuy Plus" };
+export const metadata = { title: "AltasGoods Plus" };
 
 const BENEFITS = [
   { icon: Truck, title: "Free delivery on every order", body: "No minimum order value, from every seller." },
-  { icon: Zap, title: "One-day delivery", body: "In top cities on BluBuy Fulfilled items." },
-  { icon: Timer, title: "24 hour early access", body: "To BluBuy Big Days and BluBuy Plus Day deals." },
-  { icon: Coins, title: "2x BluCoins", body: "2 coins for every ₹100, up to 100 per order." },
+  { icon: Zap, title: "One-day delivery", body: "In top cities on AltasGoods Fulfilled items." },
+  { icon: Timer, title: "24 hour early access", body: "To AltasGoods Big Days and AltasGoods Plus Day deals." },
+  { icon: Coins, title: "2x AltasCoins", body: "2 coins for every ₹100, up to 100 per order." },
   { icon: BadgePercent, title: "Plus-only prices", body: "Member prices and coupons on thousands of products." },
   { icon: Headset, title: "Priority support", body: "Shorter waits on chat and call-back." },
 ];
@@ -24,7 +24,7 @@ export default function PlusPage() {
   const multiple = Math.floor(m.totalSaved / m.price);
   return (
     <>
-      <PageHeader title="BluBuy Plus" description="Your membership, what it has saved you and everything included." />
+      <PageHeader title="AltasGoods Plus" description="Your membership, what it has saved you and everything included." />
 
       <section className="relative mb-6 overflow-hidden rounded-[var(--radius-card)] bg-brand-950 text-white">
         <div className="pointer-events-none absolute -top-24 -right-16 size-80 rounded-full bg-brand-600/40 blur-3xl" aria-hidden="true" />
@@ -62,14 +62,14 @@ export default function PlusPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
-          <Panel title="Savings by month" description={`Since ${dateLabel(m.periodStart)}. September includes BluBuy Big Days.`}>
+          <Panel title="Savings by month" description={`Since ${dateLabel(m.periodStart)}. September includes AltasGoods Big Days.`}>
             <BarChart
               data={m.monthlySavings.map((d) => ({ label: d.label, saved: d.value }))}
               series={[{ key: "saved", label: "Saved" }]}
               format="inr"
               height={220}
               emphasis={m.monthlySavings.length - 1}
-              ariaLabel="Amount saved with BluBuy Plus each month, November to September"
+              ariaLabel="Amount saved with AltasGoods Plus each month, November to September"
             />
             <dl className="mt-5 grid gap-x-8 gap-y-2.5 border-t border-line pt-4 sm:grid-cols-2">
               {m.savings.map((s) => (

@@ -14,7 +14,7 @@ export default async function MessagesPage(props: PageProps<"/seller/messages">)
     <>
       <PageHeader
         title="Buyer messages"
-        description="Reply within 24 hours, including weekends. Messages go through BluBuy with contact details masked; links, phone numbers, promotions and review requests are blocked."
+        description="Reply within 24 hours, including weekends. Messages go through AltasGoods with contact details masked; links, phone numbers, promotions and review requests are blocked."
         meta={
           <>
             <Badge tone="success" dot>

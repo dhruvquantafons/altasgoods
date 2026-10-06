@@ -92,7 +92,7 @@ function evaluate(p: string, o: OriginOption, directory: PincodeEntry[], hubName
     codNote: entry?.codNote ?? (special ? "COD unavailable in special zones" : undefined),
     reverse: serviceable && (entry ? entry.reverse : !special),
     heavy: serviceable && (entry ? entry.heavy : !special && zone !== "National"),
-    hub: entry?.hubId ? (hubNames[entry.hubId] ?? "BluBuy hub") : serviceable ? "Partner delivery hub" : "Not mapped",
+    hub: entry?.hubId ? (hubNames[entry.hubId] ?? "AltasGoods hub") : serviceable ? "Partner delivery hub" : "Not mapped",
     plus: zone === "Local",
     known: Boolean(entry),
   };
@@ -195,7 +195,7 @@ export function PincodeChecker({ directory, origins, hubNames }: { directory: Pi
                 <p className="mt-0.5 text-lg font-semibold text-ink-900">{promise}</p>
                 <p className="text-xs text-ink-500">
                   {res.zone}, {res.days[0] === res.days[1] ? `${res.days[0]} day` : `${res.days[0]} to ${res.days[1]} days`} transit. Before the 2:00 pm cut-off.
-                  {res.plus && " Plus one-day eligible for BluBuy Fulfilled items."}
+                  {res.plus && " Plus one-day eligible for AltasGoods Fulfilled items."}
                 </p>
               </div>
               <ul className="mt-3 flex flex-col gap-2 text-[13px]">
@@ -221,7 +221,7 @@ export function PincodeChecker({ directory, origins, hubNames }: { directory: Pi
               </p>
             </>
           ) : (
-            <p className="mt-3 text-[13px] text-ink-600">{res.codNote ?? "No BluBuy Logistics or partner coverage for this pincode yet."}</p>
+            <p className="mt-3 text-[13px] text-ink-600">{res.codNote ?? "No AltasGoods Logistics or partner coverage for this pincode yet."}</p>
           )}
         </div>
       )}

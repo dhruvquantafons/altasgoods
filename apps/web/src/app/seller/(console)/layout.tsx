@@ -7,7 +7,7 @@ import { currentUser } from "@/lib/api/server";
 import { CURRENT_SELLER_ID, getSeller, sellerNotifications } from "@/lib/mock";
 
 export const metadata: Metadata = {
-  title: { default: "Seller Hub", template: "%s | BluBuy Seller Hub" },
+  title: { default: "Seller Hub", template: "%s | AltasGoods Seller Hub" },
 };
 
 const ROLE: Record<string, string> = { OWNER: "Owner", MANAGER: "Manager", OPERATIONS: "Operations", CATALOG: "Catalog", FINANCE: "Finance", READ_ONLY: "Viewer" };

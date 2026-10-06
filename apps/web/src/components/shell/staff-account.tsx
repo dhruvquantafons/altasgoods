@@ -14,7 +14,7 @@ export function accountTab(raw: string | string[] | undefined): AccountTab {
 
 /**
  * Personal account page shared by every dashboard workspace
- * (Seller Hub, BluBuy Control, Hub Console, Care Desk).
+ * (Seller Hub, AltasGoods Control, Hub Console, Care Desk).
  */
 export function StaffAccountPage({
   person,

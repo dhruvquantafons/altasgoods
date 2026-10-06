@@ -125,7 +125,7 @@ export function PlusManage({
       <Modal
         open={modal === "cancel"}
         onClose={() => setModal(null)}
-        title="Cancel BluBuy Plus"
+        title="Cancel AltasGoods Plus"
         description="Choose when your membership should end. You can rejoin any time."
         footer={
           <>
@@ -147,7 +147,7 @@ export function PlusManage({
       >
         <div className="flex flex-col gap-3">
           {[
-            { key: "end" as const, title: `At the end of this year, on ${renewsOnLabel}`, body: "Keep free delivery, early access and 2x BluCoins until then. Nothing else is charged." },
+            { key: "end" as const, title: `At the end of this year, on ${renewsOnLabel}`, body: "Keep free delivery, early access and 2x AltasCoins until then. Nothing else is charged." },
             {
               key: "now" as const,
               title: refundEstimate > 0 ? "Right away, with a part refund" : "Right away",
@@ -167,7 +167,7 @@ export function PlusManage({
           ))}
           <p className="mt-1 flex items-start gap-2 text-xs text-ink-500">
             <CircleCheck size={14} className="mt-px shrink-0 text-success-600" aria-hidden="true" />
-            Orders already placed keep their free delivery and BluCoins.
+            Orders already placed keep their free delivery and AltasCoins.
           </p>
         </div>
       </Modal>

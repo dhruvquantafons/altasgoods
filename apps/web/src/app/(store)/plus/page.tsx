@@ -7,13 +7,13 @@ import { currentUser } from "@/lib/api/server";
 import { PLUS_MEMBERSHIP, PLUS_PLANS } from "@/lib/mock/store-extra";
 import { cn, formatINR, formatNumber } from "@/lib/utils";
 
-export const metadata = { title: "BluBuy Plus" };
+export const metadata = { title: "AltasGoods Plus" };
 
 const BENEFITS = [
   { icon: Truck, title: "Free delivery, every order", body: "No minimum order value, on every seller." },
-  { icon: Zap, title: "One-day delivery", body: "On BluBuy Fulfilled items in top cities." },
-  { icon: Timer, title: "24 hour early access", body: "Shop BluBuy Big Days and Plus Day a day before everyone." },
-  { icon: Coins, title: "2x BluCoins", body: "2 coins per ₹100 instead of 1, up to 100 coins per order." },
+  { icon: Zap, title: "One-day delivery", body: "On AltasGoods Fulfilled items in top cities." },
+  { icon: Timer, title: "24 hour early access", body: "Shop AltasGoods Big Days and Plus Day a day before everyone." },
+  { icon: Coins, title: "2x AltasCoins", body: "2 coins per ₹100 instead of 1, up to 100 coins per order." },
   { icon: Tag, title: "Plus-only deals", body: "Member prices and coupons like PLUS200 all year." },
   { icon: Headset, title: "Priority support", body: "Shorter queues on chat and call-backs within 15 minutes." },
 ];
@@ -22,10 +22,10 @@ const COMPARE: [string, string | boolean, string | boolean][] = [
   ["Delivery fee", "Free on every order", "Free above ₹499 per seller, else ₹40"],
   ["One-day delivery in top cities", true, false],
   ["Early access to sale events", "24 hours early", false],
-  ["BluCoins per ₹100", "2", "1"],
+  ["AltasCoins per ₹100", "2", "1"],
   ["Plus-only deals and coupons", true, false],
   ["Priority customer support", true, false],
-  ["Easy returns and BluBuy Guarantee", true, true],
+  ["Easy returns and AltasGoods Guarantee", true, true],
 ];
 
 export default async function PlusPage() {
@@ -40,11 +40,11 @@ export default async function PlusPage() {
         <div className={cn(STORE_CONTAINER, "relative grid gap-10 py-12 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:py-16")}>
           <div>
             <p className="inline-flex items-center gap-2 text-sm font-semibold text-accent-300">
-              <Crown size={18} aria-hidden="true" /> BluBuy Plus
+              <Crown size={18} aria-hidden="true" /> AltasGoods Plus
             </p>
             <h1 className="mt-3 text-4xl leading-[1.05] font-semibold tracking-tight lg:text-[52px]">Everything faster, everything free to deliver</h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-brand-100">
-              One membership for free delivery on every order, one-day delivery in top cities, early sale access and double BluCoins. From {formatINR(83)} a month on the
+              One membership for free delivery on every order, one-day delivery in top cities, early sale access and double AltasCoins. From {formatINR(83)} a month on the
               annual plan. Cancel any time in one step.
             </p>
           </div>
@@ -64,7 +64,7 @@ export default async function PlusPage() {
                 {[
                   { k: formatINR(m.savedThisYear), v: "saved this year" },
                   { k: String(m.freeDeliveries), v: "free deliveries" },
-                  { k: formatNumber(m.coinsEarned), v: "BluCoins earned" },
+                  { k: formatNumber(m.coinsEarned), v: "AltasCoins earned" },
                 ].map((s) => (
                   <div key={s.v} className="flex flex-col-reverse rounded-xl bg-white/[0.06] px-3 py-3">
                     <dt className="mt-0.5 text-xs text-brand-200">{s.v}</dt>

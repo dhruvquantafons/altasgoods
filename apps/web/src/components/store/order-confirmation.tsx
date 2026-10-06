@@ -109,7 +109,7 @@ export function OrderConfirmation({ fallback, requestedId, firstName, phone }: {
               items={[
                 { title: "Order confirmed", time: "Just now", description: "The seller has been notified and your payment is secured.", tone: "success" },
                 { title: "Packed by the seller", description: "Usually within a day. You can still cancel for free until it ships.", done: false },
-                { title: "Shipped with BluBuy Logistics", description: "You get a tracking link by SMS and in Your orders.", done: false },
+                { title: "Shipped with AltasGoods Logistics", description: "You get a tracking link by SMS and in Your orders.", done: false },
                 { title: "Out for delivery", description: "For high value items, share the one-time code with the delivery associate.", done: false },
                 { title: "Delivered", description: "On or before each promised date above. Easy returns from the order page if anything is not right.", done: false },
               ]}
@@ -125,9 +125,9 @@ export function OrderConfirmation({ fallback, requestedId, firstName, phone }: {
             {order.savings > 0 && <p className="mt-3 rounded-lg bg-success-50 px-3 py-2 text-[13px] font-semibold text-success-700">You saved {formatINR(order.savings)} on this order</p>}
           </section>
 
-          <section aria-label="BluCoins" className="rounded-2xl border border-accent-100 bg-accent-50/60 p-5">
+          <section aria-label="AltasCoins" className="rounded-2xl border border-accent-100 bg-accent-50/60 p-5">
             <p className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-              <Coins size={17} className="text-accent-700" aria-hidden="true" /> {order.coinsEarned} BluCoins on the way
+              <Coins size={17} className="text-accent-700" aria-hidden="true" /> {order.coinsEarned} AltasCoins on the way
             </p>
             <p className="mt-1 text-[13px] text-ink-600">Credited to your account once the return window closes. 1 coin = ₹1 on your next order.</p>
           </section>
@@ -163,7 +163,7 @@ export function OrderConfirmation({ fallback, requestedId, firstName, phone }: {
               <Undo2 size={13} aria-hidden="true" /> Free cancellation until your order ships
             </li>
             <li className={cn("flex items-center gap-2")}>
-              <ShieldCheck size={13} aria-hidden="true" /> Protected by the BluBuy Guarantee
+              <ShieldCheck size={13} aria-hidden="true" /> Protected by the AltasGoods Guarantee
             </li>
           </ul>
         </aside>

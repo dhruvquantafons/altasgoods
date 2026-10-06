@@ -153,7 +153,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               <Link href="#questions" className="text-brand-700 hover:underline">
                 {qa.length} answered questions
               </Link>
-              {p.assured && <AssuredMark label="BluBuy Assured" className="text-[13px]" />}
+              {p.assured && <AssuredMark label="AltasGoods Assured" className="text-[13px]" />}
             </div>
             {p.soldLast30d >= 100 && (
               <p className="mt-2 text-[13px] text-ink-600">
@@ -243,7 +243,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
       {others.length > 0 && (
         <section id="other-sellers" aria-labelledby="pdp-sellers" className="mt-12 scroll-mt-40">
           <h2 id="pdp-sellers" className="text-xl font-semibold tracking-tight text-ink-900 lg:text-2xl">
-            Other sellers on BluBuy ({others.length})
+            Other sellers on AltasGoods ({others.length})
           </h2>
           <p className="mt-1 text-sm text-ink-500">All offers for this product, sorted by price including delivery to {pin?.city} {DEFAULT_PINCODE}.</p>
           <ul className="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line">
@@ -267,14 +267,14 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
                     <p className="mt-0.5 text-ink-500">
                       {o.sellerRating.toFixed(1)} rating, {formatNumber(o.sellerRatingCount)} ratings
                     </p>
-                    {o.assured && <AssuredMark className="mt-1" label="BluBuy Assured" />}
+                    {o.assured && <AssuredMark className="mt-1" label="AltasGoods Assured" />}
                   </div>
                   <div className="text-[13px] text-ink-700">
                     <p>
                       Delivery <span className="font-semibold text-ink-900">{days <= 1 ? promiseLabel(days) : `by ${formatPromise(daysFromNow(days))}`}</span>
                     </p>
                     <p className="mt-0.5 text-ink-500">
-                      {o.fulfilledBy === "blubuy" ? "Fulfilled by BluBuy" : "Ships from seller"}, {o.returnWindowDays} day returns
+                      {o.fulfilledBy === "blubuy" ? "Fulfilled by AltasGoods" : "Ships from seller"}, {o.returnWindowDays} day returns
                       {o.codAvailable ? ", pay on delivery" : ""}
                     </p>
                   </div>
@@ -339,7 +339,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
                       </div>
                     ))}
                     <div className="grid grid-cols-[150px_1fr] gap-4 px-4 py-2.5 sm:grid-cols-[180px_1fr]">
-                      <dt className="text-ink-500">{g === p.specs[0] ? "BSIN" : "Listed on BluBuy"}</dt>
+                      <dt className="text-ink-500">{g === p.specs[0] ? "BSIN" : "Listed on AltasGoods"}</dt>
                       <dd className={g === p.specs[0] ? "font-mono text-[13px] text-ink-800" : "text-ink-800"}>
                         {g === p.specs[0] ? `B0${p.sku.replace(/\W/g, "").slice(-8)}` : formatDayMonthYear(p.createdAt)}
                       </dd>
@@ -361,7 +361,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <p className="mt-2 text-sm font-medium text-ink-900">{policy.short}</p>
           <p className="mt-1 text-sm leading-relaxed text-ink-600">{policy.detail}</p>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-            Damaged, defective or wrong items can always be reported within the window or 7 days, whichever is longer. Refunds to BluBuy Credits arrive within 2 hours.
+            Damaged, defective or wrong items can always be reported within the window or 7 days, whichever is longer. Refunds to AltasGoods Credits arrive within 2 hours.
           </p>
           <Link href="/policies/returns" className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-700 hover:underline">
             Returns policy <ChevronRight size={14} aria-hidden="true" />
@@ -374,11 +374,11 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <p className="mt-2 text-sm font-medium text-ink-900">{warranty}</p>
           <p className="mt-1 text-sm leading-relaxed text-ink-600">
             {warranty.startsWith("No")
-              ? "This product is covered by BluBuy returns and the BluBuy Guarantee instead."
-              : `Claim with ${brand.name} using your BluBuy invoice. Keep the box and accessories for faster service.`}
+              ? "This product is covered by AltasGoods returns and the AltasGoods Guarantee instead."
+              : `Claim with ${brand.name} using your AltasGoods invoice. Keep the box and accessories for faster service.`}
           </p>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-            BluBuy Guarantee: if your item does not arrive or is not as described, we make it right, even when the seller does not.
+            AltasGoods Guarantee: if your item does not arrive or is not as described, we make it right, even when the seller does not.
           </p>
         </div>
         <div className="rounded-2xl border border-line p-5 lg:p-6">

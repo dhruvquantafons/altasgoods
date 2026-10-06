@@ -5,7 +5,7 @@ import { currentTime, slaOf, tickets } from "@/lib/api/support";
 import type { Notification } from "@/lib/types";
 
 export const metadata: Metadata = {
-  title: { default: "Care Desk", template: "%s | BluBuy Care Desk" },
+  title: { default: "Care Desk", template: "%s | AltasGoods Care Desk" },
 };
 
 const ROLE: Record<string, string> = {
@@ -42,7 +42,7 @@ export default async function SupportLayout({ children }: { children: React.Reac
     <SupportShell
       notifications={notifications}
       counts={{ open: queue?.counts.open || undefined }}
-      user={user ? { name: user.name ?? user.phone, role: user.staffRoles.map((r) => ROLE[r]).filter(Boolean).join(", ") || "BluBuy staff" } : undefined}
+      user={user ? { name: user.name ?? user.phone, role: user.staffRoles.map((r) => ROLE[r]).filter(Boolean).join(", ") || "AltasGoods staff" } : undefined}
     >
       {children}
     </SupportShell>

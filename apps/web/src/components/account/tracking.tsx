@@ -42,7 +42,7 @@ export function TrackingHistory({ order, awb }: { order: Order; awb: string }) {
   );
 }
 
-/** BluBuy Secure Delivery banner shown while a high-value order is out for delivery. */
+/** AltasGoods Secure Delivery banner shown while a high-value order is out for delivery. */
 export function SecureDeliveryBanner({ otp, promisedBy, className }: { otp: string; promisedBy: string; className?: string }) {
   return (
     <section aria-label="Secure Delivery OTP" className={cn("relative overflow-hidden rounded-[var(--radius-card)] bg-brand-950 text-white", className)}>
@@ -54,11 +54,11 @@ export function SecureDeliveryBanner({ otp, promisedBy, className }: { otp: stri
             <ShieldCheck size={21} strokeWidth={1.8} aria-hidden="true" />
           </span>
           <div>
-            <p className="text-[13px] font-medium text-brand-200">BluBuy Secure Delivery</p>
+            <p className="text-[13px] font-medium text-brand-200">AltasGoods Secure Delivery</p>
             <p className="mt-0.5 font-display text-[18px] font-semibold">Share this code at your door</p>
             <p className="mt-1.5 max-w-md text-sm leading-relaxed text-brand-100">
               Your package arrives today by {timeLabel(promisedBy)}. Check that the tamper-evident seal is intact, then give this code to the delivery associate.
-              BluBuy will never ask for it on a call.
+              AltasGoods will never ask for it on a call.
             </p>
           </div>
         </div>

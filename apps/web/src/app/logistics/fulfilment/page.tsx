@@ -34,7 +34,7 @@ export default async function FulfilmentPage(props: PageProps<"/logistics/fulfil
     <>
       <PageHeader
         title="Fulfilment centres"
-        description="BluBuy FC Console: inbound and GRN, putaway, picking, packing and dispatch by carrier cut-off."
+        description="AltasGoods FC Console: inbound and GRN, putaway, picking, packing and dispatch by carrier cut-off."
         meta={
           <>
             <Badge tone="neutral">
@@ -69,7 +69,7 @@ export default async function FulfilmentPage(props: PageProps<"/logistics/fulfil
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="min-w-0 xl:col-span-2">
-          <CardHeader title="Inbound appointments and GRN" description="Seller shipments to BluBuy Fulfilled, by dock slot" />
+          <CardHeader title="Inbound appointments and GRN" description="Seller shipments to AltasGoods Fulfilled, by dock slot" />
           <TableContainer className="mt-3">
             <Table>
               <THead>

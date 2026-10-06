@@ -203,7 +203,7 @@ function OtpStep({
       {resent && left > 0 && <p className="mt-1 text-center text-xs text-success-700">A new code is on its way</p>}
       <p className="mt-6 flex items-start gap-2 rounded-xl bg-ink-50 px-3.5 py-3 text-xs leading-relaxed text-ink-600">
         <ShieldCheck size={15} className="mt-px shrink-0 text-success-600" aria-hidden="true" />
-        BluBuy will never call you to ask for this code. Do not share it with anyone.
+        AltasGoods will never call you to ask for this code. Do not share it with anyone.
       </p>
     </form>
   );
@@ -214,7 +214,7 @@ function OtpStep({
 const COPY = {
   shopper: { title: "Sign in or create an account", body: "Use your mobile number. We will send you a one-time code, no password needed." },
   seller: { title: "Sign in to Seller Hub", body: "Use the mobile number registered to your seller account." },
-  staff: { title: "Sign in to BluBuy Control", body: "For BluBuy staff. Use the mobile number on your staff account." },
+  staff: { title: "Sign in to AltasGoods Control", body: "For AltasGoods staff. Use the mobile number on your staff account." },
 };
 
 export function LoginForm({ next, audience = "shopper", denied = false, signedInAs }: { next: string; audience?: keyof typeof COPY; denied?: boolean; signedInAs?: string }) {
@@ -243,8 +243,8 @@ export function LoginForm({ next, audience = "shopper", denied = false, signedIn
       <p className="mt-2 text-[15px] text-ink-600">{COPY[audience].body}</p>
       {(denied || signedInAs) && (
         <p role="alert" className="mt-4 rounded-xl border border-warning-100 bg-warning-50 px-3.5 py-3 text-[13px] text-warning-700">
-          {signedInAs ? `You are signed in as ${signedInAs}, which has no ${audience === "staff" ? "BluBuy staff access" : "seller account"}.` : "The account you are signed in with does not have access here."} Sign in with a{" "}
-          {audience === "staff" ? "BluBuy staff" : "seller"} account to continue.
+          {signedInAs ? `You are signed in as ${signedInAs}, which has no ${audience === "staff" ? "AltasGoods staff access" : "seller account"}.` : "The account you are signed in with does not have access here."} Sign in with a{" "}
+          {audience === "staff" ? "AltasGoods staff" : "seller"} account to continue.
         </p>
       )}
       <div className="mt-8">
@@ -255,7 +255,7 @@ export function LoginForm({ next, audience = "shopper", denied = false, signedIn
         {sending ? "Sending code" : "Send code"}
       </button>
       <p className="mt-5 text-xs leading-relaxed text-ink-500">
-        By continuing you agree to BluBuy&apos;s{" "}
+        By continuing you agree to AltasGoods&apos;s{" "}
         <Link href="/policies/terms" className="font-medium text-brand-700 hover:underline">
           Terms of use
         </Link>{" "}
@@ -267,7 +267,7 @@ export function LoginForm({ next, audience = "shopper", denied = false, signedIn
       </p>
       {audience !== "staff" && (
         <div className="mt-8 border-t border-line pt-6 text-center text-sm text-ink-600">
-          {audience === "seller" ? "Not selling on BluBuy yet?" : "New to BluBuy?"}{" "}
+          {audience === "seller" ? "Not selling on AltasGoods yet?" : "New to AltasGoods?"}{" "}
           <Link href={audience === "seller" ? "/seller/register" : "/signup"} className="font-semibold text-brand-700 hover:underline">
             {audience === "seller" ? "Start selling" : "Create an account"}
           </Link>
@@ -303,7 +303,7 @@ export function SignupForm() {
         else setErrors({ mobile: r.error });
       }}
     >
-      <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Create your BluBuy account</h1>
+      <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Create your AltasGoods account</h1>
       <p className="mt-2 text-[15px] text-ink-600">Three details and a code. That is all.</p>
       <div className="mt-8 flex flex-col gap-4">
         <Field label="Full name" htmlFor="su-name" required error={errors.name}>
@@ -324,7 +324,7 @@ export function SignupForm() {
         Continue
       </button>
       <p className="mt-5 text-xs leading-relaxed text-ink-500">
-        By creating an account you agree to BluBuy&apos;s{" "}
+        By creating an account you agree to AltasGoods&apos;s{" "}
         <Link href="/policies/terms" className="font-medium text-brand-700 hover:underline">
           Terms of use
         </Link>{" "}

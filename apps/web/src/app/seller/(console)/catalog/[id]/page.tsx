@@ -137,7 +137,7 @@ export default async function ListingPage(props: PageProps<"/seller/catalog/[id]
                     </p>
                     <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-500">
                       {o.fulfilledBy === "blubuy" && <Warehouse size={12} aria-hidden="true" />}
-                      {o.fulfilledBy === "blubuy" ? "BluBuy Fulfilled" : "Seller shipped"}, delivery in {o.deliveryDays} {o.deliveryDays === 1 ? "day" : "days"}
+                      {o.fulfilledBy === "blubuy" ? "AltasGoods Fulfilled" : "Seller shipped"}, delivery in {o.deliveryDays} {o.deliveryDays === 1 ? "day" : "days"}
                     </p>
                   </div>
                   <span className="shrink-0 text-[13px] font-semibold text-ink-900 tabular-nums">{formatINR(o.mine ? listing.price : o.price)}</span>
@@ -196,7 +196,7 @@ export default async function ListingPage(props: PageProps<"/seller/catalog/[id]
           <div className="flex items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4">
             <ProductImage src={listing.image} alt="" size={48} rounded="md" />
             <p className="text-xs leading-relaxed text-ink-500">
-              Catalog content for this BSIN is shared by every seller. Brand owners with BluBuy Brand Registry control the title, images and A+ content.
+              Catalog content for this BSIN is shared by every seller. Brand owners with AltasGoods Brand Registry control the title, images and A+ content.
             </p>
           </div>
         </div>

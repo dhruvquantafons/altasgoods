@@ -199,7 +199,7 @@ export function ReturnWizard({
   };
 
   const refundLabel =
-    refundTo === "credits" ? "BluBuy Credits" : refundTo === "bank" ? `UPI ID ${upi}` : payment.label;
+    refundTo === "credits" ? "AltasGoods Credits" : refundTo === "bank" ? `UPI ID ${upi}` : payment.label;
   const refundWhen =
     refundTo === "credits"
       ? item?.instantRefund
@@ -493,7 +493,7 @@ export function ReturnWizard({
                     )}
                     <Choice name="refund" selected={refundTo === "credits"} onSelect={() => setRefundTo("credits")}>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-[13.5px] font-medium text-ink-900">BluBuy Credits</p>
+                        <p className="text-[13.5px] font-medium text-ink-900">AltasGoods Credits</p>
                         {item.instantRefund && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-semibold text-success-700">
                             <Zap size={11} aria-hidden="true" />
@@ -521,7 +521,7 @@ export function ReturnWizard({
               {resolution === "replacement" && (
                 <p className="flex items-start gap-2 rounded-lg bg-brand-50 px-3.5 py-3 text-[13px] text-brand-800">
                   <Zap size={16} className="mt-px shrink-0" aria-hidden="true" />
-                  As a BluBuy Plus member, your replacement can ship before we pick up the original, so you are never without it for long.
+                  As an AltasGoods Plus member, your replacement can ship before we pick up the original, so you are never without it for long.
                 </p>
               )}
             </div>

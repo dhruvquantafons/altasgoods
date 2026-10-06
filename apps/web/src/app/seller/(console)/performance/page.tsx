@@ -37,7 +37,7 @@ export default function PerformancePage() {
     <>
       <PageHeader
         title="Account health"
-        description="BluBuy Seller Health: a 0 to 1000 score built from your performance metrics and policy compliance. It decides your access to deals, ads, the Assured badge and the featured offer."
+        description="AltasGoods Seller Health: a 0 to 1000 score built from your performance metrics and policy compliance. It decides your access to deals, ads, the Assured badge and the featured offer."
         actions={
           <ToastButton icon="download" message="Account health report for the last 180 days is being prepared.">
             Download report

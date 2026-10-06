@@ -5,7 +5,7 @@ import { api, publicApi } from "@/lib/api/server";
 import type { Address, Order, PaymentDetail, PaymentMethod, Quote } from "@/lib/api/types";
 
 /**
- * Storefront mutations. Each calls the BluBuy API with the session cookie on
+ * Storefront mutations. Each calls the AltasGoods API with the session cookie on
  * the server, so tokens never reach the browser.
  */
 
@@ -15,7 +15,7 @@ const fail = (e: unknown, fallback: string): { ok: false; error: string; code?: 
   const p = (e ?? {}) as { detail?: string; code?: string; errors?: { message: string }[] };
   return { ok: false, error: p.errors?.[0]?.message ?? p.detail ?? fallback, code: p.code };
 };
-const offline = { ok: false as const, error: "BluBuy is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
+const offline = { ok: false as const, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
 
 /** A cart line as the storefront keeps it: product plus the chosen seller. */
 export interface LineInput {

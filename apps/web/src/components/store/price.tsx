@@ -72,10 +72,10 @@ export function RatingChip({ rating, count, className }: { rating: number; count
 
 export function AssuredMark({ className, label = "Assured" }: { className?: string; label?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 text-[11px] font-semibold text-brand-700", className)} title="BluBuy Assured: quality checked, faster delivery, easy returns">
+    <span className={cn("inline-flex items-center gap-1 text-[11px] font-semibold text-brand-700", className)} title="AltasGoods Assured: quality checked, faster delivery, easy returns">
       <BadgeCheck size={14} strokeWidth={2} className="fill-brand-50" aria-hidden="true" />
       <span>
-        <span className="sr-only">BluBuy </span>
+        <span className="sr-only">AltasGoods </span>
         {label}
       </span>
     </span>

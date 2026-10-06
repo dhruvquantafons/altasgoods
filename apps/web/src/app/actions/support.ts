@@ -19,7 +19,7 @@ const fail = (e: unknown, fallback: string): { ok: false; error: string; code?: 
   const p = (e ?? {}) as { detail?: string; code?: string; errors?: { message: string }[] };
   return { ok: false, error: p.errors?.[0]?.message ?? p.detail ?? fallback, code: p.code };
 };
-const offline = { ok: false as const, error: "BluBuy is unreachable right now. Please try again in a moment." };
+const offline = { ok: false as const, error: "AltasGoods is unreachable right now. Please try again in a moment." };
 
 async function call<T>(fn: () => Promise<{ data?: T; error?: unknown }>, fallback: string, paths: string[] = []): Promise<Result<T>> {
   try {

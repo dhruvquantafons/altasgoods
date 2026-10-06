@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * 1. refreshes an expired or expiring access token with the refresh token, and
  *    hands the new token to this same request so Server Components see it;
  * 2. sends signed-out visitors of protected areas to sign in;
- * 3. keeps BluBuy Control to staff and Seller Hub to seller accounts.
+ * 3. keeps AltasGoods Control to staff and Seller Hub to seller accounts.
  * Real authorisation happens in the API on every call.
  */
 const ACCESS = "bb_at";

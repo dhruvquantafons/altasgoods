@@ -104,7 +104,7 @@ export default async function StatementPage(props: PageProps<"/seller/payments/[
                     { label: "Refunds to customers", value: s.refunds },
                   ]}
                 />
-                <p className="mt-5 text-xs font-medium text-ink-500">BluBuy fees</p>
+                <p className="mt-5 text-xs font-medium text-ink-500">AltasGoods fees</p>
                 <AmountRows
                   className="mt-1"
                   rows={[

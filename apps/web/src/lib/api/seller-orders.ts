@@ -11,7 +11,7 @@ const METHOD: Record<SellerItem["paymentMethod"], UiMethod> = { UPI: "upi", CARD
 
 /**
  * An API order line in the shape Seller Hub's order screens were built around.
- * Every line is treated as seller shipped for now; automated BluBuy Fulfilled
+ * Every line is treated as seller shipped for now; automated AltasGoods Fulfilled
  * processing arrives with the logistics phase.
  */
 export function toSellerLine(i: SellerItem, deliveredAt?: string): SellerLine {

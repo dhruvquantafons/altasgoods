@@ -19,7 +19,7 @@ import {
 import { SELL_PROGRAMS, SELL_STEPS } from "@/lib/mock/store-extra";
 import { cn, formatINR } from "@/lib/utils";
 
-export const metadata = { title: "Sell on BluBuy" };
+export const metadata = { title: "Sell on AltasGoods" };
 
 const EXAMPLE_PRICE = 1599;
 
@@ -42,7 +42,7 @@ export default function SellPage() {
         <div className="pointer-events-none absolute -bottom-48 left-1/4 size-96 rounded-full bg-accent-400/15 blur-3xl" aria-hidden="true" />
         <div className={cn(STORE_CONTAINER, "relative grid gap-10 py-14 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-20")}>
           <div>
-            <p className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-brand-100 ring-1 ring-white/15">BluBuy Seller Hub</p>
+            <p className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-brand-100 ring-1 ring-white/15">AltasGoods Seller Hub</p>
             <h1 className="mt-5 text-4xl leading-[1.05] font-semibold tracking-tight lg:text-[56px]">Sell to customers across India, on fair terms</h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-brand-100">
               Zero commission on items up to {formatINR(COMMISSION_FREE_UPTO)}, no collection fee on prepaid or cash on delivery orders, and payouts as soon as delivery
@@ -61,7 +61,7 @@ export default function SellPage() {
               { k: "0%", v: `commission on items up to ${formatINR(COMMISSION_FREE_UPTO)}` },
               { k: `${PAYOUT_HOLD_DAYS.Platinum} days`, v: "after delivery to get paid, for Platinum sellers" },
               { k: "₹0", v: "collection fee on UPI, cards or cash on delivery" },
-              { k: "19,000+", v: "pincodes served by BluBuy Logistics" },
+              { k: "19,000+", v: "pincodes served by AltasGoods Logistics" },
             ].map((s) => (
               <div key={s.k} className="rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/10">
                 <p className="font-display text-3xl font-semibold tracking-tight">{s.k}</p>
@@ -148,7 +148,7 @@ export default function SellPage() {
 
               <div className="overflow-hidden rounded-2xl border border-line">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-5">
-                  <p className="text-base font-semibold text-ink-900">Shipping with BluBuy Logistics</p>
+                  <p className="text-base font-semibold text-ink-900">Shipping with AltasGoods Logistics</p>
                   <p className="text-[13px] text-ink-500">Per package, by chargeable weight and zone. Tier discounts up to 15%.</p>
                 </div>
                 <div className="mt-3 overflow-x-auto">
@@ -240,8 +240,8 @@ export default function SellPage() {
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: Megaphone, t: "BluBuy Ads", b: "Sponsored products and brand ads, pay only per click, clearly labelled to shoppers." },
-              { icon: Clock, t: "Sale events", b: "Nominate deals for BluBuy Big Days and Plus Day with honest 30 day price checks." },
+              { icon: Megaphone, t: "AltasGoods Ads", b: "Sponsored products and brand ads, pay only per click, clearly labelled to shoppers." },
+              { icon: Clock, t: "Sale events", b: "Nominate deals for AltasGoods Big Days and Plus Day with honest 30 day price checks." },
               { icon: Users, t: "Seller Health", b: "One score and clear targets for cancellations, late dispatch and defects." },
               { icon: GraduationCap, t: "Seller Academy", b: "Short lessons on listings, packaging and GST, in English and Hindi." },
             ].map((x) => (
@@ -266,8 +266,8 @@ export default function SellPage() {
             {[
               ["Do I need a GSTIN?", "Yes for most categories. Books and other GST exempt categories can register with PAN only."],
               ["When do I get paid?", `As soon as delivery plus ${PAYOUT_HOLD_DAYS.Platinum} to ${PAYOUT_HOLD_DAYS.Bronze} days depending on your tier, on the next Monday, Wednesday or Friday payout run.`],
-              ["Who handles returns?", "BluBuy Logistics picks up returns with a doorstep quality check. Damaged or wrong returns can be claimed through BluBuy SafeClaim."],
-              ["Can I sell on other marketplaces too?", "Of course. There is no exclusivity on BluBuy."],
+              ["Who handles returns?", "AltasGoods Logistics picks up returns with a doorstep quality check. Damaged or wrong returns can be claimed through AltasGoods SafeClaim."],
+              ["Can I sell on other marketplaces too?", "Of course. There is no exclusivity on AltasGoods."],
             ].map(([q, a]) => (
               <details key={q} className="group px-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[15px] font-medium text-ink-900 [&::-webkit-details-marker]:hidden">

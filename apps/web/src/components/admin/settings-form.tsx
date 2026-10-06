@@ -22,13 +22,13 @@ const SECTIONS = [
   { id: "returns", label: "Return windows" },
   { id: "payments", label: "Payments and COD" },
   { id: "delivery", label: "Delivery and fees" },
-  { id: "plus", label: "BluBuy Plus" },
-  { id: "coins", label: "BluCoins" },
+  { id: "plus", label: "AltasGoods Plus" },
+  { id: "coins", label: "AltasCoins" },
   { id: "grievance", label: "Grievance officer" },
   { id: "maintenance", label: "Maintenance banner" },
 ];
 
-const INITIAL_METHODS: Record<string, boolean> = { UPI: true, "Credit and debit cards": true, "Net banking": true, Wallets: true, "Card EMI": true, "Cash on delivery": true, "BluBuy Pay Later": false };
+const INITIAL_METHODS: Record<string, boolean> = { UPI: true, "Credit and debit cards": true, "Net banking": true, Wallets: true, "Card EMI": true, "Cash on delivery": true, "AltasGoods Pay Later": false };
 
 function Rupee(props: ComponentProps<typeof Input>) {
   return <Input type="number" min={0} suffix="INR" {...props} />;
@@ -119,9 +119,9 @@ export function SettingsForm({ data }: { data: SettingsData }) {
                   <Switch
                     key={m}
                     label={m}
-                    description={m === "BluBuy Pay Later" ? "Phase 2, NBFC partner onboarding" : undefined}
+                    description={m === "AltasGoods Pay Later" ? "Phase 2, NBFC partner onboarding" : undefined}
                     checked={on}
-                    disabled={m === "BluBuy Pay Later"}
+                    disabled={m === "AltasGoods Pay Later"}
                     onChange={(v) => {
                       setMethods((x) => ({ ...x, [m]: v }));
                       touch();
@@ -153,7 +153,7 @@ export function SettingsForm({ data }: { data: SettingsData }) {
 
         {section(
           "plus",
-          "BluBuy Plus pricing",
+          "AltasGoods Plus pricing",
           "A price change creates a new plan version; existing members keep their price until renewal. Cancelling must stay a one-step flow.",
           true,
           <div className="grid gap-4 sm:grid-cols-2">
@@ -168,7 +168,7 @@ export function SettingsForm({ data }: { data: SettingsData }) {
 
         {section(
           "coins",
-          "BluCoins",
+          "AltasCoins",
           "Coins are credited after the return window closes. 1 coin is worth ₹1 at redemption.",
           true,
           <div className="grid gap-4 sm:grid-cols-3">

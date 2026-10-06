@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { api } from "./server";
 
-/** Open seller application counts for BluBuy Control, shared by the layout and pages in one request. */
+/** Open seller application counts for AltasGoods Control, shared by the layout and pages in one request. */
 export const loadKycSummary = cache(async () => {
   try {
     const r = await (await api()).GET("/v1/admin/seller-applications", { params: { query: { tab: "open", page: 1, pageSize: 1 } } });

@@ -41,7 +41,7 @@ const eventLabel: Partial<Record<OrderStatus, string>> = {
   placed: "Order placed",
   confirmed: "Seller confirmed your order",
   packed: "Item packed and invoice generated",
-  ready_to_ship: "Ready to ship, handed to BluBuy Logistics pickup",
+  ready_to_ship: "Ready to ship, handed to AltasGoods Logistics pickup",
   shipped: "Shipped from seller warehouse",
   in_transit: "In transit, reached sort centre",
   out_for_delivery: "Out for delivery",

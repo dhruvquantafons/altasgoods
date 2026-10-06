@@ -206,7 +206,7 @@ export function TicketActions({
     { key: "refund" as const, label: "Issue refund", hint: `${level} limit ${formatINR(limit)}`, icon: IndianRupee },
     { key: "replacement" as const, label: "Create replacement", hint: "One replacement per item", icon: RefreshCcw },
     { key: "seller" as const, label: "Escalate to seller", hint: "48 hour response", icon: Store },
-    { key: "guarantee" as const, label: "File BluBuy Guarantee claim", hint: eligible ? "Eligible" : "Check eligibility", icon: ShieldCheck },
+    { key: "guarantee" as const, label: "File AltasGoods Guarantee claim", hint: eligible ? "Eligible" : "Check eligibility", icon: ShieldCheck },
   ];
 
   const errorNote = error && (
@@ -296,7 +296,7 @@ export function TicketActions({
                   onClick={() =>
                     run(
                       { kind: "REFUND", amountPaise: Math.round(amt * 100), destination: dest, reason },
-                      over ? `Refund of ${formatINR(amt)} sent for supervisor approval` : `Refund of ${formatINR(amt)} initiated to ${dest === "CREDITS" ? "BluBuy Credits" : order.cod ? "the verified bank account" : order.paymentLabel}`,
+                      over ? `Refund of ${formatINR(amt)} sent for supervisor approval` : `Refund of ${formatINR(amt)} initiated to ${dest === "CREDITS" ? "AltasGoods Credits" : order.cod ? "the verified bank account" : order.paymentLabel}`,
                     )
                   }
                 >
@@ -314,7 +314,7 @@ export function TicketActions({
               <fieldset>
                 <legend className="mb-2 text-[13px] font-medium text-ink-700">Refund to</legend>
                 <div className="flex flex-col gap-2.5">
-                  <Radio name="dest" checked={dest === "CREDITS"} onChange={() => setDest("CREDITS")} label="BluBuy Credits" description="Under 2 hours. Usable on the next order." />
+                  <Radio name="dest" checked={dest === "CREDITS"} onChange={() => setDest("CREDITS")} label="AltasGoods Credits" description="Under 2 hours. Usable on the next order." />
                   <Radio
                     name="dest"
                     checked={dest === "SOURCE"}
@@ -346,7 +346,7 @@ export function TicketActions({
             open={open === "replacement"}
             onClose={close}
             title="Create replacement"
-            description="Ships after doorstep QC passes, or right away for BluBuy Plus members with a low risk score."
+            description="Ships after doorstep QC passes, or right away for AltasGoods Plus members with a low risk score."
             footer={
               <>
                 <Button variant="ghost" onClick={close}>
@@ -420,8 +420,8 @@ export function TicketActions({
           <Modal
             open={open === "guarantee"}
             onClose={close}
-            title="File a BluBuy Guarantee claim"
-            description="The seller has 72 hours to respond; no response auto-grants the claim. BluBuy decides within 7 days."
+            title="File an AltasGoods Guarantee claim"
+            description="The seller has 72 hours to respond; no response auto-grants the claim. AltasGoods decides within 7 days."
             footer={
               <>
                 <Button variant="ghost" onClick={close}>

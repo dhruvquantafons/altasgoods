@@ -1,5 +1,5 @@
 /**
- * Canonical state machines for BluBuy. Every dashboard renders statuses through
+ * Canonical state machines for AltasGoods. Every dashboard renders statuses through
  * these maps so a status always has the same label and colour everywhere.
  * See docs/architecture/state-machines.md for the transition rules.
  */
@@ -39,7 +39,7 @@ export const ORDER_STATUS: StatusMap<OrderStatus> = {
   confirmed: { label: "Confirmed", tone: "info", description: "Seller accepted the order" },
   packed: { label: "Packed", tone: "brand", description: "Packed, invoice and label generated" },
   ready_to_ship: { label: "Ready to ship", tone: "brand", description: "Manifested and awaiting pickup" },
-  shipped: { label: "Shipped", tone: "brand", description: "Picked up by BluBuy Logistics" },
+  shipped: { label: "Shipped", tone: "brand", description: "Picked up by AltasGoods Logistics" },
   in_transit: { label: "In transit", tone: "brand", description: "Moving between hubs" },
   out_for_delivery: { label: "Out for delivery", tone: "accent", description: "With a delivery associate today" },
   delivered: { label: "Delivered", tone: "success" },
@@ -129,9 +129,9 @@ export const PAYMENT_METHOD: Record<PaymentMethod, string> = {
   upi: "UPI",
   card: "Credit / Debit card",
   netbanking: "Net banking",
-  wallet: "BluBuy Credits",
+  wallet: "AltasGoods Credits",
   emi: "EMI",
-  paylater: "BluBuy Pay Later",
+  paylater: "AltasGoods Pay Later",
   cod: "Cash on delivery",
   giftcard: "Gift card",
 };

@@ -304,7 +304,7 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
                     </TD>
                     <TD align="right">
                       {r.status === "mismatch" ? (
-                        <ActionButton label="Resolve" size="xs" title="Resolve mismatch" description={`${r.mismatches} transaction mismatch between ${r.provider} and BluBuy for ${formatDateShort(r.date)}.`} reasons={["Late success, auto refunded", "Refund settled next day", "Gateway file corrected", "Manual ledger adjustment (maker-checker)"]} note="required" toast="Mismatch resolved" doneLabel="Resolved" />
+                        <ActionButton label="Resolve" size="xs" title="Resolve mismatch" description={`${r.mismatches} transaction mismatch between ${r.provider} and AltasGoods for ${formatDateShort(r.date)}.`} reasons={["Late success, auto refunded", "Refund settled next day", "Gateway file corrected", "Manual ledger adjustment (maker-checker)"]} note="required" toast="Mismatch resolved" doneLabel="Resolved" />
                       ) : r.status === "pending" ? (
                         <ToastButton label="Fetch file" icon="download" size="xs" toast={`Requested ${r.provider} settlement file`} doneLabel="Requested" />
                       ) : null}
@@ -319,7 +319,7 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
 
       {tab === "cod" && (
         <Card>
-          <CardHeader title="COD remittance from BluBuy Logistics" description="Delivered COD against associate collections, hub deposits and bank credits. Sellers become eligible only after reconciliation." />
+          <CardHeader title="COD remittance from AltasGoods Logistics" description="Delivered COD against associate collections, hub deposits and bank credits. Sellers become eligible only after reconciliation." />
           <TableContainer className="mt-3">
             <Table>
               <THead>

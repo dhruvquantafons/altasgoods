@@ -6,8 +6,8 @@ import { currentUser } from "@/lib/api/server";
 import { formatPhone } from "@/lib/onboarding";
 
 export const metadata: Metadata = {
-  title: { default: "Start selling", template: "%s | BluBuy Seller Hub" },
-  description: "Register as a seller on BluBuy: verify your business, add a pickup address and bank account, and start listing.",
+  title: { default: "Start selling", template: "%s | AltasGoods Seller Hub" },
+  description: "Register as a seller on AltasGoods: verify your business, add a pickup address and bank account, and start listing.",
 };
 
 export default async function RegisterLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +30,7 @@ export default async function RegisterLayout({ children }: { children: React.Rea
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">{children}</main>
       <footer className="border-t border-line bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-5 text-xs text-ink-500 sm:flex-row sm:justify-between sm:px-6">
-          <p>BluBuy Internet Private Limited, an e-commerce operator under the CGST Act.</p>
+          <p>AltasGoods Internet Private Limited, an e-commerce operator under the CGST Act.</p>
           <p>Your documents are encrypted and used only for KYC verification.</p>
         </div>
       </footer>

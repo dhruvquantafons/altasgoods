@@ -43,7 +43,7 @@ export function PriceDetails({
           label="Delivery charges"
           value={totals.delivery === 0 ? "Free" : formatINR(totals.delivery)}
           green={totals.delivery === 0}
-          hint={totals.delivery === 0 ? (plus ? "BluBuy Plus benefit" : undefined) : `₹40 per seller shipment under ₹499`}
+          hint={totals.delivery === 0 ? (plus ? "AltasGoods Plus benefit" : undefined) : `₹40 per seller shipment under ₹499`}
         />
         {extra.map((e) => (
           <Row key={e.label} label={e.label} value={`-${formatINR(e.value)}`} green hint={e.note} />
@@ -56,7 +56,7 @@ export function PriceDetails({
       {savings > 0 && (
         <p className="mx-5 mb-4 rounded-lg bg-success-50 px-3 py-2 text-[13px] font-semibold text-success-700">You will save {formatINR(savings)} on this order</p>
       )}
-      <p className="mx-5 mb-4 text-xs leading-relaxed text-ink-500">Prices include GST. BluBuy adds no payment handling or cash on delivery charges.</p>
+      <p className="mx-5 mb-4 text-xs leading-relaxed text-ink-500">Prices include GST. AltasGoods adds no payment handling or cash on delivery charges.</p>
       {footer && <div className="border-t border-line px-5 py-4">{footer}</div>}
     </section>
   );

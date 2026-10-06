@@ -203,7 +203,7 @@ export default async function ShipmentDetailPage(props: PageProps<"/logistics/sh
               </div>
             ) : (
               <p className="px-5 pt-2 pb-5 text-[13px] leading-relaxed text-ink-500">
-                Captured in BluBuy Rider at the door: {j.secure ? "the customer's Secure Delivery OTP, " : ""}a doorstep photo, the receiver&apos;s name and a geo-tag. Nothing captured yet.
+                Captured in AltasGoods Rider at the door: {j.secure ? "the customer's Secure Delivery OTP, " : ""}a doorstep photo, the receiver&apos;s name and a geo-tag. Nothing captured yet.
               </p>
             )}
           </Card>

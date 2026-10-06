@@ -55,7 +55,7 @@ export function ReplyComposer({
     if (!r.ok) return setError(r.error);
     setText("");
     setFiles([]);
-    show(mode === "note" ? "Internal note added. Only BluBuy staff can see it." : `Reply sent by ${channel.toLowerCase()}${after === "PENDING_CUSTOMER" ? ", waiting for the customer" : after === "RESOLVED" ? ", ticket resolved" : ""}`);
+    show(mode === "note" ? "Internal note added. Only AltasGoods staff can see it." : `Reply sent by ${channel.toLowerCase()}${after === "PENDING_CUSTOMER" ? ", waiting for the customer" : after === "RESOLVED" ? ", ticket resolved" : ""}`);
     router.refresh();
   }
 

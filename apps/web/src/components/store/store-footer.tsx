@@ -13,10 +13,10 @@ const columns = [
   {
     title: "About",
     links: [
-      { label: "About BluBuy", href: "/about" },
+      { label: "About AltasGoods", href: "/about" },
       { label: "Careers", href: "/careers" },
       { label: "Press", href: "/press" },
-      { label: "BluBuy Plus", href: "/plus" },
+      { label: "AltasGoods Plus", href: "/plus" },
       { label: "Big Days sale", href: "/deals" },
     ],
   },
@@ -26,7 +26,7 @@ const columns = [
       { label: "Help centre", href: "/help" },
       { label: "Track your order", href: "/account/orders" },
       { label: "Payments", href: "/policies/payments" },
-      { label: "BluBuy Guarantee", href: "/policies/guarantee" },
+      { label: "AltasGoods Guarantee", href: "/policies/guarantee" },
       { label: "Contact us", href: "/contact" },
     ],
   },
@@ -42,18 +42,18 @@ const columns = [
     ],
   },
   {
-    title: "Sell on BluBuy",
+    title: "Sell on AltasGoods",
     links: [
       { label: "Start selling", href: "/sell" },
       { label: "Fees and rate card", href: "/sell/fees" },
-      { label: "BluBuy Fulfilled", href: "/sell/fulfilled" },
+      { label: "AltasGoods Fulfilled", href: "/sell/fulfilled" },
       { label: "Seller Hub login", href: "/seller" },
       { label: "Register as a seller", href: "/seller/register" },
     ],
   },
 ];
 
-const payments = ["UPI", "Credit cards", "Debit cards", "Net banking", "EMI", "BluBuy Pay Later", "Gift cards", "Cash on delivery"];
+const payments = ["UPI", "Credit cards", "Debit cards", "Net banking", "EMI", "AltasGoods Pay Later", "Gift cards", "Cash on delivery"];
 
 export function StoreFooter({ company, grievance }: FooterProps) {
   return (
@@ -66,7 +66,7 @@ export function StoreFooter({ company, grievance }: FooterProps) {
           </p>
           <div id="app-download" className="mt-6 scroll-mt-24 rounded-xl bg-white/[0.05] p-4 ring-1 ring-white/10">
             <p className="flex items-center gap-2 text-sm font-semibold text-white">
-              <Smartphone size={16} strokeWidth={1.8} aria-hidden="true" /> BluBuy app
+              <Smartphone size={16} strokeWidth={1.8} aria-hidden="true" /> AltasGoods app
               <span className="rounded-full bg-accent-400 px-2 py-px text-[11px] font-semibold text-ink-950">Coming soon</span>
             </p>
             <p className="mt-1.5 text-[13px] leading-relaxed text-brand-200">

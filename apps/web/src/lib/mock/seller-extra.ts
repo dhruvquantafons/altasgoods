@@ -55,7 +55,7 @@ function digits(seed: string, len: number) {
   return code(seed, len, "0123456789");
 }
 
-/** BluBuy Standard Identification Number: "B0" plus 8 alphanumerics, one per sellable variant. */
+/** AltasGoods Standard Identification Number: "B0" plus 8 alphanumerics, one per sellable variant. */
 export function bsinFor(productId: string) {
   return `B0${code(productId, 8)}`;
 }
@@ -143,9 +143,9 @@ export function maskPhone(phone: string) {
 export type Channel = "fulfilled" | "ship" | "flex" | "self";
 
 export const CHANNELS: Record<Channel, { label: string; description: string }> = {
-  fulfilled: { label: "BluBuy Fulfilled", description: "Stored, packed and shipped by a BluBuy fulfilment centre" },
-  ship: { label: "BluBuy Ship", description: "You pack, BluBuy Logistics picks up and delivers" },
-  flex: { label: "BluBuy Flex", description: "Your warehouse on BluBuy systems, BluBuy picks up" },
+  fulfilled: { label: "AltasGoods Fulfilled", description: "Stored, packed and shipped by an AltasGoods fulfilment centre" },
+  ship: { label: "AltasGoods Ship", description: "You pack, AltasGoods Logistics picks up and delivers" },
+  flex: { label: "AltasGoods Flex", description: "Your warehouse on AltasGoods systems, AltasGoods picks up" },
   self: { label: "Self Ship", description: "You ship with your own courier and upload tracking" },
 };
 
@@ -179,7 +179,7 @@ export const ORDER_STAGES: { key: OrderStage; label: string; statuses: OrderStat
   { key: "new", label: "New", statuses: ["placed"], hint: "Confirm new orders to start the dispatch clock." },
   { key: "to_pack", label: "To pack", statuses: ["confirmed"], hint: "Generate the invoice and label, then pack the item." },
   { key: "ready", label: "Ready to ship", statuses: ["packed", "ready_to_ship"], hint: "Mark ready to ship, add to a manifest and hand over at pickup." },
-  { key: "shipped", label: "Shipped", statuses: ["shipped", "in_transit", "out_for_delivery", "undelivered"], hint: "With BluBuy Logistics, on the way to the customer." },
+  { key: "shipped", label: "Shipped", statuses: ["shipped", "in_transit", "out_for_delivery", "undelivered"], hint: "With AltasGoods Logistics, on the way to the customer." },
   { key: "delivered", label: "Delivered", statuses: ["delivered"], hint: "Delivered and inside the return window." },
   { key: "cancelled", label: "Cancelled", statuses: ["cancelled", "pending_payment"], hint: "Cancelled before shipment by the customer, you or the system." },
   { key: "returns", label: "Returns", statuses: ["return_requested", "returned", "rto_in_transit", "returned_to_seller"], hint: "Customer returns and shipments returning to origin." },
@@ -1039,9 +1039,9 @@ export interface SaleEventInfo {
 }
 
 export const saleEvents: SaleEventInfo[] = [
-  { id: "ev-bigdays", name: "BluBuy Big Days", status: "live", startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", priceLockAt: "2026-09-24T00:00:00+05:30", minDiscount: 20, requirements: ["At least 20% below the 30-day low price", "Stock of 50 units or more in a BluBuy fulfilment centre", "Seller Health of 600 or more"], nominated: 9, approved: 7, sales: 38_40_000, units: 612 },
+  { id: "ev-bigdays", name: "AltasGoods Big Days", status: "live", startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", priceLockAt: "2026-09-24T00:00:00+05:30", minDiscount: 20, requirements: ["At least 20% below the 30-day low price", "Stock of 50 units or more in an AltasGoods fulfilment centre", "Seller Health of 600 or more"], nominated: 9, approved: 7, sales: 38_40_000, units: 612 },
   { id: "ev-diwali", name: "Diwali Dhamaka", status: "nominations_open", startsAt: "2026-10-28T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", nominateBy: "2026-10-10T23:59:00+05:30", priceLockAt: "2026-10-26T00:00:00+05:30", minDiscount: 15, requirements: ["At least 15% below the 30-day low price", "Price locked from 26 Oct; you may only lower it", "Up to 50 products per seller"], nominated: 4, approved: 0 },
-  { id: "ev-plusday", name: "BluBuy Plus Day", status: "ended", startsAt: "2026-07-14T00:00:00+05:30", endsAt: "2026-07-15T23:59:00+05:30", minDiscount: 20, requirements: ["Members-only pricing", "BluBuy Fulfilled stock only"], nominated: 6, approved: 6, sales: 21_15_000, units: 288 },
+  { id: "ev-plusday", name: "AltasGoods Plus Day", status: "ended", startsAt: "2026-07-14T00:00:00+05:30", endsAt: "2026-07-15T23:59:00+05:30", minDiscount: 20, requirements: ["Members-only pricing", "AltasGoods Fulfilled stock only"], nominated: 6, approved: 6, sales: 21_15_000, units: 288 },
 ];
 
 export interface DealNomination {
@@ -1104,7 +1104,7 @@ export const sellerCoupons: SellerCoupon[] = [
       const [budget, sales, audience] = couponPerf[c.code] ?? [50000, 0, "All customers"];
       return { ...c, budget, spent: c.type === "flat" ? c.usage * c.value : Math.round(sales * (c.value / 100) * 0.92), sales, redemptions: c.usage, audience, perCustomer: 1 };
     }),
-  { id: "cp-apx-3", code: "APEXLAPTOP5", description: "Apex Retail: 5% off Kestrel laptops for BluBuy Plus members", type: "percent", value: 5, maxDiscount: 5000, minOrder: 49999, usage: 0, limit: 300, startsAt: "2026-10-28T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", status: "scheduled", fundedBy: "seller", budget: 300000, spent: 0, sales: 0, redemptions: 0, audience: "BluBuy Plus members", perCustomer: 1 },
+  { id: "cp-apx-3", code: "APEXLAPTOP5", description: "Apex Retail: 5% off Kestrel laptops for AltasGoods Plus members", type: "percent", value: 5, maxDiscount: 5000, minOrder: 49999, usage: 0, limit: 300, startsAt: "2026-10-28T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", status: "scheduled", fundedBy: "seller", budget: 300000, spent: 0, sales: 0, redemptions: 0, audience: "AltasGoods Plus members", perCustomer: 1 },
   { id: "cp-apx-4", code: "APEXNEW200", description: "Apex Retail: 200 off for customers new to the store", type: "flat", value: 200, minOrder: 1999, usage: 412, limit: 500, startsAt: "2026-08-01T00:00:00+05:30", endsAt: "2026-08-31T23:59:00+05:30", status: "expired", fundedBy: "seller", budget: 100000, spent: 82400, sales: 9_86_300, redemptions: 412, audience: "New to your store", perCustomer: 1 },
 ];
 
@@ -1192,7 +1192,7 @@ export const LEDGER_STATUS: Record<LedgerStatus, StatusMeta> = {
   cancelled: { label: "Voided", tone: "neutral" },
 };
 
-export type LedgerType = "Order payment" | "Refund" | "SafeClaim reimbursement" | "BluBuy Ads" | "Penalty" | "Fulfilled fees";
+export type LedgerType = "Order payment" | "Refund" | "SafeClaim reimbursement" | "AltasGoods Ads" | "Penalty" | "Fulfilled fees";
 
 export interface LedgerEntry {
   id: string;
@@ -1259,9 +1259,9 @@ const orderEntries: LedgerEntry[] = sellerLines
   });
 
 const adjustmentEntries: LedgerEntry[] = [
-  { id: "TX-300118274", at: fromNow(-1).toISOString(), type: "BluBuy Ads", description: "BluBuy Ads spend, 22 to 28 Sept (deducted from payout)", gross: 0, fees: -184320, gstOnFees: -33178, tcs: 0, tds: 0, net: -217498, status: "eligible" },
+  { id: "TX-300118274", at: fromNow(-1).toISOString(), type: "AltasGoods Ads", description: "AltasGoods Ads spend, 22 to 28 Sept (deducted from payout)", gross: 0, fees: -184320, gstOnFees: -33178, tcs: 0, tds: 0, net: -217498, status: "eligible" },
   { id: "TX-300117903", at: fromNow(-3).toISOString(), type: "Penalty", orderId: sellerLines[5]?.orderId, description: "Late dispatch penalty (first scan after dispatch by date)", gross: 0, fees: -30, gstOnFees: -5, tcs: 0, tds: 0, net: -35, status: "eligible" },
-  { id: "TX-300116551", at: fromNow(-5).toISOString(), type: "Fulfilled fees", description: "BluBuy Fulfilled storage, September (Rs 35 per cubic foot)", gross: 0, fees: -42350, gstOnFees: -7623, tcs: 0, tds: 0, net: -49973, status: "eligible" },
+  { id: "TX-300116551", at: fromNow(-5).toISOString(), type: "Fulfilled fees", description: "AltasGoods Fulfilled storage, September (Rs 35 per cubic foot)", gross: 0, fees: -42350, gstOnFees: -7623, tcs: 0, tds: 0, net: -49973, status: "eligible" },
   { id: "TX-300115012", at: fromNow(-24).toISOString(), type: "SafeClaim reimbursement", description: "SafeClaim SC-26082702, empty box returned (Kestrel Air 14)", gross: 84990, fees: 0, gstOnFees: 0, tcs: 0, tds: 0, net: 84990, status: "paid", payoutId: statementsAll[3]?.id },
   ...sellerReturns
     .filter((r) => r.kind === "return" && ["refund_initiated", "completed", "qc_failed"].includes(r.status))
@@ -1302,8 +1302,8 @@ export const balances = {
   onHold: ledger.filter((l) => l.status === "on_hold").reduce((a, l) => a + l.net, 0) + 42150,
   reserve: 0,
   upcoming: [
-    { label: "BluBuy Ads spend, 29 Sept to 5 Oct", amount: -2_10_400, on: "Deducted from the 6 Oct payout" },
-    { label: "BluBuy Fulfilled storage, October (peak rate)", amount: -61_200, on: "Billed 1 Nov" },
+    { label: "AltasGoods Ads spend, 29 Sept to 5 Oct", amount: -2_10_400, on: "Deducted from the 6 Oct payout" },
+    { label: "AltasGoods Fulfilled storage, October (peak rate)", amount: -61_200, on: "Billed 1 Nov" },
     { label: "Blu Flash Deal fees, Big Days (3 deals)", amount: -5_310, on: "Deducted from the 6 Oct payout" },
   ],
 };
@@ -1327,9 +1327,9 @@ export const taxDocuments: TaxDocument[] = [
   { id: "td-3", kind: "tcs", title: "TCS certificate (GSTR-8)", period: "July 2026", number: "TCS/27/2026-07/APX", issuedOn: "2026-08-10", amount: Math.round(monthTcs(1) * 0.86), status: "available" },
   { id: "td-4", kind: "tds", title: "Form 16A, TDS u/s 194-O", period: "Q1 FY 2026-27 (Apr to Jun)", number: "16A/Q1/2026-27/GTJWY1805B", issuedOn: "2026-08-14", amount: 41_870, status: "available" },
   { id: "td-5", kind: "tds", title: "Form 16A, TDS u/s 194-O", period: "Q4 FY 2025-26 (Feb to Mar)", number: "16A/Q4/2025-26/GTJWY1805B", issuedOn: "2026-05-30", amount: 18_240, status: "available" },
-  { id: "td-6", kind: "fee_invoice", title: "BluBuy tax invoice for fees", period: "September 2026", number: "BBFI/2026-27/0048213", amount: 0, status: "generating" },
-  { id: "td-7", kind: "fee_invoice", title: "BluBuy tax invoice for fees", period: "August 2026", number: "BBFI/2026-27/0039905", issuedOn: "2026-09-01", amount: 31_84_520, status: "available" },
-  { id: "td-8", kind: "fee_invoice", title: "BluBuy tax invoice for fees", period: "July 2026", number: "BBFI/2026-27/0031142", issuedOn: "2026-08-01", amount: 27_46_310, status: "available" },
+  { id: "td-6", kind: "fee_invoice", title: "AltasGoods tax invoice for fees", period: "September 2026", number: "BBFI/2026-27/0048213", amount: 0, status: "generating" },
+  { id: "td-7", kind: "fee_invoice", title: "AltasGoods tax invoice for fees", period: "August 2026", number: "BBFI/2026-27/0039905", issuedOn: "2026-09-01", amount: 31_84_520, status: "available" },
+  { id: "td-8", kind: "fee_invoice", title: "AltasGoods tax invoice for fees", period: "July 2026", number: "BBFI/2026-27/0031142", issuedOn: "2026-08-01", amount: 27_46_310, status: "available" },
   { id: "td-9", kind: "credit_note", title: "Credit note, fee reversals on returns", period: "August 2026", number: "BBCN/2026-27/0004410", issuedOn: "2026-09-01", amount: 1_12_840, status: "available" },
 ];
 
@@ -1383,9 +1383,9 @@ const trend = (v: number, seed: string) => {
 };
 
 export const healthMetrics: HealthMetric[] = [
-  { key: "odr", label: "Order defect rate", value: h.odr, target: 1, comparator: "under", window: "60 days", appliesTo: "All orders", definition: "Items with 1 or 2 star seller feedback, a seller-funded BluBuy Guarantee claim or a chargeback, divided by all items.", consequence: "Above 1% removes featured offer eligibility and can lead to listing restrictions.", affected: 31, trend: trend(h.odr, "odr") },
-  { key: "pfcr", label: "Pre-fulfilment cancel rate", value: h.cancellationRate, target: 2.5, comparator: "under", window: "7 days", appliesTo: "BluBuy Ship and Self Ship", definition: "Seller-attributable cancellations before shipment divided by items. Customer requested cancellations are excluded.", consequence: "Each seller cancellation carries a ₹60 penalty and lowers your Seller Health score.", affected: 2, trend: trend(h.cancellationRate, "pfcr") },
-  { key: "ldr", label: "Late dispatch rate", value: h.lateDispatchRate, target: 4, comparator: "under", window: "10 days", appliesTo: "BluBuy Ship and Self Ship", definition: "Items first scanned after the dispatch by date, divided by items shipped.", consequence: "₹30 penalty per late item. Above 4% for two weeks pauses same-day badges on your offers.", affected: 46, trend: trend(h.lateDispatchRate, "ldr") },
+  { key: "odr", label: "Order defect rate", value: h.odr, target: 1, comparator: "under", window: "60 days", appliesTo: "All orders", definition: "Items with 1 or 2 star seller feedback, a seller-funded AltasGoods Guarantee claim or a chargeback, divided by all items.", consequence: "Above 1% removes featured offer eligibility and can lead to listing restrictions.", affected: 31, trend: trend(h.odr, "odr") },
+  { key: "pfcr", label: "Pre-fulfilment cancel rate", value: h.cancellationRate, target: 2.5, comparator: "under", window: "7 days", appliesTo: "AltasGoods Ship and Self Ship", definition: "Seller-attributable cancellations before shipment divided by items. Customer requested cancellations are excluded.", consequence: "Each seller cancellation carries a ₹60 penalty and lowers your Seller Health score.", affected: 2, trend: trend(h.cancellationRate, "pfcr") },
+  { key: "ldr", label: "Late dispatch rate", value: h.lateDispatchRate, target: 4, comparator: "under", window: "10 days", appliesTo: "AltasGoods Ship and Self Ship", definition: "Items first scanned after the dispatch by date, divided by items shipped.", consequence: "₹30 penalty per late item. Above 4% for two weeks pauses same-day badges on your offers.", affected: 46, trend: trend(h.lateDispatchRate, "ldr") },
   { key: "vtr", label: "Valid tracking rate", value: h.validTrackingRate, target: 95, comparator: "over", window: "30 days", appliesTo: "Self Ship", definition: "Self Ship items with a valid courier and AWB scanned within 24 hours, divided by Self Ship items.", consequence: "Below 95% removes Self Ship from your account for affected categories.", affected: 6, trend: trend(h.validTrackingRate, "vtr") },
   { key: "return", label: "Seller-fault return rate", value: h.returnRate, target: 6.5, comparator: "under", window: "90 days", appliesTo: "All orders", definition: "Returns for defective, wrong, missing or not-as-described items, divided by items delivered. Target is the category benchmark.", consequence: "Above benchmark triggers quality alerts and can suppress the affected listings.", affected: 118, trend: trend(h.returnRate, "ret") },
   { key: "response", label: "Buyer messages answered in 24 hours", value: 96.4, target: 90, comparator: "over", window: "90 days", appliesTo: "All orders", definition: "Buyer messages answered within 24 hours, including weekends, divided by messages needing a response.", consequence: "Below 90% lowers your Seller Health score by 30 points at the weekly evaluation.", affected: 9, trend: trend(96.4, "resp") },
@@ -1425,7 +1425,7 @@ export const TIERS: { key: SellerTier; scale: string; gates: string; benefits: s
   { key: "Bronze", scale: "Default for new sellers", gates: "None", benefits: ["Fixed fee plus ₹10", "Payout 7 days after delivery"] },
   { key: "Silver", scale: "GMV ₹10 lakh or 1,500 units in 90 days", gates: "Cancel rate under 2%, late dispatch under 3%, health 600+, rating 3.8+", benefits: ["Fixed fee plus ₹5", "Payout 5 days after delivery", "5% off forward shipping"] },
   { key: "Gold", scale: "GMV ₹40 lakh or 5,000 units in 90 days", gates: "Cancel rate under 1%, late dispatch under 2%, health 700+, rating 4.0+", benefits: ["Fixed fee plus ₹2", "Payout 3 days after delivery", "10% off forward shipping", "Account manager"] },
-  { key: "Platinum", scale: "GMV ₹1 crore or 12,000 units in 90 days", gates: "Cancel rate under 0.5%, late dispatch under 1%, health 800+, rating 4.2+", benefits: ["Base fixed fee", "Payout 2 days after delivery", "15% off forward shipping", "Account manager", "Priority in BluBuy Big Days"] },
+  { key: "Platinum", scale: "GMV ₹1 crore or 12,000 units in 90 days", gates: "Cancel rate under 0.5%, late dispatch under 1%, health 800+, rating 4.2+", benefits: ["Base fixed fee", "Payout 2 days after delivery", "15% off forward shipping", "Account manager", "Priority in AltasGoods Big Days"] },
 ];
 
 /** Platinum gate progress for the current 90 day window. */
@@ -1462,7 +1462,7 @@ export interface SellerFeedback {
   comment: string;
   at: string;
   response?: string;
-  /** feedback about logistics on BluBuy Fulfilled orders is struck through and excluded from ODR */
+  /** feedback about logistics on AltasGoods Fulfilled orders is struck through and excluded from ODR */
   struck?: boolean;
 }
 
@@ -1565,7 +1565,7 @@ export const messageThreads: MessageThread[] = [
   ]),
   thread("msg-2", 1, "Delivery before Saturday?", "needs_reply", [
     ["buyer", "Hi, I need this laptop before Saturday for a client presentation. Is that possible?", 410],
-    ["system", "BluBuy sent the customer the promised delivery date: Sat, 3 Oct.", 405],
+    ["system", "AltasGoods sent the customer the promised delivery date: Sat, 3 Oct.", 405],
     ["buyer", "Also, does it come with the charger in the box?", 380],
   ]),
   thread("msg-3", 3, "Colour option for headphones", "needs_reply", [
@@ -1578,7 +1578,7 @@ export const messageThreads: MessageThread[] = [
   ]),
   thread("msg-5", 24, "Return pickup timing", "replied", [
     ["buyer", "The pickup for my return was missed today. Will it be rescheduled?", 4400],
-    ["seller", "Sorry for the trouble. BluBuy Logistics has rescheduled the pickup for tomorrow between 10 AM and 1 PM. Please keep the item in its original box.", 4300],
+    ["seller", "Sorry for the trouble. AltasGoods Logistics has rescheduled the pickup for tomorrow between 10 AM and 1 PM. Please keep the item in its original box.", 4300],
   ]),
   thread("msg-6", 27, "Delivery confirmation", "no_response_needed", [
     ["buyer", "Received the air fryer, all good.", 7200],
@@ -1587,9 +1587,9 @@ export const messageThreads: MessageThread[] = [
 
 export const messageTemplates = [
   { id: "t-1", title: "Send invoice", body: "Thank you for your order. Please find the GST invoice for order {order} attached. Let us know if you need any changes to the billing details." },
-  { id: "t-2", title: "Delivery timeline", body: "Thank you for reaching out. Your order {order} is scheduled to be dispatched today and BluBuy shows delivery by {date}. You can track it from Your orders." },
+  { id: "t-2", title: "Delivery timeline", body: "Thank you for reaching out. Your order {order} is scheduled to be dispatched today and AltasGoods shows delivery by {date}. You can track it from Your orders." },
   { id: "t-3", title: "Warranty information", body: "The product carries the brand warranty from the invoice date. Keep the invoice and serial number handy and contact the brand service centre for any claim." },
-  { id: "t-4", title: "Return information", body: "You can request a return from Your orders within the return window. BluBuy will schedule a pickup and the refund is issued after the quality check." },
+  { id: "t-4", title: "Return information", body: "You can request a return from Your orders within the return window. AltasGoods will schedule a pickup and the refund is issued after the quality check." },
   { id: "t-5", title: "Change before dispatch", body: "We cannot change items on an order once it is placed. You can cancel this order from Your orders before it ships and place a new one with the right option." },
 ];
 
@@ -1603,7 +1603,7 @@ export const CASE_STATUS: Record<CaseStatus, StatusMeta> = {
   new: { label: "New", tone: "info" },
   open: { label: "Open", tone: "brand" },
   pending_seller: { label: "Awaiting your reply", tone: "warning" },
-  pending_internal: { label: "With BluBuy team", tone: "info" },
+  pending_internal: { label: "With AltasGoods team", tone: "info" },
   resolved: { label: "Resolved", tone: "success" },
   closed: { label: "Closed", tone: "neutral" },
 };
@@ -1612,9 +1612,9 @@ export const CASE_CATEGORIES = [
   { key: "SELLER_ORDERS", label: "Orders and shipping" },
   { key: "SELLER_PAYMENTS", label: "Payments and fees" },
   { key: "SELLER_CATALOG", label: "Listings and catalog" },
-  { key: "SELLER_FULFILLED", label: "BluBuy Fulfilled" },
+  { key: "SELLER_FULFILLED", label: "AltasGoods Fulfilled" },
   { key: "SELLER_ACCOUNT_HEALTH", label: "Account health" },
-  { key: "SELLER_ADS", label: "BluBuy Ads" },
+  { key: "SELLER_ADS", label: "AltasGoods Ads" },
   { key: "SELLER_TAX", label: "Tax and invoices" },
 ];
 
@@ -1633,14 +1633,14 @@ export interface SupportCase {
 export const supportCases: SupportCase[] = [
   { id: "TK204517836", subject: "Weight discrepancy recovery on 4 laptop shipments", category: "Payments and fees", status: "pending_seller", reference: "TX-300117903", createdAt: fromNow(-2).toISOString(), updatedAt: fromNow(-0.3).toISOString(), lastMessage: "Please share the packed weight photos for the 4 AWBs so we can review the slab change.", respondBy: fromNow(1.2).toISOString() },
   { id: "TK204511290", subject: "Monitor listing suppressed after template change", category: "Listings and catalog", status: "open", reference: "p-monitor-ultra", createdAt: fromNow(-1).toISOString(), updatedAt: fromNow(-0.5).toISOString(), lastMessage: "Our catalog team is checking why the refresh rate attribute did not carry over." },
-  { id: "TK204498877", subject: "Inbound IN-260926-02 shows 1 unit damaged at dock", category: "BluBuy Fulfilled", status: "pending_internal", reference: "IN-260926-02", createdAt: fromNow(-3).toISOString(), updatedAt: fromNow(-1).toISOString(), lastMessage: "Farukhnagar FC is reviewing the dock camera footage. Expect an update within 2 business days." },
+  { id: "TK204498877", subject: "Inbound IN-260926-02 shows 1 unit damaged at dock", category: "AltasGoods Fulfilled", status: "pending_internal", reference: "IN-260926-02", createdAt: fromNow(-3).toISOString(), updatedAt: fromNow(-1).toISOString(), lastMessage: "Farukhnagar FC is reviewing the dock camera footage. Expect an update within 2 business days." },
   { id: "TK204470021", subject: "TCS certificate for August not matching GSTR-2X", category: "Tax and invoices", status: "resolved", createdAt: fromNow(-9).toISOString(), updatedAt: fromNow(-6).toISOString(), lastMessage: "A revised certificate has been issued. Download it from Payments, Tax documents." },
   { id: "TK204455109", subject: "Request account manager call before Diwali", category: "Account health", status: "closed", createdAt: fromNow(-15).toISOString(), updatedAt: fromNow(-12).toISOString(), lastMessage: "Call completed with Ananya from Seller Success. Notes shared by email." },
 ];
 
 export const academyCourses = [
   { id: "ac-1", title: "Win the featured offer during sale events", topic: "Pricing", minutes: 12, level: "Intermediate", progress: 100 },
-  { id: "ac-2", title: "Packaging that survives BluBuy Logistics", topic: "Fulfilment", minutes: 8, level: "Beginner", progress: 60 },
+  { id: "ac-2", title: "Packaging that survives AltasGoods Logistics", topic: "Fulfilment", minutes: 8, level: "Beginner", progress: 60 },
   { id: "ac-3", title: "Reading your settlement statement", topic: "Payments", minutes: 15, level: "Beginner", progress: 0 },
   { id: "ac-4", title: "Keyword bidding for Sponsored Products", topic: "Advertising", minutes: 18, level: "Intermediate", progress: 30 },
   { id: "ac-5", title: "Filing a SafeClaim with the right evidence", topic: "Returns", minutes: 9, level: "Beginner", progress: 0 },
@@ -1685,7 +1685,7 @@ export const SELLER_ROLES = [
   { key: "Operations", description: "Orders, returns, inventory and inbound shipments" },
   { key: "Catalog", description: "Listings, images, pricing and bulk uploads" },
   { key: "Finance", description: "Payments, statements, tax documents and fee invoices (view only on bank)" },
-  { key: "Marketing", description: "BluBuy Ads, coupons, deals and sale events" },
+  { key: "Marketing", description: "AltasGoods Ads, coupons, deals and sale events" },
 ];
 
 export const subUsers = [

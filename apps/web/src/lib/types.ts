@@ -1,5 +1,5 @@
 /**
- * BluBuy domain model. These shapes mirror the planned REST API so the web app,
+ * AltasGoods domain model. These shapes mirror the planned REST API so the web app,
  * the backend and the future Flutter app share one vocabulary.
  * Money is always in whole rupees (INR) unless a field says otherwise.
  */

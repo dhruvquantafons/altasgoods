@@ -18,7 +18,7 @@ const fail = (e: unknown, fallback: string): { ok: false; error: string; code?: 
   const p = (e ?? {}) as { detail?: string; code?: string; errors?: { path: string; message: string }[] };
   return { ok: false, error: p.errors?.length === 1 ? p.errors[0]!.message : (p.detail ?? fallback), code: p.code, errors: p.errors };
 };
-const offline = { ok: false as const, error: "BluBuy is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
+const offline = { ok: false as const, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
 
 async function call<T>(fn: () => Promise<{ data?: T; error?: unknown }>, fallback: string): Promise<Result<T>> {
   try {

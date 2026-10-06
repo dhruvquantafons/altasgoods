@@ -1,5 +1,5 @@
 /**
- * Extra mock data for BluBuy Control (the admin console). Everything here is
+ * Extra mock data for AltasGoods Control (the admin console). Everything here is
  * deterministic and anchored to NOW so server and client renders agree.
  * Derived from the shared mock files; it never mutates them.
  */
@@ -590,7 +590,7 @@ export interface PayoutHold {
 export const payoutHolds: PayoutHold[] = [
   { id: "HLD-118", sellerId: "s-profit", reason: "Order defect rate 1.4% and an open authenticity appeal", category: "Account health", since: ago(6 * D), amountHeld: 1842390, placedBy: "Trust and Safety (automated)", releaseWhen: "ODR under 1% at the weekly evaluation, or appeal accepted" },
   { id: "HLD-121", sellerId: "s-desihandloom", reason: "Seller suspended for review manipulation", category: "Risk investigation", since: ago(19 * D), amountHeld: 412880, placedBy: "Elena D'Souza", releaseWhen: "Investigation closed; final settlement after 90 day claims window" },
-  { id: "HLD-124", sellerId: "s-ganesh", reason: "Reserve for 4 open BluBuy Guarantee claims", category: "Dispute reserve", since: ago(2 * D), amountHeld: 68420, placedBy: "Claims engine", releaseWhen: "Claims decided" },
+  { id: "HLD-124", sellerId: "s-ganesh", reason: "Reserve for 4 open AltasGoods Guarantee claims", category: "Dispute reserve", since: ago(2 * D), amountHeld: 68420, placedBy: "Claims engine", releaseWhen: "Claims decided" },
   { id: "HLD-125", sellerId: "s-pageturn", reason: "GSTIN status under verification after address amendment", category: "KYC lapse", since: ago(1 * D), amountHeld: 214550, placedBy: "Dev Malhotra", releaseWhen: "Amended GST certificate verified" },
 ];
 
@@ -980,9 +980,9 @@ const auditTemplates: AuditTemplate[] = [
   () => ({ actor: "Rawahul Islam", actorRole: "", action: "setting:update", entity: "Setting", target: "cod.max_order_value", summary: "Changed COD maximum order value from ₹40,000 to ₹50,000", reason: "Big Days policy" }),
   (r) => ({ actor: "Manoj Tiwari", actorRole: "", action: "risk_rule:update", entity: "Risk rule", target: "RR-03", summary: `Raised high RTO pincode threshold review cadence to daily for ${between(r, 3, 9)} pincodes` }),
   (r) => { const rv = pick(r, reviews.filter((x) => x.status !== "published")); return { actor: "Aparna Krishnan", actorRole: "", action: "review:moderate", entity: "Review", target: rv.id, summary: "Removed review for external link and phone number", reason: "PII_OR_LINKS" }; },
-  () => ({ actor: "Kunal Bhatia", actorRole: "", action: "cms:publish", entity: "Banner", target: "hero-bigdays-day6", summary: "Published homepage hero for BluBuy Big Days day 6" }),
+  () => ({ actor: "Kunal Bhatia", actorRole: "", action: "cms:publish", entity: "Banner", target: "hero-bigdays-day6", summary: "Published homepage hero for AltasGoods Big Days day 6" }),
   (r) => { const s = pick(r, sellers.filter((x) => x.status === "active")); return { actor: "Rawahul Islam", actorRole: "", action: "pii:reveal", entity: "Seller", target: s.id, summary: `Revealed phone number of ${s.ownerName}`, reason: "Escalated support case" }; },
-  () => ({ actor: "Rawahul Islam", actorRole: "", action: "staff:invite", entity: "Staff", target: "harsh@blubuy.in", summary: "Invited Harsh Vardhan as Catalog Moderator" }),
+  () => ({ actor: "Rawahul Islam", actorRole: "", action: "staff:invite", entity: "Staff", target: "harsh@altasgoods.in", summary: "Invited Harsh Vardhan as Catalog Moderator" }),
   (r) => { const s = pick(r, sellers.filter((x) => x.status === "active")); return { actor: "System", actorRole: "", action: "payout:hold", entity: "Payout", target: s.id, summary: `Placed dispute reserve on ${s.displayName}`, reason: "OPEN_GUARANTEE_CLAIMS" }; },
   () => ({ actor: "Fatima Sheikh", actorRole: "", action: "ratecard:submit", entity: "Rate card", target: "RC-2026-EXAMPLE", summary: "Submitted rate card draft for approval (maker)" }),
 ];
@@ -1011,7 +1011,7 @@ export const auditEntries: AuditEntry[] = (() => {
 
 export interface GatewayStat {
   key: string;
-  method: "UPI" | "Cards" | "Net banking" | "Wallets" | "EMI" | "BluBuy Credits";
+  method: "UPI" | "Cards" | "Net banking" | "Wallets" | "EMI" | "AltasGoods Credits";
   channel: string;
   provider: string;
   success15m: number;
@@ -1031,7 +1031,7 @@ export const gatewayStats: GatewayStat[] = [
   { key: "nb", method: "Net banking", channel: "All banks", provider: "Veloce Payments", success15m: 89.7, success24h: 90.4, volume24h: 9700, latencyMs: 5200, status: "operational" },
   { key: "wallets", method: "Wallets", channel: "Partner wallets", provider: "Kanakpay", success15m: 97.1, success24h: 97.6, volume24h: 4600, latencyMs: 1320, status: "operational" },
   { key: "emi", method: "EMI", channel: "Card EMI", provider: "Veloce Payments", success15m: 90.2, success24h: 91.5, volume24h: 7400, latencyMs: 3050, status: "operational" },
-  { key: "credits", method: "BluBuy Credits", channel: "Internal tender", provider: "BluBuy ledger", success15m: 99.9, success24h: 99.9, volume24h: 12800, latencyMs: 180, status: "operational" },
+  { key: "credits", method: "AltasGoods Credits", channel: "Internal tender", provider: "AltasGoods ledger", success15m: 99.9, success24h: 99.9, volume24h: 12800, latencyMs: 180, status: "operational" },
 ];
 
 /** Payment failure rate (percent of attempts) for the last 24 completed hours. */
@@ -1142,7 +1142,7 @@ export const codRemittance = hubs
 
 /* --------------------------------- Ads -------------------------------- */
 
-/** 30 completed days of BluBuy Ads platform revenue and delivery. */
+/** 30 completed days of AltasGoods Ads platform revenue and delivery. */
 export const adsDaily = platformDaily.slice(-31, -1).map((d, i) => {
   const r = seeded(6000 + i);
   const impressions = Math.round(d.visitors * (11.5 + r() * 1.5));
@@ -1195,7 +1195,7 @@ export interface AdCreative {
 
 export const adReviewQueue: AdCreative[] = [
   { id: "CRV-5521", sellerId: "s-apex", format: "Sponsored Brands", headline: "Big Days on Auralis: studio sound, festival prices", image: productByKey("headphones-studio").image, landing: "Brand store: Auralis", submittedAt: ago(3 * H), flags: [] },
-  { id: "CRV-5524", sellerId: "s-glow", format: "Sponsored Display", headline: "Guaranteed glow in 3 days or your money back", image: productByKey("serum-glow").image, landing: "Product page", submittedAt: ago(2 * H + 20), flags: ["Unsubstantiated claim: \"guaranteed\" results", "Refund promise outside BluBuy policy"] },
+  { id: "CRV-5524", sellerId: "s-glow", format: "Sponsored Display", headline: "Guaranteed glow in 3 days or your money back", image: productByKey("serum-glow").image, landing: "Product page", submittedAt: ago(2 * H + 20), flags: ["Unsubstantiated claim: \"guaranteed\" results", "Refund promise outside AltasGoods policy"] },
   { id: "CRV-5527", sellerId: "s-terra", format: "Sponsored Brands", headline: "Living rooms that feel like home", image: productByKey("sofa-oslo").image, landing: "Collection: Oaken living room", submittedAt: ago(95), flags: [] },
   { id: "CRV-5530", sellerId: "s-urbankart", format: "Sponsored Display", headline: "Cheapest smartwatch in India, only today!", image: productByKey("watch-smart").image, landing: "Product page", submittedAt: ago(70), flags: ["Superlative claim without evidence: \"cheapest\"", "False urgency: offer is not time-limited"] },
   { id: "CRV-5533", sellerId: "s-loomhouse", format: "Sponsored Brands", headline: "Handcrafted kurtas for the festive season", image: productByKey("kurta-ethnic").image, landing: "Brand store: Rangrez", submittedAt: ago(40), flags: [] },
@@ -1219,7 +1219,7 @@ export interface SaleEvent {
 }
 
 export const saleEvents: SaleEvent[] = [
-  { id: "ev-plus", name: "BluBuy Plus Day", code: "EVENT_PLUS_DAY", startsAt: "2026-07-15T00:00:00+05:30", endsAt: "2026-07-16T23:59:00+05:30", status: "ended", dealsApproved: 9240, dealsPending: 0, gmv: 1_412_000_000, targetGmv: 1_300_000_000, earlyAccess: "Members only" },
+  { id: "ev-plus", name: "AltasGoods Plus Day", code: "EVENT_PLUS_DAY", startsAt: "2026-07-15T00:00:00+05:30", endsAt: "2026-07-16T23:59:00+05:30", status: "ended", dealsApproved: 9240, dealsPending: 0, gmv: 1_412_000_000, targetGmv: 1_300_000_000, earlyAccess: "Members only" },
   { id: "ev-bigdays", name: SALE_EVENT.name, code: "EVENT_BIG_DAYS", startsAt: SALE_EVENT.startsAt, endsAt: SALE_EVENT.endsAt, status: "live", dealsApproved: 18640, dealsPending: 312, gmv: Math.round(platformDaily.filter((d) => new Date(d.date) >= new Date(SALE_EVENT.startsAt)).reduce((acc, d) => acc + d.gmv, 0)), targetGmv: 6_000_000_000, earlyAccess: "25 Sep for Plus members", submissionsClose: "2026-09-12T23:59:00+05:30" },
   { id: "ev-diwali", name: "Diwali Dhamaka", code: "EVENT_DIWALI", startsAt: "2026-10-28T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", status: "submissions_open", dealsApproved: 2140, dealsPending: 1186, targetGmv: 4_500_000_000, earlyAccess: "27 Oct for Plus members", submissionsClose: "2026-10-12T23:59:00+05:30" },
   { id: "ev-yearend", name: "Year End Sale", code: "EVENT_YEAR_END", startsAt: "2026-12-20T00:00:00+05:30", endsAt: "2026-12-31T23:59:00+05:30", status: "planning", dealsApproved: 0, dealsPending: 0, targetGmv: 2_200_000_000 },
@@ -1290,7 +1290,7 @@ export interface HeroBanner {
 }
 
 export const heroBanners: HeroBanner[] = [
-  { id: "hero-bigdays-day6", title: "BluBuy Big Days: day 6", subtitle: "Up to 60% off festive home, fashion and electronics. Plus members save an extra 10%.", cta: "Shop the sale", href: "/deals", image: "/images/banners/hero-festive.jpg", startsAt: "2026-10-01T00:00:00+05:30", endsAt: "2026-10-01T23:59:00+05:30", status: "live", audience: "Everyone", impressions: 4_820_000, ctr: 3.4 },
+  { id: "hero-bigdays-day6", title: "AltasGoods Big Days: day 6", subtitle: "Up to 60% off festive home, fashion and electronics. Plus members save an extra 10%.", cta: "Shop the sale", href: "/deals", image: "/images/banners/hero-festive.jpg", startsAt: "2026-10-01T00:00:00+05:30", endsAt: "2026-10-01T23:59:00+05:30", status: "live", audience: "Everyone", impressions: 4_820_000, ctr: 3.4 },
   { id: "hero-electronics", title: "Laptops and audio, festival prices", subtitle: "No cost EMI up to 12 months on Kestrel, Auralis and Lumora.", cta: "Explore electronics", href: "/c/electronics", image: "/images/banners/hero-electronics.jpg", startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "live", audience: "Everyone", impressions: 3_160_000, ctr: 2.7 },
   { id: "hero-fashion", title: "The festive edit", subtitle: "Handcrafted kurtas, sarees and juttis from independent labels.", cta: "Shop fashion", href: "/c/fashion", image: "/images/banners/hero-fashion.jpg", startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "live", audience: "Women, metro cities", impressions: 2_410_000, ctr: 3.1 },
   { id: "hero-home", title: "Make room for Diwali", subtitle: "Furniture, lighting and decor with free installation in 40 cities.", cta: "Shop home", href: "/c/home", image: "/images/banners/hero-home.jpg", startsAt: "2026-10-06T00:00:00+05:30", endsAt: "2026-10-27T23:59:00+05:30", status: "scheduled", audience: "Everyone", impressions: 0, ctr: 0 },
@@ -1341,21 +1341,21 @@ export const reportLibrary: ReportDef[] = [
   { id: "rpt-feeinv", name: "Seller fee invoices", group: "Tax and compliance", description: "Monthly GST invoices and credit notes for commission, fixed fee and shipping per seller.", formats: ["PDF bundle", "CSV"], cadence: "Monthly", owner: "Finance", lastRunAt: ago(1 * D) },
   { id: "rpt-settle", name: "Seller settlements", group: "Finance", description: "Settlement lines per seller with sale, fees, TCS, TDS, refunds, holds and payout UTRs.", formats: ["XLSX", "CSV"], cadence: "Each payout run", owner: "Finance", lastRunAt: ago(2 * D) },
   { id: "rpt-recon", name: "Gateway and COD reconciliation", group: "Finance", description: "Captured payments against gateway settlement files, and delivered COD against hub deposits and bank credits.", formats: ["XLSX"], cadence: "Daily", owner: "Finance", lastRunAt: ago(9 * H) },
-  { id: "rpt-liability", name: "BluCoins and Credits liability", group: "Finance", description: "Outstanding BluCoins, BluBuy Credits and gift card balances with expiry ageing.", formats: ["XLSX"], cadence: "Monthly", owner: "Finance", lastRunAt: ago(30 * D) },
+  { id: "rpt-liability", name: "AltasCoins and Credits liability", group: "Finance", description: "Outstanding AltasCoins, AltasGoods Credits and gift card balances with expiry ageing.", formats: ["XLSX"], cadence: "Monthly", owner: "Finance", lastRunAt: ago(30 * D) },
   { id: "rpt-sales", name: "Sales and GMV by category", group: "Sales", description: "GMV, orders, units, AOV and conversion by category, brand and region.", formats: ["XLSX", "CSV"], cadence: "Daily", owner: "Growth", lastRunAt: ago(6 * H) },
   { id: "rpt-orders", name: "Orders and cancellations", group: "Sales", description: "Order items by status with cancellation reasons and actor (customer, seller, system, admin).", formats: ["CSV"], cadence: "On demand", owner: "Operations", lastRunAt: ago(3 * D) },
   { id: "rpt-returns", name: "Returns and refunds", group: "Operations", description: "Returns by reason and fault, QC outcomes, refund destination and time to refund.", formats: ["XLSX", "CSV"], cadence: "Weekly", owner: "Operations", lastRunAt: ago(4 * D) },
   { id: "rpt-logistics", name: "Logistics SLA and NDR", group: "Operations", description: "On-time pickup and delivery, NDR reasons, RTO rate by hub, lane and pincode.", formats: ["XLSX"], cadence: "Daily", owner: "Operations", lastRunAt: ago(10 * H) },
   { id: "rpt-sellerperf", name: "Seller performance and health", group: "Sellers", description: "Seller Health scores, metric breaches, violations and tier evaluation results.", formats: ["XLSX"], cadence: "Weekly", owner: "Trust and Safety", lastRunAt: ago(2 * D) },
-  { id: "rpt-plus", name: "BluBuy Plus membership", group: "Customers", description: "Members by plan, renewals, cancellations, grace period and benefit usage.", formats: ["XLSX"], cadence: "Monthly", owner: "Growth", lastRunAt: ago(30 * D) },
+  { id: "rpt-plus", name: "AltasGoods Plus membership", group: "Customers", description: "Members by plan, renewals, cancellations, grace period and benefit usage.", formats: ["XLSX"], cadence: "Monthly", owner: "Growth", lastRunAt: ago(30 * D) },
 ];
 
 export const scheduledExports = [
-  { id: "SCH-11", reportId: "rpt-gstr8", cadence: "Monthly on the 2nd, 6:00 am", recipients: "tax@blubuy.in", format: "GSTR-8 JSON", nextRunAt: "2026-10-02T06:00:00+05:30", active: true },
-  { id: "SCH-12", reportId: "rpt-tds194o", cadence: "Monthly on the 3rd, 6:00 am", recipients: "tax@blubuy.in", format: "Form 26Q text", nextRunAt: "2026-10-03T06:00:00+05:30", active: true },
-  { id: "SCH-14", reportId: "rpt-recon", cadence: "Daily, 7:00 am", recipients: "finance-ops@blubuy.in", format: "XLSX", nextRunAt: "2026-10-02T07:00:00+05:30", active: true },
-  { id: "SCH-17", reportId: "rpt-sales", cadence: "Daily, 8:00 am", recipients: "leadership@blubuy.in", format: "XLSX", nextRunAt: "2026-10-02T08:00:00+05:30", active: true },
-  { id: "SCH-19", reportId: "rpt-sellerperf", cadence: "Mondays, 9:00 am", recipients: "trust@blubuy.in", format: "XLSX", nextRunAt: "2026-10-05T09:00:00+05:30", active: false },
+  { id: "SCH-11", reportId: "rpt-gstr8", cadence: "Monthly on the 2nd, 6:00 am", recipients: "tax@altasgoods.in", format: "GSTR-8 JSON", nextRunAt: "2026-10-02T06:00:00+05:30", active: true },
+  { id: "SCH-12", reportId: "rpt-tds194o", cadence: "Monthly on the 3rd, 6:00 am", recipients: "tax@altasgoods.in", format: "Form 26Q text", nextRunAt: "2026-10-03T06:00:00+05:30", active: true },
+  { id: "SCH-14", reportId: "rpt-recon", cadence: "Daily, 7:00 am", recipients: "finance-ops@altasgoods.in", format: "XLSX", nextRunAt: "2026-10-02T07:00:00+05:30", active: true },
+  { id: "SCH-17", reportId: "rpt-sales", cadence: "Daily, 8:00 am", recipients: "leadership@altasgoods.in", format: "XLSX", nextRunAt: "2026-10-02T08:00:00+05:30", active: true },
+  { id: "SCH-19", reportId: "rpt-sellerperf", cadence: "Mondays, 9:00 am", recipients: "trust@altasgoods.in", format: "XLSX", nextRunAt: "2026-10-05T09:00:00+05:30", active: false },
 ];
 
 export const reportRuns = [
@@ -1389,7 +1389,7 @@ export const adminRoles: AdminRole[] = [
   { id: "category_mgr", code: "A5", name: "Category Manager", description: "Category tree, attributes, category approvals and deal approvals for own categories", members: 8, scope: "Assigned categories" },
   { id: "brand_ip", code: "A6", name: "Brand and IP Manager", description: "Brand creation, Brand Registry, authorisation letters and IP complaints", members: 3, scope: "Global" },
   { id: "merch", code: "A7", name: "Merchandiser", description: "Homepage, banners, collections and search merchandising", members: 5, scope: "Global" },
-  { id: "marketing", code: "A8", name: "Marketing and Promotions Manager", description: "Platform coupons, bank offers, sale events, BluCoins rules", members: 4, limit: "Coupon budget up to ₹50 lakh", scope: "Global" },
+  { id: "marketing", code: "A8", name: "Marketing and Promotions Manager", description: "Platform coupons, bank offers, sale events, AltasCoins rules", members: 4, limit: "Coupon budget up to ₹50 lakh", scope: "Global" },
   { id: "ads_ops", code: "A9", name: "Ads Operations", description: "Ad policies, creative review, CPC floors and billing issues", members: 4, scope: "Global" },
   { id: "finance_mgr", code: "A10", name: "Finance Manager", description: "Approves payouts and high-value refunds, publishes rate cards, signs off reconciliation", members: 3, makerChecker: "Checker", scope: "Global" },
   { id: "finance_exec", code: "A11", name: "Finance Executive", description: "Prepares payout runs, reconciles gateway and COD files, handles refund failures", members: 7, makerChecker: "Maker", limit: "Refund reroute up to ₹1 lakh", scope: "Global" },
@@ -1504,7 +1504,7 @@ export const platformSettings = {
   delivery: { freeAbove: 499, fee: 40, platformFee: 0 },
   plus: { monthly: 149, annual: 999, trialDays: 0, members: 4_812_300 },
   coins: { earnPer100: 1, plusEarnPer100: 2, capPerOrder: 100, redeemPercent: 10, expiryMonths: 6 },
-  grievance: { name: "Meenakshi Raghavan", designation: "Grievance Officer", email: "grievance@blubuy.in", phone: "+91 80 4718 2200", address: "BluBuy Technologies Private Limited, 7th Floor, Orion Tech Park, Outer Ring Road, Bengaluru 560103" },
+  grievance: { name: "Meenakshi Raghavan", designation: "Grievance Officer", email: "grievance@altasgoods.in", phone: "+91 80 4718 2200", address: "AltasGoods Technologies Private Limited, 7th Floor, Orion Tech Park, Outer Ring Road, Bengaluru 560103" },
   maintenance: { enabled: false, message: "Scheduled maintenance on 4 Oct from 2:00 am to 4:00 am. Payments may be slower than usual.", audience: "Everyone" },
 };
 

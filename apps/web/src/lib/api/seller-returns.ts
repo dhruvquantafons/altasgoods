@@ -79,7 +79,7 @@ export function nextStepOf(r: ReturnRequest): SellerReturnRow["next"] {
     case "OUT_FOR_PICKUP":
       return { text: "Out for pickup" };
     case "PICKUP_FAILED":
-      return { text: "Pickup failed, BluBuy re-attempts" };
+      return { text: "Pickup failed, AltasGoods re-attempts" };
     case "PICKED_UP":
     case "IN_TRANSIT": {
       const by = arrivesByOf(r);
@@ -88,7 +88,7 @@ export function nextStepOf(r: ReturnRequest): SellerReturnRow["next"] {
     case "RECEIVED":
       return { text: "Grade the item", due: gradeDueOf(r) };
     case "QC_FAILED":
-      return { text: "BluBuy is reviewing your check" };
+      return { text: "AltasGoods is reviewing your check" };
     case "REJECTED":
       return { text: "Rejected" };
     case "CANCELLED":

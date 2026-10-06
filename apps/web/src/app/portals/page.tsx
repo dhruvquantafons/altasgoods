@@ -18,7 +18,7 @@ const keyPages: Record<string, { label: string; href: string }[]> = {
     { label: "Overview", href: "/account" },
     { label: "Orders and tracking", href: "/account/orders" },
     { label: "Returns and refunds", href: "/account/returns" },
-    { label: "BluCoins and Plus", href: "/account/rewards" },
+    { label: "AltasCoins and Plus", href: "/account/rewards" },
   ],
   seller: [
     { label: "Dashboard", href: "/seller" },
@@ -71,9 +71,9 @@ export default function PortalsPage() {
       <main className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 lg:py-16">
         <div className="max-w-2xl">
           <p className="text-[13px] font-semibold tracking-[0.08em] text-brand-700 uppercase">One marketplace, six workspaces</p>
-          <h1 className="mt-3 text-[34px] leading-[1.15] font-semibold text-ink-900 sm:text-[42px]">Everything that powers BluBuy, in one place</h1>
+          <h1 className="mt-3 text-[34px] leading-[1.15] font-semibold text-ink-900 sm:text-[42px]">Everything that powers AltasGoods, in one place</h1>
           <p className="mt-4 text-[15px] leading-relaxed text-ink-600">
-            Shoppers, sellers, BluBuy staff, logistics teams and support agents each get a workspace built for their job. They share one design system, one data
+            Shoppers, sellers, AltasGoods staff, logistics teams and support agents each get a workspace built for their job. They share one design system, one data
             model and one order lifecycle, so the web app today and the Flutter apps next speak the same language.
           </p>
         </div>
@@ -110,7 +110,7 @@ export default function PortalsPage() {
 
         <section className="mt-16" aria-labelledby="lifecycle">
           <h2 id="lifecycle" className="text-xl font-semibold text-ink-900">
-            How an order moves through BluBuy
+            How an order moves through AltasGoods
           </h2>
           <p className="mt-1 text-sm text-ink-500">The same order is visible, with the right level of detail, in every workspace it touches.</p>
           <ol className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">

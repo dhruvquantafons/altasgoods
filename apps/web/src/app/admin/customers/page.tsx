@@ -60,7 +60,7 @@ export default async function CustomersPage(props: PageProps<"/admin/customers">
       <KpiStrip
         className="mb-6"
         items={[
-          { label: "BluBuy Plus members", value: formatCompact(platformSettings.plus.members), hint: "active and in grace period" },
+          { label: "AltasGoods Plus members", value: formatCompact(platformSettings.plus.members), hint: "active and in grace period" },
           { label: "New customers, 7 days", value: formatCompact(new7), delta: pctChange(new7, newPrev), deltaLabel: "vs prior 7 days" },
           { label: "High risk accounts", value: customers.filter((c) => c.riskScore >= 70).length, hint: "risk score 70 or above", href: "/admin/customers?segment=risk" },
           { label: "Blocked accounts", value: customers.filter((c) => c.status === "blocked").length, hint: "cannot place orders", href: "/admin/customers?segment=blocked" },
@@ -102,7 +102,7 @@ export default async function CustomersPage(props: PageProps<"/admin/customers">
                   <TH align="right">Lifetime value</TH>
                   <TH className="hidden sm:table-cell">Membership</TH>
                   <TH align="right" className="hidden xl:table-cell">
-                    BluCoins
+                    AltasCoins
                   </TH>
                   <TH className="hidden md:table-cell">Risk score</TH>
                   <TH className="hidden sm:table-cell">Status</TH>

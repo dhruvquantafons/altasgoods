@@ -5,7 +5,7 @@ import type { Notification } from "@/lib/types";
 import { NOW } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: { default: "Hub Console", template: "%s | BluBuy Hub Console" },
+  title: { default: "Hub Console", template: "%s | AltasGoods Hub Console" },
 };
 
 const notifications: Notification[] = [

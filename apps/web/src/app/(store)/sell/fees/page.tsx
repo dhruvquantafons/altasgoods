@@ -62,7 +62,7 @@ export default function FeesPage() {
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero
-        crumbs={[{ label: "Home", href: "/" }, { label: "Sell on BluBuy", href: "/sell" }, { label: "Fees and rate card" }]}
+        crumbs={[{ label: "Home", href: "/" }, { label: "Sell on AltasGoods", href: "/sell" }, { label: "Fees and rate card" }]}
         eyebrow="Fees and rate card"
         title="Simple fees, shown before you sell"
         description={`Three charges on each sale: commission, a fixed fee and shipping. Nothing for payment collection or cash on delivery, and zero commission on items priced up to ${formatINR(COMMISSION_FREE_UPTO)}.`}
@@ -146,7 +146,7 @@ export default function FeesPage() {
             Shipping fee per package
           </h2>
           <p className="mt-1 text-sm text-ink-500">
-            For BluBuy Ship, BluBuy Flex and BluBuy Fulfilled. Chargeable weight is the higher of actual and volumetric weight (L x W x H in cm, divided by 5,000).
+            For AltasGoods Ship, AltasGoods Flex and AltasGoods Fulfilled. Chargeable weight is the higher of actual and volumetric weight (L x W x H in cm, divided by 5,000).
           </p>
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
@@ -174,7 +174,7 @@ export default function FeesPage() {
             </table>
           </div>
           <p className="mt-4 text-[13px] text-ink-500">
-            Tier discount on shipping: {TIERS.map((t) => `${t} ${TIER_SHIPPING_DISCOUNT[t]}%`).join(", ")}. Self Ship sellers pay no BluBuy shipping fee.
+            Tier discount on shipping: {TIERS.map((t) => `${t} ${TIER_SHIPPING_DISCOUNT[t]}%`).join(", ")}. Self Ship sellers pay no AltasGoods shipping fee.
           </p>
         </section>
 
@@ -183,7 +183,7 @@ export default function FeesPage() {
             <h2 id="example" className="text-lg font-semibold text-ink-900">
               Worked example
             </h2>
-            <p className="mt-1 text-sm text-ink-500">A home and kitchen item, Gold seller, BluBuy Ship, 800 g parcel to another city in the same zone, prepaid.</p>
+            <p className="mt-1 text-sm text-ink-500">A home and kitchen item, Gold seller, AltasGoods Ship, 800 g parcel to another city in the same zone, prepaid.</p>
             <dl className="mt-5 divide-y divide-line text-sm">
               {example.rows.map(([label, how, amount]) => (
                 <div key={label} className="flex items-start justify-between gap-4 py-2.5">

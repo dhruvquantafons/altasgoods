@@ -20,7 +20,7 @@ export function generateStaticParams() {
 export async function generateMetadata(props: PageProps<"/store/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const s = getSeller(slug);
-  return { title: s ? `${s.displayName} on BluBuy` : "Seller" };
+  return { title: s ? `${s.displayName} on AltasGoods` : "Seller" };
 }
 
 const FEEDBACK = [
@@ -39,7 +39,7 @@ export default async function SellerStorePage(props: PageProps<"/store/[slug]">)
   const positive = hist.slice(0, 2).reduce((a, h) => a + h.pct, 0);
   const g = sellerGrievance(seller);
   const cats = seller.categories.map((c) => getCategory(c)?.name).filter(Boolean);
-  const fulfil = seller.fulfillment.map((f) => (f === "blubuy_fulfilled" ? "BluBuy Fulfilled" : f === "easy_ship" ? "BluBuy Ship" : "Self Ship"));
+  const fulfil = seller.fulfillment.map((f) => (f === "blubuy_fulfilled" ? "AltasGoods Fulfilled" : f === "easy_ship" ? "AltasGoods Ship" : "Self Ship"));
 
   return (
     <div className={cn(STORE_CONTAINER, "pt-5 pb-16 lg:pt-6 lg:pb-24")}>
@@ -72,7 +72,7 @@ export default async function SellerStorePage(props: PageProps<"/store/[slug]">)
                   <MapPin size={14} className="text-ink-400" aria-hidden="true" /> {seller.city}, {seller.state}
                 </span>
                 <span className="flex items-center gap-1">
-                  <CalendarDays size={14} className="text-ink-400" aria-hidden="true" /> On BluBuy since {new Date(seller.joinedAt).getFullYear()}
+                  <CalendarDays size={14} className="text-ink-400" aria-hidden="true" /> On AltasGoods since {new Date(seller.joinedAt).getFullYear()}
                 </span>
               </p>
             </div>
@@ -102,7 +102,7 @@ export default async function SellerStorePage(props: PageProps<"/store/[slug]">)
                 Products from {seller.displayName}
               </h2>
               <p className="mt-1 text-sm text-ink-500">
-                {list.length} on BluBuy now, in {cats.join(", ")}
+                {list.length} on AltasGoods now, in {cats.join(", ")}
               </p>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default async function SellerStorePage(props: PageProps<"/store/[slug]">)
                 <dd className="mt-0.5 flex flex-wrap gap-1.5">
                   {fulfil.map((f) => (
                     <span key={f} className="inline-flex items-center gap-1 rounded-md bg-ink-100 px-2 py-0.5 text-xs font-medium text-ink-700">
-                      {f === "BluBuy Fulfilled" ? <Package size={12} aria-hidden="true" /> : <Truck size={12} aria-hidden="true" />} {f}
+                      {f === "AltasGoods Fulfilled" ? <Package size={12} aria-hidden="true" /> : <Truck size={12} aria-hidden="true" />} {f}
                     </span>
                   ))}
                 </dd>
@@ -202,9 +202,9 @@ export default async function SellerStorePage(props: PageProps<"/store/[slug]">)
 
           <section className="rounded-2xl bg-ink-50 p-5 text-[13px] text-ink-600">
             <p className="flex items-center gap-2 font-semibold text-ink-900">
-              <ShieldCheck size={16} className="text-brand-600" aria-hidden="true" /> Protected by BluBuy Guarantee
+              <ShieldCheck size={16} className="text-brand-600" aria-hidden="true" /> Protected by AltasGoods Guarantee
             </p>
-            <p className="mt-1 leading-relaxed">If an order from this seller does not arrive or is not as described, contact the seller first. After 48 hours, BluBuy steps in.</p>
+            <p className="mt-1 leading-relaxed">If an order from this seller does not arrive or is not as described, contact the seller first. After 48 hours, AltasGoods steps in.</p>
             <div className="mt-3 flex flex-wrap gap-4">
               <Link href="/policies/guarantee" className="inline-flex items-center gap-1 font-semibold text-brand-700 hover:underline">
                 <ThumbsUp size={13} aria-hidden="true" /> How it works

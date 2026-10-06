@@ -169,7 +169,7 @@ function ReturnCard({ r, slots }: { r: AccountReturn; slots: { key: string; labe
             <div className="rounded-xl border border-line p-4">
               <p className="text-xs font-semibold tracking-wide text-ink-500 uppercase">Replacement</p>
               <p className="mt-2 text-[15px] font-semibold text-ink-900">Arriving by {dayLabel(r.replacementEta)}</p>
-              <p className="mt-0.5 text-[13px] text-ink-600">A new unit is on its way with BluBuy Logistics.</p>
+              <p className="mt-0.5 text-[13px] text-ink-600">A new unit is on its way with AltasGoods Logistics.</p>
             </div>
           )}
           {r.pickup && beforePickup && (
@@ -180,7 +180,7 @@ function ReturnCard({ r, slots }: { r: AccountReturn; slots: { key: string; labe
               </p>
               <p className="mt-1 flex items-start gap-1.5 text-[13px] text-ink-600">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
-                Doorstep pickup by BluBuy Logistics
+                Doorstep pickup by AltasGoods Logistics
               </p>
               <p className="mt-2 text-xs text-ink-500">Keep the item packed with its tags, accessories and box.</p>
               {r.replacementEta && <p className="mt-1 text-xs text-ink-500">Replacement expected by {dayLabel(r.replacementEta)}.</p>}
@@ -193,7 +193,7 @@ function ReturnCard({ r, slots }: { r: AccountReturn; slots: { key: string; labe
               title="Why this return was not accepted"
               action={
                 <Link href={`/account/support?order=${r.orderId}&topic=guarantee`} className="text-[13px] font-semibold text-brand-700 hover:underline">
-                  File a BluBuy Guarantee claim
+                  File an AltasGoods Guarantee claim
                 </Link>
               }
             >

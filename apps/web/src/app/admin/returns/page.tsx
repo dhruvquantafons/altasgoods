@@ -37,7 +37,7 @@ const REFUND_VIEWS: { key: string; label: string; match: (r: AdminRefund) => boo
 
 const faultTone = { Seller: "warning", Customer: "neutral", Logistics: "info" } as const;
 const sellerName = (id: string) => sellers.find((s) => s.id === id)?.displayName ?? id;
-const destination = (m: AdminRefund["method"]) => (m === "bluwallet" ? "BluBuy Credits" : PAYMENT_METHOD[m]);
+const destination = (m: AdminRefund["method"]) => (m === "bluwallet" ? "AltasGoods Credits" : PAYMENT_METHOD[m]);
 
 function ReturnActions({ r }: { r: ReturnRequest }) {
   const summary = [
@@ -50,7 +50,7 @@ function ReturnActions({ r }: { r: ReturnRequest }) {
     return (
       <div className="flex justify-end gap-1.5">
         <ActionButton label="Approve" icon="check" size="xs" title={`Approve ${r.id}`} description="Creates a reverse pickup within 5 days (up to 3 attempts)." summary={summary} fields={[{ name: "res", label: "Resolution", type: "select", options: r.type === "replacement" ? ["Replacement", "Refund"] : ["Refund", "Replacement"] }]} note="optional" toast="Return approved, reverse pickup scheduled" doneLabel="Approved" />
-        <ActionButton label="Reject" icon="x" size="xs" variant="ghost" danger title={`Reject ${r.id}`} description="The customer may file a BluBuy Guarantee claim." summary={summary} reasons={["Return window expired", "Non-returnable item without a damage claim", "Item condition not eligible", "Duplicate request"]} note="required" toast="Return rejected, customer notified with the reason" doneLabel="Rejected" />
+        <ActionButton label="Reject" icon="x" size="xs" variant="ghost" danger title={`Reject ${r.id}`} description="The customer may file an AltasGoods Guarantee claim." summary={summary} reasons={["Return window expired", "Non-returnable item without a damage claim", "Item condition not eligible", "Duplicate request"]} note="required" toast="Return rejected, customer notified with the reason" doneLabel="Rejected" />
       </div>
     );
   if (r.status === "qc_failed")
@@ -80,7 +80,7 @@ function RefundActions({ r }: { r: AdminRefund }) {
     return (
       <div className="flex justify-end gap-1.5">
         <ToastButton label="Retry" icon="retry" size="xs" toast={`Retry submitted for ${r.id}`} doneLabel="Retrying" />
-        <ActionButton label="Reroute" icon="wallet" size="xs" variant="ghost" title="Reroute the failed refund" description="Moves the refund back to Approved with a new destination. The customer is informed." summary={summary} fields={[{ name: "dest", label: "New destination", type: "select", options: ["BluBuy Credits (under 2 hours)", "Bank account via IMPS (penny drop verified)", "UPI ID (verified)"] }]} note="optional" toast="Refund rerouted and resubmitted" doneLabel="Rerouted" />
+        <ActionButton label="Reroute" icon="wallet" size="xs" variant="ghost" title="Reroute the failed refund" description="Moves the refund back to Approved with a new destination. The customer is informed." summary={summary} fields={[{ name: "dest", label: "New destination", type: "select", options: ["AltasGoods Credits (under 2 hours)", "Bank account via IMPS (penny drop verified)", "UPI ID (verified)"] }]} note="optional" toast="Refund rerouted and resubmitted" doneLabel="Rerouted" />
       </div>
     );
   if (r.status === "on_hold")
@@ -251,12 +251,12 @@ export default async function ReturnsPage(props: PageProps<"/admin/returns">) {
             </Table>
           </TableContainer>
           <p className="border-t border-line px-5 py-3 text-xs text-ink-500">
-            {refundView === "failed" ? `Showing the latest ${refundRows.length} of ${opsSnapshot.refundsFailed} failed refunds.` : `${refundRows.length} refunds.`} Refunds reverse in the opposite order of tender: external method first, then Credits, then BluCoins.
+            {refundView === "failed" ? `Showing the latest ${refundRows.length} of ${opsSnapshot.refundsFailed} failed refunds.` : `${refundRows.length} refunds.`} Refunds reverse in the opposite order of tender: external method first, then Credits, then AltasCoins.
           </p>
         </Card>
         <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:col-span-3">
           <Card>
-            <CardHeader title="Instant refunds to BluBuy Credits" description="Refund at pickup and Credits refunds, last 24 hours" action={<Zap size={17} className="text-ink-400" aria-hidden="true" />} />
+            <CardHeader title="Instant refunds to AltasGoods Credits" description="Refund at pickup and Credits refunds, last 24 hours" action={<Zap size={17} className="text-ink-400" aria-hidden="true" />} />
             <div className="px-5 pt-3 pb-2">
               <div className="flex items-end gap-6">
                 <div>
@@ -286,10 +286,10 @@ export default async function ReturnsPage(props: PageProps<"/admin/returns">) {
           </Card>
 
           <Card>
-            <CardHeader title="Refund timelines" description="BluBuy targets after refund processing starts" />
+            <CardHeader title="Refund timelines" description="AltasGoods targets after refund processing starts" />
             <dl className="mt-3 divide-y divide-line border-t border-line text-[13px]">
               {[
-                ["BluBuy Credits", "Under 2 hours", "99.6%"],
+                ["AltasGoods Credits", "Under 2 hours", "99.6%"],
                 ["UPI", "1 to 2 business days", "97.8%"],
                 ["Cards and EMI", "3 to 5 business days", "95.1%"],
                 ["Net banking", "3 to 5 business days", "96.4%"],

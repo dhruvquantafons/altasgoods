@@ -29,7 +29,7 @@ function OfferRow({ o }: { o: BankOffer }) {
 
 /**
  * Offers block: bank, UPI, EMI and partner offers with their conditions, an
- * opt-in coupon, and BluCoins you will earn. Never folded into the headline price.
+ * opt-in coupon, and AltasCoins you will earn. Never folded into the headline price.
  */
 export function OffersList({
   offers,
@@ -79,7 +79,7 @@ export function OffersList({
           <span className="flex items-center gap-2">
             <Coins size={15} className="text-accent-700" aria-hidden="true" />
             <span>
-              Earn <span className="font-semibold text-ink-900">{coins} BluCoins</span> on this order
+              Earn <span className="font-semibold text-ink-900">{coins} AltasCoins</span> on this order
             </span>
           </span>
           {emiFrom && (

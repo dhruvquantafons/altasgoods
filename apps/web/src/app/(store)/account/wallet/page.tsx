@@ -10,7 +10,7 @@ import { CREDITS, GIFT_CARD_DESIGNS, giftCards, walletTransactions, type WalletK
 import type { Tone } from "@/lib/status";
 import { cn, formatINR } from "@/lib/utils";
 
-export const metadata = { title: "BluBuy Credits" };
+export const metadata = { title: "AltasGoods Credits" };
 
 const KIND: Record<WalletKind, { icon: typeof Gift; tone: Tone; label: string }> = {
   refund: { icon: Undo2, tone: "success", label: "Refund" },
@@ -37,7 +37,7 @@ export default async function WalletPage(props: PageProps<"/account/wallet">) {
 
   return (
     <>
-      <PageHeader title="BluBuy Credits" description="Store credit from refunds, gift cards and goodwill. Use it on any order, together with any payment method." />
+      <PageHeader title="AltasGoods Credits" description="Store credit from refunds, gift cards and goodwill. Use it on any order, together with any payment method." />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -57,7 +57,7 @@ export default async function WalletPage(props: PageProps<"/account/wallet">) {
                   toast="Withdrawal requested. It reaches your bank in 1 to 2 business days"
                   confirm={{
                     title: `Move ${formatINR(CREDITS.refund.amount)} to your bank?`,
-                    body: "Only credits that came from refunds can be moved back, to the account they were paid from. Gift card and goodwill credits stay in BluBuy.",
+                    body: "Only credits that came from refunds can be moved back, to the account they were paid from. Gift card and goodwill credits stay in AltasGoods.",
                     confirmLabel: "Move to bank",
                   }}
                 />
@@ -129,14 +129,14 @@ export default async function WalletPage(props: PageProps<"/account/wallet">) {
                   style={{ left: `calc(50% - 140px + ${i * 60}px)`, top: `${20 + (i % 2) * 12}%`, transform: `rotate(${(i - 1) * 7}deg)` }}
                   aria-hidden="true"
                 >
-                  <p className="font-display text-[12px] font-semibold">BluBuy</p>
+                  <p className="font-display text-[12px] font-semibold">AltasGoods</p>
                   <p className="text-[11px] opacity-90">{d.name}</p>
                 </div>
               ))}
             </div>
             <div className="p-5 sm:p-6">
-              <h2 className="text-[15px] font-semibold text-ink-900">BluBuy Gift Card</h2>
-              <p className="mt-1 text-[13px] text-ink-500">From ₹100 to ₹10,000, delivered by email in minutes. Valid for a year on anything sold on BluBuy.</p>
+              <h2 className="text-[15px] font-semibold text-ink-900">AltasGoods Gift Card</h2>
+              <p className="mt-1 text-[13px] text-ink-500">From ₹100 to ₹10,000, delivered by email in minutes. Valid for a year on anything sold on AltasGoods.</p>
               <BuyGiftCardButton designs={GIFT_CARD_DESIGNS} className="mt-4 w-full" />
             </div>
           </section>
@@ -168,7 +168,7 @@ export default async function WalletPage(props: PageProps<"/account/wallet">) {
           <div className="flex gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-5 text-[13px] text-ink-600 shadow-card">
             <Info size={17} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
             <p>
-              BluBuy Credits is a closed-loop balance for use on BluBuy only. Gift cards cannot be reloaded, resold or exchanged for cash. Instant refunds to Credits arrive
+              AltasGoods Credits is a closed-loop balance for use on AltasGoods only. Gift cards cannot be reloaded, resold or exchanged for cash. Instant refunds to Credits arrive
               in under 2 hours.
             </p>
           </div>

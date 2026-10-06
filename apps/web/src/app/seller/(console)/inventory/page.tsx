@@ -88,7 +88,7 @@ export default async function InventoryPage(props: PageProps<"/seller/inventory"
     <>
       <PageHeader
         title="Inventory"
-        description="Stock at your Andheri warehouse and in BluBuy fulfilment centres, with restock recommendations from your last 30 days of sales."
+        description="Stock at your Andheri warehouse and in AltasGoods fulfilment centres, with restock recommendations from your last 30 days of sales."
         actions={
           <InboundWizard
             centres={FULFILMENT_CENTRES}

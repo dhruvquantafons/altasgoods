@@ -129,7 +129,7 @@ export function ListingEditor({ initial, rateCard, initialTab = "offer" }: { ini
                         <span>
                           <span className="block text-sm font-medium text-ink-900">{CHANNEL_LABEL[c]}</span>
                           <span className="block text-xs text-ink-500">
-                            {c === "fulfilled" ? "Stored, packed and shipped by BluBuy. Assured badge, faster delivery." : "You pack; BluBuy Logistics picks up from your warehouse."}
+                            {c === "fulfilled" ? "Stored, packed and shipped by AltasGoods. Assured badge, faster delivery." : "You pack; AltasGoods Logistics picks up from your warehouse."}
                           </span>
                         </span>
                       </label>

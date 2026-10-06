@@ -22,7 +22,7 @@ const TOPICS = [
   { key: "return", label: "Returns and refunds", body: "Pickups, replacements, refund status", icon: Undo2 },
   { key: "payment", label: "Payments", body: "Charges, EMI, UPI and Pay Later", icon: CreditCard },
   { key: "account", label: "Account and security", body: "Sign-in, OTP, profile and privacy", icon: UserRound },
-  { key: "plus", label: "BluBuy Plus", body: "Benefits, renewal and cancellation", icon: Crown },
+  { key: "plus", label: "AltasGoods Plus", body: "Benefits, renewal and cancellation", icon: Crown },
   { key: "seller", label: "Report a seller", body: "Wrong items, fake products, conduct", icon: Store },
 ];
 
@@ -56,14 +56,14 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
   const openTickets = convs.filter((t) => !["RESOLVED", "CLOSED"].includes(t.status));
   const waiting = openTickets.find((t) => t.status === "PENDING_CUSTOMER");
   const chat = convs.find((t) => t.channel === "CHAT" && t.canReply && t.status !== "RESOLVED");
-  const claims = convs.filter((t) => t.subject.startsWith("BluBuy Guarantee claim"));
+  const claims = convs.filter((t) => t.subject.startsWith("AltasGoods Guarantee claim"));
   const firstName = (user?.name ?? "").split(" ")[0];
 
   return (
     <>
       <PageHeader
         title="Help and support"
-        description="Get help with an order in a couple of taps, or reach BluBuy Care any time, day or night."
+        description="Get help with an order in a couple of taps, or reach AltasGoods Care any time, day or night."
         actions={
           <>
             <RaiseTicketButton orders={orderOptions} defaultOrderId={focus?.id} defaultCategory={topic ? TOPIC_CATEGORY[topic] : undefined} autoOpen={Boolean(topic && topic !== "guarantee")} />
@@ -126,7 +126,7 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
           </Panel>
 
           <Panel title="My tickets" description={`${openTickets.length} open`} bodyClassName="px-0 pb-1 sm:px-0">
-            {convs.length === 0 && <p className="px-5 py-4 text-[13px] text-ink-500 sm:px-6">No tickets yet. Anything you raise here shows up with every reply from BluBuy Care.</p>}
+            {convs.length === 0 && <p className="px-5 py-4 text-[13px] text-ink-500 sm:px-6">No tickets yet. Anything you raise here shows up with every reply from AltasGoods Care.</p>}
             <ul className="divide-y divide-line">
               {convs.map((t) => {
                 const last = t.messages.at(-1);
@@ -187,7 +187,7 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
           <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-brand-950 p-5 text-white sm:p-6">
             <div className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full bg-brand-600/40 blur-3xl" aria-hidden="true" />
             <div className="relative">
-              <p className="text-[13px] font-medium text-brand-200">BluBuy Care</p>
+              <p className="text-[13px] font-medium text-brand-200">AltasGoods Care</p>
               <p className="mt-1 font-display text-lg font-semibold">Talk to a person, 24 x 7</p>
               <p className="mt-1.5 text-sm text-brand-100">Plus members get priority. Average wait right now is under a minute.</p>
               <div className="mt-4 flex flex-col gap-2">
@@ -197,7 +197,7 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
             </div>
           </section>
 
-          <Panel title="BluBuy Guarantee" action={<ShieldCheck size={18} className="text-brand-600" aria-hidden="true" />}>
+          <Panel title="AltasGoods Guarantee" action={<ShieldCheck size={18} className="text-brand-600" aria-hidden="true" />}>
             <p className="text-[13px] leading-relaxed text-ink-600">
               If an item never arrives, is not what was described, or a refund is not issued, we step in, whichever seller you bought from.
             </p>
@@ -212,7 +212,7 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
                 <p className="text-xs font-semibold tracking-wide text-ink-500 uppercase">Your claims</p>
                 {claims.map((c) => (
                   <div key={c.id} className="mt-2.5">
-                    <p className="text-[13px] font-medium text-ink-900">{c.subject.replace("BluBuy Guarantee claim: ", "")}</p>
+                    <p className="text-[13px] font-medium text-ink-900">{c.subject.replace("AltasGoods Guarantee claim: ", "")}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
                       <Badge size="sm" tone={c.status === "RESOLVED" || c.status === "CLOSED" ? "success" : "info"} dot>
                         {CUSTOMER_TICKET_STATUS[UI_TICKET_STATUS[c.status]].label}
@@ -233,14 +233,14 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
               <li className="font-medium text-ink-900">Meera Krishnan</li>
               <li className="flex items-center gap-2">
                 <Mail size={14} className="text-ink-400" aria-hidden="true" />
-                grievance@blubuy.in
+                grievance@altasgoods.in
               </li>
               <li className="flex items-center gap-2">
                 <PhoneCall size={14} className="text-ink-400" aria-hidden="true" />
                 1800 309 2580, 9 AM to 6 PM
               </li>
             </ul>
-            <p className="mt-3 text-xs text-ink-500">BluBuy Commerce Private Limited, 7th Floor, Lakeview Tech Park, Bengaluru 560103</p>
+            <p className="mt-3 text-xs text-ink-500">AltasGoods Commerce Private Limited, 7th Floor, Lakeview Tech Park, Bengaluru 560103</p>
           </Panel>
         </div>
       </div>

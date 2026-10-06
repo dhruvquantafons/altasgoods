@@ -18,8 +18,8 @@ const channels = [
 ];
 
 const teams = [
-  { icon: Store, title: "Sellers", body: "Raise a support case from Seller Hub, or write to seller.support@blubuy.in.", href: "/seller/support", cta: "Seller support" },
-  { icon: Newspaper, title: "Press and media", body: "Write to press@blubuy.in for interviews, data and images.", href: "/press", cta: "Press room" },
+  { icon: Store, title: "Sellers", body: "Raise a support case from Seller Hub, or write to seller.support@altasgoods.in.", href: "/seller/support", cta: "Seller support" },
+  { icon: Newspaper, title: "Press and media", body: "Write to press@altasgoods.in for interviews, data and images.", href: "/press", cta: "Press room" },
   { icon: Briefcase, title: "Careers", body: "See open roles and how we hire.", href: "/careers", cta: "Open roles" },
 ];
 

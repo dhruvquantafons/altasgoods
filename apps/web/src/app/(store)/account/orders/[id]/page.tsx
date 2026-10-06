@@ -146,7 +146,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                 {order.status === "shipped" || order.status === "in_transit" ? (
                   <p className="mt-4 flex items-center gap-2 text-[13px] text-ink-500">
                     <Truck size={15} aria-hidden="true" />
-                    With BluBuy Logistics. You will get the delivery associate&apos;s details on the day of delivery.
+                    With AltasGoods Logistics. You will get the delivery associate&apos;s details on the day of delivery.
                   </p>
                 ) : null}
                 {order.status === "cancelled" && (
@@ -230,8 +230,8 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
               <p className="mt-3 flex items-start gap-2 text-xs text-ink-500">
                 <Coins size={14} className="mt-px shrink-0 text-accent-600" aria-hidden="true" />
                 {coinsOn && coinsOn.getTime() < NOW.getTime()
-                  ? `${coins} BluCoins earned on this order.`
-                  : `${coins} BluCoins will be added ${coinsOn ? `on ${shortDate(coinsOn)}` : "after delivery"}, once the return window closes.`}
+                  ? `${coins} AltasCoins earned on this order.`
+                  : `${coins} AltasCoins will be added ${coinsOn ? `on ${shortDate(coinsOn)}` : "after delivery"}, once the return window closes.`}
               </p>
             )}
           </Panel>
@@ -248,7 +248,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                       <Store size={16} aria-hidden="true" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13.5px] font-semibold text-ink-900">{s?.displayName ?? "BluBuy seller"}</p>
+                      <p className="text-[13.5px] font-semibold text-ink-900">{s?.displayName ?? "AltasGoods seller"}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
                         {s && (
                           <span className="inline-flex items-center gap-1">
@@ -257,7 +257,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                           </span>
                         )}
                         {s && <span>{s.city}</span>}
-                        {offer?.fulfilledBy === "blubuy" && <span className="text-brand-700">Fulfilled by BluBuy</span>}
+                        {offer?.fulfilledBy === "blubuy" && <span className="text-brand-700">Fulfilled by AltasGoods</span>}
                       </p>
                       <Link href={`/account/support?order=${order.id}&topic=seller`} className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:underline">
                         <MessageSquareText size={14} aria-hidden="true" />
@@ -281,7 +281,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                 ? { label: "Cancel an item", hint: "Free before it ships", href: `/account/support?order=${order.id}&topic=cancel`, icon: PackageX }
                 : { label: "Return or replace an item", hint: "Doorstep pickup and quick refunds", href: `/account/orders/${order.id}/return`, icon: RotateCcw },
               { label: "Payment or refund question", hint: "Charges, EMI and refund status", href: `/account/support?order=${order.id}&topic=payment`, icon: CreditCard },
-              { label: "File a BluBuy Guarantee claim", hint: "If the seller has not resolved it", href: `/account/support?order=${order.id}&topic=guarantee`, icon: ShieldCheck },
+              { label: "File an AltasGoods Guarantee claim", hint: "If the seller has not resolved it", href: `/account/support?order=${order.id}&topic=guarantee`, icon: ShieldCheck },
             ].map((h) => (
               <Link key={h.label} href={h.href} className="group flex items-center gap-3 rounded-xl border border-line px-3.5 py-3 transition-colors hover:border-line-strong hover:bg-ink-50/60">
                 <h.icon size={18} strokeWidth={1.8} className="shrink-0 text-ink-400 group-hover:text-brand-600" aria-hidden="true" />

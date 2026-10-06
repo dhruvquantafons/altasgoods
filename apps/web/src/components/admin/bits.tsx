@@ -1,5 +1,5 @@
 /**
- * Small presentational pieces shared by BluBuy Control pages. No hooks, so
+ * Small presentational pieces shared by AltasGoods Control pages. No hooks, so
  * they render in server and client components alike.
  */
 import type { ReactNode } from "react";

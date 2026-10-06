@@ -14,7 +14,7 @@ const NEXT: Record<string, { to: Step; label: string } | undefined> = {
 };
 
 /**
- * Development only: stands in for BluBuy Logistics scans so the whole order
+ * Development only: stands in for AltasGoods Logistics scans so the whole order
  * lifecycle can be demonstrated before the logistics integration exists.
  */
 export function CourierSimulator({ items }: { items: { id: string; title: string; status: string }[] }) {
@@ -38,7 +38,7 @@ export function CourierSimulator({ items }: { items: { id: string; title: string
       <p className="flex items-center gap-2 text-[13px] font-semibold text-accent-800">
         <FlaskConical size={15} aria-hidden="true" /> Courier simulator (development only)
       </p>
-      <p className="mt-0.5 text-xs text-ink-600">Stands in for BluBuy Logistics scans until the logistics integration is live.</p>
+      <p className="mt-0.5 text-xs text-ink-600">Stands in for AltasGoods Logistics scans until the logistics integration is live.</p>
       <ul className="mt-3 flex flex-col gap-2">
         {movable.map((i) => {
           const next = NEXT[i.status]!;

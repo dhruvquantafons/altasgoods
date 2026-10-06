@@ -191,7 +191,7 @@ export default function PromotionsPage() {
               );
             })}
           </ul>
-          <p className="border-t border-line px-5 py-3 text-xs text-ink-500">Deal fee ₹1,500 per flash deal during BluBuy Big Days, ₹300 at other times.</p>
+          <p className="border-t border-line px-5 py-3 text-xs text-ink-500">Deal fee ₹1,500 per flash deal during AltasGoods Big Days, ₹300 at other times.</p>
         </Card>
       </div>
 

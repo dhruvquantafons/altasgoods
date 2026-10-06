@@ -78,7 +78,7 @@ export default async function AdminOverview() {
   const alerts: { icon: LucideIcon; tone: Tone; title: string; detail: string; href: string; cta: string }[] = [
     { icon: CreditCard, tone: "danger", title: `UPI success ${upi15.toFixed(1)}%, last 15 min`, detail: "Collect requests degraded at Kanakpay", href: "/admin/payments", cta: "Gateway health" },
     { icon: Timer, tone: "warning", title: `${formatNumber(opsSnapshot.slaBreaches)} items past dispatch-by`, detail: `${formatNumber(opsSnapshot.dispatchAtRisk)} more at risk before 6 pm`, href: "/admin/orders?view=attention", cta: "Review orders" },
-    { icon: RotateCcw, tone: "danger", title: `${opsSnapshot.refundsFailed} refunds failed at the bank`, detail: "Retry or reroute to BluBuy Credits", href: "/admin/returns?refund=failed", cta: "Fix refunds" },
+    { icon: RotateCcw, tone: "danger", title: `${opsSnapshot.refundsFailed} refunds failed at the bank`, detail: "Retry or reroute to AltasGoods Credits", href: "/admin/returns?refund=failed", cta: "Fix refunds" },
     { icon: PackageCheck, tone: "warning", title: `${CATALOG_QUEUE_TOTAL} listings awaiting QC`, detail: `Oldest ${opsSnapshot.oldestQcHours} h against a 48 h target`, href: "/admin/catalog", cta: "Open queue" },
     {
       icon: Building2,

@@ -45,7 +45,7 @@ export const tickets: Ticket[] = Array.from({ length: 48 }, (_, i) => {
   const via = { chat: "chat", app: "the app", email: "email", phone: "a phone call" }[channel];
   const messages: Ticket["messages"] = [
     { from: "customer", author: order.customerName, body, at: createdAt.toISOString() },
-    { from: "system", author: "BluBuy", body: `Ticket created via ${via}.${fits.length ? ` Linked to order ${order.id}.` : ""}`, at: clamp(createdAt.getTime() + 60_000) },
+    { from: "system", author: "AltasGoods", body: `Ticket created via ${via}.${fits.length ? ` Linked to order ${order.id}.` : ""}`, at: clamp(createdAt.getTime() + 60_000) },
   ];
   if (status !== "open")
     messages.push({ from: "agent", author: assignee ?? "Support", body: "Thank you for reaching out. I have checked this and raised it with the concerned team. I will update you as soon as I hear back.", at: clamp(createdAt.getTime() + 40 * 60_000) });
@@ -108,10 +108,10 @@ export function reviewsFor(productId: string) {
 /* ------------------------------- Coupons ------------------------------ */
 
 export const coupons: Coupon[] = [
-  { id: "cp-1", code: "BIGDAYS10", description: "10% off sitewide during BluBuy Big Days", type: "percent", value: 10, maxDiscount: 1500, minOrder: 999, usage: 48210, limit: 100000, startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "active", fundedBy: "blubuy" },
+  { id: "cp-1", code: "BIGDAYS10", description: "10% off sitewide during AltasGoods Big Days", type: "percent", value: 10, maxDiscount: 1500, minOrder: 999, usage: 48210, limit: 100000, startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "active", fundedBy: "blubuy" },
   { id: "cp-2", code: "BLUFIRST", description: "Flat 200 off on your first order", type: "flat", value: 200, minOrder: 499, usage: 12904, limit: 50000, startsAt: "2026-01-01T00:00:00+05:30", endsAt: "2026-12-31T23:59:00+05:30", status: "active", fundedBy: "blubuy" },
   { id: "cp-3", code: "UPI150", description: "Flat 150 off on UPI payments above 1,999", type: "flat", value: 150, minOrder: 1999, usage: 30877, limit: 60000, startsAt: "2026-09-20T00:00:00+05:30", endsAt: "2026-10-10T23:59:00+05:30", status: "active", fundedBy: "bank" },
-  { id: "cp-4", code: "PLUS200", description: "Extra 200 off for BluBuy Plus members", type: "flat", value: 200, minOrder: 1499, usage: 8120, limit: 25000, startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "active", fundedBy: "blubuy" },
+  { id: "cp-4", code: "PLUS200", description: "Extra 200 off for AltasGoods Plus members", type: "flat", value: 200, minOrder: 1499, usage: 8120, limit: 25000, startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "active", fundedBy: "blubuy" },
   { id: "cp-5", code: "APEXAUDIO", description: "Apex Retail: 12% off headphones and speakers", type: "percent", value: 12, maxDiscount: 2000, minOrder: 2999, usage: 642, limit: 2000, startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "active", fundedBy: "seller" },
   { id: "cp-6", code: "DIWALI25", description: "Diwali specials, up to 25% off home decor", type: "percent", value: 25, maxDiscount: 2500, minOrder: 1999, usage: 0, limit: 40000, startsAt: "2026-10-28T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", status: "scheduled", fundedBy: "blubuy" },
   { id: "cp-7", code: "HDFC1500", description: "Instant 1,500 off on HDFC credit cards", type: "flat", value: 1500, minOrder: 14999, usage: 6230, limit: 20000, startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "active", fundedBy: "bank" },
@@ -177,6 +177,6 @@ export const adminNotifications: Notification[] = [
 export const customerNotifications: Notification[] = [
   { id: "c-1", kind: "order", title: "Your order is out for delivery", body: "Auralis Studio ANC headphones will arrive today by 7 PM. Share OTP 4821 at delivery.", at: t(30), read: false, href: "/account/orders" },
   { id: "c-2", kind: "promo", title: "Big Days: 2 days left", body: "Extra 10% off with code BIGDAYS10 on orders above 999.", at: t(240), read: false, href: "/deals" },
-  { id: "c-3", kind: "payment", title: "Refund credited", body: "₹1,299 has been credited to your BluBuy Credits balance.", at: t(1500), read: true, href: "/account/wallet" },
-  { id: "c-4", kind: "account", title: "You earned 120 BluCoins", body: "Coins from your last order are now available to use.", at: t(4000), read: true, href: "/account/rewards" },
+  { id: "c-3", kind: "payment", title: "Refund credited", body: "₹1,299 has been credited to your AltasGoods Credits balance.", at: t(1500), read: true, href: "/account/wallet" },
+  { id: "c-4", kind: "account", title: "You earned 120 AltasCoins", body: "Coins from your last order are now available to use.", at: t(4000), read: true, href: "/account/rewards" },
 ];

@@ -51,7 +51,7 @@ export default async function CustomersPage(props: PageProps<"/support/customers
           <Input name="q" defaultValue={q} icon={Search} inputSize="sm" placeholder="Name, email, last 4 digits of phone or c-001" aria-label="Search customers" className="w-full sm:w-80" />
           <Select name="plus" defaultValue={plus} selectSize="sm" aria-label="Membership" className="w-[calc(50%-4px)] sm:w-40">
             <option value="">All members</option>
-            <option value="yes">BluBuy Plus</option>
+            <option value="yes">AltasGoods Plus</option>
             <option value="no">Not Plus</option>
           </Select>
           <Select name="risk" defaultValue={risk} selectSize="sm" aria-label="Risk" className="w-[calc(50%-4px)] sm:w-44">
@@ -100,7 +100,7 @@ export default async function CustomersPage(props: PageProps<"/support/customers
                             <span>
                               <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-900 group-hover:text-brand-700">
                                 {c.name}
-                                {c.plusMember && <Crown size={13} className="text-brand-600" aria-label="BluBuy Plus" />}
+                                {c.plusMember && <Crown size={13} className="text-brand-600" aria-label="AltasGoods Plus" />}
                               </span>
                               <span className="font-mono text-[11px] text-ink-500">{c.id}</span>
                             </span>

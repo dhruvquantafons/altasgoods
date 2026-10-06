@@ -13,21 +13,21 @@ import type { BankOffer, CartProduct, CouponLite, NavCategory, Suggestion, Walle
 /* ------------------------------ Company ------------------------------- */
 
 export const COMPANY = {
-  legalName: "BluBuy Commerce Private Limited",
+  legalName: "AltasGoods Commerce Private Limited",
   cin: "U47912KA2025PTC204817",
   gstin: "29AALCB4821Q1Z6",
   registeredOffice: "Level 9, Lakeview Square, 14 Residency Road, Ashok Nagar, Bengaluru, Karnataka 560025",
   customerCare: "1800 210 4455",
   customerCareHours: "8 am to 10 pm, every day",
-  email: "care@blubuy.in",
-  website: "www.blubuy.in",
+  email: "care@altasgoods.in",
+  website: "www.altasgoods.in",
 };
 
 /** Required by the Consumer Protection (E-Commerce) Rules, 2020. */
 export const GRIEVANCE_OFFICER = {
   name: "Meenakshi Raghavan",
-  designation: "Grievance Officer, BluBuy Commerce Private Limited",
-  email: "grievance.officer@blubuy.in",
+  designation: "Grievance Officer, AltasGoods Commerce Private Limited",
+  email: "grievance.officer@altasgoods.in",
   phone: "+91 80 4718 2200",
   hours: "Monday to Saturday, 9:30 am to 6:30 pm",
   address: "Level 9, Lakeview Square, 14 Residency Road, Bengaluru, Karnataka 560025",
@@ -57,7 +57,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     id: "festive",
     image: "/images/banners/hero-festive.jpg",
     alt: "Lit clay diya with warm bokeh lights in the dark",
-    eyebrow: "BluBuy Big Days, live now",
+    eyebrow: "AltasGoods Big Days, live now",
     title: "The festive sale, done calmly",
     body: "Up to 60% off across 30 categories. Real prices, honest timers and easy returns on every deal.",
     cta: "Shop the sale",
@@ -179,12 +179,12 @@ export function dealFor(productId: string) {
 /* ---------------------------- Bank offers ----------------------------- */
 
 export const BANK_OFFERS: BankOffer[] = [
-  { id: "bo-kaveri", kind: "Bank offer", bank: "Kaveri Bank", title: "10% instant discount with Kaveri Bank credit cards", detail: "Up to ₹1,500 off on orders of ₹5,000 and above. Once per card during BluBuy Big Days.", minOrder: 5000, percent: 10, cap: 1500, method: "card" },
+  { id: "bo-kaveri", kind: "Bank offer", bank: "Kaveri Bank", title: "10% instant discount with Kaveri Bank credit cards", detail: "Up to ₹1,500 off on orders of ₹5,000 and above. Once per card during AltasGoods Big Days.", minOrder: 5000, percent: 10, cap: 1500, method: "card" },
   { id: "bo-sahyadri", kind: "Bank offer", bank: "Sahyadri Bank", title: "Flat ₹750 off with Sahyadri Bank debit card EMI", detail: "On orders of ₹15,000 and above, 6 month tenure or longer.", minOrder: 15000, flat: 750, method: "emi" },
   { id: "bo-upi", kind: "UPI offer", title: "Flat ₹150 off on UPI payments", detail: "On orders of ₹1,999 and above. Applied automatically when you pay by UPI.", minOrder: 1999, flat: 150, method: "upi" },
   { id: "bo-emi", kind: "No cost EMI", title: "No cost EMI for 3 and 6 months", detail: "On orders of ₹3,000 and above with Kaveri Bank and Coral Bank credit cards. Interest is given as an upfront discount.", minOrder: 3000, method: "emi" },
-  { id: "bo-paylater", kind: "Cashback", title: "₹100 back as BluBuy Credits on your first Pay Later order", detail: "Credited within 48 hours of delivery. Minimum order ₹999.", minOrder: 999, flat: 100, method: "paylater" },
-  { id: "bo-coral", kind: "Partner offer", bank: "Coral Bank", title: "5% back as BluCoins with the BluBuy Coral credit card", detail: "Unlimited for Plus members, up to 500 BluCoins a month for others.", minOrder: 0, percent: 5 },
+  { id: "bo-paylater", kind: "Cashback", title: "₹100 back as AltasGoods Credits on your first Pay Later order", detail: "Credited within 48 hours of delivery. Minimum order ₹999.", minOrder: 999, flat: 100, method: "paylater" },
+  { id: "bo-coral", kind: "Partner offer", bank: "Coral Bank", title: "5% back as AltasCoins with the AltasGoods Coral credit card", detail: "Unlimited for Plus members, up to 500 AltasCoins a month for others.", minOrder: 0, percent: 5 },
 ];
 
 export function bankOffersFor(price: number) {
@@ -233,7 +233,7 @@ export const CUSTOMER_WALLET: WalletLite = {
   plusMember: CURRENT_CUSTOMER.plusMember,
 };
 
-/* ----------------------------- BluBuy Plus ---------------------------- */
+/* ----------------------------- AltasGoods Plus ---------------------------- */
 
 export const PLUS_PLANS = [
   { id: "monthly", name: "Monthly", price: 149, period: "month", note: "Cancel any time", perMonth: 149 },
@@ -489,7 +489,7 @@ export function returnPolicyFor(p: Product, windowDays?: number) {
   const cat = getCategory(p.categoryId)?.slug;
   const sub = p.subcategory;
   if (cat === "fashion") return { days: 10, short: "10 day return or exchange", detail: "Return, replacement or size and colour exchange within 10 days of delivery. Tags intact and unworn." };
-  if (cat === "home" && sub === "Furniture") return { days: 10, short: "10 day return or replacement", detail: "Returnable within 10 days if installed by BluBuy or the brand installer." };
+  if (cat === "home" && sub === "Furniture") return { days: 10, short: "10 day return or replacement", detail: "Returnable within 10 days if installed by AltasGoods or the brand installer." };
   if (cat === "home") return { days: 7, short: "7 day return or replacement", detail: "Return or replacement within 7 days of delivery." };
   if (cat === "mobiles") return { days: 7, short: "7 day replacement", detail: "Replacement within 7 days for defective, damaged or wrong items. Reset the device and remove locks before pickup." };
   if (cat === "beauty") return { days: 7, short: "7 day return if unopened", detail: "Refund if unopened and sealed. Replacement if damaged or wrong." };
@@ -552,35 +552,35 @@ export const HELP_TOPICS = [
   { icon: "Undo2", title: "Returns and refunds", body: "Return windows, pickup, refund timelines and status", href: "/policies/returns" },
   { icon: "XCircle", title: "Cancellations", body: "Cancel before dispatch for a full refund, no fees", href: "/policies/cancellation" },
   { icon: "CreditCard", title: "Payments and EMI", body: "UPI, cards, EMI, Pay Later and failed payments", href: "/policies/payments" },
-  { icon: "Wallet", title: "BluBuy Credits and gift cards", body: "Balance, expiry and using credits at checkout", href: "/policies/credits" },
-  { icon: "Crown", title: "BluBuy Plus", body: "Benefits, renewals and cancelling in one step", href: "/plus" },
-  { icon: "ShieldCheck", title: "BluBuy Guarantee", body: "Item not received or not as described", href: "/policies/guarantee" },
+  { icon: "Wallet", title: "AltasGoods Credits and gift cards", body: "Balance, expiry and using credits at checkout", href: "/policies/credits" },
+  { icon: "Crown", title: "AltasGoods Plus", body: "Benefits, renewals and cancelling in one step", href: "/plus" },
+  { icon: "ShieldCheck", title: "AltasGoods Guarantee", body: "Item not received or not as described", href: "/policies/guarantee" },
   { icon: "UserRound", title: "Account and privacy", body: "Login, mobile number, data and consent", href: "/policies/account-security" },
 ];
 
 export const HELP_FAQS: { id: string; group: string; q: string; a: string }[] = [
   { id: "cancellation", group: "Cancellations", q: "How do I cancel an order?", a: "Open Your orders, choose the item and select Cancel. Items can be cancelled any time before they are shipped, with a full refund and no cancellation fee. After shipping you can request cancellation and the parcel will return to the seller, or simply refuse it at the door." },
   { id: "returns", group: "Returns and refunds", q: "What is the return window for my item?", a: "Return windows are counted from the delivery date: 10 days for fashion and furniture, 7 days for home, electronics, mobiles (replacement), books, toys and sports, 7 days for beauty if unopened, and 2 days for grocery. The exact window is shown on the product page and in your order." },
-  { id: "refund-time", group: "Returns and refunds", q: "When will I get my refund?", a: "Refunds to BluBuy Credits arrive within 2 hours. UPI refunds take 1 to 2 business days, cards and net banking 3 to 5 business days. Cash on delivery orders are refunded to BluBuy Credits or your bank account via IMPS or UPI." },
-  { id: "payments", group: "Payments", q: "Money was debited but my order failed. What happens now?", a: "If a payment fails after your money is debited, BluBuy reverses it automatically within 1 business day as required by RBI rules. You do not need to raise a request. If you do not see the reversal, contact us with the transaction reference." },
-  { id: "cod", group: "Payments", q: "Is there an extra charge for cash on delivery?", a: "No. BluBuy never charges a fee for cash on delivery, a payment handling fee or a platform fee. Pay on delivery is available for orders up to ₹50,000 on serviceable pincodes, and you can pay by cash or UPI QR at the door." },
-  { id: "credits", group: "BluBuy Credits", q: "Do BluBuy Credits expire?", a: "Credits from refunds never expire and can be moved back to your bank on request. Goodwill credits expire after 1 year. Gift card balances keep the gift card's 1 year validity." },
-  { id: "guarantee", group: "BluBuy Guarantee", q: "What does the BluBuy Guarantee cover?", a: "If an item was not delivered, arrived materially different from its listing, or a refund was not issued, contact the seller first. If it is not resolved in 48 hours, file a BluBuy Guarantee claim from the order page within 90 days of the latest delivery date." },
+  { id: "refund-time", group: "Returns and refunds", q: "When will I get my refund?", a: "Refunds to AltasGoods Credits arrive within 2 hours. UPI refunds take 1 to 2 business days, cards and net banking 3 to 5 business days. Cash on delivery orders are refunded to AltasGoods Credits or your bank account via IMPS or UPI." },
+  { id: "payments", group: "Payments", q: "Money was debited but my order failed. What happens now?", a: "If a payment fails after your money is debited, AltasGoods reverses it automatically within 1 business day as required by RBI rules. You do not need to raise a request. If you do not see the reversal, contact us with the transaction reference." },
+  { id: "cod", group: "Payments", q: "Is there an extra charge for cash on delivery?", a: "No. AltasGoods never charges a fee for cash on delivery, a payment handling fee or a platform fee. Pay on delivery is available for orders up to ₹50,000 on serviceable pincodes, and you can pay by cash or UPI QR at the door." },
+  { id: "credits", group: "AltasGoods Credits", q: "Do AltasGoods Credits expire?", a: "Credits from refunds never expire and can be moved back to your bank on request. Goodwill credits expire after 1 year. Gift card balances keep the gift card's 1 year validity." },
+  { id: "guarantee", group: "AltasGoods Guarantee", q: "What does the AltasGoods Guarantee cover?", a: "If an item was not delivered, arrived materially different from its listing, or a refund was not issued, contact the seller first. If it is not resolved in 48 hours, file an AltasGoods Guarantee claim from the order page within 90 days of the latest delivery date." },
   { id: "account", group: "Account and privacy", q: "How do I download or delete my data?", a: "Go to Account, then Privacy and data. You can download a copy of your data, withdraw consent for promotional messages or request deletion of your account. Open orders or refunds must be completed before deletion." },
 ];
 
-/* --------------------------- Sell on BluBuy --------------------------- */
+/* --------------------------- Sell on AltasGoods --------------------------- */
 
 export const SELL_STEPS = [
   { title: "Register in 10 minutes", body: "Mobile number, GSTIN (or PAN for GST exempt categories like books), bank account and pickup address." },
   { title: "List your products", body: "Match an existing BSIN or create a new listing with photos, price, stock and the legal declarations we check for you." },
-  { title: "Receive orders", body: "Orders confirm automatically. Pack before your dispatch-by date and BluBuy Logistics picks up from your door." },
+  { title: "Receive orders", body: "Orders confirm automatically. Pack before your dispatch-by date and AltasGoods Logistics picks up from your door." },
   { title: "Get paid fast", body: "Payouts run every Monday, Wednesday and Friday, as soon as delivery plus 2 days for Platinum sellers." },
 ];
 
 export const SELL_PROGRAMS = [
-  { name: "BluBuy Fulfilled", icon: "Warehouse", body: "Send stock to our fulfilment centres. We store, pack, ship and handle returns. Automatically BluBuy Assured." },
-  { name: "BluBuy Ship", icon: "Truck", body: "You pack at your warehouse, BluBuy Logistics picks up and delivers to 19,000+ pincodes." },
+  { name: "AltasGoods Fulfilled", icon: "Warehouse", body: "Send stock to our fulfilment centres. We store, pack, ship and handle returns. Automatically AltasGoods Assured." },
+  { name: "AltasGoods Ship", icon: "Truck", body: "You pack at your warehouse, AltasGoods Logistics picks up and delivers to 19,000+ pincodes." },
   { name: "Self Ship", icon: "PackageCheck", body: "Use your own courier and upload tracking. Prepaid orders only, ideal for niche or local sellers." },
 ];
 

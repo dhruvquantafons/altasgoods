@@ -1,8 +1,8 @@
 import { addDays, NOW, seeded } from "../utils";
 
-/** BluBuy Big Days festive sale window used to shape the series. */
+/** AltasGoods Big Days festive sale window used to shape the series. */
 export const SALE_EVENT = {
-  name: "BluBuy Big Days",
+  name: "AltasGoods Big Days",
   startsAt: "2026-09-26T00:00:00+05:30",
   endsAt: "2026-10-05T23:59:00+05:30",
 };

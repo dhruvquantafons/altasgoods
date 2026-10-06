@@ -37,7 +37,7 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
         </div>
         {!empty && plus && (
           <p className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-[13px] font-medium text-brand-700">
-            <Truck size={15} aria-hidden="true" /> Free delivery on every order with BluBuy Plus
+            <Truck size={15} aria-hidden="true" /> Free delivery on every order with AltasGoods Plus
           </p>
         )}
       </div>
@@ -77,7 +77,7 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
                       </Link>
                       {g.fulfilledBy === "blubuy" && (
                         <span className="hidden items-center gap-1 text-xs font-medium text-brand-700 sm:inline-flex">
-                          <BadgeCheck size={13} aria-hidden="true" /> Fulfilled by BluBuy
+                          <BadgeCheck size={13} aria-hidden="true" /> Fulfilled by AltasGoods
                         </span>
                       )}
                     </p>
@@ -91,7 +91,7 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
                   </header>
                   {!plus && short > 0 && (
                     <p className="border-b border-line bg-brand-50/50 px-5 py-2 text-xs text-brand-800">
-                      Add {formatINR(short)} more from this seller for free delivery, or join BluBuy Plus.
+                      Add {formatINR(short)} more from this seller for free delivery, or join AltasGoods Plus.
                     </p>
                   )}
                   <ul className="divide-y divide-line">

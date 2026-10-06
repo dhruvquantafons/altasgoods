@@ -27,12 +27,12 @@ export default function SupportPage() {
     <>
       <PageHeader
         title="Support cases"
-        description="Cases with BluBuy Seller Support. First response within 24 hours; most cases are resolved within 5 business days."
+        description="Cases with AltasGoods Seller Support. First response within 24 hours; most cases are resolved within 5 business days."
         actions={<NewCase categories={CASE_CATEGORIES} />}
       />
 
       <StatStrip className="mb-6">
-        <MiniStat label="Open cases" value={open.length} hint="With you or with BluBuy" />
+        <MiniStat label="Open cases" value={open.length} hint="With you or with AltasGoods" />
         <MiniStat label="Waiting for your reply" value={waiting.length} hint="Cases close after 72 hours without a reply" tone={waiting.length ? "warning" : undefined} />
         <MiniStat label="Median first response" value="3 h 40 min" hint="Your cases, last 90 days" />
         <MiniStat label="Seller Academy" value={`${academyCourses.filter((c) => c.progress === 100).length} of ${academyCourses.length}`} hint="Courses completed" />
@@ -88,7 +88,7 @@ export default function SupportPage() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="min-w-0 overflow-hidden xl:col-span-2">
           <CardHeader
-            title="BluBuy Seller Academy"
+            title="AltasGoods Seller Academy"
             description="Short lessons from the Seller Success team"
             action={
               learning.length > 0 && (

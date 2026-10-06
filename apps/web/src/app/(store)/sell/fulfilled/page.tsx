@@ -7,12 +7,12 @@ import { STORE_CONTAINER } from "@/components/store/store-header";
 import { hubs } from "@/lib/mock";
 import { cn, formatNumber } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "BluBuy Fulfilled" };
+export const metadata: Metadata = { title: "AltasGoods Fulfilled" };
 
 const steps = [
   { icon: Warehouse, title: "Send your stock", body: "Create an inbound shipment in Seller Hub and book a delivery slot at the recommended fulfilment centre." },
-  { icon: PackageCheck, title: "We store and pack", body: "Every unit is checked, labelled and stored. When an order comes in, we pick, pack and hand it to BluBuy Logistics." },
-  { icon: Truck, title: "Fast, Assured delivery", body: "Your listings carry the BluBuy Assured badge and qualify for one-day delivery for BluBuy Plus members." },
+  { icon: PackageCheck, title: "We store and pack", body: "Every unit is checked, labelled and stored. When an order comes in, we pick, pack and hand it to AltasGoods Logistics." },
+  { icon: Truck, title: "Fast, Assured delivery", body: "Your listings carry the AltasGoods Assured badge and qualify for one-day delivery for AltasGoods Plus members." },
   { icon: RotateCcw, title: "We handle returns", body: "Returns come back to our centre, are graded, and sellable units go straight back into your inventory." },
 ];
 
@@ -26,11 +26,11 @@ const fees = [
 ];
 
 const compare: [string, boolean | string, boolean | string, boolean | string][] = [
-  ["Who packs and ships", "BluBuy", "You pack, BluBuy picks up", "You and your courier"],
-  ["BluBuy Assured badge", true, "Gold and above", false],
+  ["Who packs and ships", "AltasGoods", "You pack, AltasGoods picks up", "You and your courier"],
+  ["AltasGoods Assured badge", true, "Gold and above", false],
   ["One-day delivery for Plus members", true, "Select pincodes", false],
   ["Cash on delivery", true, true, false],
-  ["Returns handled by BluBuy", true, "Pickup only", false],
+  ["Returns handled by AltasGoods", true, "Pickup only", false],
   ["Storage fees", true, false, false],
 ];
 
@@ -45,10 +45,10 @@ export default function FulfilledPage() {
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero
-        crumbs={[{ label: "Home", href: "/" }, { label: "Sell on BluBuy", href: "/sell" }, { label: "BluBuy Fulfilled" }]}
-        eyebrow="BluBuy Fulfilled"
+        crumbs={[{ label: "Home", href: "/" }, { label: "Sell on AltasGoods", href: "/sell" }, { label: "AltasGoods Fulfilled" }]}
+        eyebrow="AltasGoods Fulfilled"
         title="Send us your stock. We do the rest."
-        description="Store your products in BluBuy fulfilment centres and we pick, pack, ship and handle returns, with the BluBuy Assured badge on every listing."
+        description="Store your products in AltasGoods fulfilment centres and we pick, pack, ship and handle returns, with the AltasGoods Assured badge on every listing."
       >
         <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[13px] text-ink-700 ring-1 ring-line">
           <BadgeCheck size={14} className="text-brand-600" aria-hidden="true" />
@@ -124,8 +124,8 @@ export default function FulfilledPage() {
               <thead className="text-xs text-ink-500">
                 <tr className="border-b border-line">
                   <th className="pb-2 text-left font-medium" />
-                  <th className="pb-2 font-semibold text-brand-700">BluBuy Fulfilled</th>
-                  <th className="pb-2 font-medium">BluBuy Ship</th>
+                  <th className="pb-2 font-semibold text-brand-700">AltasGoods Fulfilled</th>
+                  <th className="pb-2 font-medium">AltasGoods Ship</th>
                   <th className="pb-2 font-medium">Self Ship</th>
                 </tr>
               </thead>
@@ -151,7 +151,7 @@ export default function FulfilledPage() {
 
         <div className="mt-12 flex flex-col gap-4 rounded-2xl bg-brand-950 p-6 text-white sm:flex-row sm:items-center sm:justify-between lg:p-8">
           <div>
-            <p className="font-display text-lg font-semibold">Already selling on BluBuy?</p>
+            <p className="font-display text-lg font-semibold">Already selling on AltasGoods?</p>
             <p className="mt-1 text-sm text-brand-100">Create your first inbound shipment from Inventory in Seller Hub.</p>
           </div>
           <Link href="/seller/inventory" className="inline-flex h-11 items-center gap-2 self-start rounded-lg bg-white px-5 text-sm font-semibold text-ink-900 hover:bg-brand-50 sm:self-auto">

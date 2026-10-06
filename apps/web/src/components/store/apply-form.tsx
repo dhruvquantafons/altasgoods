@@ -53,7 +53,7 @@ export function ApplyForm({ roleTitle }: { roleTitle: string }) {
       <Field label="Anything you would like us to know" htmlFor="apply-note">
         <Textarea id="apply-note" name="note" rows={4} />
       </Field>
-      <Checkbox name="consent" required label="I agree to BluBuy storing my application for up to 12 months for hiring purposes." />
+      <Checkbox name="consent" required label="I agree to AltasGoods storing my application for up to 12 months for hiring purposes." />
       <Button type="submit" size="lg" className="mt-1 w-full">
         Submit application
       </Button>

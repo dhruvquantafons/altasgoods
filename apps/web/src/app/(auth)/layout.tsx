@@ -5,7 +5,7 @@ import { BadgeCheck, Lock, Truck, Undo2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 
 export const metadata: Metadata = {
-  title: { default: "Sign in", template: "%s | BluBuy" },
+  title: { default: "Sign in", template: "%s | AltasGoods" },
 };
 
 const TILES = ["headphones-studio", "dress-summer", "vase-ceramic", "sneakers-white", "coffee-maker", "watch-analog"];
@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <ul className="mt-6 flex flex-col gap-3 text-[15px] text-brand-100">
             {[
               { icon: Truck, t: "Real delivery dates for your pincode" },
-              { icon: Undo2, t: "Free doorstep returns, refunds in 2 hours to BluBuy Credits" },
+              { icon: Undo2, t: "Free doorstep returns, refunds in 2 hours to AltasGoods Credits" },
               { icon: BadgeCheck, t: "Verified sellers with their details on every product" },
             ].map((x) => (
               <li key={x.t} className="flex items-center gap-3">
@@ -53,7 +53,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="w-full max-w-[400px]">{children}</div>
         </div>
         <p className="text-center text-xs text-ink-500">
-          © 2026 BluBuy Commerce Private Limited.{" "}
+          © 2026 AltasGoods Commerce Private Limited.{" "}
           <Link href="/policies/terms" className="hover:text-ink-800">
             Terms
           </Link>{" "}

@@ -32,7 +32,7 @@ const SLOT_LABEL: Record<HomeSlot["type"], string> = {
 };
 const PERSONAS = [
   { key: "everyone", label: "Guest or any customer" },
-  { key: "plus", label: "BluBuy Plus member" },
+  { key: "plus", label: "AltasGoods Plus member" },
   { key: "new", label: "New customer" },
 ];
 
@@ -233,7 +233,7 @@ export function CmsStudio({ slots, banners, products, categories }: { slots: Hom
         <div className="p-5">
           <div className={cn("mx-auto overflow-hidden rounded-xl border border-line-strong bg-canvas shadow-raised", mobile ? "max-w-[300px] rounded-[28px] border-[6px] border-ink-900" : "w-full")}>
             <div className={cn("flex items-center gap-2 border-b border-line bg-white px-3", mobile ? "h-9" : "h-10")}>
-              <span className="font-display text-[13px] font-bold text-brand-700">BluBuy</span>
+              <span className="font-display text-[13px] font-bold text-brand-700">AltasGoods</span>
               <span className="h-5 flex-1 rounded-md bg-ink-100" aria-hidden="true" />
             </div>
             <div className={cn("flex flex-col gap-4 p-3", mobile && "gap-3 p-2.5")}>
