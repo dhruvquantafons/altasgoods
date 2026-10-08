@@ -96,7 +96,7 @@ export default function HomePage() {
       <Section className="mt-12 lg:mt-16" labelledBy="home-dotd">
         <SectionTitle
           id="home-dotd"
-          title="Blu Deal of the Day"
+          title="Deal of the Day"
           description="One-day prices, at least 20% below the lowest price of the last 30 days"
           eyebrow={
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-2.5 py-1 text-xs font-semibold text-accent-900 ring-1 ring-accent-100 ring-inset">

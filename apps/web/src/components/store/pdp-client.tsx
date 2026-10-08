@@ -354,7 +354,7 @@ export function BuyBox() {
       {data.deal && (
         <div className="mt-3 rounded-lg bg-accent-50 px-3 py-2 text-[13px] text-accent-900 ring-1 ring-accent-100 ring-inset">
           <p className="flex items-center justify-between gap-2 font-semibold">
-            {data.deal.kind === "flash" ? "Blu Flash Deal" : "Blu Deal of the Day"}
+            {data.deal.kind === "flash" ? "Blu Flash Deal" : "Deal of the Day"}
             <DealTimer endsAt={data.deal.endsAt} compact />
           </p>
           <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-accent-100" aria-hidden="true">

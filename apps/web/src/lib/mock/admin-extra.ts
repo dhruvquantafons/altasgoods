@@ -1231,7 +1231,7 @@ export interface DealSubmission {
   title: string;
   image: string;
   sellerId: string;
-  dealType: "Blu Flash Deal" | "Blu Deal of the Day" | "Big Days deal" | "Diwali Dhamaka deal";
+  dealType: "Blu Flash Deal" | "Deal of the Day" | "Big Days deal" | "Diwali Dhamaka deal";
   dealPrice: number;
   low30d: number;
   mrp: number;
@@ -1245,10 +1245,10 @@ const dealSeeds: [key: string, seller: string, type: DealSubmission["dealType"],
   ["phone-nova", "s-novatek", "Diwali Dhamaka deal", 11, 10, 3000],
   ["airfryer-crisp", "s-ganesh", "Blu Flash Deal", 9, 15, 250],
   ["sofa-oslo", "s-terra", "Diwali Dhamaka deal", 22, 15, 60],
-  ["kurta-ethnic", "s-loomhouse", "Blu Deal of the Day", 24, 20, 1200],
+  ["kurta-ethnic", "s-loomhouse", "Deal of the Day", 24, 20, 1200],
   ["perfume-noir", "s-glow", "Diwali Dhamaka deal", -6, 15, 300],
   ["watch-smart", "s-urbankart", "Blu Flash Deal", 18, 15, 800],
-  ["dumbbells-hex", "s-profit", "Blu Deal of the Day", 21, 20, 150],
+  ["dumbbells-hex", "s-profit", "Deal of the Day", 21, 20, 150],
   ["lamp-arc", "s-kiln", "Diwali Dhamaka deal", 17, 15, 220],
   ["almonds-premium", "s-greenleaf", "Big Days deal", 12, 10, 2400],
 ];

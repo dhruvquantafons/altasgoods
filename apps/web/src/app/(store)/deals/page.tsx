@@ -157,7 +157,7 @@ export default async function DealsPage(props: PageProps<"/deals">) {
         <Section className="mt-14" labelledBy="deals-dotd">
           <SectionTitle
             id="deals-dotd"
-            title="Blu Deal of the Day"
+            title="Deal of the Day"
             description="One-day prices, at least 20% below the 30 day low"
             aside={
               <span className="hidden items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-900 ring-1 ring-accent-100 ring-inset sm:inline-flex">
