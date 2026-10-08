@@ -1,6 +1,6 @@
 /**
- * Extra mock data for the BluBuy Hub Console (logistics, FC Console, Rider app
- * preview) and the BluBuy Care Desk. Deterministic and anchored to NOW like the
+ * Extra mock data for the AltasGoods Hub Console (logistics, FC Console, Rider app
+ * preview) and the AltasGoods Care Desk. Deterministic and anchored to NOW like the
  * rest of the mock layer. Each block mirrors an entity in
  * docs/research/01-marketplace-workflows.md section 12.
  */
@@ -1234,7 +1234,7 @@ export function ticketThread(t: Ticket): ThreadEntry[] {
     entries.push({ kind: "note", author: t.assignee ?? CURRENT_AGENT.name, body: notesByCategory[t.category], at: new Date(created + 3.2 * 3600_000).toISOString() });
   }
   if (t.status === "escalated") {
-    entries.push({ kind: "system", author: "BluBuy", body: "Escalated to the L2 specialist queue: resolution SLA at risk and customer asked for escalation.", at: new Date(Math.min(created + 21 * 3600_000, NOW.getTime() - 3 * 3600_000)).toISOString() });
+    entries.push({ kind: "system", author: "AltasGoods", body: "Escalated to the L2 specialist queue: resolution SLA at risk and customer asked for escalation.", at: new Date(Math.min(created + 21 * 3600_000, NOW.getTime() - 3 * 3600_000)).toISOString() });
   }
   clampToNow(entries);
   if (t.status === "open" || t.status === "in_progress" || t.status === "escalated") {
@@ -1295,15 +1295,15 @@ export interface Macro {
 }
 
 export const macros: Macro[] = [
-  { id: "M-101", title: "Delay apology with new date", category: "Delivery", body: "Hi {first_name}, I am sorry your order {order_id} is running late. I have checked with BluBuy Logistics and it is now expected by {promise_date}. I will keep this ticket open and update you as soon as it is out for delivery.", uses: 1842, updatedAt: "2026-09-18" },
+  { id: "M-101", title: "Delay apology with new date", category: "Delivery", body: "Hi {first_name}, I am sorry your order {order_id} is running late. I have checked with AltasGoods Logistics and it is now expected by {promise_date}. I will keep this ticket open and update you as soon as it is out for delivery.", uses: 1842, updatedAt: "2026-09-18" },
   { id: "M-102", title: "Marked delivered, not received", category: "Delivery", body: "Hi {first_name}, thank you for letting us know. I have opened a delivery investigation for order {order_id} with our hub team. They will verify the delivery location and proof of delivery within 24 hours. If the package is not found, we will arrange a refund or replacement.", uses: 1210, updatedAt: "2026-09-22" },
-  { id: "M-103", title: "Refund timeline by payment method", category: "Return and refund", body: "Hi {first_name}, your refund for order {order_id} has been initiated. BluBuy Credits refunds arrive in under 2 hours, UPI in 1 to 2 business days, and cards in 3 to 5 business days. You will receive the reference number by SMS once your bank confirms.", uses: 2675, updatedAt: "2026-09-29" },
+  { id: "M-103", title: "Refund timeline by payment method", category: "Return and refund", body: "Hi {first_name}, your refund for order {order_id} has been initiated. AltasGoods Credits refunds arrive in under 2 hours, UPI in 1 to 2 business days, and cards in 3 to 5 business days. You will receive the reference number by SMS once your bank confirms.", uses: 2675, updatedAt: "2026-09-29" },
   { id: "M-104", title: "Request photos of damaged item", category: "Product quality", body: "Hi {first_name}, I am sorry the item arrived damaged. Could you please reply with 2 or 3 photos of the product and the outer box, including the shipping label? This helps us arrange a replacement for order {order_id} right away.", uses: 1534, updatedAt: "2026-08-30" },
   { id: "M-105", title: "Replacement confirmed", category: "Product quality", body: "Hi {first_name}, good news: a replacement for order {order_id} has been created. Our associate will pick up the original item at the time of delivery, so please keep it ready in its packaging.", uses: 988, updatedAt: "2026-09-11" },
   { id: "M-106", title: "Payment debited, order not placed", category: "Payment", body: "Hi {first_name}, I can see the payment was debited but the order could not be confirmed. The amount will be refunded automatically to the source account within 1 business day. No action is needed from you.", uses: 1377, updatedAt: "2026-09-25" },
-  { id: "M-107", title: "COD refund: bank details", category: "Return and refund", body: "Hi {first_name}, since order {order_id} was paid by cash on delivery, we can refund to your BluBuy Credits instantly, or to a bank account or UPI ID within 1 to 2 business days after a quick verification. Please let me know which you prefer.", uses: 642, updatedAt: "2026-09-02" },
+  { id: "M-107", title: "COD refund: bank details", category: "Return and refund", body: "Hi {first_name}, since order {order_id} was paid by cash on delivery, we can refund to your AltasGoods Credits instantly, or to a bank account or UPI ID within 1 to 2 business days after a quick verification. Please let me know which you prefer.", uses: 642, updatedAt: "2026-09-02" },
   { id: "M-108", title: "OTP not received at login", category: "Account", body: "Hi {first_name}, please try the Get OTP on call option on the login screen. If your number is on DND, SMS may be delayed by your operator. Let me know if the call OTP also does not arrive and I will help further.", uses: 721, updatedAt: "2026-07-14" },
-  { id: "M-109", title: "Seller cancellation explained", category: "Seller dispute", body: "Hi {first_name}, I am sorry the seller cancelled order {order_id}. Your full refund has been initiated. I have also reported this cancellation to our seller performance team. The same item is available from other sellers on BluBuy.", uses: 455, updatedAt: "2026-09-05" },
+  { id: "M-109", title: "Seller cancellation explained", category: "Seller dispute", body: "Hi {first_name}, I am sorry the seller cancelled order {order_id}. Your full refund has been initiated. I have also reported this cancellation to our seller performance team. The same item is available from other sellers on AltasGoods.", uses: 455, updatedAt: "2026-09-05" },
   { id: "M-110", title: "Escalated to specialist", category: "General", body: "Hi {first_name}, I have escalated your request to a specialist who handles cases like this. You will hear from them within 24 hours. Your ticket reference stays the same, so you do not need to explain the issue again.", uses: 803, updatedAt: "2026-09-20" },
   { id: "M-111", title: "GST invoice for business purchase", category: "Other", body: "Hi {first_name}, the seller can issue a GST invoice with your company GSTIN for order {order_id}. Please share the GSTIN and registered business name and I will request the updated invoice. It usually takes 2 business days.", uses: 312, updatedAt: "2026-06-28" },
   { id: "M-112", title: "Closing with CSAT request", category: "General", body: "Hi {first_name}, I am glad we could sort this out. I am marking this ticket as resolved. You will get a short survey about your experience, and if anything else comes up, just reply here within 7 days to reopen it. Regards, {agent_name}", uses: 3120, updatedAt: "2026-09-30" },
@@ -1366,12 +1366,12 @@ export const articles: Article[] = [
         table: {
           head: ["Paid with", "Refund to", "Time after processing"],
           rows: [
-            ["UPI", "Source UPI or BluBuy Credits", "Credits under 2 hours, UPI 1 to 2 business days"],
-            ["Credit or debit card", "Source card or BluBuy Credits", "3 to 5 business days"],
-            ["Net banking", "Source account or BluBuy Credits", "3 to 5 business days"],
+            ["UPI", "Source UPI or AltasGoods Credits", "Credits under 2 hours, UPI 1 to 2 business days"],
+            ["Credit or debit card", "Source card or AltasGoods Credits", "3 to 5 business days"],
+            ["Net banking", "Source account or AltasGoods Credits", "3 to 5 business days"],
             ["EMI", "Source card (issuer reverses EMI)", "3 to 5 business days"],
-            ["Cash on delivery", "BluBuy Credits, or bank or UPI after penny drop", "Credits under 2 hours, bank 1 to 2 business days"],
-            ["BluCoins", "Restored to BluCoins", "Instant"],
+            ["Cash on delivery", "AltasGoods Credits, or bank or UPI after penny drop", "Credits under 2 hours, bank 1 to 2 business days"],
+            ["AltasCoins", "Restored to AltasCoins", "Instant"],
           ],
         },
       },
@@ -1386,7 +1386,7 @@ export const articles: Article[] = [
     updatedAt: "2026-08-21",
     owner: "Order operations",
     sections: [
-      { bullets: ["Free cancellation until the item is shipped", "After dispatch, the customer can refuse at the door or return within the window", "Seller cancellations trigger an automatic full refund and count against seller metrics", "Plus members get the same cancellation rules with faster refunds to BluBuy Credits"] },
+      { bullets: ["Free cancellation until the item is shipped", "After dispatch, the customer can refuse at the door or return within the window", "Seller cancellations trigger an automatic full refund and count against seller metrics", "Plus members get the same cancellation rules with faster refunds to AltasGoods Credits"] },
     ],
   },
   {
@@ -1407,34 +1407,34 @@ export const articles: Article[] = [
     category: "Delivery",
     summary: "What happens after a failed delivery attempt and how customers can choose a new date or update the address.",
     updatedAt: "2026-09-08",
-    owner: "BluBuy Logistics",
+    owner: "AltasGoods Logistics",
     sections: [
       { bullets: ["Up to 3 attempts within 5 calendar days of the first attempt", "Customer is notified within 30 minutes with options: re-attempt date, address details, alternate phone, pay online, or cancel", "No response in 24 hours: automatic re-attempt the next working day", "Refused, out of delivery area or cancelled shipments return to origin immediately"] },
       { heading: "Fake attempt reports", body: "If a customer says they were available, the case is marked disputed, gets a priority re-attempt and the associate's attempt is reviewed." },
     ],
   },
   {
-    slug: "blubuy-plus",
-    title: "BluBuy Plus benefits and billing",
+    slug: "altasgoods-plus",
+    title: "AltasGoods Plus benefits and billing",
     category: "Membership",
     summary: "Membership benefits, renewal, refunds on cancellation and how to check a member's status.",
     updatedAt: "2026-09-01",
     owner: "Membership team",
     sections: [
-      { bullets: ["Free one-day delivery on eligible BluBuy Fulfilled items in top cities", "Early access to BluBuy Big Days and BluBuy Plus Day", "Extra BluCoins on every order", "Priority support queue with faster first response"] },
+      { bullets: ["Free one-day delivery on eligible AltasGoods Fulfilled items in top cities", "Early access to AltasGoods Big Days and AltasGoods Plus Day", "Extra AltasCoins on every order", "Priority support queue with faster first response"] },
       { heading: "Cancellation", body: "Members can cancel within 14 days for a full refund if no Plus benefit was used. After that, the membership runs until the end of the paid term." },
     ],
   },
   {
-    slug: "blubuy-guarantee",
-    title: "BluBuy Guarantee claims",
+    slug: "altasgoods-guarantee",
+    title: "AltasGoods Guarantee claims",
     category: "Claims",
     summary: "Eligibility, filing window and decision timelines for customer protection claims against sellers.",
     updatedAt: "2026-09-17",
     owner: "Trust and Safety",
     sections: [
       { bullets: ["Item not delivered by promised date plus 3 days", "Item damaged, defective, wrong or materially different and the return was refused or the refund was not issued within 2 days of return receipt", "Customer must contact the seller or open a return and wait 48 hours first (not needed for not delivered)", "File within 90 days of the latest promised delivery date"] },
-      { heading: "Decision", body: "Seller has 72 hours to respond. No response means the claim is auto-granted. BluBuy decides within 7 days." },
+      { heading: "Decision", body: "Seller has 72 hours to respond. No response means the claim is auto-granted. AltasGoods decides within 7 days." },
     ],
   },
   {
@@ -1443,9 +1443,9 @@ export const articles: Article[] = [
     category: "Delivery",
     summary: "How OTP delivery works for high value orders and which categories offer open box inspection at the door.",
     updatedAt: "2026-08-09",
-    owner: "BluBuy Logistics",
+    owner: "AltasGoods Logistics",
     sections: [
-      { body: "BluBuy Secure Delivery asks the customer to share a one-time code with the associate. The code is sent by SMS and shown in the BluBuy app on the delivery day." },
+      { body: "AltasGoods Secure Delivery asks the customer to share a one-time code with the associate. The code is sent by SMS and shown in the AltasGoods app on the delivery day." },
       { bullets: ["Applies to high value orders, mobiles, laptops and jewellery", "Associates cannot mark delivered without the OTP", "Open Box lets the customer inspect the item at the door and reject it if damaged or wrong"] },
     ],
   },
@@ -1540,7 +1540,7 @@ export interface ShipmentJourney {
   addressLine: string;
   landmark: string;
   dims: string;
-  service: "BluBuy Fulfilled" | "BluBuy Ship";
+  service: "AltasGoods Fulfilled" | "AltasGoods Ship";
   pod?: { receiver: string; otpVerified: boolean; geoDistanceM: number; at: string; method: "Cash" | "UPI QR" | "Prepaid" };
   ndr?: NdrCase;
 }
@@ -1617,14 +1617,14 @@ export function shipmentJourney(s: Shipment): ShipmentJourney {
     if (delivered) push(at, "Delivered", s.city, undefined, "success");
     else {
       push(at, "Delivery attempt failed", s.city, reason ? `NDR raised: ${reason.replace(/_/g, " ")}` : undefined, "warning");
-      push(add(at, 22), "Customer notified", "BluBuy", "SMS and WhatsApp with re-attempt options");
+      push(add(at, 22), "Customer notified", "AltasGoods", "SMS and WhatsApp with re-attempt options");
     }
   }
   if (status === "out_for_delivery") {
     push(add(DAY_START, 8 * 60 + 40 + between(r, 0, 30)), "Out for delivery", destName, runsheet ? `${associates.find((a) => a.id === s.associateId)?.name ?? "Associate"}, runsheet ${runsheet.id}` : undefined, "brand");
   }
   if (status === "ndr" && ndr && ndr.response.at) {
-    push(new Date(ndr.response.at), "Customer responded", "BluBuy", `${ndr.response.kind.replace(/_/g, " ")}${ndr.response.note ? `: ${ndr.response.note}` : ""}`, "info");
+    push(new Date(ndr.response.at), "Customer responded", "AltasGoods", `${ndr.response.kind.replace(/_/g, " ")}${ndr.response.note ? `: ${ndr.response.note}` : ""}`, "info");
   }
   if (status.startsWith("rto")) {
     const last = attempts.at(-1);
@@ -1660,7 +1660,7 @@ export function shipmentJourney(s: Shipment): ShipmentJourney {
     addressLine: `Flat ${between(r, 1, 9)}XX${between(r, 0, 9)}, Tower ${pick(r, ["A", "B", "C", "D", "E"])}, ${pick(r, streets)}`,
     landmark: pick(r, landmarks),
     dims: `${between(r, 18, 48)} x ${between(r, 12, 36)} x ${between(r, 6, 24)} cm`,
-    service: fulfilled ? "BluBuy Fulfilled" : "BluBuy Ship",
+    service: fulfilled ? "AltasGoods Fulfilled" : "AltasGoods Ship",
     pod: delivered
       ? { receiver: pick(r, ["Self", "Self", "Family member", "Security at gate"]), otpVerified: secure || r() < 0.6, geoDistanceM: delivered.geoDistanceM, at: delivered.at, method: s.cod ? pick(r, ["Cash", "UPI QR"] as const) : "Prepaid" }
       : undefined,

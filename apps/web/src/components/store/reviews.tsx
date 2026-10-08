@@ -122,7 +122,7 @@ export function ReviewsSection({
           <p className="flex items-center gap-2 text-sm font-semibold text-ink-900">
             <PenLine size={16} className="text-ink-500" aria-hidden="true" /> Bought this product?
           </p>
-          <p className="mt-1 text-[13px] text-ink-500">Only customers who bought it on BluBuy can review it. Reviews are checked before they appear.</p>
+          <p className="mt-1 text-[13px] text-ink-500">Only customers who bought it on AltasGoods can review it. Reviews are checked before they appear.</p>
           <Link href="/account/orders" className="mt-3 inline-flex h-9 items-center rounded-lg border border-line-strong px-3.5 text-[13px] font-medium text-ink-800 hover:bg-ink-50">
             Write a review
           </Link>

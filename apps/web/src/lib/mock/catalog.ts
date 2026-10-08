@@ -228,7 +228,7 @@ export const products: Product[] = seeds.map((s, i) => {
     ratingCount: s.count,
     reviewCount: Math.round(s.count * 0.18),
     highlights: highlightsByCat[s.cat]!,
-    description: `${s.title.split(/[,(]/)[0]!.trim()} is designed for people who care about quality and value. Thoughtfully made by ${s.brand} and backed by BluBuy Assured quality checks, it is delivered with easy returns and secure payments.`,
+    description: `${s.title.split(/[,(]/)[0]!.trim()} is designed for people who care about quality and value. Thoughtfully made by ${s.brand} and backed by AltasGoods Assured quality checks, it is delivered with easy returns and secure payments.`,
     specs: specsFor(s),
     variants: variantsFor(s),
     offers,

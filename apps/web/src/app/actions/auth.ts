@@ -19,7 +19,7 @@ export async function requestOtp(phone: string): Promise<Result<OtpChallenge>> {
     const r = await publicApi().POST("/v1/auth/otp", { body: { phone } });
     return r.data ? { ok: true, data: r.data } : failure(r.error, "Could not send the code");
   } catch {
-    return { ok: false, error: "BluBuy is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
+    return { ok: false, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
   }
 }
 
@@ -34,7 +34,7 @@ export async function verifyOtp(input: { challengeId: string; code: string; name
     await setSession(r.data);
     return { ok: true, data: { user: r.data.user, isNewUser: r.data.isNewUser } };
   } catch {
-    return { ok: false, error: "BluBuy is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
+    return { ok: false, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
   }
 }
 

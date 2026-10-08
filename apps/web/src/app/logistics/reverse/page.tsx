@@ -72,7 +72,7 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
 
           <div className="grid grid-cols-1 gap-6">
             <Card className="min-w-0">
-              <CardHeader title="Return pickups" description="Doorstep QC runs in BluBuy Rider before the item is accepted" />
+              <CardHeader title="Return pickups" description="Doorstep QC runs in AltasGoods Rider before the item is accepted" />
               <TableContainer className="mt-3">
                 <Table>
                   <THead>
@@ -220,7 +220,7 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
                         </TD>
                         <TD>
                           <p className="text-[13px] text-ink-900">{sellerName(r.sellerId)}</p>
-                          <p className="text-xs text-ink-500">{getHub(r.originHubId)?.type === "fulfillment_center" ? "BluBuy Fulfilled" : "BluBuy Ship"}</p>
+                          <p className="text-xs text-ink-500">{getHub(r.originHubId)?.type === "fulfillment_center" ? "AltasGoods Fulfilled" : "AltasGoods Ship"}</p>
                         </TD>
                         <TD className="text-[13px]">{rtoReason(r.reason)}</TD>
                         <TD align="right">{r.attempts}</TD>
@@ -243,7 +243,7 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
               </Table>
             </TableContainer>
             <p className="border-t border-line px-5 py-3 text-xs leading-relaxed text-ink-500">
-              Customer-caused RTO charges the seller forward shipping only, with no commission, fixed or reverse fee. Damaged and lost shipments in the BluBuy network raise a SafeClaim automatically.
+              Customer-caused RTO charges the seller forward shipping only, with no commission, fixed or reverse fee. Damaged and lost shipments in the AltasGoods network raise a SafeClaim automatically.
             </p>
           </Card>
         </>

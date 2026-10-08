@@ -83,7 +83,7 @@ export default async function OrderDetail(props: PageProps<"/admin/orders/[id]">
               label="Add note"
               icon="note"
               title="Add an internal note"
-              description="Visible to BluBuy staff only, never to the customer or seller."
+              description="Visible to AltasGoods staff only, never to the customer or seller."
               note="required"
               notePlaceholder="What happened and what you did"
               confirmLabel="Save note"
@@ -98,7 +98,7 @@ export default async function OrderDetail(props: PageProps<"/admin/orders/[id]">
               reasons={["Item not delivered", "Damaged or defective item", "Wrong item delivered", "Price adjustment", "Duplicate charge", "Goodwill gesture"]}
               fields={[
                 { name: "amount", label: "Amount (₹)", type: "number", defaultValue: String(o.total - refunded) },
-                { name: "dest", label: "Refund to", type: "select", options: o.payment.method === "cod" ? ["BluBuy Credits (under 2 hours)", "Bank account or UPI ID (verified by penny drop)"] : [`Original ${PAYMENT_METHOD[o.payment.method]}`, "BluBuy Credits (under 2 hours)"] },
+                { name: "dest", label: "Refund to", type: "select", options: o.payment.method === "cod" ? ["AltasGoods Credits (under 2 hours)", "Bank account or UPI ID (verified by penny drop)"] : [`Original ${PAYMENT_METHOD[o.payment.method]}`, "AltasGoods Credits (under 2 hours)"] },
               ]}
               warning={o.total > 25000 ? "Refunds above ₹25,000 need a Finance Manager to approve (maker-checker)." : undefined}
               note="required"
@@ -130,7 +130,7 @@ export default async function OrderDetail(props: PageProps<"/admin/orders/[id]">
               summary={summary}
               fields={[{ name: "items", label: "Items to cancel", type: "select", options: itemOptions }]}
               reasons={["Customer requested via support (CUSTOMER_REQUESTED_VIA_SUPPORT)", "Operations intervention (OPS_INTERVENTION)", "Risk rejected (RISK_REJECTED)", "Listing blocked (LISTING_BLOCKED)", "Unserviceable pincode (UNSERVICEABLE)"]}
-              warning={o.payment.method === "cod" ? "Nothing to refund for cash on delivery. BluCoins and Credits used are restored immediately." : "A prepaid refund starts within 1 hour. BluCoins and Credits used are restored immediately."}
+              warning={o.payment.method === "cod" ? "Nothing to refund for cash on delivery. AltasCoins and Credits used are restored immediately." : "A prepaid refund starts within 1 hour. AltasCoins and Credits used are restored immediately."}
               note="required"
               confirmLabel="Cancel items"
               toast="Cancellation recorded, seller asked to pull the package from the manifest"
@@ -235,7 +235,7 @@ export default async function OrderDetail(props: PageProps<"/admin/orders/[id]">
                   <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-[13px]">
                     <span className="flex items-center gap-2">
                       <Mono>{r.id}</Mono>
-                      <span className="text-ink-600">Refund to {r.method === "bluwallet" ? "BluBuy Credits" : PAYMENT_METHOD[r.method]}, {formatDateTime(r.initiatedAt)}</span>
+                      <span className="text-ink-600">Refund to {r.method === "bluwallet" ? "AltasGoods Credits" : PAYMENT_METHOD[r.method]}, {formatDateTime(r.initiatedAt)}</span>
                     </span>
                     <span className="flex items-center gap-3">
                       <span className="font-medium tabular-nums">{formatINR(r.amount)}</span>
@@ -249,7 +249,7 @@ export default async function OrderDetail(props: PageProps<"/admin/orders/[id]">
 
           {/* Shipments */}
           <Card>
-            <CardHeader title="Shipments" description="BluBuy Logistics, forward and reverse" />
+            <CardHeader title="Shipments" description="AltasGoods Logistics, forward and reverse" />
             <div className="mt-3 divide-y divide-line border-t border-line">
               {shipments.map((s) => {
                 const seller = sellers.find((x) => x.id === s.sellerId);

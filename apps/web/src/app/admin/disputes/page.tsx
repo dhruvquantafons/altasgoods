@@ -33,7 +33,7 @@ export default async function DisputesPage(props: PageProps<"/admin/disputes">) 
 
   return (
     <>
-      <PageHeader title="Disputes and claims" description="BluBuy Guarantee claims from customers, SafeClaim reimbursements for sellers, and card chargebacks. Sellers get 72 hours to respond; BluBuy decides within 7 days." />
+      <PageHeader title="Disputes and claims" description="AltasGoods Guarantee claims from customers, SafeClaim reimbursements for sellers, and card chargebacks. Sellers get 72 hours to respond; AltasGoods decides within 7 days." />
 
       <KpiStrip
         className="mb-6"
@@ -42,7 +42,7 @@ export default async function DisputesPage(props: PageProps<"/admin/disputes">) 
           { label: "Due within 24 h", value: due24, hint: "response or decision" },
           { label: "SafeClaims open", value: openS.length, hint: "7 business day decision" },
           { label: "Granted, 30 days", value: formatINR(grantedAmt), hint: `${granted.length} claims` },
-          { label: "BluBuy funded", value: `${blubuyShare.toFixed(0)}%`, hint: "logistics or FC caused" },
+          { label: "AltasGoods funded", value: `${blubuyShare.toFixed(0)}%`, hint: "logistics or FC caused" },
         ]}
       />
 
@@ -50,8 +50,8 @@ export default async function DisputesPage(props: PageProps<"/admin/disputes">) 
         className="mb-5"
         active={tab}
         items={[
-          { key: "guarantee", label: "BluBuy Guarantee", count: openG.length, href: "/admin/disputes" },
-          { key: "safeclaim", label: "BluBuy SafeClaim", count: openS.length, href: "/admin/disputes?tab=safeclaim" },
+          { key: "guarantee", label: "AltasGoods Guarantee", count: openG.length, href: "/admin/disputes" },
+          { key: "safeclaim", label: "AltasGoods SafeClaim", count: openS.length, href: "/admin/disputes?tab=safeclaim" },
           { key: "chargebacks", label: "Chargebacks", count: chargebacks.filter((c) => c.status === "open").length, href: "/admin/disputes?tab=chargebacks" },
         ]}
       />
@@ -109,10 +109,10 @@ export default async function DisputesPage(props: PageProps<"/admin/disputes">) 
                         {open ? (
                           <>
                             <SlaText dueAt={c.status === "awaiting_seller" ? c.sellerRespondBy : c.decideBy} warnWithinMins={24 * 60} />
-                            <p className="text-xs text-ink-500">{c.status === "awaiting_seller" ? "Seller response" : "BluBuy decision"}</p>
+                            <p className="text-xs text-ink-500">{c.status === "awaiting_seller" ? "Seller response" : "AltasGoods decision"}</p>
                           </>
                         ) : (
-                          <span className="text-[13px] text-ink-500">{c.fundedBy ? (c.fundedBy === "blubuy" ? "BluBuy funded" : "Seller funded") : "Closed"}</span>
+                          <span className="text-[13px] text-ink-500">{c.fundedBy ? (c.fundedBy === "blubuy" ? "AltasGoods funded" : "Seller funded") : "Closed"}</span>
                         )}
                       </TD>
                       <TD>
@@ -124,7 +124,7 @@ export default async function DisputesPage(props: PageProps<"/admin/disputes">) 
                             label="Decide"
                             size="xs"
                             title={`Decide ${c.id}`}
-                            description="Seller-funded grants count toward the seller's order defect rate; logistics-caused claims are BluBuy funded and do not."
+                            description="Seller-funded grants count toward the seller's order defect rate; logistics-caused claims are AltasGoods funded and do not."
                             summary={[
                               { label: "Customer", value: c.customerName },
                               { label: "Amount", value: formatINR(c.amount) },
@@ -133,7 +133,7 @@ export default async function DisputesPage(props: PageProps<"/admin/disputes">) 
                               { label: "Evidence", value: c.evidence.join(", ") },
                               { label: "Order", value: c.orderId },
                             ]}
-                            fields={[{ name: "decision", label: "Decision", type: "select", options: ["Grant, seller funded", "Grant, BluBuy funded", "Deny", "Request more information"] }]}
+                            fields={[{ name: "decision", label: "Decision", type: "select", options: ["Grant, seller funded", "Grant, AltasGoods funded", "Deny", "Request more information"] }]}
                             note="required"
                             confirmLabel="Record decision"
                             toast="Decision recorded; customer and seller notified"

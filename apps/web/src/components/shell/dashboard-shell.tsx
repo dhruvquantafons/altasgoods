@@ -117,7 +117,7 @@ function WorkspaceSwitcher({ current }: { current: Workspace }) {
     >
       {(close) => (
         <div>
-          <p className="px-2.5 pt-1.5 pb-2 text-[11px] font-semibold tracking-[0.06em] text-ink-400 uppercase">BluBuy workspaces</p>
+          <p className="px-2.5 pt-1.5 pb-2 text-[11px] font-semibold tracking-[0.06em] text-ink-400 uppercase">AltasGoods workspaces</p>
           {WORKSPACES.map((w) => (
             <Link
               key={w.key}

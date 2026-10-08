@@ -155,7 +155,7 @@ function OfferForm({ v, set, rateCard, categoryId, mrpLocked, heavy }: { v: Offe
                 <input type="radio" name="w-channel" checked={v.channel === c} onChange={() => set({ channel: c })} className="mt-1 accent-brand-600" />
                 <span>
                   <span className="block text-sm font-medium text-ink-900">{CHANNEL_LABEL[c]}</span>
-                  <span className="block text-xs text-ink-500">{c === "fulfilled" ? "BluBuy stores, packs and ships. Pick and pack ₹14 per unit." : "You pack, BluBuy Logistics picks up. No storage fee."}</span>
+                  <span className="block text-xs text-ink-500">{c === "fulfilled" ? "AltasGoods stores, packs and ships. Pick and pack ₹14 per unit." : "You pack, AltasGoods Logistics picks up. No storage fee."}</span>
                 </span>
               </label>
             ))}
@@ -326,8 +326,8 @@ export function AddProductWizard({
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <div className="p-5">
-            <SectionTitle title="Find your product in the BluBuy catalog" description="If it already exists, you only add an offer: price, stock and fulfilment. No new content or review needed." />
-            <Input icon={Search} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by product name, brand, model or BSIN (for example B0E6D981QD)" aria-label="Search the BluBuy catalog" inputSize="lg" />
+            <SectionTitle title="Find your product in the AltasGoods catalog" description="If it already exists, you only add an offer: price, stock and fulfilment. No new content or review needed." />
+            <Input icon={Search} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by product name, brand, model or BSIN (for example B0E6D981QD)" aria-label="Search the AltasGoods catalog" inputSize="lg" />
             <p className="mt-2 text-xs text-ink-500">{query ? `${results.length} ${results.length === 1 ? "match" : "matches"}` : "Popular in your categories"}</p>
           </div>
           <ul className="divide-y divide-line border-t border-line">
@@ -777,7 +777,7 @@ export function AddProductWizard({
 
         {step === 6 && (
           <div className="max-w-3xl">
-            <SectionTitle title="Review and submit" description="New products are checked by the BluBuy catalog team, usually within 24 hours." />
+            <SectionTitle title="Review and submit" description="New products are checked by the AltasGoods catalog team, usually within 24 hours." />
             <div className="divide-y divide-line rounded-xl border border-line">
               {[
                 { s: 0, label: "Category", value: `${cat.name} > ${leafName}` },

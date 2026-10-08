@@ -140,14 +140,14 @@ export const customerAddresses: Address[] = [
 /* -------------------------------- Staff ------------------------------- */
 
 export const staff: StaffMember[] = [
-  { id: "u-1", name: "Rawahul Islam", email: "rawahul@blubuy.in", role: "Super Admin", team: "Leadership", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-2", name: "Aparna Krishnan", email: "aparna@blubuy.in", role: "Catalog Manager", team: "Catalog", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-3", name: "Dev Malhotra", email: "dev@blubuy.in", role: "Seller Onboarding Lead", team: "Seller Success", lastActive: addDays(NOW, -1).toISOString(), status: "active" },
-  { id: "u-4", name: "Fatima Sheikh", email: "fatima@blubuy.in", role: "Finance Controller", team: "Finance", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-5", name: "Kunal Bhatia", email: "kunal@blubuy.in", role: "Marketing Manager", team: "Growth", lastActive: addDays(NOW, -2).toISOString(), status: "active" },
-  { id: "u-6", name: "Revathi Subramanian", email: "revathi@blubuy.in", role: "Support Team Lead", team: "Customer Experience", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-7", name: "Manoj Tiwari", email: "manoj@blubuy.in", role: "Logistics Manager", team: "Operations", lastActive: addDays(NOW, -1).toISOString(), status: "active" },
-  { id: "u-8", name: "Elena D'Souza", email: "elena@blubuy.in", role: "Risk Analyst", team: "Trust and Safety", lastActive: addDays(NOW, -3).toISOString(), status: "active" },
-  { id: "u-9", name: "Harsh Vardhan", email: "harsh@blubuy.in", role: "Catalog Associate", team: "Catalog", lastActive: addDays(NOW, -12).toISOString(), status: "invited" },
-  { id: "u-10", name: "Nikita Rao", email: "nikita@blubuy.in", role: "Support Agent", team: "Customer Experience", lastActive: addDays(NOW, -40).toISOString(), status: "disabled" },
+  { id: "u-1", name: "Rawahul Islam", email: "rawahul@altasgoods.in", role: "Super Admin", team: "Leadership", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
+  { id: "u-2", name: "Aparna Krishnan", email: "aparna@altasgoods.in", role: "Catalog Manager", team: "Catalog", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
+  { id: "u-3", name: "Dev Malhotra", email: "dev@altasgoods.in", role: "Seller Onboarding Lead", team: "Seller Success", lastActive: addDays(NOW, -1).toISOString(), status: "active" },
+  { id: "u-4", name: "Fatima Sheikh", email: "fatima@altasgoods.in", role: "Finance Controller", team: "Finance", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
+  { id: "u-5", name: "Kunal Bhatia", email: "kunal@altasgoods.in", role: "Marketing Manager", team: "Growth", lastActive: addDays(NOW, -2).toISOString(), status: "active" },
+  { id: "u-6", name: "Revathi Subramanian", email: "revathi@altasgoods.in", role: "Support Team Lead", team: "Customer Experience", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
+  { id: "u-7", name: "Manoj Tiwari", email: "manoj@altasgoods.in", role: "Logistics Manager", team: "Operations", lastActive: addDays(NOW, -1).toISOString(), status: "active" },
+  { id: "u-8", name: "Elena D'Souza", email: "elena@altasgoods.in", role: "Risk Analyst", team: "Trust and Safety", lastActive: addDays(NOW, -3).toISOString(), status: "active" },
+  { id: "u-9", name: "Harsh Vardhan", email: "harsh@altasgoods.in", role: "Catalog Associate", team: "Catalog", lastActive: addDays(NOW, -12).toISOString(), status: "invited" },
+  { id: "u-10", name: "Nikita Rao", email: "nikita@altasgoods.in", role: "Support Agent", team: "Customer Experience", lastActive: addDays(NOW, -40).toISOString(), status: "disabled" },
 ];

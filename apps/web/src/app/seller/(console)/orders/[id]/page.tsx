@@ -46,7 +46,7 @@ const SELLER_EVENT: Record<string, string> = {
   confirmed: "Order confirmed",
   packed: "Invoice and label generated, package packed",
   ready_to_ship: "Marked ready to ship and added to the manifest",
-  shipped: "Picked up by BluBuy Logistics",
+  shipped: "Picked up by AltasGoods Logistics",
   in_transit: "In transit, reached the sort centre",
   out_for_delivery: "Out for delivery",
   delivered: "Delivered, OTP verified at the door",
@@ -84,7 +84,7 @@ function timelineFor(order: Order, line: SellerLine): TimelineItem[] {
 
 function packagingTips(subcategory: string) {
   if (["Laptops", "Monitors", "Cameras", "Tablets", "Smartphones"].includes(subcategory))
-    return ["Double-wall carton with at least 5 cm of cushioning on every side", "Keep the brand box sealed; wrap it, do not tape the brand box itself", "Seal with BluBuy tamper-evident tape (Secure Delivery applies above ₹25,000)"];
+    return ["Double-wall carton with at least 5 cm of cushioning on every side", "Keep the brand box sealed; wrap it, do not tape the brand box itself", "Seal with AltasGoods tamper-evident tape (Secure Delivery applies above ₹25,000)"];
   if (subcategory === "Kitchen Appliances")
     return ["Single-wall carton is fine if the brand box has moulded inserts", "Fill gaps so the product cannot move when shaken", "Mark the box \"This side up\" for glass doors and jars"];
   if (subcategory === "Cookware")
@@ -438,7 +438,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
               />
               {primary.cod && (
                 <p className="mt-4 rounded-lg bg-ink-50 px-3 py-2.5 text-xs text-ink-600">
-                  BluBuy collects {formatINR(order.total)} in cash at delivery and remits it to your settlement once the hub deposits it.
+                  AltasGoods collects {formatINR(order.total)} in cash at delivery and remits it to your settlement once the hub deposits it.
                 </p>
               )}
             </div>
@@ -450,7 +450,7 @@ export default async function OrderDetailPage(props: PageProps<"/seller/orders/[
               <InfoGrid
                 columns={1}
                 items={[
-                  { label: "Carrier", value: "BluBuy Logistics" },
+                  { label: "Carrier", value: "AltasGoods Logistics" },
                   { label: "AWB", value: primary.awb ? <Mono className="text-sm">{primary.awb}</Mono> : <span className="text-ink-500">Assigned when the label is generated</span> },
                   ...(primary.manifestId ? [{ label: "Manifest", value: <Mono className="text-sm">{primary.manifestId}</Mono> }] : []),
                   ...(primary.pickupSlot && preShip ? [{ label: "Pickup slot", value: `${formatWeekday(primary.pickupSlot)}, 4:00 to 6:00 PM` }] : []),
@@ -523,7 +523,7 @@ function NextStep({ line, returnId, now }: { line: SellerLine; returnId?: string
         <div className="flex gap-3 p-5">
           <Warehouse size={19} className="mt-0.5 shrink-0 text-brand-600" aria-hidden="true" />
           <div>
-            <p className="text-sm font-semibold text-ink-900">Handled by BluBuy Fulfilled</p>
+            <p className="text-sm font-semibold text-ink-900">Handled by AltasGoods Fulfilled</p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-600">
               {line.fc} picks, packs and ships this item. You do not need to confirm, pack or hand it over. Stock is reserved from your fulfilment centre inventory.
             </p>
@@ -557,8 +557,8 @@ function NextStep({ line, returnId, now }: { line: SellerLine; returnId?: string
   }
   const done: Record<string, { icon: typeof CircleCheck; title: string; body: string }> = {
     delivered: { icon: CircleCheck, title: "Delivered", body: "Nothing to do. The return window is open; settlement follows the tier hold period." },
-    shipped: { icon: PackageCheck, title: "With BluBuy Logistics", body: "Handed over on time. Tracking updates appear in the timeline." },
-    in_transit: { icon: PackageCheck, title: "With BluBuy Logistics", body: "Handed over on time. Tracking updates appear in the timeline." },
+    shipped: { icon: PackageCheck, title: "With AltasGoods Logistics", body: "Handed over on time. Tracking updates appear in the timeline." },
+    in_transit: { icon: PackageCheck, title: "With AltasGoods Logistics", body: "Handed over on time. Tracking updates appear in the timeline." },
     out_for_delivery: { icon: PackageCheck, title: "Out for delivery", body: "The delivery associate will verify the OTP at the door." },
     cancelled: { icon: ShieldCheck, title: "Cancelled", body: "No action needed. The customer has been refunded and stock released." },
   };

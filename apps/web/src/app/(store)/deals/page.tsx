@@ -13,7 +13,7 @@ import { categories, getProduct, products, SALE_EVENT } from "@/lib/mock";
 import { BANK_OFFERS, DEALS_OF_THE_DAY, FLASH_DEALS, inStock, isBrowsable, storefrontCoupons } from "@/lib/mock/store-extra";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "BluBuy Big Days deals" };
+export const metadata = { title: "AltasGoods Big Days deals" };
 
 const DISCOUNTS = [20, 30, 40];
 
@@ -157,7 +157,7 @@ export default async function DealsPage(props: PageProps<"/deals">) {
         <Section className="mt-14" labelledBy="deals-dotd">
           <SectionTitle
             id="deals-dotd"
-            title="Blu Deal of the Day"
+            title="Deal of the Day"
             description="One-day prices, at least 20% below the 30 day low"
             aside={
               <span className="hidden items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-900 ring-1 ring-accent-100 ring-inset sm:inline-flex">
@@ -232,7 +232,7 @@ export default async function DealsPage(props: PageProps<"/deals">) {
         <div className="flex gap-4 rounded-2xl bg-ink-50 p-5 lg:p-6">
           <Info size={20} className="mt-0.5 shrink-0 text-ink-500" aria-hidden="true" />
           <div className="text-sm leading-relaxed text-ink-600">
-            <p className="font-semibold text-ink-900">How BluBuy prices deals</p>
+            <p className="font-semibold text-ink-900">How AltasGoods prices deals</p>
             <p className="mt-1 max-w-3xl">
               A deal price must be below the lowest price the item sold for in the last 30 days and can never exceed the M.R.P. During the event, sellers can lower a
               deal price but not raise it. &ldquo;Claimed&rdquo; bars show the share of the deal quantity already sold, and timers end at the real end time.

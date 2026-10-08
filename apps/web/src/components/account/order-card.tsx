@@ -14,10 +14,10 @@ const reviewed = new Set(myReviews.map((r) => r.slug));
 
 export function refundOptionsFor(order: Order): RefundOption[] {
   const m = order.payment.method;
-  if (m === "wallet" || m === "giftcard") return [{ key: "credits", label: "BluBuy Credits", detail: "Back in your balance in under 2 hours" }];
+  if (m === "wallet" || m === "giftcard") return [{ key: "credits", label: "AltasGoods Credits", detail: "Back in your balance in under 2 hours" }];
   return [
     { key: "original", label: paymentLabel(m), detail: `Usually ${refundTiming(m).toLowerCase()} after the refund starts` },
-    { key: "credits", label: "BluBuy Credits", detail: "Instant, usually under 2 hours. Use it on any order" },
+    { key: "credits", label: "AltasGoods Credits", detail: "Instant, usually under 2 hours. Use it on any order" },
   ];
 }
 

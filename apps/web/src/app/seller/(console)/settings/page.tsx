@@ -69,7 +69,7 @@ export default async function SettingsPage(props: PageProps<"/seller/settings">)
                       { label: "CIN", value: <Mono className="text-sm">{businessProfile.cin}</Mono> },
                       { label: "PAN", value: <Mono className="text-sm">{businessProfile.pan}</Mono> },
                       { label: "Registered address", value: businessProfile.registeredAddress },
-                      { label: "Selling on BluBuy since", value: formatDate(businessProfile.joinedAt) },
+                      { label: "Selling on AltasGoods since", value: formatDate(businessProfile.joinedAt) },
                       { label: "Approved categories", value: businessProfile.categories.join(", ") },
                       { label: "Seller tier", value: `${SELLER.tier}, rating ${SELLER.rating} of 5` },
                     ]}

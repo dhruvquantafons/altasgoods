@@ -13,7 +13,7 @@ export default function PoliciesPage() {
         crumbs={[{ label: "Home", href: "/" }, { label: "Policies" }]}
         eyebrow="Policies"
         title="Clear rules, written plainly"
-        description="Everything about returns, delivery, payments, your data and your rights as a BluBuy customer, in one place."
+        description="Everything about returns, delivery, payments, your data and your rights as an AltasGoods customer, in one place."
       />
       <div className={cn(STORE_CONTAINER, "mt-10 lg:mt-14")}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

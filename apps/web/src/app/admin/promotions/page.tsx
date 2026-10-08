@@ -22,7 +22,7 @@ const RANGE_END = new Date("2027-01-01T00:00:00+05:30").getTime();
 const MONTHS = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const pos = (iso: string | number) => Math.max(0, Math.min(100, ((new Date(iso).getTime() - RANGE_START) / (RANGE_END - RANGE_START)) * 100));
 const BAR_LABEL = { ended: "Ended", live: "Live now", submissions_open: "Deals open", planning: "Planning" } as const;
-const FUNDING = { blubuy: "BluBuy funded", seller: "Seller funded", bank: "Bank funded" } as const;
+const FUNDING = { blubuy: "AltasGoods funded", seller: "Seller funded", bank: "Bank funded" } as const;
 const sellerName = (id: string) => sellers.find((s) => s.id === id)?.displayName ?? id;
 
 function dealCheck(d: (typeof dealSubmissions)[number]) {
@@ -49,13 +49,13 @@ export default function PromotionsPage() {
         items={[
           { label: "Active coupons", value: active.length, hint: `${coupons.filter((c) => c.status === "scheduled").length} scheduled` },
           { label: "Big Days redemptions", value: formatCompact(bigDays.reduce((a, c) => a + c.usage, 0)), hint: "since 26 Sep" },
-          { label: "BluBuy-funded discount", value: formatCompact(spend, true), hint: "estimated, live coupons" },
+          { label: "AltasGoods-funded discount", value: formatCompact(spend, true), hint: "estimated, live coupons" },
           { label: "Deals awaiting approval", value: formatNumber(pending), hint: "across events", href: "#deals" },
         ]}
       />
 
       <Card className="mb-6">
-        <CardHeader title="Sale events" description="July to December 2026. Plus members get 24 hour early access to BluBuy Big Days and Plus Day." />
+        <CardHeader title="Sale events" description="July to December 2026. Plus members get 24 hour early access to AltasGoods Big Days and Plus Day." />
         {/* Timeline (md and up) */}
         <div className="hidden px-5 pt-4 pb-5 md:block">
           <div className="grid grid-cols-[220px_1fr] gap-x-4">

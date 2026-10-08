@@ -1,6 +1,6 @@
-# BluBuy web
+# AltasGoods web
 
-Every BluBuy web workspace (storefront, account, Seller Hub, BluBuy Control, Hub Console, Care Desk) in one Next.js 16 app.
+Every AltasGoods web workspace (storefront, account, Seller Hub, AltasGoods Control, Hub Console, Care Desk) in one Next.js 16 app.
 
 ```bash
 npm install

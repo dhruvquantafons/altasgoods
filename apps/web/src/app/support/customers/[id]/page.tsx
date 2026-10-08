@@ -55,7 +55,7 @@ export default async function CustomerSupportView(props: PageProps<"/support/cus
             <Mono className="text-xs text-ink-500">{c.id}</Mono>
             {c.plusMember && (
               <Badge tone="brand" icon={Crown}>
-                BluBuy Plus
+                AltasGoods Plus
               </Badge>
             )}
             {c.status !== "active" && (
@@ -80,7 +80,7 @@ export default async function CustomerSupportView(props: PageProps<"/support/cus
         <MetricTile label="Orders" value={formatNumber(c.orders)} hint={`${orders.length} in the last 6 weeks`} icon={ShoppingBag} />
         <MetricTile label="Lifetime value" value={formatINR(c.lifetimeValue)} hint={`Average ${formatINR(Math.round(c.lifetimeValue / Math.max(1, c.orders)))} per order`} icon={IndianRupee} />
         <MetricTile label="Open tickets" value={open.length} tone={open.length ? "warning" : "neutral"} hint={`${tix.length} ticket${tix.length === 1 ? "" : "s"} in total`} icon={Inbox} />
-        <MetricTile label="BluCoins" value={formatNumber(c.bluCoins)} hint={c.plusMember ? "Plus earns 2x coins" : "Standard earn rate"} icon={Coins} />
+        <MetricTile label="AltasCoins" value={formatNumber(c.bluCoins)} hint={c.plusMember ? "Plus earns 2x coins" : "Standard earn rate"} icon={Coins} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -179,7 +179,7 @@ export default async function CustomerSupportView(props: PageProps<"/support/cus
               <KeyRow label="Location">
                 {c.city}, {c.state}
               </KeyRow>
-              <KeyRow label="Membership">{c.plusMember ? "BluBuy Plus" : "Standard"}</KeyRow>
+              <KeyRow label="Membership">{c.plusMember ? "AltasGoods Plus" : "Standard"}</KeyRow>
               <KeyRow label="Account">{c.status === "active" ? "Active" : c.status === "flagged" ? "Flagged by risk" : "Blocked"}</KeyRow>
             </dl>
           </Card>
@@ -226,7 +226,7 @@ export default async function CustomerSupportView(props: PageProps<"/support/cus
                     <div>
                       <Mono className="text-xs text-ink-500">{r.id}</Mono>
                       <p className="text-[13px] text-ink-800">
-                        {formatINR(r.amount)} to {r.method === "bluwallet" ? "BluBuy Credits" : PAYMENT_METHOD[r.method]}
+                        {formatINR(r.amount)} to {r.method === "bluwallet" ? "AltasGoods Credits" : PAYMENT_METHOD[r.method]}
                       </p>
                       <p className="text-xs text-ink-500">{when(r.initiatedAt)}</p>
                     </div>

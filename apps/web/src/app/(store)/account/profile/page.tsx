@@ -21,8 +21,8 @@ export default function ProfilePage() {
   const blockers = [
     openOrders ? { label: `${openOrders} orders on the way`, detail: "Wait for delivery or cancel them" } : null,
     openRefunds ? { label: `${openRefunds} refund in progress`, detail: "We will finish it before closing the account" } : null,
-    CREDITS.balance ? { label: `${formatINR(CREDITS.balance)} in BluBuy Credits`, detail: `Move ${formatINR(CREDITS.refund.amount)} of refund credits to your bank. Gift card and goodwill credits cannot be paid out` } : null,
-    { label: "BluBuy Plus", detail: "Your membership will be cancelled without a refund for the current year" },
+    CREDITS.balance ? { label: `${formatINR(CREDITS.balance)} in AltasGoods Credits`, detail: `Move ${formatINR(CREDITS.refund.amount)} of refund credits to your bank. Gift card and goodwill credits cannot be paid out` } : null,
+    { label: "AltasGoods Plus", detail: "Your membership will be cancelled without a refund for the current year" },
   ].filter((b): b is { label: string; detail: string } => Boolean(b));
 
   return (
@@ -91,7 +91,7 @@ export default function ProfilePage() {
               <Switch defaultChecked label="Sign-in alerts" description="Tell me by SMS and email when someone signs in from a new device." />
               <div className="flex items-start gap-2.5 rounded-xl bg-ink-50 px-3.5 py-3 text-xs text-ink-600">
                 <ShieldCheck size={16} className="mt-px shrink-0 text-success-600" aria-hidden="true" />
-                BluBuy will never ask for your OTP, PIN or card details on a call, chat or email.
+                AltasGoods will never ask for your OTP, PIN or card details on a call, chat or email.
               </div>
             </div>
             <div>
@@ -169,7 +169,7 @@ export default function ProfilePage() {
               </div>
               <p className="flex items-start gap-2 px-1 text-xs leading-relaxed text-ink-500">
                 <FileLock2 size={14} className="mt-px shrink-0" aria-hidden="true" />
-                Questions about your data? Write to our Grievance Officer, Meera Krishnan, at privacy@blubuy.in. We reply within 7 days.
+                Questions about your data? Write to our Grievance Officer, Meera Krishnan, at privacy@altasgoods.in. We reply within 7 days.
               </p>
             </div>
           </div>

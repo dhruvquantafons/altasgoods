@@ -24,7 +24,7 @@ import {
 import { cn, formatINR } from "@/lib/utils";
 
 export const metadata = {
-  title: { absolute: "BluBuy: Shop smarter, live better" },
+  title: { absolute: "AltasGoods: Shop smarter, live better" },
 };
 
 export default function HomePage() {
@@ -96,7 +96,7 @@ export default function HomePage() {
       <Section className="mt-12 lg:mt-16" labelledBy="home-dotd">
         <SectionTitle
           id="home-dotd"
-          title="Blu Deal of the Day"
+          title="Deal of the Day"
           description="One-day prices, at least 20% below the lowest price of the last 30 days"
           eyebrow={
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-2.5 py-1 text-xs font-semibold text-accent-900 ring-1 ring-accent-100 ring-inset">
@@ -117,7 +117,7 @@ export default function HomePage() {
 
       {/* Best sellers */}
       <Section className="mt-12 lg:mt-16" labelledBy="home-best">
-        <SectionTitle id="home-best" title="Best sellers" description="Most bought on BluBuy in the last 30 days" href="/s?sort=popularity" />
+        <SectionTitle id="home-best" title="Best sellers" description="Most bought on AltasGoods in the last 30 days" href="/s?sort=popularity" />
         <Rail label="Best sellers">
           {best.map((p, i) => (
             <RailItem key={p.id}>
@@ -160,7 +160,7 @@ export default function HomePage() {
 
       {/* Brand spotlights */}
       <Section className="mt-12 lg:mt-16" labelledBy="home-brands">
-        <SectionTitle id="home-brands" title="Brands in the spotlight" description="Verified brand stores on BluBuy" />
+        <SectionTitle id="home-brands" title="Brands in the spotlight" description="Verified brand stores on AltasGoods" />
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
           {BRAND_SPOTLIGHTS.map((b) => (
             <Link key={b.slug} href={`/s?brand=${b.slug}`} className={cn("group relative flex flex-col overflow-hidden rounded-2xl p-5 lg:p-6", b.tone)}>
@@ -185,8 +185,8 @@ export default function HomePage() {
         <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line lg:grid-cols-4">
           {[
             { icon: Lock, title: "Secure payments", body: "UPI, cards and EMI through RBI regulated partners. We never store card numbers." },
-            { icon: Undo2, title: "Easy returns", body: "Free doorstep pickup. Refunds to BluBuy Credits within 2 hours." },
-            { icon: BadgeCheck, title: "BluBuy Assured", body: "Extra quality checks, faster delivery and simpler returns." },
+            { icon: Undo2, title: "Easy returns", body: "Free doorstep pickup. Refunds to AltasGoods Credits within 2 hours." },
+            { icon: BadgeCheck, title: "AltasGoods Assured", body: "Extra quality checks, faster delivery and simpler returns." },
             { icon: Wallet, title: "Pay on delivery", body: "Cash or UPI at your door, with no extra charge, ever." },
           ].map((t) => (
             <li key={t.title} className="flex flex-col gap-3 bg-white p-5 lg:p-6">
@@ -211,9 +211,9 @@ export default function HomePage() {
                 <Crown size={22} strokeWidth={1.8} aria-hidden="true" />
               </span>
               <div>
-                <p className="font-display text-2xl font-semibold tracking-tight text-ink-900">BluBuy Plus</p>
+                <p className="font-display text-2xl font-semibold tracking-tight text-ink-900">AltasGoods Plus</p>
                 <p className="mt-1 max-w-xl text-[15px] text-ink-600">
-                  Free delivery on every order, one-day delivery in top cities, 24 hour early access to sales and 2x BluCoins. {formatINR(annual.price)} a year, cancel any
+                  Free delivery on every order, one-day delivery in top cities, 24 hour early access to sales and 2x AltasCoins. {formatINR(annual.price)} a year, cancel any
                   time in one step.
                 </p>
                 <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-ink-700">

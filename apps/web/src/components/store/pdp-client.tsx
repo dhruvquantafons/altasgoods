@@ -298,7 +298,7 @@ function DeliveryModule() {
           {price >= 10000 && (
             <li className="flex gap-2.5">
               <Lock size={16} className="mt-px shrink-0 text-ink-600" aria-hidden="true" />
-              <span className="text-ink-700">BluBuy Secure Delivery: share a one-time code at the door</span>
+              <span className="text-ink-700">AltasGoods Secure Delivery: share a one-time code at the door</span>
             </li>
           )}
           {data.large && (
@@ -354,7 +354,7 @@ export function BuyBox() {
       {data.deal && (
         <div className="mt-3 rounded-lg bg-accent-50 px-3 py-2 text-[13px] text-accent-900 ring-1 ring-accent-100 ring-inset">
           <p className="flex items-center justify-between gap-2 font-semibold">
-            {data.deal.kind === "flash" ? "Blu Flash Deal" : "Blu Deal of the Day"}
+            {data.deal.kind === "flash" ? "Blu Flash Deal" : "Deal of the Day"}
             <DealTimer endsAt={data.deal.endsAt} compact />
           </p>
           <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-accent-100" aria-hidden="true">
@@ -418,8 +418,8 @@ export function BuyBox() {
             <PackageCheck size={15} className="mt-px shrink-0 text-ink-500" aria-hidden="true" />
           )}
           <dd className="text-ink-700">
-            {o.fulfilledBy === "blubuy" ? "Ships from a BluBuy fulfilment centre" : `Ships from the seller in ${o.sellerCity}`}
-            {o.assured && <span className="block text-xs font-medium text-brand-700">BluBuy Assured: extra quality checks</span>}
+            {o.fulfilledBy === "blubuy" ? "Ships from an AltasGoods fulfilment centre" : `Ships from the seller in ${o.sellerCity}`}
+            {o.assured && <span className="block text-xs font-medium text-brand-700">AltasGoods Assured: extra quality checks</span>}
           </dd>
         </div>
         <div className="flex items-start gap-2.5">
@@ -447,7 +447,7 @@ export function BuyBox() {
           href="#other-sellers"
           className="mt-4 flex items-center justify-between rounded-lg border border-line px-3 py-2.5 text-[13px] font-medium text-ink-800 transition-colors hover:border-ink-300"
         >
-          Other sellers on BluBuy ({data.otherOffers})
+          Other sellers on AltasGoods ({data.otherOffers})
           <ChevronRight size={16} className="text-ink-400" aria-hidden="true" />
         </Link>
       )}

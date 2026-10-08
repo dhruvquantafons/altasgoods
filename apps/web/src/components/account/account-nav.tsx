@@ -51,9 +51,9 @@ const groups: { title?: string; items: NavItem[] }[] = [
   {
     title: "Money and rewards",
     items: [
-      { href: "/account/plus", label: "BluBuy Plus", short: "Plus", icon: Crown },
-      { href: "/account/wallet", label: "BluBuy Credits", short: "Credits", icon: Wallet },
-      { href: "/account/rewards", label: "BluCoins", short: "BluCoins", icon: Coins },
+      { href: "/account/plus", label: "AltasGoods Plus", short: "Plus", icon: Crown },
+      { href: "/account/wallet", label: "AltasGoods Credits", short: "Credits", icon: Wallet },
+      { href: "/account/rewards", label: "AltasCoins", short: "AltasCoins", icon: Coins },
       { href: "/account/payments", label: "Payment methods", short: "Payments", icon: CreditCard },
     ],
   },
@@ -95,7 +95,7 @@ export function AccountSidebar({ name, plus, memberSince, counts }: AccountNavPr
             {plus ? (
               <Link href="/account/plus" className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-950 px-2 py-0.5 text-[11px] font-semibold text-white">
                 <Crown size={11} strokeWidth={2.2} aria-hidden="true" className="text-accent-300" />
-                BluBuy Plus
+                AltasGoods Plus
               </Link>
             ) : null}
             <p className="mt-1 text-xs text-ink-500">Customer since {memberSince}</p>

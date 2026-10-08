@@ -72,7 +72,7 @@ export function SandboxPay({ payment, order }: Props) {
     <div className="mx-auto flex w-full max-w-md flex-col px-4 py-10 sm:py-16">
       <div className="mb-4 flex items-center justify-center gap-2 rounded-full bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-800 ring-1 ring-accent-100">
         <FlaskConical size={14} aria-hidden="true" />
-        BluBuy Pay sandbox: no real money moves
+        AltasGoods Pay sandbox: no real money moves
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-raised">
@@ -80,8 +80,8 @@ export function SandboxPay({ payment, order }: Props) {
           <div className="flex items-center gap-2.5">
             <LogoMark className="size-7" />
             <div>
-              <p className="text-sm font-semibold text-ink-900">BluBuy Pay</p>
-              <p className="text-xs text-ink-500">BluBuy Commerce Private Limited</p>
+              <p className="text-sm font-semibold text-ink-900">AltasGoods Pay</p>
+              <p className="text-xs text-ink-500">AltasGoods Commerce Private Limited</p>
             </div>
           </div>
           <span className="flex items-center gap-1 text-xs text-ink-500">
@@ -161,7 +161,7 @@ export function SandboxPay({ payment, order }: Props) {
 
         <p className="flex items-start gap-2 border-t border-line bg-ink-50 px-6 py-3.5 text-xs leading-relaxed text-ink-500">
           <ShieldCheck size={15} className="mt-px shrink-0 text-success-600" aria-hidden="true" />
-          In production this step happens in your UPI app or on your bank&apos;s page. BluBuy never sees your card number or UPI PIN.
+          In production this step happens in your UPI app or on your bank&apos;s page. AltasGoods never sees your card number or UPI PIN.
         </p>
       </div>
       <Link href={`/account/orders/${order.id}`} className="mt-5 text-center text-sm font-medium text-ink-600 hover:text-ink-900">

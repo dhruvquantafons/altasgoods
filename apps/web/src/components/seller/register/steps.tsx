@@ -264,7 +264,7 @@ function PhoneSignIn() {
           {a.error}
         </p>
       )}
-      <p className="text-xs text-ink-500">Already a BluBuy shopper? Use the same number; your seller account is added to it.</p>
+      <p className="text-xs text-ink-500">Already an AltasGoods shopper? Use the same number; your seller account is added to it.</p>
     </div>
   );
 }
@@ -620,7 +620,7 @@ export function StoreStep({ app, setApp, next, back }: StepProps) {
           <p className="text-ink-600">
             Sold by <span className="font-semibold text-brand-700">{trimmed || "Your store"}</span>
           </p>
-          <p className="mt-0.5 text-xs text-ink-500">New seller on BluBuy, ratings appear after your first orders</p>
+          <p className="mt-0.5 text-xs text-ink-500">New seller on AltasGoods, ratings appear after your first orders</p>
         </div>
         <p className="mt-2 text-xs text-ink-500">Add a logo and banner from Seller Hub settings once you are approved.</p>
       </div>
@@ -663,7 +663,7 @@ export function PickupStep({ app, setApp, next, back, states }: StepProps & { st
   const canNext = f.line1.trim().length >= 3 && /^[1-8]\d{5}$/.test(f.pincode) && f.city.trim().length >= 2 && !!f.state && f.contactName.trim().length >= 2 && MOBILE_RE.test(f.contactPhone);
   return (
     <>
-      <StepTitle title="Pickup address" description="BluBuy Logistics collects your packages from here. Add more locations later from Settings." />
+      <StepTitle title="Pickup address" description="AltasGoods Logistics collects your packages from here. Add more locations later from Settings." />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Address line 1" htmlFor="rg-l1" required className="sm:col-span-2">
           <Input id="rg-l1" value={f.line1} onChange={(e) => set({ line1: e.target.value })} placeholder="Building, unit, street" />
@@ -718,7 +718,7 @@ export function PickupStep({ app, setApp, next, back, states }: StepProps & { st
           This address is in {f.state} but your GSTIN is registered in {gstState}. Add it as an additional place of business on your GST registration, or register in {f.state}.
         </p>
       )}
-      <p className="mt-4 text-xs text-ink-500">If you use BluBuy Fulfilled, each fulfilment centre you store stock in is added to your GST registration as an additional place of business.</p>
+      <p className="mt-4 text-xs text-ink-500">If you use AltasGoods Fulfilled, each fulfilment centre you store stock in is added to your GST registration as an additional place of business.</p>
       <StepFooter
         back={back}
         hint="Complete the address, pincode and pickup contact"
@@ -959,7 +959,7 @@ export function DocumentsStep({ app, setApp, next, back }: StepProps) {
           <DocumentRow key={r.kind} kind={r.kind} label={r.label} hint={r.hint} required={r.required} doc={doc(r.kind)} setApp={setApp} />
         ))}
       </ul>
-      <p className="mt-4 text-xs text-ink-500">Documents are encrypted and seen only by BluBuy&apos;s verification team.</p>
+      <p className="mt-4 text-xs text-ink-500">Documents are encrypted and seen only by AltasGoods&apos;s verification team.</p>
       <StepFooter back={back} hint="Upload every required document" disabled={!canNext} onClick={next} label="Continue" />
     </>
   );
@@ -1009,7 +1009,7 @@ export function SignatureStep({ app, setApp, next, back }: StepProps) {
   const usable = !!sig && sig.status !== "REJECTED";
   return (
     <>
-      <StepTitle title="Digital signature" description="Printed on the tax invoices BluBuy generates for your orders. Sign as the authorised signatory." />
+      <StepTitle title="Digital signature" description="Printed on the tax invoices AltasGoods generates for your orders. Sign as the authorised signatory." />
       {sig && (
         <div className="mb-5 flex items-center gap-4 rounded-xl border border-line p-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- private document streamed through a route handler */}
@@ -1204,7 +1204,7 @@ export function BrandStep({ app, setApp, next, back }: StepProps) {
       <StepTitle title="Brand registry" description="Optional. Brand owners get control of their product pages and tools to protect them. You can do this later." />
       <div className="flex flex-col gap-4">
         <div className="rounded-xl border border-line p-4">
-          <Switch checked={own} onChange={setOwn} label="I own a brand" description="Enrol in BluBuy Brand Registry with a registered trademark or a pending application with IP India" />
+          <Switch checked={own} onChange={setOwn} label="I own a brand" description="Enrol in AltasGoods Brand Registry with a registered trademark or a pending application with IP India" />
           {own && (
             <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
               <Field label="Brand name" htmlFor="rg-brand" required>
@@ -1315,7 +1315,7 @@ export function ReviewStep({ app, me, back, goTo, categories }: StepProps & { ca
           onChange={(e) => setAgree(e.target.checked)}
           label={
             <>
-              I agree to the BluBuy seller agreement ({x.agreementVersion}), the fee rate card and the returns policy, and confirm the information above is accurate.{" "}
+              I agree to the AltasGoods seller agreement ({x.agreementVersion}), the fee rate card and the returns policy, and confirm the information above is accurate.{" "}
               <a href="/policies/terms" target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 font-medium text-brand-700 hover:underline">
                 Read it <ExternalLink size={11} aria-hidden="true" />
               </a>

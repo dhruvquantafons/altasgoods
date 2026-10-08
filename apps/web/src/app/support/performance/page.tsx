@@ -50,7 +50,7 @@ export default function PerformancePage() {
 
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="min-w-0">
-          <CardHeader title="Volume" description="Tickets created and resolved per day. BluBuy Big Days started on 26 Sept." />
+          <CardHeader title="Volume" description="Tickets created and resolved per day. AltasGoods Big Days started on 26 Sept." />
           <div className="px-5 pt-3 pb-5">
             <AreaChart
               data={volume}

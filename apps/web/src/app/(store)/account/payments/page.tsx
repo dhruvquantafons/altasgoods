@@ -16,7 +16,7 @@ export default function PaymentsPage() {
   const available = PAY_LATER.limit - PAY_LATER.used;
   return (
     <>
-      <PageHeader title="Payment methods" description="Saved UPI IDs and cards for faster checkout, plus your BluBuy Pay Later and EMI options." />
+      <PageHeader title="Payment methods" description="Saved UPI IDs and cards for faster checkout, plus your AltasGoods Pay Later and EMI options." />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -60,7 +60,7 @@ export default function PaymentsPage() {
 
           <Panel
             title="Saved cards"
-            description="Stored as secure tokens with your bank as RBI rules require. BluBuy never keeps your full card number or CVV."
+            description="Stored as secure tokens with your bank as RBI rules require. AltasGoods never keeps your full card number or CVV."
             bodyClassName="pt-5"
           >
             <ul className="grid gap-4 md:grid-cols-2">
@@ -151,7 +151,7 @@ export default function PaymentsPage() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <Panel title="BluBuy Pay Later" action={<Badge tone="success" dot>Active</Badge>}>
+          <Panel title="AltasGoods Pay Later" action={<Badge tone="success" dot>Active</Badge>}>
             <p className="text-xs text-ink-500">Available to spend</p>
             <p className="mt-1 text-[30px] leading-none font-semibold tracking-tight text-ink-900 tabular-nums">{formatINR(available)}</p>
             <Progress value={PAY_LATER.used} max={PAY_LATER.limit} className="mt-4" label="Pay Later limit used" />
@@ -190,7 +190,7 @@ export default function PaymentsPage() {
               </li>
               <li className="flex items-start gap-2.5">
                 <CreditCard size={16} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
-                BluBuy Credits and BluCoins can be combined with any method
+                AltasGoods Credits and AltasCoins can be combined with any method
               </li>
             </ul>
           </Panel>

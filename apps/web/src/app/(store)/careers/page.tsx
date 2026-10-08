@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Careers" };
 
 const benefits = [
   { icon: HeartPulse, title: "Health for your family", body: "Medical cover for you, your partner, children and parents, plus mental health support." },
-  { icon: Wallet, title: "Meaningful ownership", body: "Every full time employee receives stock options in BluBuy." },
+  { icon: Wallet, title: "Meaningful ownership", body: "Every full time employee receives stock options in AltasGoods." },
   { icon: Home, title: "Flexible and hybrid", body: "Three days together in the office, the rest wherever you work best." },
   { icon: GraduationCap, title: "Learning budget", body: "₹50,000 a year for courses, books and conferences." },
   { icon: Sprout, title: "Generous leave", body: "24 days of paid leave, 26 weeks of parental leave for every parent." },
@@ -29,7 +29,7 @@ export default async function CareersPage(props: PageProps<"/careers">) {
     <div className="pb-16 lg:pb-24">
       <InfoHero
         crumbs={[{ label: "Home", href: "/" }, { label: "Careers" }]}
-        eyebrow="Careers at BluBuy"
+        eyebrow="Careers at AltasGoods"
         title="Help build a calmer, fairer marketplace for India"
         description="We are a small team doing work that reaches millions of homes and thousands of small businesses. If you care about craft and about people, we would love to hear from you."
       >
@@ -121,7 +121,7 @@ export default async function CareersPage(props: PageProps<"/careers">) {
             ))}
           </ol>
           <p className="mt-6 max-w-2xl text-sm leading-relaxed text-ink-500">
-            BluBuy is an equal opportunity employer. We welcome people of every gender, caste, religion, region, disability, age and sexual orientation, and we make
+            AltasGoods is an equal opportunity employer. We welcome people of every gender, caste, religion, region, disability, age and sexual orientation, and we make
             reasonable adjustments throughout the hiring process. We will never ask you to pay a fee at any stage.
           </p>
         </section>

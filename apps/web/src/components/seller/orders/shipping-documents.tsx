@@ -20,7 +20,7 @@ export interface LabelData {
   qty: number;
 }
 
-/** 4 x 6 inch BluBuy Logistics label preview (address lines stay masked until printing). */
+/** 4 x 6 inch AltasGoods Logistics label preview (address lines stay masked until printing). */
 export function ShippingLabel({ d, className }: { d: LabelData; className?: string }) {
   const route = `BOM-SC-01 > ${d.city.slice(0, 3).toUpperCase()}-DH`;
   return (
@@ -29,8 +29,8 @@ export function ShippingLabel({ d, className }: { d: LabelData; className?: stri
         <span className="flex items-center gap-2">
           <LogoMark className="size-6" />
           <span className="text-[13px] leading-tight font-bold">
-            BluBuy Logistics
-            <span className="block text-[10px] font-medium text-ink-600">BluBuy Ship, surface</span>
+            AltasGoods Logistics
+            <span className="block text-[10px] font-medium text-ink-600">AltasGoods Ship, surface</span>
           </span>
         </span>
         <span className={cn("rounded px-2 py-1 text-[12px] font-bold", d.cod ? "bg-ink-900 text-white" : "border border-ink-900")}>
@@ -95,7 +95,7 @@ export interface InvoiceLine {
   gst: number;
 }
 
-/** Seller tax invoice preview: seller GSTIN plus BluBuy as the e-commerce operator. */
+/** Seller tax invoice preview: seller GSTIN plus AltasGoods as the e-commerce operator. */
 export function TaxInvoice({
   number,
   date,
@@ -187,7 +187,7 @@ export function TaxInvoice({
       </div>
       <div className="flex flex-wrap items-end justify-between gap-4 border-t border-line pt-3 text-[11px] text-ink-500">
         <p className="max-w-sm">
-          Supplied through BluBuy Internet Private Limited (e-commerce operator, GSTIN 27AAJCB4821K1Z6). TCS under section 52 is collected by the operator.
+          Supplied through AltasGoods Internet Private Limited (e-commerce operator, GSTIN 27AAJCB4821K1Z6). TCS under section 52 is collected by the operator.
         </p>
         <div className="text-right">
           <p className="font-[cursive] text-[15px] text-ink-700 italic">R. Mehta</p>

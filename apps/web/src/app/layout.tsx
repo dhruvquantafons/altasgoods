@@ -24,12 +24,12 @@ const code = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "BluBuy: Shop smarter, live better",
-    template: "%s | BluBuy",
+    default: "AltasGoods: Shop smarter, live better",
+    template: "%s | AltasGoods",
   },
   description:
-    "BluBuy is India's elegant marketplace for electronics, fashion, home and more. Fast delivery, easy returns and secure payments.",
-  applicationName: "BluBuy",
+    "AltasGoods is India's elegant marketplace for electronics, fashion, home and more. Fast delivery, easy returns and secure payments.",
+  applicationName: "AltasGoods",
 };
 
 export const viewport: Viewport = {

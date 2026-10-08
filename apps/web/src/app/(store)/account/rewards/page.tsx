@@ -11,7 +11,7 @@ import { accountOrders, BLUCOINS, coinTransactions, partnerRewards, returnPolicy
 import type { Tone } from "@/lib/status";
 import { cn, formatNumber, NOW } from "@/lib/utils";
 
-export const metadata = { title: "BluCoins" };
+export const metadata = { title: "AltasCoins" };
 
 const KIND: Record<string, { tone: Tone; icon: typeof Coins }> = {
   earned: { tone: "accent", icon: ArrowDownLeft },
@@ -37,7 +37,7 @@ export default function RewardsPage() {
 
   return (
     <>
-      <PageHeader title="BluCoins" description="Earn coins on every order and spend them at checkout or on partner rewards. 1 coin is worth ₹1." />
+      <PageHeader title="AltasCoins" description="Earn coins on every order and spend them at checkout or on partner rewards. 1 coin is worth ₹1." />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -47,7 +47,7 @@ export default function RewardsPage() {
               <div>
                 <p className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-800">
                   <Coins size={15} aria-hidden="true" />
-                  Your BluCoins
+                  Your AltasCoins
                 </p>
                 <p className="mt-2 text-[44px] leading-none font-semibold tracking-tight text-ink-900 tabular-nums">{formatNumber(BLUCOINS.balance)}</p>
                 <p className="mt-2 text-sm text-ink-600">Worth ₹{formatNumber(BLUCOINS.balance)} at checkout, up to 10% of an order</p>
@@ -63,7 +63,7 @@ export default function RewardsPage() {
             </div>
             <p className="relative mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs text-ink-700 ring-1 ring-accent-100">
               <Crown size={13} className="text-accent-700" aria-hidden="true" />
-              BluBuy Plus doubles your coins on every order
+              AltasGoods Plus doubles your coins on every order
             </p>
           </section>
 
@@ -104,7 +104,7 @@ export default function RewardsPage() {
             </ul>
           </Panel>
 
-          <Panel title="Partner rewards" description="Swap coins for vouchers from BluBuy partners.">
+          <Panel title="Partner rewards" description="Swap coins for vouchers from AltasGoods partners.">
             <ul className="grid gap-3 sm:grid-cols-2">
               {partnerRewards.map((r) => {
                 const Icon = PARTNER_ICON[r.category] ?? BedDouble;
@@ -168,10 +168,10 @@ export default function RewardsPage() {
           <Panel title="Ways to earn">
             <ul className="flex flex-col gap-4">
               {[
-                { icon: ShoppingBag, title: "Shop on BluBuy", body: "2 coins for every ₹100 as a Plus member, up to 100 per order." },
+                { icon: ShoppingBag, title: "Shop on AltasGoods", body: "2 coins for every ₹100 as a Plus member, up to 100 per order." },
                 { icon: Star, title: "Review what you bought", body: "Bonus coins during sale events for helpful, honest reviews. Coins never depend on your rating." },
-                { icon: Smartphone, title: "Pay with UPI on Big Days", body: "Extra coins on UPI payments during BluBuy Big Days." },
-                { icon: Sparkles, title: "Plus Day bonus", body: "Members-only bonus coins on BluBuy Plus Day." },
+                { icon: Smartphone, title: "Pay with UPI on Big Days", body: "Extra coins on UPI payments during AltasGoods Big Days." },
+                { icon: Sparkles, title: "Plus Day bonus", body: "Members-only bonus coins on AltasGoods Plus Day." },
               ].map((w) => (
                 <li key={w.title} className="flex gap-3">
                   <IconDot icon={w.icon} tone="accent" />

@@ -32,8 +32,8 @@ export function StoreHeader({
           <DeliverTo addresses={addresses} name={customer.firstName} />
           <nav aria-label="Utility" className="flex items-center gap-1 text-[13px] text-ink-600">
             {[
-              { href: "/plus", label: "BluBuy Plus", icon: Crown },
-              { href: "/sell", label: "Sell on BluBuy", icon: Store },
+              { href: "/plus", label: "AltasGoods Plus", icon: Crown },
+              { href: "/sell", label: "Sell on AltasGoods", icon: Store },
               { href: "/help", label: "Help", icon: HelpCircle },
               { href: "#app-download", label: "Download app", icon: Smartphone },
             ].map((l) => (

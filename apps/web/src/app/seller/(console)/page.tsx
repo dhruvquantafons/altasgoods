@@ -333,7 +333,7 @@ export default async function SellerDashboard() {
                   <dd className="font-medium text-ink-900 tabular-nums">{formatINR(payout.grossSales)}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-ink-600">BluBuy fees and taxes</dt>
+                  <dt className="text-ink-600">AltasGoods fees and taxes</dt>
                   <dd className="font-medium text-ink-900 tabular-nums">{formatINR(payout.fees.reduce((a, f) => a + f.amount, 0))}</dd>
                 </div>
                 <div className="flex justify-between">

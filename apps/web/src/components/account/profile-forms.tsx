@@ -195,7 +195,7 @@ export function DeleteAccountButton({ blockers }: { blockers: { label: string; d
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title={done ? "Deletion requested" : "Delete your BluBuy account"}
+        title={done ? "Deletion requested" : "Delete your AltasGoods account"}
         description={done ? undefined : "We will delete your personal data within 30 days, except what the law requires us to keep, like tax invoices."}
         footer={
           done ? (
@@ -239,7 +239,7 @@ export function DeleteAccountButton({ blockers }: { blockers: { label: string; d
             </Field>
             <label className={cn("flex cursor-pointer items-start gap-2.5 text-[13px] text-ink-700")}>
               <input type="checkbox" className="mt-0.5 size-4 accent-brand-600" checked={ack} onChange={(e) => setAck(e.target.checked)} />
-              I understand that my order history, reviews, BluCoins and saved lists will be permanently deleted.
+              I understand that my order history, reviews, AltasCoins and saved lists will be permanently deleted.
             </label>
           </div>
         )}

@@ -6,7 +6,7 @@ import { sellerOrderLines } from "./orders";
 import { sellers } from "./people";
 
 /**
- * Example BluBuy rate card, version RC-2026-EXAMPLE. Mirrors section 13 of
+ * Example AltasGoods rate card, version RC-2026-EXAMPLE. Mirrors section 13 of
  * docs/research/01-marketplace-workflows.md. Illustrative only; the commercial,
  * finance and legal teams own the real numbers.
  */
@@ -15,7 +15,7 @@ export const RATE_CARD_VERSION = "RC-2026-EXAMPLE";
 /** Items priced up to this amount pay 0% commission in every category. */
 export const COMMISSION_FREE_UPTO = 999;
 
-/** Fixed fee per item (BluBuy Ship, Flex and Fulfilled; Platinum base). */
+/** Fixed fee per item (AltasGoods Ship, Flex and Fulfilled; Platinum base). */
 export const FIXED_FEE_SLABS = [
   { upTo: 250, fee: 4 },
   { upTo: 500, fee: 8 },
@@ -46,7 +46,7 @@ export const SHIPPING_SLABS = [
 /** Tier discount on forward shipping (percent). */
 export const TIER_SHIPPING_DISCOUNT = { Platinum: 15, Gold: 10, Silver: 5, Bronze: 0 } as const;
 
-/** No separate collection fee: gateway and COD costs are absorbed by BluBuy. Kept at zero for older screens. */
+/** No separate collection fee: gateway and COD costs are absorbed by AltasGoods. Kept at zero for older screens. */
 export const COLLECTION_FEE_PERCENT = { prepaid: 0, cod: 0 };
 export const GST_ON_FEES_PERCENT = 18;
 /** TCS under GST (section 52) on the taxable value. */

@@ -25,7 +25,7 @@ const TABS = [
   { key: "tax", label: "Tax documents" },
 ];
 
-const TYPES: LedgerType[] = ["Order payment", "Refund", "SafeClaim reimbursement", "BluBuy Ads", "Penalty", "Fulfilled fees"];
+const TYPES: LedgerType[] = ["Order payment", "Refund", "SafeClaim reimbursement", "AltasGoods Ads", "Penalty", "Fulfilled fees"];
 
 const feeTotal = (fees: { amount: number }[]) => fees.reduce((a, f) => a + f.amount, 0);
 
@@ -373,7 +373,7 @@ function Transactions({ q, type, status }: { q: string; type: string; status: st
 const DOC_GROUPS = [
   { kind: "tcs", title: "TCS certificates", description: "0.5% TCS collected under section 52 of the CGST Act, reported in GSTR-8. Claim it in your electronic cash ledger after it reflects in GSTR-2X." },
   { kind: "tds", title: "TDS certificates, section 194-O", description: "0.1% TDS deducted on your taxable sales. Claim it against your income tax using Form 16A; it appears in Form 26AS." },
-  { kind: "fee_invoice", title: "GST invoices for BluBuy fees", description: "Monthly tax invoices for commission, fixed, shipping and fulfilment fees. Claim the input tax credit on the GST." },
+  { kind: "fee_invoice", title: "GST invoices for AltasGoods fees", description: "Monthly tax invoices for commission, fixed, shipping and fulfilment fees. Claim the input tax credit on the GST." },
   { kind: "credit_note", title: "Credit notes", description: "Fee reversals on returns and cancellations." },
 ] as const;
 

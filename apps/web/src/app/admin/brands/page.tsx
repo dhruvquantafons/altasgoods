@@ -27,7 +27,7 @@ export default async function BrandsPage(props: PageProps<"/admin/brands">) {
 
   return (
     <>
-      <PageHeader title="Brands" description="BluBuy Brand Registry and seller brand authorisations. Trademarks are checked against IP India; registry owners get content priority and IP complaint tools." />
+      <PageHeader title="Brands" description="AltasGoods Brand Registry and seller brand authorisations. Trademarks are checked against IP India; registry owners get content priority and IP complaint tools." />
 
       <KpiStrip
         className="mb-6"

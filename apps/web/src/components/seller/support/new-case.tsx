@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
 
-/** Open a support case with BluBuy Seller Support. */
+/** Open a support case with AltasGoods Seller Support. */
 export function NewCase({ categories }: { categories: { key: string; label: string }[] }) {
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState(categories[0]!.key);

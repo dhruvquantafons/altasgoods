@@ -33,7 +33,7 @@ export interface InboxThread {
 }
 
 const RULES: { test: RegExp; reason: string }[] = [
-  { test: /(\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}/, reason: "Phone numbers are not allowed. BluBuy relays every message." },
+  { test: /(\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}/, reason: "Phone numbers are not allowed. AltasGoods relays every message." },
   { test: /[\w.+-]+@[\w-]+\.[\w.]+/, reason: "Email addresses are not allowed." },
   { test: /(https?:\/\/|www\.)\S+/i, reason: "External links are not allowed." },
   { test: /\b(discount|offer|sale|coupon|buy now|cashback)\b/i, reason: "Promotional language is not allowed in buyer messages." },
@@ -104,11 +104,11 @@ export function Inbox({ threads, templates, initialId }: { threads: InboxThread[
     const at = new Date().toISOString();
     if (composing && composeFor) {
       setSentNew((prev) => [...prev, { id: `new-${composeFor}-${prev.length}`, from: "seller", body, at, attachment: attach ?? undefined }]);
-      toast.show(`Message sent through BluBuy about order ${composeFor}. The buyer is notified by app and email; their reply appears here.`);
+      toast.show(`Message sent through AltasGoods about order ${composeFor}. The buyer is notified by app and email; their reply appears here.`);
     } else if (active) {
       const msg: InboxMessage = { id: `${active.id}-new-${active.messages.length}`, from: "seller", body, at, attachment: attach ?? undefined };
       update(active.id, { messages: [...active.messages, msg], status: "replied", dueAt: undefined, lastAt: msg.at });
-      toast.show("Reply sent through BluBuy. The buyer is notified by app and email.");
+      toast.show("Reply sent through AltasGoods. The buyer is notified by app and email.");
     } else return;
     setDraft("");
     setAttach(null);

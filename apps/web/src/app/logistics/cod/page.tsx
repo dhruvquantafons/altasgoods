@@ -29,7 +29,7 @@ export default function CodPage() {
     <>
       <PageHeader
         title="COD remittance"
-        description="Cash on delivery from collection at the door to the hub cashier, the bank and BluBuy finance."
+        description="Cash on delivery from collection at the door to the hub cashier, the bank and AltasGoods finance."
         actions={
           <>
             <ToastButton label="Close day" icon="check" message="Day close blocked: 3 associates have not declared yesterday's cash" size="md" />
@@ -92,7 +92,7 @@ export default function CodPage() {
                         </TD>
                         <TD align="right">
                           {d.status === "declared" && <ToastButton label="Accept" size="xs" variant="soft" message={`${formatINR(d.declared ?? 0)} from ${name(d.associateId)} counted and accepted`} />}
-                          {d.status === "not_declared" && <ToastButton label="Remind" size="xs" variant="ghost" message={`Reminder sent to ${name(d.associateId)} on BluBuy Rider`} />}
+                          {d.status === "not_declared" && <ToastButton label="Remind" size="xs" variant="ghost" message={`Reminder sent to ${name(d.associateId)} on AltasGoods Rider`} />}
                           {d.status === "short" && <ToastButton label="Recovery" size="xs" variant="ghost" message={`Recovery case opened for ${name(d.associateId)}`} />}
                         </TD>
                       </TR>
@@ -183,7 +183,7 @@ export default function CodPage() {
         </Card>
 
         <Card className="min-w-0">
-          <CardHeader title="Remittance to BluBuy finance" description="D+1 cycle from the hub collection account to the COD collection account" />
+          <CardHeader title="Remittance to AltasGoods finance" description="D+1 cycle from the hub collection account to the COD collection account" />
           <TableContainer className="mt-3">
             <Table>
               <THead>

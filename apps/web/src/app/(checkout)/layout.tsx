@@ -6,7 +6,7 @@ import { CartProvider } from "@/components/store/cart-context";
 import { COMPANY } from "@/lib/mock/store-extra";
 
 export const metadata: Metadata = {
-  title: { default: "Secure checkout", template: "%s | BluBuy" },
+  title: { default: "Secure checkout", template: "%s | AltasGoods" },
 };
 
 /** Enclosed, distraction-free checkout: logo, secure label and help only. */
@@ -33,7 +33,7 @@ export default function CheckoutLayout({ children }: { children: React.ReactNode
         <footer className="border-t border-line bg-white">
           <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 py-5 text-xs text-ink-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
             <p>
-              Payments are processed by RBI regulated partners. BluBuy never stores your card number. Need help? Call {COMPANY.customerCare} (toll free).
+              Payments are processed by RBI regulated partners. AltasGoods never stores your card number. Need help? Call {COMPANY.customerCare} (toll free).
             </p>
             <p className="flex gap-4">
               <Link href="/policies/terms" className="hover:text-ink-800">

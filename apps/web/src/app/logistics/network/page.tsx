@@ -30,7 +30,7 @@ export default function NetworkPage() {
 
   return (
     <>
-      <PageHeader title="Hubs and line haul" description="The BluBuy Logistics network: nodes, utilisation, lanes with transit times, and pincode serviceability." />
+      <PageHeader title="Hubs and line haul" description="The AltasGoods Logistics network: nodes, utilisation, lanes with transit times, and pincode serviceability." />
 
       <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <MetricTile label="Fulfilment centres" value={hubs.filter((h) => h.type === "fulfillment_center").length} hint={`${formatNumber(sum(hubs.filter((h) => h.type === "fulfillment_center"), (h) => h.capacity))} units per day capacity`} icon={Warehouse} />

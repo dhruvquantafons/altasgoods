@@ -83,7 +83,7 @@ export default async function StatusPage() {
       </>
     ),
     ACTION_REQUIRED: <>Our verification team reviewed application {app.id} and needs a few corrections before it can be approved. Fix the items below and resubmit within 30 days.</>,
-    APPROVED: <>Congratulations, {first}. Your seller account is ready. Open Seller Hub to create your first listing; your store goes live once it passes a quality check and BluBuy Logistics verifies your pickup address.</>,
+    APPROVED: <>Congratulations, {first}. Your seller account is ready. Open Seller Hub to create your first listing; your store goes live once it passes a quality check and AltasGoods Logistics verifies your pickup address.</>,
     REJECTED: (
       <>
         Reason: {app.rejectionReason}. If you think this is a mistake, contact Seller Support. A declined application can be reopened 30 days after the decision.
@@ -119,7 +119,7 @@ export default async function StatusPage() {
           </ButtonLink>
         ) : (
           <ButtonLink href="/" variant="secondary" className="self-start sm:self-center">
-            Back to BluBuy
+            Back to AltasGoods
           </ButtonLink>
         )}
       </div>
@@ -154,7 +154,7 @@ export default async function StatusPage() {
                 {[
                   { done: true, title: "Business, PAN, bank and documents verified", body: "" },
                   { done: false, title: "Create your first listing", body: "Find your product in the catalog or create a new one. It goes live after a quality check." },
-                  { done: false, title: "Book a pickup test", body: "BluBuy Logistics visits your pickup address once to verify it." },
+                  { done: false, title: "Book a pickup test", body: "AltasGoods Logistics visits your pickup address once to verify it." },
                   { done: false, title: "Set up your store page", body: "Logo, banner and description customers see." },
                 ].map((c) => (
                   <li key={c.title} className="flex items-start gap-3 px-5 py-3.5">

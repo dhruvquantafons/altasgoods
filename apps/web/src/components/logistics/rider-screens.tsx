@@ -1,5 +1,5 @@
 /**
- * BluBuy Rider (Flutter) screen mockups for the Hub Console preview page.
+ * AltasGoods Rider (Flutter) screen mockups for the Hub Console preview page.
  * Each screen is designed at the native 390 x 780 logical size and scaled by
  * <PhoneFrame> so typography and spacing match the real device.
  */

@@ -13,7 +13,7 @@ export default function StoreNotFound() {
       <p className="mt-3 max-w-md text-[15px] text-ink-600">The link may be old or the product may no longer be listed. Try searching, or start from one of these.</p>
       <form action="/s" method="get" className="mt-8 flex w-full max-w-lg gap-2">
         <label htmlFor="nf-q" className="sr-only">
-          Search BluBuy
+          Search AltasGoods
         </label>
         <input
           id="nf-q"

@@ -55,7 +55,7 @@ export function StoreProfileForm({ initial }: { initial: { displayName: string; 
           <Field label="Store description" htmlFor="sp-desc" className="sm:col-span-2" hint={`${draft.storeDescription.length} of 500 characters`}>
             <Textarea id="sp-desc" maxLength={500} value={draft.storeDescription} onChange={(e) => setDraft({ ...draft, storeDescription: e.target.value })} />
           </Field>
-          <Field label="Support email" htmlFor="sp-email" hint="Used by BluBuy only; never shown to customers">
+          <Field label="Support email" htmlFor="sp-email" hint="Used by AltasGoods only; never shown to customers">
             <Input id="sp-email" type="email" value={draft.supportEmail} onChange={(e) => setDraft({ ...draft, supportEmail: e.target.value })} />
           </Field>
           <Field label="Grievance officer" htmlFor="sp-grievance" hint="Required under the Consumer Protection (E-Commerce) Rules">
@@ -90,7 +90,7 @@ export function TaxPreferences() {
             checked={draft.einvoice}
             onChange={(v) => setDraft({ ...draft, einvoice: v })}
             label="Generate e-invoices (IRN)"
-            description="Required when your aggregate turnover is above ₹5 crore. BluBuy registers each invoice with the IRP and prints the QR code."
+            description="Required when your aggregate turnover is above ₹5 crore. AltasGoods registers each invoice with the IRP and prints the QR code."
           />
           <Field label="Default HSN code" htmlFor="tx-hsn" hint="Used when a listing has no HSN; set the correct HSN on every listing">
             <Input id="tx-hsn" value={draft.hsn} onChange={(e) => setDraft({ ...draft, hsn: e.target.value.replace(/\D/g, "").slice(0, 8) })} className="sm:max-w-xs" />
@@ -188,7 +188,7 @@ export function AddPickup() {
               icon={MapPin}
               onClick={() => {
                 setOpen(false);
-                toast.show("Address added. BluBuy Logistics runs a pickup test within 2 business days before it goes live.");
+                toast.show("Address added. AltasGoods Logistics runs a pickup test within 2 business days before it goes live.");
               }}
             >
               Add address
@@ -478,7 +478,7 @@ export function HolidayMode({ openOrders }: { openOrders: number }) {
             checked={draft.fulfilledActive}
             disabled={!draft.on}
             onChange={(v) => setDraft({ ...draft, fulfilledActive: v })}
-            label="Keep BluBuy Fulfilled listings live"
+            label="Keep AltasGoods Fulfilled listings live"
             description="Fulfilment centres keep shipping your stored inventory while you are away"
           />
           <div className="flex gap-3 rounded-xl bg-ink-50 px-4 py-3 text-[13px] text-ink-700">

@@ -13,7 +13,7 @@ const fail = (e: unknown, fallback: string): { ok: false; error: string; code?: 
   const p = (e ?? {}) as { detail?: string; code?: string; errors?: { message: string }[] };
   return { ok: false, error: p.errors?.[0]?.message ?? p.detail ?? fallback, code: p.code };
 };
-const offline = { ok: false as const, error: "BluBuy is unreachable right now. Please try again in a moment." };
+const offline = { ok: false as const, error: "AltasGoods is unreachable right now. Please try again in a moment." };
 
 async function call<T>(fn: () => Promise<{ data?: T; error?: unknown }>, fallback: string, paths: string[]): Promise<Result<T>> {
   try {
@@ -82,7 +82,7 @@ export async function gradeReturn(id: string, pass: boolean, note?: string): Pro
   return call(async () => (await api()).POST("/v1/seller/returns/{id}/qc", { ...path(id), body: { pass, note: note || undefined } }), "Could not save the check", ["/seller/returns", `/seller/returns/${id}`]);
 }
 
-/** Development only: stands in for BluBuy Logistics reverse pickup scans. */
+/** Development only: stands in for AltasGoods Logistics reverse pickup scans. */
 export async function simulateReturnScan(id: string, to: "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED"): Promise<Result<ReturnRequest>> {
   if (process.env.NODE_ENV === "production") return { ok: false, error: "Not available in production" };
   return call(async () => (await api()).POST("/v1/dev/returns/{id}/advance", { ...path(id), body: { to } }), "Could not record the scan", ["/seller/returns", `/seller/returns/${id}`]);

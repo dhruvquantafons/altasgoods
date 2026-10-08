@@ -344,7 +344,7 @@ export function KycQueue({ items, decided, initialOpenId, categories }: { items:
                     ))}
                   </Select>
                 </Field>
-                <Field label="Internal note" className="mt-3" htmlFor="kyc-note" hint="Only BluBuy staff see this">
+                <Field label="Internal note" className="mt-3" htmlFor="kyc-note" hint="Only AltasGoods staff see this">
                   <Textarea id="kyc-note" className="min-h-16" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Context for Risk and the audit log" />
                 </Field>
               </div>
@@ -505,7 +505,7 @@ export function KycQueue({ items, decided, initialOpenId, categories }: { items:
                     <li key={`${i}-${n.at}`} className="text-[13px]">
                       <p className="text-ink-800">{n.body}</p>
                       <p className="mt-0.5 text-xs text-ink-500">
-                        {n.byName ?? "BluBuy staff"}, {formatDateTime(n.at)}
+                        {n.byName ?? "AltasGoods staff"}, {formatDateTime(n.at)}
                       </p>
                     </li>
                   ))}
@@ -521,7 +521,7 @@ export function KycQueue({ items, decided, initialOpenId, categories }: { items:
                       {KYC_STATUS[statusKey(e.toStatus)].label}
                       <span className="font-normal text-ink-500">
                         {" "}
-                        by {e.actor === "STAFF" ? (e.actorName ?? "BluBuy staff") : e.actor === "SYSTEM" ? "automatic checks" : "the seller"}, {formatDateTime(e.at)}
+                        by {e.actor === "STAFF" ? (e.actorName ?? "AltasGoods staff") : e.actor === "SYSTEM" ? "automatic checks" : "the seller"}, {formatDateTime(e.at)}
                       </span>
                     </p>
                     {e.note && <p className="text-xs text-ink-600">{e.note}</p>}

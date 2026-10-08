@@ -8,9 +8,9 @@ import { PageHeader } from "@/components/ui/page-header";
 /** Seller Hub home for a seller who has just been approved and has no sales history yet. */
 export function NewSellerHome({ firstName, store, counts }: { firstName: string; store: string; counts: { toConfirm: number; toPack: number; awaitingPickup: number } }) {
   const steps = [
-    { done: true, icon: CircleCheck, title: "KYC verified", body: "Business, PAN, bank account and documents approved by BluBuy." },
+    { done: true, icon: CircleCheck, title: "KYC verified", body: "Business, PAN, bank account and documents approved by AltasGoods." },
     { done: false, icon: PackagePlus, title: "Create your first listing", body: "Match an existing product or create a new one. It goes live after a quality check.", href: "/seller/catalog/new", cta: "Add a product" },
-    { done: false, icon: Truck, title: "Book a pickup test", body: "BluBuy Logistics visits your pickup address once to verify it before your first order.", href: "/seller/settings?tab=pickup", cta: "Pickup settings" },
+    { done: false, icon: Truck, title: "Book a pickup test", body: "AltasGoods Logistics visits your pickup address once to verify it before your first order.", href: "/seller/settings?tab=pickup", cta: "Pickup settings" },
     { done: false, icon: Store, title: "Set up your store page", body: "Add a logo, banner and description customers see on your store page.", href: "/seller/settings", cta: "Store settings" },
     { done: false, icon: GraduationCap, title: "Learn the basics", body: "A 12 minute Seller Academy lesson on listing, pricing and dispatch.", href: "/seller/support", cta: "Start lesson" },
   ];

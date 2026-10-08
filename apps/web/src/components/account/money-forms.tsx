@@ -73,7 +73,7 @@ export function AddUpiButton() {
   );
 }
 
-/** Redeem a BluBuy Gift Card into BluBuy Credits. */
+/** Redeem an AltasGoods Gift Card into AltasGoods Credits. */
 export function AddGiftCardButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -96,8 +96,8 @@ export function AddGiftCardButton({ className }: { className?: string }) {
           setOpen(false);
           setDone(false);
         }}
-        title={done ? "Gift card added" : "Add a BluBuy Gift Card"}
-        description={done ? undefined : "The balance moves to your BluBuy Credits and keeps the gift card's expiry date."}
+        title={done ? "Gift card added" : "Add an AltasGoods Gift Card"}
+        description={done ? undefined : "The balance moves to your AltasGoods Credits and keeps the gift card's expiry date."}
         footer={
           done ? (
             <Button
@@ -135,7 +135,7 @@ export function AddGiftCardButton({ className }: { className?: string }) {
               <CircleCheck size={26} strokeWidth={1.8} aria-hidden="true" />
             </span>
             <p className="mt-3 text-2xl font-semibold text-ink-900 tabular-nums">{formatINR(1000)}</p>
-            <p className="mt-1 text-sm text-ink-600">added to your BluBuy Credits. Use it on any order before 1 Oct 2027.</p>
+            <p className="mt-1 text-sm text-ink-600">added to your AltasGoods Credits. Use it on any order before 1 Oct 2027.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -163,7 +163,7 @@ const designBg: Record<Tone, string> = {
   accent: "from-accent-300 to-accent-600",
 };
 
-/** Buy a BluBuy Gift Card for someone (design, amount, recipient). */
+/** Buy an AltasGoods Gift Card for someone (design, amount, recipient). */
 export function BuyGiftCardButton({ designs, className }: { designs: { id: string; name: string; tone: Tone }[]; className?: string }) {
   const [open, setOpen] = useState(false);
   const [design, setDesign] = useState(designs[0]?.id ?? "");
@@ -184,8 +184,8 @@ export function BuyGiftCardButton({ designs, className }: { designs: { id: strin
         open={open}
         onClose={() => setOpen(false)}
         size="lg"
-        title="Send a BluBuy Gift Card"
-        description="Delivered by email within minutes. Valid for one year, usable on anything sold on BluBuy."
+        title="Send an AltasGoods Gift Card"
+        description="Delivered by email within minutes. Valid for one year, usable on anything sold on AltasGoods."
         footer={
           <>
             <Button variant="secondary" onClick={() => setOpen(false)}>
@@ -207,7 +207,7 @@ export function BuyGiftCardButton({ designs, className }: { designs: { id: strin
       >
         <div className="grid gap-6 md:grid-cols-[240px_minmax(0,1fr)]">
           <div className={cn("flex aspect-[1.6] flex-col justify-between rounded-2xl bg-gradient-to-br p-4 text-white shadow-raised", designBg[d.tone])}>
-            <p className="font-display text-[15px] font-semibold">BluBuy</p>
+            <p className="font-display text-[15px] font-semibold">AltasGoods</p>
             <div>
               <p className="text-xs opacity-80">{d.name}</p>
               <p className="text-2xl font-semibold tabular-nums">{value >= 100 ? formatINR(value) : "₹0"}</p>

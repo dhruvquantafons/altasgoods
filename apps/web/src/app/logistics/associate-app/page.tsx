@@ -20,7 +20,7 @@ export default function AssociateAppPage() {
   return (
     <>
       <PageHeader
-        title="BluBuy Rider"
+        title="AltasGoods Rider"
         description="Design preview of the delivery associate app (Flutter). The same runsheet, NDR and cash data you see in Hub Console, from the associate's side."
         meta={
           <>

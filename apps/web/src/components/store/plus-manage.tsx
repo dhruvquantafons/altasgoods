@@ -41,7 +41,7 @@ export function PlusManage({ renewsOn, refundNote }: { renewsOn: string; refundN
       </div>
       {confirming ? (
         <div className="rounded-xl bg-white p-4 text-sm text-ink-700">
-          <p className="font-semibold text-ink-900">Cancel BluBuy Plus?</p>
+          <p className="font-semibold text-ink-900">Cancel AltasGoods Plus?</p>
           <p className="mt-1">
             Benefits continue until {renewsOn}. {refundNote}
           </p>

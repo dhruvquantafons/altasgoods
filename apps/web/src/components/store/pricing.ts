@@ -1,6 +1,6 @@
 /**
  * Pure cart and checkout maths shared by the cart page and checkout so the
- * same breakdown appears everywhere (no drip pricing). BluBuy charges no
+ * same breakdown appears everywhere (no drip pricing). AltasGoods charges no
  * platform fee and no cash on delivery fee; delivery is free for Plus members
  * and for seller shipments of ₹499 or more.
  */
@@ -63,8 +63,8 @@ export function priceLines(lines: CartLine[], catalog: CartCatalog): PricedLine[
 /** Why a coupon cannot apply right now, or null when it can. */
 export function couponBlocker(c: CouponLite, lines: PricedLine[], ctx: { plus: boolean; method?: string }) {
   const eligible = couponBase(c, lines);
-  if (c.firstOrderOnly) return "Valid on your first BluBuy order only";
-  if (c.plusOnly && !ctx.plus) return "For BluBuy Plus members";
+  if (c.firstOrderOnly) return "Valid on your first AltasGoods order only";
+  if (c.plusOnly && !ctx.plus) return "For AltasGoods Plus members";
   if (c.sellerId && eligible === 0) return "Applies to selected items from one seller";
   if (eligible < c.minOrder) return `Add items worth ₹${(c.minOrder - eligible).toLocaleString("en-IN")} more to use this`;
   if (c.upiOnly && ctx.method && ctx.method !== "upi") return "Applies only when you pay by UPI";

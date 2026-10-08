@@ -188,7 +188,7 @@ export function adminNav(c: Counts = {}): NavGroup[] {
   ];
 }
 
-export function AdminShell({ children, notifications, counts, user = { name: "BluBuy staff", role: "BluBuy Control" } }: AreaShellProps & { user?: { name: string; role: string } }) {
+export function AdminShell({ children, notifications, counts, user = { name: "AltasGoods staff", role: "AltasGoods Control" } }: AreaShellProps & { user?: { name: string; role: string } }) {
   return (
     <DashboardShell
       workspace="admin"
@@ -280,7 +280,7 @@ export function supportNav(c: Counts = {}): NavGroup[] {
   ];
 }
 
-export function SupportShell({ children, notifications, counts, user = { name: "Care Desk agent", role: "BluBuy Care Desk" } }: AreaShellProps & { user?: { name: string; role: string } }) {
+export function SupportShell({ children, notifications, counts, user = { name: "Care Desk agent", role: "AltasGoods Care Desk" } }: AreaShellProps & { user?: { name: string; role: string } }) {
   return (
     <DashboardShell
       workspace="support"

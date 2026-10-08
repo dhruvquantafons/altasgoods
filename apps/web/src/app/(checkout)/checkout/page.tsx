@@ -26,7 +26,7 @@ export default async function CheckoutPage(props: PageProps<"/checkout">) {
     <CheckoutFlow
       catalog={cartCatalog()}
       coupons={storefrontCoupons()}
-      // bank offers, Credits, gift cards and BluCoins are not priced by the API yet, so they are off
+      // bank offers, Credits, gift cards and AltasCoins are not priced by the API yet, so they are off
       bankOffers={[]}
       banks={NET_BANKING_BANKS}
       wallet={{ ...CUSTOMER_WALLET, credits: 0, giftCard: 0, bluCoins: 0, plusMember: !!user?.isPlus }}

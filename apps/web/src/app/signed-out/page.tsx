@@ -28,7 +28,7 @@ export default async function SignedOutPage(props: PageProps<"/signed-out">) {
             Sign in again{workspace ? ` to ${workspace.name}` : ""}
           </Link>
           <Link href="/" className="inline-flex h-11 items-center justify-center rounded-lg border border-line-strong bg-white text-sm font-medium text-ink-800 hover:bg-ink-50">
-            Go to the BluBuy store
+            Go to the AltasGoods store
           </Link>
         </div>
       </div>

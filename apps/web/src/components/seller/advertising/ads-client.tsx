@@ -262,8 +262,8 @@ const STEPS = [{ label: "Type" }, { label: "Products" }, { label: "Targeting" },
 
 const TYPES = [
   { key: "sp", label: "Sponsored Products", hint: "Your products in search results and on product pages. Pay per click.", locked: false },
-  { key: "sb", label: "Sponsored Brands", hint: "A headline banner with your logo and three products. Needs BluBuy Brand Registry.", locked: true },
-  { key: "sd", label: "Sponsored Display", hint: "Reach shoppers who viewed similar products, on and off BluBuy.", locked: false },
+  { key: "sb", label: "Sponsored Brands", hint: "A headline banner with your logo and three products. Needs AltasGoods Brand Registry.", locked: true },
+  { key: "sd", label: "Sponsored Display", hint: "Reach shoppers who viewed similar products, on and off AltasGoods.", locked: false },
 ];
 
 export function CreateCampaign({ products }: { products: { id: string; title: string; image: string; price: number }[] }) {
@@ -300,7 +300,7 @@ export function CreateCampaign({ products }: { products: { id: string; title: st
         side="right"
         size="lg"
         title="Create a campaign"
-        description="BluBuy Ads run on a second-price cost-per-click auction. You only pay when a shopper clicks."
+        description="AltasGoods Ads run on a second-price cost-per-click auction. You only pay when a shopper clicks."
         footer={
           <div className="flex w-full items-center justify-between gap-3">
             {step > 0 ? (
@@ -386,7 +386,7 @@ export function CreateCampaign({ products }: { products: { id: string; title: st
                 <label key={t} className={cn("cursor-pointer rounded-xl border px-4 py-3", targeting === t ? "border-brand-300 bg-brand-50/50" : "border-line hover:bg-ink-50")}>
                   <input type="radio" className="sr-only" name="targeting" checked={targeting === t} onChange={() => setTargeting(t)} />
                   <span className="block text-sm font-medium text-ink-900">{t === "auto" ? "Automatic" : "Manual keywords"}</span>
-                  <span className="block text-xs text-ink-500">{t === "auto" ? "BluBuy matches searches and products to your listings" : "You choose keywords, match types and bids"}</span>
+                  <span className="block text-xs text-ink-500">{t === "auto" ? "AltasGoods matches searches and products to your listings" : "You choose keywords, match types and bids"}</span>
                 </label>
               ))}
             </div>

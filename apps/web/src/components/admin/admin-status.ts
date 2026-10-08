@@ -1,5 +1,5 @@
 /**
- * Status maps for BluBuy Control entities that are not in lib/status.ts
+ * Status maps for AltasGoods Control entities that are not in lib/status.ts
  * (claims, KYC, moderation, rules, reconciliation and so on). Every status is
  * rendered as words plus tone through <StatusBadge meta={...} />.
  */

@@ -103,7 +103,7 @@ export function GenerateReport({
               </Field>
             </div>
           )}
-          <Field label={tax ? "GSTIN or state" : "Scope"} htmlFor={`${id}-s`} hint={tax ? "BluBuy files GSTR-8 per state registration" : undefined}>
+          <Field label={tax ? "GSTIN or state" : "Scope"} htmlFor={`${id}-s`} hint={tax ? "AltasGoods files GSTR-8 per state registration" : undefined}>
             <Select id={`${id}-s`} defaultValue="all">
               <option value="all">{tax ? "All state registrations" : "Whole marketplace"}</option>
               {tax ? ["Karnataka", "Maharashtra", "Delhi", "Uttar Pradesh", "Telangana"].map((s) => <option key={s}>{s}</option>) : ["Electronics", "Fashion", "Home & Furniture"].map((s) => <option key={s}>{s}</option>)}

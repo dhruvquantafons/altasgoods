@@ -48,7 +48,7 @@ export default function FeesPage() {
     <>
       <PageHeader
         title="Fees and commission"
-        description="The seller rate card: commission, fixed fee and shipping, plus GST on fees, TCS and TDS. No separate collection fee; gateway and COD costs are absorbed by BluBuy."
+        description="The seller rate card: commission, fixed fee and shipping, plus GST on fees, TCS and TDS. No separate collection fee; gateway and COD costs are absorbed by AltasGoods."
         meta={
           <>
             <StatusBadge meta={{ label: "Live", tone: "success" }} />
@@ -128,7 +128,7 @@ export default function FeesPage() {
 
         <div className="flex min-w-0 flex-col gap-6">
           <Card>
-            <CardHeader title="Fixed fee" description="Per item, BluBuy Ship, Flex and Fulfilled. Second and later units of the same BSIN in one package pay 50%." />
+            <CardHeader title="Fixed fee" description="Per item, AltasGoods Ship, Flex and Fulfilled. Second and later units of the same BSIN in one package pay 50%." />
             <TableContainer className="mt-3">
               <Table>
                 <THead>
@@ -169,7 +169,7 @@ export default function FeesPage() {
         </div>
 
         <Card className="min-w-0">
-          <CardHeader title="Shipping fee" description="Forward, per package, by chargeable weight (actual or L x W x H / 5000) and zone. Self Ship pays no BluBuy shipping." />
+          <CardHeader title="Shipping fee" description="Forward, per package, by chargeable weight (actual or L x W x H / 5000) and zone. Self Ship pays no AltasGoods shipping." />
           <TableContainer className="mt-3">
             <Table>
               <THead>

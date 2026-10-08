@@ -243,7 +243,7 @@ export function ListingsTable({ rows, toolbar }: { rows: ListingRow[]; toolbar: 
                           toast.show(
                             v > r.featuredPrice * 1.05 && r.featured !== "ineligible"
                               ? `Price updated to ${formatINR(v)}. It is more than 5% above the featured offer, so it is unlikely to win.`
-                              : `Price updated to ${formatINR(v)}. Live on BluBuy within 15 minutes.`,
+                              : `Price updated to ${formatINR(v)}. Live on AltasGoods within 15 minutes.`,
                           );
                         }}
                         display={<span className="text-[13px] font-medium text-ink-900">{formatINR(r.price)}</span>}

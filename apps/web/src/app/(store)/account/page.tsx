@@ -39,9 +39,9 @@ export default async function AccountOverviewPage() {
     { label: "Orders", value: `${active.length} on the way`, hint: `${accountOrders.length} orders in 3 months`, href: "/account/orders", icon: Package, tone: "brand" },
     { label: "Returns", value: `${openReturns.length} open`, hint: "Pickups and refunds", href: "/account/returns", icon: Undo2, tone: "info" },
     { label: "Wishlist", value: `${wishlistCount} items`, hint: `${priceDrops} price drops`, href: "/account/wishlist", icon: Heart, tone: "danger" },
-    { label: "BluBuy Credits", value: formatINR(CREDITS.balance), hint: "Use on any order", href: "/account/wallet", icon: Wallet, tone: "success" },
-    { label: "BluCoins", value: formatNumber(BLUCOINS.balance), hint: `${expiring.coins} expire ${shortDate(expiring.expiresOn)}`, href: "/account/rewards", icon: Coins, tone: "accent" },
-    { label: "BluBuy Plus", value: "Active", hint: `Renews ${shortDate(PLUS_MEMBERSHIP.renewsOn)}`, href: "/account/plus", icon: Crown, tone: "neutral" },
+    { label: "AltasGoods Credits", value: formatINR(CREDITS.balance), hint: "Use on any order", href: "/account/wallet", icon: Wallet, tone: "success" },
+    { label: "AltasCoins", value: formatNumber(BLUCOINS.balance), hint: `${expiring.coins} expire ${shortDate(expiring.expiresOn)}`, href: "/account/rewards", icon: Coins, tone: "accent" },
+    { label: "AltasGoods Plus", value: "Active", hint: `Renews ${shortDate(PLUS_MEMBERSHIP.renewsOn)}`, href: "/account/plus", icon: Crown, tone: "neutral" },
   ];
 
   return (
@@ -167,7 +167,7 @@ export default async function AccountOverviewPage() {
             <div className="relative">
               <p className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-200">
                 <Crown size={14} className="text-accent-300" aria-hidden="true" />
-                BluBuy Plus, annual
+                AltasGoods Plus, annual
               </p>
               <p className="mt-3 text-[30px] leading-none font-semibold tracking-tight">{formatINR(PLUS_MEMBERSHIP.totalSaved)}</p>
               <p className="mt-1.5 text-sm text-brand-100">saved since {dateLabel(PLUS_MEMBERSHIP.periodStart)}, on a {formatINR(PLUS_MEMBERSHIP.price)} plan</p>

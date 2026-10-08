@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Customer help: tickets, chat, Guarantee claims and call-backs are all real
- * conversations with BluBuy Care, answered from Care Desk.
+ * conversations with AltasGoods Care, answered from Care Desk.
  */
 
 export interface SupportOrder {
@@ -249,7 +249,7 @@ const CLAIM_REASONS = [
   { key: "refund_not_issued", label: "Refund not issued", note: "If a refund has not arrived 2 days after the seller received your return." },
 ];
 
-/** Ask BluBuy to file a Guarantee claim (spec 10.10). Care Desk checks it and files it with the seller. */
+/** Ask AltasGoods to file a Guarantee claim (spec 10.10). Care Desk checks it and files it with the seller. */
 export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, className }: { orders: SupportOrder[]; defaultOrderId?: string; autoOpen?: boolean; className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -266,10 +266,10 @@ export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, classNa
     setBusy(true);
     setError(null);
     const r = await startConversation({
-      subject: `BluBuy Guarantee claim: ${r0.label.toLowerCase()}`,
+      subject: `AltasGoods Guarantee claim: ${r0.label.toLowerCase()}`,
       category: reason === "not_received" ? "Delivery" : reason === "refund_not_issued" ? "Payment" : "Product quality",
       orderId,
-      body: `BluBuy Guarantee claim (${r0.label}). ${body.trim()}`,
+      body: `AltasGoods Guarantee claim (${r0.label}). ${body.trim()}`,
     });
     setBusy(false);
     if (!r.ok) return setError(r.error);
@@ -289,7 +289,7 @@ export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, classNa
           setDone(null);
         }}
         size="lg"
-        title={done ? "Claim received" : "File a BluBuy Guarantee claim"}
+        title={done ? "Claim received" : "File an AltasGoods Guarantee claim"}
         description={done ? undefined : "For orders from any seller, within 90 days of the latest promised delivery date."}
         footer={
           done ? (
@@ -311,9 +311,9 @@ export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, classNa
           <div className="flex flex-col gap-3 text-sm text-ink-600">
             <p className="flex items-center gap-2 font-medium text-success-700">
               <CircleCheck size={18} aria-hidden="true" />
-              Claim {done} is with BluBuy Care
+              Claim {done} is with AltasGoods Care
             </p>
-            <p>An agent checks it and files it with the seller, who then has 72 hours to respond with a refund or evidence. BluBuy decides within 7 days and refunds you directly if it goes your way. Follow it under My tickets.</p>
+            <p>An agent checks it and files it with the seller, who then has 72 hours to respond with a refund or evidence. AltasGoods decides within 7 days and refunds you directly if it goes your way. Follow it under My tickets.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
@@ -351,7 +351,7 @@ export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, classNa
   );
 }
 
-/** A live chat with BluBuy Care: a CHAT conversation the agent answers from Care Desk. */
+/** A live chat with AltasGoods Care: a CHAT conversation the agent answers from Care Desk. */
 export function ChatButton({
   autoOpen,
   orderLabel,
@@ -391,7 +391,7 @@ export function ChatButton({
     const r =
       chat && chat.canReply
         ? await replyToConversation(chat.id, text.trim())
-        : await startConversation({ subject: subjectFrom(text, "Chat with BluBuy Care"), category: "Other", orderId: orderLabel, body: text.trim() });
+        : await startConversation({ subject: subjectFrom(text, "Chat with AltasGoods Care"), category: "Other", orderId: orderLabel, body: text.trim() });
     setBusy(false);
     if (!r.ok) return setError(r.error);
     setChat(r.data);
@@ -403,7 +403,7 @@ export function ChatButton({
       <Button variant={variant} icon={Headset} className={className} onClick={() => setOpen(true)}>
         Chat with us
       </Button>
-      <Modal open={open} onClose={() => setOpen(false)} side="right" title="BluBuy Care" description={chat ? `Conversation ${chat.id}` : "An agent picks up within a few minutes"}>
+      <Modal open={open} onClose={() => setOpen(false)} side="right" title="AltasGoods Care" description={chat ? `Conversation ${chat.id}` : "An agent picks up within a few minutes"}>
         <div className="flex min-h-full flex-col gap-3">
           <div className="max-w-[85%] rounded-2xl rounded-tl-md bg-ink-100 px-3.5 py-2.5 text-[13.5px] text-ink-800">
             Hi{firstName ? ` ${firstName}` : ""}. {orderLabel ? `I can see your order ${orderLabel}. ` : ""}What can I help you with today?

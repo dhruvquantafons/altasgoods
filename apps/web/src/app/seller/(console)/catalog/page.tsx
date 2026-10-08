@@ -75,8 +75,8 @@ export default async function CatalogPage(props: PageProps<"/seller/catalog">) {
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <AutoSubmitSelect name="channel" defaultValue={channel} selectSize="sm" aria-label="Fulfilment channel" className="min-w-0 flex-1 sm:w-44 sm:flex-none">
           <option value="all">All channels</option>
-          <option value="fulfilled">BluBuy Fulfilled</option>
-          <option value="ship">BluBuy Ship</option>
+          <option value="fulfilled">AltasGoods Fulfilled</option>
+          <option value="ship">AltasGoods Ship</option>
         </AutoSubmitSelect>
         <AutoSubmitSelect name="featured" defaultValue={featured} selectSize="sm" aria-label="Featured offer" className="min-w-0 flex-1 sm:w-48 sm:flex-none">
           <option value="all">Any featured offer</option>
@@ -100,7 +100,7 @@ export default async function CatalogPage(props: PageProps<"/seller/catalog">) {
     <>
       <PageHeader
         title="Listings"
-        description="Your offers on BluBuy. Price and stock changes go live within 15 minutes; title, image and brand changes are reviewed first while the old content stays live."
+        description="Your offers on AltasGoods. Price and stock changes go live within 15 minutes; title, image and brand changes are reviewed first while the old content stays live."
         actions={
           <>
             <ButtonLink href="/seller/catalog/bulk" variant="secondary" icon={Upload}>

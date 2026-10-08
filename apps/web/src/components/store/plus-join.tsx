@@ -94,7 +94,7 @@ export function PlusPlanAction({ plan, mode, best }: { plan: PlusPlanLite; mode:
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title={mode === "switch" ? `Switch to the ${name} plan` : `Join BluBuy Plus, ${name} plan`}
+        title={mode === "switch" ? `Switch to the ${name} plan` : `Join AltasGoods Plus, ${name} plan`}
         description={price}
         footer={
           <>
@@ -122,10 +122,10 @@ export function PlusPlanAction({ plan, mode, best }: { plan: PlusPlanLite; mode:
             <p>
               {mode === "switch"
                 ? `The ${name} plan is ${price}. Your current plan stays as it is until you switch.`
-                : `Free delivery on every order, one-day delivery in top cities, 24 hour early sale access and 2x BluCoins, for ${price}.`}
+                : `Free delivery on every order, one-day delivery in top cities, 24 hour early sale access and 2x AltasCoins, for ${price}.`}
             </p>
             <p className="rounded-lg bg-ink-50 px-3 py-2.5 text-[13px] text-ink-600">
-              {mode === "switch" ? "Plan changes" : "Membership payments"} open with the BluBuy Plus launch, so nothing can be charged today. Tap Notify me and we will keep your request.
+              {mode === "switch" ? "Plan changes" : "Membership payments"} open with the AltasGoods Plus launch, so nothing can be charged today. Tap Notify me and we will keep your request.
             </p>
           </div>
         )}

@@ -9,9 +9,9 @@ import { NOW } from "@/lib/utils";
 export type Channel = "fulfilled" | "ship" | "flex" | "self";
 
 export const CHANNEL_LABEL: Record<Channel, string> = {
-  fulfilled: "BluBuy Fulfilled",
-  ship: "BluBuy Ship",
-  flex: "BluBuy Flex",
+  fulfilled: "AltasGoods Fulfilled",
+  ship: "AltasGoods Ship",
+  flex: "AltasGoods Flex",
   self: "Self Ship",
 };
 

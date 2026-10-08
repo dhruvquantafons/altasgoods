@@ -183,7 +183,7 @@ export function CreateCoupon() {
           <Field label="Audience" htmlFor="cp-aud">
             <Select id="cp-aud" defaultValue="all">
               <option value="all">All customers</option>
-              <option value="plus">BluBuy Plus members</option>
+              <option value="plus">AltasGoods Plus members</option>
               <option value="new">New to your store</option>
             </Select>
           </Field>

@@ -120,8 +120,8 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
         </AutoSubmitSelect>
         <AutoSubmitSelect name="channel" defaultValue={channel} selectSize="sm" aria-label="Fulfilment channel" className="min-w-0 flex-1 sm:w-44 sm:flex-none">
           <option value="all">All channels</option>
-          <option value="ship">BluBuy Ship</option>
-          <option value="fulfilled">BluBuy Fulfilled</option>
+          <option value="ship">AltasGoods Ship</option>
+          <option value="fulfilled">AltasGoods Fulfilled</option>
         </AutoSubmitSelect>
         <Button type="submit" size="sm" variant="secondary">
           Apply
@@ -139,7 +139,7 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
     <>
       <PageHeader
         title="Orders"
-        description="Confirm, pack and hand over seller-packed orders. BluBuy Fulfilled orders are processed by the fulfilment centre and shown here for tracking."
+        description="Confirm, pack and hand over seller-packed orders. AltasGoods Fulfilled orders are processed by the fulfilment centre and shown here for tracking."
         actions={
           <ToastButton icon="download" message="Orders report for the last 30 days is being prepared. It will appear in Reports in about a minute.">
             Download report
@@ -148,7 +148,7 @@ export default async function OrdersPage(props: PageProps<"/seller/orders">) {
       />
 
       <StatStrip className="mb-6">
-        <MiniStat label="Dispatch today" value={dueToday.length} hint="BluBuy Ship orders due by 6:00 PM" tone={dueToday.length ? "warning" : undefined} />
+        <MiniStat label="Dispatch today" value={dueToday.length} hint="AltasGoods Ship orders due by 6:00 PM" tone={dueToday.length ? "warning" : undefined} />
         <MiniStat label="Overdue" value={overdue.length} hint={overdue.length ? "Past the dispatch by date" : "Nothing late, keep it up"} />
         <MiniStat label="Awaiting pickup" value={awaitingPickup.length} hint="Slot today, 4:00 to 6:00 PM" />
         <MiniStat

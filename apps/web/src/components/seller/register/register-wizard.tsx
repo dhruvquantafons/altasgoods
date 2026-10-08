@@ -110,7 +110,7 @@ export function RegisterWizard({
       {/* Step rail */}
       <aside className="hidden lg:block">
         <div className="sticky top-24">
-          <h1 className="font-display text-xl font-semibold text-ink-900">Start selling on BluBuy</h1>
+          <h1 className="font-display text-xl font-semibold text-ink-900">Start selling on AltasGoods</h1>
           <p className="mt-1 text-[13px] text-ink-500">About 15 minutes. Every step is saved, so you can finish later.</p>
           {app && <p className="mt-1 font-mono text-xs text-ink-500">Application {app.id}</p>}
           <div className="mt-5">

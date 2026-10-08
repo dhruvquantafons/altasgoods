@@ -6,7 +6,7 @@ import { CURRENT_CUSTOMER } from "@/lib/mock";
 import { isActive } from "@/components/account/lib";
 
 export const metadata: Metadata = {
-  title: { default: "Your account", template: "%s | Your account | BluBuy" },
+  title: { default: "Your account", template: "%s | Your account | AltasGoods" },
 };
 
 export default async function AccountLayout({ children }: LayoutProps<"/account">) {

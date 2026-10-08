@@ -85,7 +85,7 @@ export function BulkUpload({ templates, errors }: { templates: Template[]; error
       </Card>
 
       <Card className="xl:col-span-2">
-        <CardHeader title="2. Upload your file" description="We validate every row before anything changes on BluBuy. Rows without errors are processed; rows with errors are skipped." />
+        <CardHeader title="2. Upload your file" description="We validate every row before anything changes on AltasGoods. Rows without errors are processed; rows with errors are skipped." />
         <div className="p-5">
           {phase === "idle" ? (
             <label

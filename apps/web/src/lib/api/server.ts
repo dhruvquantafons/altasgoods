@@ -42,7 +42,7 @@ export async function proxyFile(path: string) {
     }
     return new Response(r.body, { status: 200, headers });
   } catch {
-    return new Response("BluBuy is unreachable right now", { status: 503 });
+    return new Response("AltasGoods is unreachable right now", { status: 503 });
   }
 }
 

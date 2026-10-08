@@ -8,7 +8,7 @@ export default async function LogisticsAccountPage(props: PageProps<"/logistics/
     <StaffAccountPage
       workspaceName="Hub Console"
       tab={accountTab(sp.tab)}
-      person={{ name: "Naveen Kumar", role: "Hub Manager", email: "naveen.kumar@blubuy.in", phone: "+91 99001 27734", team: "Whitefield Delivery Hub", location: "Whitefield, Bengaluru", memberSince: "2026-07-20T09:00:00+05:30", userId: "EMP-LOG-0142" }}
+      person={{ name: "Naveen Kumar", role: "Hub Manager", email: "naveen.kumar@altasgoods.in", phone: "+91 99001 27734", team: "Whitefield Delivery Hub", location: "Whitefield, Bengaluru", memberSince: "2026-07-20T09:00:00+05:30", userId: "EMP-LOG-0142" }}
       topics={[
         { key: "linehaul", label: "Line haul delays", description: "Inbound trucks running late against their ETA" },
         { key: "ndr", label: "NDR and failed deliveries", description: "Cases due for action and customer responses" },

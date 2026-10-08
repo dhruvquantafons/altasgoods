@@ -221,7 +221,7 @@ export function CancelOrderButton({
                   </div>
                 </div>
               )}
-              <p className="mt-3 text-xs text-ink-500">BluBuy never charges a cancellation fee. Any BluCoins or BluBuy Credits you used are restored right away.</p>
+              <p className="mt-3 text-xs text-ink-500">AltasGoods never charges a cancellation fee. Any AltasCoins or AltasGoods Credits you used are restored right away.</p>
             </fieldset>
           </div>
         )}

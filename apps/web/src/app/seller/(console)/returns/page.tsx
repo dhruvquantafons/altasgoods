@@ -63,7 +63,7 @@ export default async function ReturnsPage(props: PageProps<"/seller/returns">) {
     <>
       <PageHeader
         title="Returns and claims"
-        description="Review out-of-policy requests within 48 hours, grade every return within 48 hours of receipt, and claim through BluBuy SafeClaim within 14 days when an item comes back damaged, wrong or empty."
+        description="Review out-of-policy requests within 48 hours, grade every return within 48 hours of receipt, and claim through AltasGoods SafeClaim within 14 days when an item comes back damaged, wrong or empty."
         actions={
           <ToastButton icon="download" message="Returns report for the last 90 days is being prepared.">
             Returns report
@@ -83,7 +83,7 @@ export default async function ReturnsPage(props: PageProps<"/seller/returns">) {
       {tab === "claims" ? (
         <>
           <Callout tone="info" className="mb-4" title="Sample claims">
-            SafeClaim filing goes live with the claims service. These claims show how decisions and reimbursements will appear; failed quality checks on your real returns are reviewed by BluBuy meanwhile.
+            SafeClaim filing goes live with the claims service. These claims show how decisions and reimbursements will appear; failed quality checks on your real returns are reviewed by AltasGoods meanwhile.
           </Callout>
           <Card className="overflow-hidden">
             <TableContainer>

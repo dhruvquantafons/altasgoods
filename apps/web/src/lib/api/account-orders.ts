@@ -28,7 +28,7 @@ const EVENT_LABEL: Record<string, string> = {
   NEW: "Payment received, order sent to the seller",
   ACCEPTED: "Seller confirmed your order",
   PACKED: "Item packed and invoice generated",
-  READY_TO_SHIP: "Ready to ship, handed to BluBuy Logistics",
+  READY_TO_SHIP: "Ready to ship, handed to AltasGoods Logistics",
   SHIPPED: "Shipped",
   OUT_FOR_DELIVERY: "Out for delivery",
   DELIVERED: "Delivered",

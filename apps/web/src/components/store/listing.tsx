@@ -388,7 +388,7 @@ function FilterPanel({ base, f, basePath, mode }: { base: Product[]; f: Filters;
       </FilterGroup>
 
       <FilterGroup title="Programs and availability">
-        <Option href={href({ assured: !f.assured })} active={f.assured} label="BluBuy Assured" count={count("assured", (p) => p.assured)} />
+        <Option href={href({ assured: !f.assured })} active={f.assured} label="AltasGoods Assured" count={count("assured", (p) => p.assured)} />
         <Option href={href({ avail: !f.avail })} active={f.avail} label="Include out of stock" count={count("avail", (p) => !inStock(p))} />
       </FilterGroup>
     </div>
@@ -436,7 +436,7 @@ export function ListingView({
   if (f.discount) chips.push({ label: `${f.discount}% off or more`, href: href({ discount: "" }) });
   if (f.delivery) chips.push({ label: DELIVERY_OPTIONS.find((d) => d.key === f.delivery)?.label ?? "", href: href({ delivery: "" }) });
   if (f.cod) chips.push({ label: "Pay on delivery", href: href({ cod: false }) });
-  if (f.assured) chips.push({ label: "BluBuy Assured", href: href({ assured: false }) });
+  if (f.assured) chips.push({ label: "AltasGoods Assured", href: href({ assured: false }) });
   if (f.avail) chips.push({ label: "Including out of stock", href: href({ avail: false }) });
 
   const clearHref = `${basePath}${toQuery(f, { cat: "", sub: "", brands: [], price: "", min: "", max: "", rating: "", discount: "", assured: false, delivery: "", cod: false, avail: false })}`;

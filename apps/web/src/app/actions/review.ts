@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { api } from "@/lib/api/server";
 import type { ApplicationReview } from "@/lib/api/types";
 
-/** BluBuy Control decisions on seller applications. The API checks the staff role on every call. */
+/** AltasGoods Control decisions on seller applications. The API checks the staff role on every call. */
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string; code?: string; errors?: { path: string; message: string }[] };
 
@@ -21,7 +21,7 @@ async function decide(fn: () => Promise<{ data?: ApplicationReview; error?: unkn
     revalidatePath("/admin");
     return { ok: true, data: r.data };
   } catch {
-    return { ok: false, error: "BluBuy is unreachable right now. Please try again in a moment." };
+    return { ok: false, error: "AltasGoods is unreachable right now. Please try again in a moment." };
   }
 }
 
@@ -32,7 +32,7 @@ export async function loadReview(id: string): Promise<Result<ApplicationReview>>
     const r = await (await api()).GET("/v1/admin/seller-applications/{id}", path(id));
     return r.data ? { ok: true, data: r.data } : fail(r.error, "Could not load this application");
   } catch {
-    return { ok: false, error: "BluBuy is unreachable right now. Please try again in a moment." };
+    return { ok: false, error: "AltasGoods is unreachable right now. Please try again in a moment." };
   }
 }
 

@@ -5,7 +5,7 @@ import { currentUser } from "@/lib/api/server";
 import { adminNotifications, returns } from "@/lib/mock";
 
 export const metadata: Metadata = {
-  title: { default: "BluBuy Control", template: "%s | BluBuy Control" },
+  title: { default: "AltasGoods Control", template: "%s | AltasGoods Control" },
 };
 
 const ROLE: Record<string, string> = {
@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminShell
       notifications={adminNotifications}
-      user={user ? { name: user.name ?? user.phone, role: user.staffRoles.map((r) => ROLE[r] ?? r).join(", ") || "BluBuy Control" } : undefined}
+      user={user ? { name: user.name ?? user.phone, role: user.staffRoles.map((r) => ROLE[r] ?? r).join(", ") || "AltasGoods Control" } : undefined}
       counts={{ sellerApprovals: kyc?.awaitingReview || undefined, catalogQueue: 212, returns: openReturns }}
     >
       {children}

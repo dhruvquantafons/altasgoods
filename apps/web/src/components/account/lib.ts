@@ -265,7 +265,7 @@ export function returnInfo(order: Order, item: OrderItem): ReturnInfo {
   return { eligible: true, policy, windowEndsAt: ends.toISOString() };
 }
 
-/** BluBuy Secure Delivery applies to high-value or sensitive items (spec 10.14). */
+/** AltasGoods Secure Delivery applies to high-value or sensitive items (spec 10.14). */
 export function needsSecureDelivery(order: Order) {
   return order.items.some((it) => it.price >= SECURE_DELIVERY.threshold || SECURE_DELIVERY.sensitiveCategories.includes(getProduct(it.productId)?.categoryId ?? ""));
 }
@@ -283,11 +283,11 @@ export function paymentLabel(method: PaymentMethod) {
     case "netbanking":
       return "Net banking, Sahyadri Bank";
     case "wallet":
-      return "BluBuy Credits";
+      return "AltasGoods Credits";
     case "paylater":
-      return "BluBuy Pay Later";
+      return "AltasGoods Pay Later";
     case "giftcard":
-      return "BluBuy Gift Card";
+      return "AltasGoods Gift Card";
     case "cod":
       return "Pay on delivery";
   }
@@ -308,7 +308,7 @@ export function refundTiming(method: PaymentMethod) {
 }
 
 export function sellerName(id: string) {
-  return getSeller(id)?.displayName ?? "BluBuy seller";
+  return getSeller(id)?.displayName ?? "AltasGoods seller";
 }
 
 export function shortTitle(title: string) {

@@ -146,7 +146,7 @@ export default async function FeedbackPage(props: PageProps<"/seller/feedback">)
           <div className="flex flex-col gap-6">
             <Breakdown ratings={sellerFeedback.map((f) => f.rating)} average={avgFeedback} label="Seller feedback, last 30 days" />
             <Callout tone="neutral" icon={Info} title="How feedback affects ODR">
-              1 and 2 star feedback counts toward your order defect rate for 60 days. Feedback about delivery on BluBuy Fulfilled orders is struck through and excluded, because BluBuy handled it.
+              1 and 2 star feedback counts toward your order defect rate for 60 days. Feedback about delivery on AltasGoods Fulfilled orders is struck through and excluded, because AltasGoods handled it.
             </Callout>
           </div>
           <Card className="xl:col-span-2">
@@ -161,7 +161,7 @@ export default async function FeedbackPage(props: PageProps<"/seller/feedback">)
                       {f.buyer}, {timeAgo(f.at)}, order <span className="font-mono">{f.orderId}</span>
                     </span>
                     {f.rating <= 2 && !f.struck && <Badge size="sm" tone="warning">Counts toward ODR</Badge>}
-                    {f.struck && <Badge size="sm" tone="neutral">Excluded, delivery by BluBuy</Badge>}
+                    {f.struck && <Badge size="sm" tone="neutral">Excluded, delivery by AltasGoods</Badge>}
                   </div>
                   <p className={cn("mt-1.5 text-[13px] leading-relaxed text-ink-700", f.struck && "text-ink-500 line-through")}>{f.comment}</p>
                   {f.response ? (

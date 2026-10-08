@@ -69,7 +69,7 @@ export function ProfileForm({ person }: { person: StaffPerson }) {
 
 const SESSIONS = [
   { id: "s1", device: "Chrome on macOS", place: "Bengaluru, Karnataka", when: "Active now", current: true, mobile: false },
-  { id: "s2", device: "BluBuy app on Android", place: "Bengaluru, Karnataka", when: "2 hours ago", current: false, mobile: true },
+  { id: "s2", device: "AltasGoods app on Android", place: "Bengaluru, Karnataka", when: "2 hours ago", current: false, mobile: true },
   { id: "s3", device: "Edge on Windows", place: "Mumbai, Maharashtra", when: "Yesterday, 6:42 pm", current: false, mobile: false },
 ];
 
@@ -215,7 +215,7 @@ export function PreferencesForm({ topics }: { topics: { key: string; label: stri
             <option value="compact">Compact</option>
           </Select>
         </Field>
-        <Field label="Time zone" htmlFor="pr-tz" hint="All times in BluBuy are shown in IST">
+        <Field label="Time zone" htmlFor="pr-tz" hint="All times in AltasGoods are shown in IST">
           <Input id="pr-tz" value="India Standard Time (UTC+5:30)" disabled />
         </Field>
         <Field label="Daily summary email" htmlFor="pr-digest">

@@ -8,7 +8,7 @@ import { Modal, Switch, useToast } from "@/components/ui/interactive";
 
 const MONEY_ROLES = ["Finance Manager", "Finance Executive", "Super Admin", "Operations Admin"];
 
-/** Invite a staff member to BluBuy Control with a role, scope and MFA. */
+/** Invite a staff member to AltasGoods Control with a role, scope and MFA. */
 export function InviteMember({ roles }: { roles: { id: string; name: string; scope: string }[] }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -58,7 +58,7 @@ export function InviteMember({ roles }: { roles: { id: string; name: string; sco
               <Input id={`${id}-n`} value={name} onChange={(e) => setName(e.target.value)} placeholder="Priya Menon" />
             </Field>
             <Field label="Work email" required htmlFor={`${id}-e`} error={emailError}>
-              <Input id={`${id}-e`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="priya@blubuy.in" aria-invalid={Boolean(emailError)} />
+              <Input id={`${id}-e`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="priya@altasgoods.in" aria-invalid={Boolean(emailError)} />
             </Field>
           </div>
           <Field label="Role" htmlFor={`${id}-r`} hint={`Default scope: ${role.scope}`}>
@@ -72,7 +72,7 @@ export function InviteMember({ roles }: { roles: { id: string; name: string; sco
           </Field>
           <Field label="Scope" htmlFor={`${id}-s`} hint="Category managers and moderators can be limited to categories">
             <Select id={`${id}-s`} defaultValue="global">
-              <option value="global">All of BluBuy</option>
+              <option value="global">All of AltasGoods</option>
               <option value="electronics">Electronics, Mobiles and Appliances</option>
               <option value="fashion">Fashion and Beauty</option>
               <option value="home">Home, Grocery and Books</option>

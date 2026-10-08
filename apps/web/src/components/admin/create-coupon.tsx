@@ -38,7 +38,7 @@ export function CreateCoupon() {
         open={open}
         onClose={() => setOpen(false)}
         title="Create a platform coupon"
-        description="BluBuy-funded discounts do not reduce the seller's item price; they are booked as promo expense."
+        description="AltasGoods-funded discounts do not reduce the seller's item price; they are booked as promo expense."
         size="lg"
         footer={
           <>
@@ -65,7 +65,7 @@ export function CreateCoupon() {
           </Field>
           <Field label="Funding" htmlFor={`${id}-fund`}>
             <Select id={`${id}-fund`} defaultValue="blubuy">
-              <option value="blubuy">BluBuy funded</option>
+              <option value="blubuy">AltasGoods funded</option>
               <option value="bank">Bank funded (recovered from issuer)</option>
               <option value="cofunded">Co-funded with brand</option>
             </Select>
@@ -103,7 +103,7 @@ export function CreateCoupon() {
             <Select id={`${id}-aud`} defaultValue="all">
               <option value="all">Everyone</option>
               <option value="new">New customers, first order</option>
-              <option value="plus">BluBuy Plus members</option>
+              <option value="plus">AltasGoods Plus members</option>
               <option value="lapsed">Lapsed, no order in 90 days</option>
             </Select>
           </Field>
@@ -114,7 +114,7 @@ export function CreateCoupon() {
             <Input id={`${id}-end`} type="date" value={end} onChange={(e) => setEnd(e.target.value)} aria-invalid={Boolean(errors.dates)} />
           </Field>
           <p className="rounded-xl border border-line bg-ink-50/60 px-4 py-3 text-xs text-ink-600 sm:col-span-2">
-            Stacking at checkout: deal price, then one coupon per item, then one bank offer per order, then BluCoins, then BluBuy Credits. Coupon codes are never pre-applied for customers who did not choose them.
+            Stacking at checkout: deal price, then one coupon per item, then one bank offer per order, then AltasCoins, then AltasGoods Credits. Coupon codes are never pre-applied for customers who did not choose them.
           </p>
         </div>
       </Modal>

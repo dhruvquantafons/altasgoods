@@ -46,7 +46,7 @@ export function FeedbackResponse({ id, canRemove }: { id: string; canRemove: boo
             Respond publicly
           </Button>
           {canRemove && (
-            <Button size="xs" variant="ghost" icon={Flag} onClick={() => toast.show("Removal request sent. BluBuy reviews it against the feedback policy within 48 hours.")}>
+            <Button size="xs" variant="ghost" icon={Flag} onClick={() => toast.show("Removal request sent. AltasGoods reviews it against the feedback policy within 48 hours.")}>
               Request removal
             </Button>
           )}
@@ -93,7 +93,7 @@ export function ReportReview({ id }: { id: string }) {
   const toast = useToast();
   return (
     <>
-      <Button size="xs" variant="ghost" icon={Flag} onClick={() => toast.show(`Review ${id} reported. BluBuy checks it against the review policy.`)}>
+      <Button size="xs" variant="ghost" icon={Flag} onClick={() => toast.show(`Review ${id} reported. AltasGoods checks it against the review policy.`)}>
         Report
       </Button>
       {toast.node}

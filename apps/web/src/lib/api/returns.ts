@@ -33,7 +33,7 @@ export function toAccountReturn(r: ReturnRequest, paymentLabel: string): Account
   const order = ["REQUESTED", "APPROVED", "PICKUP_SCHEDULED", "PICKED_UP", "RECEIVED", "QC_PASSED", "COMPLETED"] as const;
   const reached = (s: ApiReturnStatus) => r.events.some((e) => e.toStatus === s) || order.indexOf(s as (typeof order)[number]) <= order.indexOf(r.status as (typeof order)[number]);
   const closed = r.status === "CANCELLED" || r.status === "REJECTED";
-  const destination = r.refundTo === "CREDITS" ? "BluBuy Credits" : r.refundTo === "BANK" ? "your UPI ID" : paymentLabel;
+  const destination = r.refundTo === "CREDITS" ? "AltasGoods Credits" : r.refundTo === "BANK" ? "your UPI ID" : paymentLabel;
   return {
     id: r.id,
     orderId: r.orderId,
@@ -90,7 +90,7 @@ export async function loadMyReturns() {
     orderId: x.orderId,
     returnId: x.returnId ?? undefined,
     source: REFUND_SOURCE[x.source] ?? "Cancellation",
-    title: x.source === "SUPPORT" ? `${x.title} (BluBuy Care)` : x.title,
+    title: x.source === "SUPPORT" ? `${x.title} (AltasGoods Care)` : x.title,
     image: x.image ?? undefined,
     amount: x.amountPaise / 100,
     destination: METHOD[x.method] ?? x.method,

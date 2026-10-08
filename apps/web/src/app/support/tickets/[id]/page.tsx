@@ -70,7 +70,7 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
       ]
     : snapshot
       ? [
-          { label: "Order placed on BluBuy within the last 90 days", ok: true },
+          { label: "Order placed on AltasGoods within the last 90 days", ok: true },
           { label: "Customer contacted the seller or opened a return at least 48 hours ago", ok: contactedLongAgo },
         ]
       : [];
@@ -213,7 +213,7 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {customer?.plusMember && (
                       <Badge tone="brand" size="sm" icon={Crown}>
-                        BluBuy Plus
+                        AltasGoods Plus
                       </Badge>
                     )}
                     {customer && customer.status !== "active" && (
@@ -258,7 +258,7 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                     <KeyRow label="City">
                       {customer.city}, {customer.state}
                     </KeyRow>
-                    <KeyRow label="BluCoins">{formatNumber(customer.bluCoins)}</KeyRow>
+                    <KeyRow label="AltasCoins">{formatNumber(customer.bluCoins)}</KeyRow>
                   </dl>
                   <Link href={`/support/customers/${customer.id}`} className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
                     Open customer profile <ArrowRight size={14} aria-hidden="true" />

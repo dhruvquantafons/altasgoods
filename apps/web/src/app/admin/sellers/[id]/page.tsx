@@ -27,7 +27,7 @@ export async function generateMetadata(props: PageProps<"/admin/sellers/[id]">) 
 }
 
 const ONBOARDING = ["registration_started", "documents_submitted", "under_review", "action_required"];
-const FULFILMENT: Record<string, string> = { blubuy_fulfilled: "BluBuy Fulfilled", easy_ship: "BluBuy Ship", self_ship: "Self Ship" };
+const FULFILMENT: Record<string, string> = { blubuy_fulfilled: "AltasGoods Fulfilled", easy_ship: "AltasGoods Ship", self_ship: "Self Ship" };
 
 export default async function SellerDetail(props: PageProps<"/admin/sellers/[id]">) {
   const { id } = await props.params;
@@ -206,7 +206,7 @@ export default async function SellerDetail(props: PageProps<"/admin/sellers/[id]
                               <span className="min-w-0">
                                 <span className="block truncate text-[13px] text-ink-800">{p.title}</span>
                                 <span className="text-xs text-ink-500">
-                                  {offer.fulfilledBy === "blubuy" ? "BluBuy Fulfilled" : "Seller fulfilled"}
+                                  {offer.fulfilledBy === "blubuy" ? "AltasGoods Fulfilled" : "Seller fulfilled"}
                                   {p.featuredSellerId === s.id ? ", featured offer" : ""}
                                 </span>
                               </span>

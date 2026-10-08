@@ -29,7 +29,7 @@ export default function AdsPage() {
 
   return (
     <>
-      <PageHeader title="Ads platform" description="BluBuy Ads: Sponsored Products, Sponsored Brands and Sponsored Display. Second-price CPC auction; every placement carries a visible Sponsored label (spec 10.16)." />
+      <PageHeader title="Ads platform" description="AltasGoods Ads: Sponsored Products, Sponsored Brands and Sponsored Display. Second-price CPC auction; every placement carries a visible Sponsored label (spec 10.16)." />
 
       <KpiStrip
         className="mb-6"
@@ -48,7 +48,7 @@ export default function AdsPage() {
         <Card className="min-w-0 overflow-hidden">
           <CardHeader title="Ad revenue" description="Completed days, all ad formats" />
           <div className="px-5 pt-4 pb-5">
-            <AreaChart data={adsDaily.map((d) => ({ label: formatDateShort(d.date), revenue: d.revenue }))} series={[{ key: "revenue", label: "Ad revenue" }]} format="inrCompact" height={250} ariaLabel="BluBuy Ads revenue per day, last 30 days" />
+            <AreaChart data={adsDaily.map((d) => ({ label: formatDateShort(d.date), revenue: d.revenue }))} series={[{ key: "revenue", label: "Ad revenue" }]} format="inrCompact" height={250} ariaLabel="AltasGoods Ads revenue per day, last 30 days" />
           </div>
         </Card>
           <Card className="min-w-0">
@@ -140,7 +140,7 @@ export default function AdsPage() {
       </div>
 
       <Card>
-        <CardHeader title="Advertisers" description="Sellers running BluBuy Ads, last 30 days. Wallets are prepaid; low balances pause campaigns." />
+        <CardHeader title="Advertisers" description="Sellers running AltasGoods Ads, last 30 days. Wallets are prepaid; low balances pause campaigns." />
         <TableContainer className="mt-3">
           <Table>
             <THead>

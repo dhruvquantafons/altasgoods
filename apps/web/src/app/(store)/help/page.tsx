@@ -46,7 +46,7 @@ export default async function HelpPage(props: PageProps<"/help">) {
     <div className="pb-16 lg:pb-24">
       <div className="border-b border-line bg-gradient-to-b from-brand-50/70 to-white">
         <div className={cn(STORE_CONTAINER, "py-10 lg:py-14")}>
-          <p className="text-sm font-semibold text-brand-700">BluBuy help centre</p>
+          <p className="text-sm font-semibold text-brand-700">AltasGoods help centre</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink-900 lg:text-[40px]">How can we help{first ? `, ${first}` : ""}?</h1>
           <Form action="/help" scroll={false} className="mt-6 flex max-w-2xl gap-2">
             <label htmlFor="help-q" className="sr-only">
@@ -206,14 +206,14 @@ export default async function HelpPage(props: PageProps<"/help">) {
                   </Link>
                 </article>
                 {[
-                  { id: "shipping", title: "Shipping and delivery", body: "Orders confirmed before 2 pm count from the same day. Delivery is free for BluBuy Plus members and for each seller shipment of ₹499 or more, otherwise ₹40 per shipment, always shown before you pay. Promise dates are calculated for your pincode and shown on every product." },
-                  { id: "cancellation", title: "Cancellation", body: "Cancel any item before it ships for a full refund and no fee. Once shipped, you can request cancellation and the parcel returns to the seller, or refuse it at the door. Prepaid refunds start within 1 hour, and BluCoins and BluBuy Credits are restored immediately." },
-                  { id: "payments", title: "Payments", body: "Pay by UPI, credit or debit card, net banking, EMI, BluBuy Pay Later, BluBuy Credits and gift cards, or pay on delivery for orders up to ₹50,000. Card numbers are never stored by BluBuy; saved cards are tokenised by our payment partner. Failed payments are reversed automatically within 1 business day." },
-                  { id: "credits", title: "BluBuy Credits, gift cards and BluCoins", body: "Refund credits never expire and can be moved back to your bank. Gift cards are valid for 1 year from activation and cannot be reloaded or encashed. BluCoins are earned on every order (2 per ₹100 for Plus members), can pay for up to 10% of an order and expire 6 months after they are credited." },
-                  { id: "guarantee", title: "BluBuy Guarantee", body: "If an item does not arrive, arrives materially different, or a refund is not issued, contact the seller first. If it is not resolved within 48 hours, file a claim from the order page within 90 days of the latest promised delivery date and BluBuy decides." },
-                  { id: "terms", title: "Terms of use", body: "BluBuy is a marketplace operated by BluBuy Commerce Private Limited. Products are sold by independent sellers whose names, addresses and ratings are shown on every product page. Prices include GST, and each seller issues its own tax invoice." },
+                  { id: "shipping", title: "Shipping and delivery", body: "Orders confirmed before 2 pm count from the same day. Delivery is free for AltasGoods Plus members and for each seller shipment of ₹499 or more, otherwise ₹40 per shipment, always shown before you pay. Promise dates are calculated for your pincode and shown on every product." },
+                  { id: "cancellation", title: "Cancellation", body: "Cancel any item before it ships for a full refund and no fee. Once shipped, you can request cancellation and the parcel returns to the seller, or refuse it at the door. Prepaid refunds start within 1 hour, and AltasCoins and AltasGoods Credits are restored immediately." },
+                  { id: "payments", title: "Payments", body: "Pay by UPI, credit or debit card, net banking, EMI, AltasGoods Pay Later, AltasGoods Credits and gift cards, or pay on delivery for orders up to ₹50,000. Card numbers are never stored by AltasGoods; saved cards are tokenised by our payment partner. Failed payments are reversed automatically within 1 business day." },
+                  { id: "credits", title: "AltasGoods Credits, gift cards and AltasCoins", body: "Refund credits never expire and can be moved back to your bank. Gift cards are valid for 1 year from activation and cannot be reloaded or encashed. AltasCoins are earned on every order (2 per ₹100 for Plus members), can pay for up to 10% of an order and expire 6 months after they are credited." },
+                  { id: "guarantee", title: "AltasGoods Guarantee", body: "If an item does not arrive, arrives materially different, or a refund is not issued, contact the seller first. If it is not resolved within 48 hours, file a claim from the order page within 90 days of the latest promised delivery date and AltasGoods decides." },
+                  { id: "terms", title: "Terms of use", body: "AltasGoods is a marketplace operated by AltasGoods Commerce Private Limited. Products are sold by independent sellers whose names, addresses and ratings are shown on every product page. Prices include GST, and each seller issues its own tax invoice." },
                   { id: "privacy", title: "Privacy", body: "We collect only what we need to deliver your orders and keep your account safe, under the Digital Personal Data Protection Act, 2023. Promotional messages need your consent, which you can withdraw any time. Download or delete your data from Account, then Privacy and data." },
-                  { id: "account", title: "Account and sign in", body: "Sign in with your mobile number and a one-time password. Changing your mobile number needs codes sent to both the old and new numbers. BluBuy will never ask for your OTP, PIN or card details on a call." },
+                  { id: "account", title: "Account and sign in", body: "Sign in with your mobile number and a one-time password. Changing your mobile number needs codes sent to both the old and new numbers. AltasGoods will never ask for your OTP, PIN or card details on a call." },
                 ].map((p) => (
                   <article key={p.id} id={p.id} className="scroll-mt-28 rounded-2xl border border-line p-5 lg:p-6">
                     <h3 className="text-base font-semibold text-ink-900">{p.title}</h3>
@@ -231,14 +231,14 @@ export default async function HelpPage(props: PageProps<"/help">) {
 
             <section id="about" aria-labelledby="help-about" className="mt-14 scroll-mt-28 rounded-2xl bg-ink-50 p-5 lg:p-6">
               <h2 id="help-about" className="text-base font-semibold text-ink-900">
-                About BluBuy
+                About AltasGoods
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                BluBuy is a calmer Indian marketplace built in Bengaluru, connecting customers with thousands of verified sellers across India. Our promise: honest prices,
+                AltasGoods is a calmer Indian marketplace built in Bengaluru, connecting customers with thousands of verified sellers across India. Our promise: honest prices,
                 real delivery dates and no hidden charges. {COMPANY.legalName}, CIN {COMPANY.cin}.
               </p>
               <Link href="/about" className="mt-3 inline-flex text-[13px] font-semibold text-brand-700 hover:underline">
-                More about BluBuy
+                More about AltasGoods
               </Link>
             </section>
           </div>

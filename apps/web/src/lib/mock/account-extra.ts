@@ -39,7 +39,7 @@ export const ACCOUNT_PROFILE = {
   twoStepEnabled: true,
 };
 
-/* ------------------------------ BluBuy Plus ---------------------------- */
+/* ------------------------------ AltasGoods Plus ---------------------------- */
 /** GET /v1/me/plus */
 
 export const PLUS_PLANS = [
@@ -50,8 +50,8 @@ export const PLUS_PLANS = [
 const plusSavings = [
   { key: "delivery", label: "Free delivery", value: 1640, detail: "41 shipments delivered free" },
   { key: "deals", label: "Plus-only prices and deals", value: 6380, detail: "Across 12 orders" },
-  { key: "coins", label: "Extra BluCoins (2x)", value: 1204, detail: "1,204 bonus coins, 1 coin = ₹1" },
-  { key: "early", label: "Early access to BluBuy Big Days", value: 2150, detail: "Deals claimed 24 hours early" },
+  { key: "coins", label: "Extra AltasCoins (2x)", value: 1204, detail: "1,204 bonus coins, 1 coin = ₹1" },
+  { key: "early", label: "Early access to AltasGoods Big Days", value: 2150, detail: "Deals claimed 24 hours early" },
 ];
 
 export const PLUS_MEMBERSHIP = {
@@ -82,7 +82,7 @@ export const PLUS_MEMBERSHIP = {
   ordersThisYear: 31,
 };
 
-/* ----------------------------- BluBuy Credits -------------------------- */
+/* ----------------------------- AltasGoods Credits -------------------------- */
 /** GET /v1/me/credits and /v1/me/credits/ledger */
 
 export type WalletKind = "refund" | "gift_card" | "goodwill" | "spent" | "withdrawal";
@@ -100,12 +100,12 @@ export interface WalletTxn {
 
 // oldest first; running balance is computed so the ledger always reconciles
 const walletSeed: Omit<WalletTxn, "balance">[] = [
-  { id: "WT-88120", at: ist("2026-03-08", "20:15"), title: "Gift card added", detail: "BluBuy Gift Card ending 7731", kind: "gift_card", amount: 2000, ref: "GC-7731" },
+  { id: "WT-88120", at: ist("2026-03-08", "20:15"), title: "Gift card added", detail: "AltasGoods Gift Card ending 7731", kind: "gift_card", amount: 2000, ref: "GC-7731" },
   { id: "WT-88904", at: ist("2026-04-19", "13:30"), title: "Used on an order", detail: "Part payment, Maison Vara leather tote", kind: "spent", amount: -1200, ref: "BB-260419-30871" },
-  { id: "WT-89261", at: ist("2026-06-02", "16:45"), title: "Refund to BluBuy Credits", detail: "Return of Kiln & Co Stoneware Coffee Mugs", kind: "refund", amount: 899, ref: "RT-29711" },
+  { id: "WT-89261", at: ist("2026-06-02", "16:45"), title: "Refund to AltasGoods Credits", detail: "Return of Kiln & Co Stoneware Coffee Mugs", kind: "refund", amount: 899, ref: "RT-29711" },
   { id: "WT-89630", at: ist("2026-07-15", "11:10"), title: "Goodwill credit", detail: "Sorry your order arrived a day late", kind: "goodwill", amount: 250, ref: "TK-58210" },
   { id: "WT-90118", at: ist("2026-09-06", "18:20"), title: "Used on an order", detail: "Part payment, Voltix ProBlend mixer grinder", kind: "spent", amount: -500, ref: "BB-260906-92983" },
-  { id: "WT-90412", at: ist("2026-09-30", "09:32"), title: "Refund to BluBuy Credits", detail: "Return of Kiln & Co Handcrafted Ceramic Vase", kind: "refund", amount: 1299, ref: "RT-30916" },
+  { id: "WT-90412", at: ist("2026-09-30", "09:32"), title: "Refund to AltasGoods Credits", detail: "Return of Kiln & Co Handcrafted Ceramic Vase", kind: "refund", amount: 1299, ref: "RT-30916" },
 ];
 
 let running = 0;
@@ -139,7 +139,7 @@ export const GIFT_CARD_DESIGNS = [
   { id: "wedding", name: "Wedding", tone: "danger" as const },
 ];
 
-/* -------------------------------- BluCoins ----------------------------- */
+/* -------------------------------- AltasCoins ----------------------------- */
 /** GET /v1/me/blucoins */
 
 export interface CoinTxn {
@@ -157,7 +157,7 @@ const coinSeed: Omit<CoinTxn, "balance">[] = [
   { id: "BC-4410", at: ist("2026-04-30", "09:00"), title: "Earned on an order", detail: "Order BB-260418-55120", kind: "earned", coins: 120 },
   { id: "BC-4532", at: ist("2026-05-22", "09:00"), title: "Earned on an order", detail: "Order BB-260509-21934", kind: "earned", coins: 85 },
   { id: "BC-4719", at: ist("2026-06-14", "09:00"), title: "Earned on an order", detail: "Order BB-260601-77412", kind: "earned", coins: 100 },
-  { id: "BC-4851", at: ist("2026-07-16", "12:00"), title: "BluBuy Plus Day bonus", detail: "Members-only bonus coins", kind: "bonus", coins: 50 },
+  { id: "BC-4851", at: ist("2026-07-16", "12:00"), title: "AltasGoods Plus Day bonus", detail: "Members-only bonus coins", kind: "bonus", coins: 50 },
   { id: "BC-4907", at: ist("2026-07-30", "17:40"), title: "Review bonus", detail: "4 reviews published in July", kind: "bonus", coins: 40 },
   { id: "BC-5012", at: ist("2026-08-12", "09:00"), title: "Earned on an order", detail: "Order BB-260728-60413", kind: "earned", coins: 100 },
   { id: "BC-5093", at: ist("2026-08-20", "21:05"), title: "Redeemed for a partner reward", detail: "Cinemood movie voucher", kind: "redeemed", coins: -200 },
@@ -166,7 +166,7 @@ const coinSeed: Omit<CoinTxn, "balance">[] = [
   { id: "BC-5302", at: ist("2026-09-16", "09:00"), title: "Earned on an order", detail: "Order BB-260906-92983", kind: "earned", coins: 70, orderId: "BB-260906-92983" },
   { id: "BC-5376", at: ist("2026-09-27", "11:48"), title: "Used on an order", detail: "Order BB-260927-81647", kind: "redeemed", coins: -150, orderId: "BB-260927-81647" },
   { id: "BC-5401", at: ist("2026-09-28", "15:50"), title: "Earned on an order", detail: "Order BB-260916-32493", kind: "earned", coins: 100, orderId: "BB-260916-32493" },
-  { id: "BC-5402", at: ist("2026-09-28", "15:50"), title: "BluBuy Big Days bonus", detail: "Extra 20 coins on festive orders", kind: "bonus", coins: 20 },
+  { id: "BC-5402", at: ist("2026-09-28", "15:50"), title: "AltasGoods Big Days bonus", detail: "Extra 20 coins on festive orders", kind: "bonus", coins: 20 },
 ];
 
 const coinOpening = CURRENT_CUSTOMER.bluCoins - coinSeed.reduce((a, c) => a + c.coins, 0);
@@ -228,7 +228,7 @@ export const PAY_LATER = {
 export const emiOptions = [
   { id: "emi-1", title: "No cost EMI", source: "Kaveri Bank credit card ending 4821", detail: "3 and 6 month plans on orders above ₹3,000", limit: 185000, eligible: true },
   { id: "emi-2", title: "Debit card EMI", source: "Sahyadri Bank debit card ending 0937", detail: "Pre-approved, 3 to 12 months", limit: 75000, eligible: true },
-  { id: "emi-3", title: "Cardless EMI", source: "BluBuy Pay Later with Avanti Finance", detail: "3 to 12 months, instant approval", limit: 120000, eligible: true },
+  { id: "emi-3", title: "Cardless EMI", source: "AltasGoods Pay Later with Avanti Finance", detail: "3 to 12 months, instant approval", limit: 120000, eligible: true },
 ];
 
 /* ------------------------------- Orders -------------------------------- */
@@ -245,8 +245,8 @@ const ofdSubtotal = ofdItems.reduce((a, it) => a + it.price * it.quantity, 0);
 const ofdTimeline: OrderEvent[] = [
   { status: "placed", label: "Order placed", at: ist("2026-09-29", "08:12") },
   { status: "confirmed", label: "Seller confirmed your order", at: ist("2026-09-29", "08:20") },
-  { status: "packed", label: "Item packed and invoice generated", at: ist("2026-09-29", "13:05"), location: "BluBuy fulfilment centre, Hoskote" },
-  { status: "ready_to_ship", label: "Ready to ship, sealed in a tamper-evident bag", at: ist("2026-09-29", "16:30"), location: "BluBuy fulfilment centre, Hoskote" },
+  { status: "packed", label: "Item packed and invoice generated", at: ist("2026-09-29", "13:05"), location: "AltasGoods fulfilment centre, Hoskote" },
+  { status: "ready_to_ship", label: "Ready to ship, sealed in a tamper-evident bag", at: ist("2026-09-29", "16:30"), location: "AltasGoods fulfilment centre, Hoskote" },
   { status: "shipped", label: "Shipped from fulfilment centre", at: ist("2026-09-29", "21:10"), location: "Hoskote origin hub" },
   { status: "in_transit", label: "In transit, reached sort centre", at: ist("2026-09-30", "14:45"), location: "Bengaluru sort centre" },
   { status: "out_for_delivery", label: "Out for delivery", at: ist("2026-10-01", "08:05"), location: "Whitefield delivery hub" },
@@ -315,7 +315,7 @@ export function returnPolicyFor(product: Product | undefined): ReturnPolicy {
       };
     case "cat-home":
       return product?.subcategory === "Furniture"
-        ? { days: 10, resolutions: ["refund", "replacement"], summary: "10 days return or replacement", note: "Only if installed by BluBuy or the brand" }
+        ? { days: 10, resolutions: ["refund", "replacement"], summary: "10 days return or replacement", note: "Only if installed by AltasGoods or the brand" }
         : { days: 7, resolutions: ["refund", "replacement"], summary: "7 days return or replacement" };
     case "cat-mobiles":
       return { days: 7, resolutions: ["replacement"], summary: "7 days replacement only", note: "For defective, damaged or wrong items. Reset the device and remove locks" };
@@ -452,13 +452,13 @@ const returnSeeds: ReturnSeed[] = [
     status: "picked_up",
     requestedAt: ist("2026-09-26", "18:40"),
     pickup: { date: ist("2026-09-30", "08:00"), window: "8 AM to 11 AM", addressId: "addr-2" },
-    refund: { id: "RF-82107", amount: 1299, destination: "BluBuy Credits", instant: true, status: "completed", initiatedAt: ist("2026-09-30", "09:05"), completedAt: ist("2026-09-30", "09:32"), reference: "BBCR-90412" },
+    refund: { id: "RF-82107", amount: 1299, destination: "AltasGoods Credits", instant: true, status: "completed", initiatedAt: ist("2026-09-30", "09:05"), completedAt: ist("2026-09-30", "09:32"), reference: "BBCR-90412" },
     events: [
       { label: "Return requested", at: ist("2026-09-26", "18:40"), done: true },
       { label: "Approved", at: ist("2026-09-26", "18:41"), note: "Within the 7 day return window", done: true },
       { label: "Pickup scheduled", at: ist("2026-09-26", "18:41"), note: "Wed, 30 Sept, 8 AM to 11 AM", done: true },
       { label: "Picked up", at: ist("2026-09-30", "08:52"), note: "Doorstep check passed", done: true },
-      { label: "Refunded to BluBuy Credits", at: ist("2026-09-30", "09:32"), note: "Instant refund at pickup", done: true },
+      { label: "Refunded to AltasGoods Credits", at: ist("2026-09-30", "09:32"), note: "Instant refund at pickup", done: true },
       { label: "Received by seller", done: false },
     ],
   },
@@ -527,7 +527,7 @@ const returnSeeds: ReturnSeed[] = [
     status: "rejected",
     requestedAt: ist("2026-09-23", "08:50"),
     pickup: { date: ist("2026-09-25", "12:00"), window: "12 PM to 3 PM", addressId: "addr-1" },
-    rejectionReason: "The doorstep check could not be completed because the brand tag had been removed. If you think this is a mistake you can file a BluBuy Guarantee claim.",
+    rejectionReason: "The doorstep check could not be completed because the brand tag had been removed. If you think this is a mistake you can file an AltasGoods Guarantee claim.",
     events: [
       { label: "Return requested", at: ist("2026-09-23", "08:50"), done: true },
       { label: "Approved", at: ist("2026-09-23", "08:51"), done: true },
@@ -585,12 +585,12 @@ const refundDestination: Record<PaymentMethod | "bluwallet", string> = {
   upi: "Original UPI account",
   card: "Original card",
   netbanking: "Original bank account",
-  wallet: "BluBuy Credits",
-  bluwallet: "BluBuy Credits",
+  wallet: "AltasGoods Credits",
+  bluwallet: "AltasGoods Credits",
   emi: "Original card (EMI reversed by the bank)",
-  paylater: "BluBuy Pay Later account",
-  cod: "BluBuy Credits",
-  giftcard: "BluBuy Credits",
+  paylater: "AltasGoods Pay Later account",
+  cod: "AltasGoods Credits",
+  giftcard: "AltasGoods Credits",
 };
 
 /** Every refund for the customer: returns plus cancellations. */
@@ -753,7 +753,7 @@ export interface CustomerTicket {
   createdAt: string;
   updatedAt: string;
   lastMessage: string;
-  lastFrom: "You" | "BluBuy Care";
+  lastFrom: "You" | "AltasGoods Care";
   responseDueAt?: string;
 }
 
@@ -772,7 +772,7 @@ export const customerTickets: CustomerTicket[] = [
     createdAt: ist("2026-09-29", "09:40"),
     updatedAt: ist("2026-09-30", "16:05"),
     lastMessage: "We have moved your pickup to Fri, 2 Oct and asked the seller to keep a replacement unit ready.",
-    lastFrom: "BluBuy Care",
+    lastFrom: "AltasGoods Care",
     responseDueAt: ist("2026-10-01", "16:05"),
   },
   {
@@ -785,7 +785,7 @@ export const customerTickets: CustomerTicket[] = [
     createdAt: ist("2026-09-27", "12:30"),
     updatedAt: ist("2026-09-28", "10:15"),
     lastMessage: "Could you share a photo of the jacket in daylight so we can compare it with the listing?",
-    lastFrom: "BluBuy Care",
+    lastFrom: "AltasGoods Care",
   },
   {
     id: "TK-60218",
@@ -797,7 +797,7 @@ export const customerTickets: CustomerTicket[] = [
     createdAt: ist("2026-09-10", "11:20"),
     updatedAt: ist("2026-09-11", "15:45"),
     lastMessage: "Your bank has confirmed the credit. The UTR is on the refund page. Glad we could help.",
-    lastFrom: "BluBuy Care",
+    lastFrom: "AltasGoods Care",
   },
   {
     id: "TK-60105",
@@ -809,7 +809,7 @@ export const customerTickets: CustomerTicket[] = [
     createdAt: ist("2026-09-08", "17:10"),
     updatedAt: ist("2026-09-12", "10:00"),
     lastMessage: "The seller has issued a revised invoice with your GSTIN. You can download it from the order page.",
-    lastFrom: "BluBuy Care",
+    lastFrom: "AltasGoods Care",
   },
 ];
 
@@ -825,7 +825,7 @@ const extraNotifications: Notification[] = [
   { id: "c-5", kind: "alert", title: "Price drop on your wishlist", body: "Meridian Heritage Automatic Analog Watch is now ₹1,000 lower than when you saved it.", at: hoursAgo(6), read: false, href: "/account/wishlist" },
   { id: "c-6", kind: "order", title: "Return pickup on Fri, 2 Oct", body: "Keep the Novatek Slate 11 Tablet ready with its box and charger. Pickup between 9 AM and 12 PM.", at: hoursAgo(19), read: false, href: "/account/returns" },
   { id: "c-7", kind: "account", title: "New sign-in to your account", body: "A new sign-in from an Android phone in Bengaluru. If this was not you, sign out of all devices.", at: hoursAgo(52), read: true, href: "/account/profile" },
-  { id: "c-8", kind: "system", title: "Your BluBuy Plus renews on 12 Nov", body: "₹999 will be charged to your Kaveri Bank credit card ending 4821. You can manage auto-renew any time.", at: hoursAgo(98), read: true, href: "/account/plus" },
+  { id: "c-8", kind: "system", title: "Your AltasGoods Plus renews on 12 Nov", body: "₹999 will be charged to your Kaveri Bank credit card ending 4821. You can manage auto-renew any time.", at: hoursAgo(98), read: true, href: "/account/plus" },
   { id: "c-9", kind: "order", title: "Replacement shipped", body: "Your replacement Orbit Watch S3 is on its way and will arrive by Fri, 2 Oct.", at: hoursAgo(67), read: true, href: "/account/returns" },
 ];
 
@@ -840,25 +840,25 @@ export const NOTIFICATION_PREFS: { key: string; label: string; description: stri
   { key: "orders", label: "Order and delivery updates", description: "Confirmation, shipping, out for delivery, delivery OTP", transactional: true, channels: { push: true, sms: true, email: true, whatsapp: true } },
   { key: "returns", label: "Returns and refunds", description: "Pickup reminders and refund status", transactional: true, channels: { push: true, sms: true, email: true, whatsapp: false } },
   { key: "security", label: "Account and security", description: "Sign-ins, OTPs and changes to your account", transactional: true, channels: { push: true, sms: true, email: true, whatsapp: false } },
-  { key: "offers", label: "Offers and sale events", description: "BluBuy Big Days, bank offers and coupons", transactional: false, channels: { push: true, sms: false, email: true, whatsapp: false } },
+  { key: "offers", label: "Offers and sale events", description: "AltasGoods Big Days, bank offers and coupons", transactional: false, channels: { push: true, sms: false, email: true, whatsapp: false } },
   { key: "price", label: "Price drops and back in stock", description: "For items in your wishlists", transactional: false, channels: { push: true, sms: false, email: false, whatsapp: true } },
   { key: "reminders", label: "Cart and wishlist reminders", description: "Items you left behind", transactional: false, channels: { push: false, sms: false, email: false, whatsapp: false } },
-  { key: "rewards", label: "BluBuy Plus and BluCoins", description: "Renewals, coin credits and expiry reminders", transactional: false, channels: { push: true, sms: false, email: true, whatsapp: false } },
+  { key: "rewards", label: "AltasGoods Plus and AltasCoins", description: "Renewals, coin credits and expiry reminders", transactional: false, channels: { push: true, sms: false, email: true, whatsapp: false } },
 ];
 
 /* ------------------------- Security and privacy ------------------------ */
 
 export const sessions = [
   { id: "ss-1", device: "Laptop, web browser", platform: "laptop" as const, location: "Bengaluru, Karnataka", ip: "49.207.xx.xx", lastActive: NOW.toISOString(), current: true },
-  { id: "ss-2", device: "Android phone, BluBuy app", platform: "phone" as const, location: "Bengaluru, Karnataka", ip: "106.51.xx.xx", lastActive: hoursAgo(2), current: false },
-  { id: "ss-3", device: "Tablet, BluBuy app", platform: "tablet" as const, location: "Bengaluru, Karnataka", ip: "49.207.xx.xx", lastActive: hoursAgo(76), current: false },
+  { id: "ss-2", device: "Android phone, AltasGoods app", platform: "phone" as const, location: "Bengaluru, Karnataka", ip: "106.51.xx.xx", lastActive: hoursAgo(2), current: false },
+  { id: "ss-3", device: "Tablet, AltasGoods app", platform: "tablet" as const, location: "Bengaluru, Karnataka", ip: "49.207.xx.xx", lastActive: hoursAgo(76), current: false },
   { id: "ss-4", device: "Desktop, web browser", platform: "desktop" as const, location: "New Delhi, Delhi", ip: "122.161.xx.xx", lastActive: hoursAgo(24 * 19), current: false },
 ];
 
 export const consents = [
-  { key: "personalisation", label: "Personalised recommendations", description: "Use my orders and browsing on BluBuy to suggest products.", granted: true, since: ist("2021-03-14") },
+  { key: "personalisation", label: "Personalised recommendations", description: "Use my orders and browsing on AltasGoods to suggest products.", granted: true, since: ist("2021-03-14") },
   { key: "marketing", label: "Promotional messages", description: "Send offers on the channels I have turned on in notification settings.", granted: true, since: ist("2023-10-02") },
-  { key: "paylater", label: "Share data with the BluBuy Pay Later lender", description: "Share my name, mobile and repayment history with Avanti Finance Limited for credit decisions.", granted: true, since: ist("2026-02-11") },
+  { key: "paylater", label: "Share data with the AltasGoods Pay Later lender", description: "Share my name, mobile and repayment history with Avanti Finance Limited for credit decisions.", granted: true, since: ist("2026-02-11") },
   { key: "research", label: "Product research", description: "Invite me to surveys and usability studies.", granted: false, since: undefined as string | undefined },
 ];
 

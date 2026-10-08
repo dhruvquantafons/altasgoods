@@ -37,7 +37,7 @@ export default function AdvertisingPage() {
     <>
       <PageHeader
         title="Advertising"
-        description="BluBuy Ads campaign manager. Sponsored results are labelled and limited to 4 per 20 organic results; you pay per click from your ad wallet."
+        description="AltasGoods Ads campaign manager. Sponsored results are labelled and limited to 4 per 20 organic results; you pay per click from your ad wallet."
         actions={
           <>
             <ToastButton icon="download" message="Search term report for the last 14 days is being prepared.">

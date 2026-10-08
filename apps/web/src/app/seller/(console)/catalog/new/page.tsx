@@ -38,7 +38,7 @@ export default async function AddProductPage(props: PageProps<"/seller/catalog/n
       <PageHeader
         breadcrumbs={[{ label: "Listings", href: "/seller/catalog" }, { label: "Add a product" }]}
         title="Add a product"
-        description="Sell a product that is already on BluBuy, or create a new one. Offers on existing products go live after automatic checks; new products are reviewed first."
+        description="Sell a product that is already on AltasGoods, or create a new one. Offers on existing products go live after automatic checks; new products are reviewed first."
       />
       <AddProductWizard catalog={catalog} categories={tree} approved={SELLER.categories} rateCard={RATE_CARD} initialFlow={mode} />
     </>
