@@ -17,12 +17,13 @@ export class DevLogisticsService {
 
   async advance(user: AuthUser, orderItemId: string, to: OrderItemStatus, deliveredDaysAgo?: number) {
     const [row] = await this.db
-      .select({ orderId: orderItems.orderId, sellerId: orderItems.sellerId, customerId: orders.userId })
+      .select({ orderId: orderItems.orderId, customerId: orders.userId })
       .from(orderItems)
       .innerJoin(orders, eq(orders.id, orderItems.orderId))
       .where(eq(orderItems.id, orderItemId));
-    // the item's seller or its customer may drive the simulation
-    if (!row || (row.customerId !== user.id && !user.sellers.includes(row.sellerId))) throw notFound("Order item");
+    // the item's customer or store operations staff may drive the simulation
+    const ops = user.staff.some((r) => r === "SUPER_ADMIN" || r === "OPS_ADMIN");
+    if (!row || (row.customerId !== user.id && !ops)) throw notFound("Order item");
     const [item] = await this.db.transaction(async (tx) => {
       const moved = await this.workflow.transition(tx, { orderId: row.orderId, itemIds: [orderItemId], to, actor: "LOGISTICS", note: "Simulated courier scan" });
       if (to === "DELIVERED" && deliveredDaysAgo) await tx.update(orderItems).set({ deliveredAt: new Date(Date.now() - deliveredDaysAgo * 86_400_000) }).where(eq(orderItems.id, orderItemId));

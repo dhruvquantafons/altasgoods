@@ -17,7 +17,6 @@ export const productQuery = z.object({
   category: z.string().optional().describe("Category slug"),
   subcategory: z.string().optional().describe("Subcategory name, e.g. Headphones"),
   brand: csv.describe("Comma separated brand slugs"),
-  seller: z.string().optional().describe("Seller slug, for a seller's store page"),
   ids: csv.describe("Comma separated product ids or slugs"),
   minPrice: z.coerce.number().int().min(0).optional().describe("Paise"),
   maxPrice: z.coerce.number().int().min(0).optional().describe("Paise"),
@@ -25,7 +24,7 @@ export const productQuery = z.object({
   minDiscount: z.coerce.number().int().min(0).max(90).optional().describe("Percent"),
   assured: boolish,
   inStock: boolish,
-  tag: z.enum(["bestseller", "new", "deal", "limited", "plus"]).optional(),
+  tag: z.enum(["bestseller", "new", "deal", "limited"]).optional(),
   sort: z.enum(SORTS).default("relevance"),
   ...pageQuery,
 });
@@ -51,9 +50,8 @@ export const productSummary = z.object({
   tags: z.array(z.string()),
   inStock: z.boolean(),
   deliveryDays: z.number().int(),
-  sellerCount: z.number().int(),
-  featuredOfferId: z.uuid().nullable(),
-  featuredSellerId: z.string().nullable(),
+  /** the store's offer: what carts and orders reference */
+  offerId: z.uuid(),
 });
 export type ProductSummary = z.infer<typeof productSummary>;
 
@@ -65,31 +63,6 @@ export const productList = paginated(productSummary).extend({
   }),
 });
 
-export const sellerRef = z.object({
-  id: z.string(),
-  slug: z.string(),
-  displayName: z.string(),
-  city: z.string(),
-  rating: z.number(),
-  ratingCount: z.number().int(),
-  tier: z.string(),
-});
-
-export const offerSchema = z.object({
-  id: z.uuid(),
-  seller: sellerRef,
-  pricePaise: z.number().int(),
-  mrpPaise: z.number().int(),
-  discountPercent: z.number().int(),
-  inStock: z.boolean(),
-  lowStock: z.number().int().nullable().describe("Units left when 10 or fewer, otherwise null"),
-  fulfilledBy: z.enum(["BLUBUY", "SELLER"]),
-  deliveryDays: z.number().int(),
-  codAvailable: z.boolean(),
-  returnWindowDays: z.number().int(),
-  isFeatured: z.boolean(),
-});
-
 export const productDetail = productSummary.extend({
   images: z.array(z.string()),
   description: z.string(),
@@ -98,7 +71,9 @@ export const productDetail = productSummary.extend({
   variants: z.array(z.object({ name: z.string(), values: z.array(z.object({ label: z.string(), swatch: z.string().optional(), available: z.boolean() })) })),
   reviewCount: z.number().int(),
   soldLast30d: z.number().int(),
-  offers: z.array(offerSchema),
+  lowStock: z.number().int().nullable().describe("Units left when 10 or fewer, otherwise null"),
+  codAvailable: z.boolean(),
+  returnWindowDays: z.number().int(),
 });
 
 export const categoryNode = z.object({
@@ -107,9 +82,57 @@ export const categoryNode = z.object({
   name: z.string(),
   icon: z.string().nullable(),
   image: z.string().nullable(),
-  commissionPercent: z.number(),
   productCount: z.number().int(),
   children: z.array(z.object({ id: z.string(), slug: z.string(), name: z.string() })),
 });
 
-export const sellerProfile = sellerRef.extend({ state: z.string(), joinedAt: z.iso.datetime(), liveProducts: z.number().int() });
+/* ------------------------- Storefront snapshot ------------------------- */
+
+const specsSchema = z.array(z.object({ group: z.string(), items: z.array(z.object({ label: z.string(), value: z.string() })) }));
+const variantsSchema = z.array(z.object({ name: z.string(), values: z.array(z.object({ label: z.string(), swatch: z.string().optional(), available: z.boolean() })) }));
+
+export const storefrontProduct = z.object({
+  id: z.string(),
+  slug: z.string(),
+  sku: z.string(),
+  title: z.string(),
+  brandId: z.string(),
+  categoryId: z.string(),
+  subcategory: z.string(),
+  images: z.array(z.string()),
+  description: z.string(),
+  highlights: z.array(z.string()),
+  specs: specsSchema,
+  variants: variantsSchema,
+  rating: z.number(),
+  ratingCount: z.number().int(),
+  reviewCount: z.number().int(),
+  assured: z.boolean(),
+  tags: z.array(z.string()),
+  soldLast30d: z.number().int(),
+  createdAt: z.iso.datetime(),
+  offer: z.object({
+    id: z.uuid(),
+    pricePaise: z.number().int(),
+    mrpPaise: z.number().int(),
+    stock: z.number().int().describe("Units available to order, capped at 10"),
+    deliveryDays: z.number().int(),
+    codAvailable: z.boolean(),
+    returnWindowDays: z.number().int(),
+  }),
+});
+
+export const storefrontCatalog = z.object({
+  categories: z.array(
+    z.object({
+      id: z.string(),
+      slug: z.string(),
+      name: z.string(),
+      icon: z.string().nullable(),
+      image: z.string().nullable(),
+      children: z.array(z.object({ id: z.string(), slug: z.string(), name: z.string() })),
+    }),
+  ),
+  brands: z.array(z.object({ id: z.string(), slug: z.string(), name: z.string() })),
+  products: z.array(storefrontProduct),
+});

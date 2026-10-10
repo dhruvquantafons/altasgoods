@@ -295,7 +295,7 @@ export default async function InboundPage(props: PageProps<"/logistics/inbound">
           </Table>
         </TableContainer>
         <p className="border-t border-line px-5 py-3 text-xs text-ink-500">
-          Damaged shipments are held for QC and auto-raise a SafeClaim for the seller. See the{" "}
+          Damaged shipments are held for QC and auto-raise a courier claim. See the{" "}
           <Link href="/logistics/reverse?tab=rto" className="font-medium text-brand-700 hover:underline">
             RTO queue
           </Link>{" "}

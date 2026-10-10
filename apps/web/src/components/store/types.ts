@@ -1,21 +1,15 @@
 /**
  * Plain, serialisable shapes passed from server pages into storefront client
- * components (cart, checkout, buy box). Built by helpers in
- * src/lib/mock/store-extra.ts so client bundles never import the data layer.
+ * components (cart, checkout, buy box), so client bundles never import the
+ * data layer.
  */
 
+/** The store's price, stock and delivery terms for a product. */
 export interface CartOffer {
-  sellerId: string;
-  sellerName: string;
-  sellerSlug: string;
-  sellerRating: number;
-  sellerRatingCount: number;
-  sellerCity: string;
   price: number;
   mrp: number;
   stock: number;
   deliveryDays: number;
-  fulfilledBy: "blubuy" | "seller";
   codAvailable: boolean;
   returnWindowDays: number;
   assured: boolean;
@@ -32,8 +26,7 @@ export interface CartProduct {
   subcategory: string;
   rating: number;
   ratingCount: number;
-  featuredSellerId: string;
-  offers: CartOffer[];
+  offer: CartOffer;
   /** large items get a scheduled delivery slot at checkout */
   large: boolean;
   /** first variant option values, used for a default selection label */
@@ -43,10 +36,9 @@ export interface CartProduct {
 export type CartCatalog = Record<string, CartProduct>;
 
 export interface CartLine {
-  /** productId + sellerId + variant */
+  /** productId + variant */
   key: string;
   productId: string;
-  sellerId: string;
   qty: number;
   variant?: string;
   saved?: boolean;
@@ -60,14 +52,10 @@ export interface CouponLite {
   maxDiscount?: number;
   minOrder: number;
   endsAt: string;
-  fundedBy: "blubuy" | "seller" | "bank";
-  /** seller id for seller-funded coupons */
-  sellerId?: string;
+  fundedBy: "store" | "bank";
   plusOnly?: boolean;
   upiOnly?: boolean;
   firstOrderOnly?: boolean;
-  /** limits a seller coupon to some sub-categories */
-  subcategories?: string[];
 }
 
 export interface WalletLite {
@@ -128,8 +116,9 @@ export interface NavCategory {
 export interface PlacedOrder {
   id: string;
   placedAt: number;
-  items: { title: string; image: string; qty: number; price: number; seller: string; variant?: string; slug: string }[];
-  shipments: { seller: string; date: string; option: string; items: number }[];
+  items: { title: string; image: string; qty: number; price: number; variant?: string; slug: string }[];
+  /** everything ships together from the store */
+  delivery: { date: string; option: string };
   address: AddressLite;
   paymentLabel: string;
   payable: number;

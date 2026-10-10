@@ -2,22 +2,17 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck } from "lucide-react";
 import { ListingView, parseFilters, toQuery } from "@/components/store/listing";
 import { ProductCard } from "@/components/store/product-card";
 import { Rail, RailItem } from "@/components/store/rail";
 import { SectionTitle } from "@/components/store/section";
-import { categories, getCategory, productsByCategory } from "@/lib/mock";
 import { inStock, isBrowsable, PRICE_BANDS, topBrandsIn } from "@/lib/mock/store-extra";
 import { featuredOffer } from "@/components/store/product-card";
-
-export function generateStaticParams() {
-  return categories.map((c) => ({ slug: c.slug }));
-}
+import { getStoreCatalog } from "@/lib/store-catalog";
 
 export async function generateMetadata(props: PageProps<"/c/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  const c = getCategory(slug);
+  const c = (await getStoreCatalog()).category(slug);
   return { title: c ? `${c.name}: shop online` : "Category" };
 }
 
@@ -27,7 +22,7 @@ const BLURB: Record<string, string> = {
   fashion: "Everyday cotton, festive ethnic wear and footwear, with free 10 day exchange.",
   home: "Furniture, lighting and kitchenware from independent studios across India.",
   appliances: "Kitchen and home appliances with installation and 2 year warranties.",
-  beauty: "Skincare, fragrance and makeup, sealed and sourced from brands and authorised sellers.",
+  beauty: "Skincare, fragrance and makeup, sealed and sourced directly from brands and authorised distributors.",
   grocery: "Coffee, tea, dry fruits and pantry staples, freshly packed and FSSAI certified.",
   books: "Fiction, non-fiction and collectible hardcovers, delivered in protective packaging.",
   sports: "Gear for yoga, the gym, cricket and cycling, built for daily training.",
@@ -36,11 +31,12 @@ const BLURB: Record<string, string> = {
 
 export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
   const { slug } = await props.params;
-  const cat = getCategory(slug);
+  const catalog = await getStoreCatalog();
+  const cat = catalog.category(slug);
   if (!cat || cat.parentId) notFound();
   const sp = await props.searchParams;
   const f = { ...parseFilters(sp), cat: "" };
-  const base = productsByCategory(cat.slug);
+  const base = catalog.inCategory(cat.slug);
   const basePath = `/c/${cat.slug}`;
   const curated = toQuery(f) === "";
 
@@ -49,17 +45,17 @@ export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
   const prices = live.map((p) => featuredOffer(p).price);
   const bands = PRICE_BANDS.filter((b) => prices.some((x) => x >= b.min && x <= b.max));
   const best = live.filter(inStock).sort((a, b) => b.soldLast30d - a.soldLast30d).slice(0, 10);
-  const brandsHere = topBrandsIn(cat.id);
+  const brandsHere = topBrandsIn(catalog.products, cat.id);
 
   const intro = curated ? (
     <div className="mt-4 lg:mt-5">
       <div className="relative overflow-hidden rounded-2xl bg-ink-900">
-        <Image src={cat.image!} alt="" fill loading="eager" sizes="100vw" className="object-cover opacity-60" />
+        {cat.image && <Image src={cat.image} alt="" fill loading="eager" sizes="100vw" className="object-cover opacity-60" />}
         <div className="absolute inset-0 bg-gradient-to-r from-ink-950/85 via-ink-950/50 to-transparent" aria-hidden="true" />
         <div className="relative max-w-xl px-6 py-10 text-white lg:px-12 lg:py-14">
           <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">{live.length} products, {brandsHere.length} brands</p>
           <p className="mt-2 font-display text-3xl font-semibold tracking-tight lg:text-[40px] lg:leading-tight">{cat.name}</p>
-          <p className="mt-2 text-[15px] leading-relaxed text-white/80">{BLURB[cat.slug]}</p>
+          {BLURB[cat.slug] && <p className="mt-2 text-[15px] leading-relaxed text-white/80">{BLURB[cat.slug]}</p>}
         </div>
       </div>
 
@@ -111,7 +107,6 @@ export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
                   href={`${basePath}?brand=${b.slug}`}
                   className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-line px-4 text-sm font-medium text-ink-800 transition-colors hover:border-ink-300"
                 >
-                  {b.verified && <BadgeCheck size={15} className="text-brand-600" aria-label="Verified brand" />}
                   {b.name}
                 </Link>
               </li>

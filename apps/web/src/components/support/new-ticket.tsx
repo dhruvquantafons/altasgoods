@@ -10,7 +10,7 @@ import { Modal } from "@/components/ui/interactive";
 import { CATEGORIES } from "./meta";
 
 type Category = (typeof CATEGORIES)[number];
-type Snapshot = { total: number; paymentLabel: string; cod: boolean; seller: string; items: { id: string; title: string; price: number; quantity: number }[] };
+type Snapshot = { total: number; paymentLabel: string; cod: boolean; items: { id: string; title: string; price: number; quantity: number }[] };
 
 /** Opens a real ticket for a customer (a phone call, an order lookup) and goes to it. */
 export function NewTicketButton({

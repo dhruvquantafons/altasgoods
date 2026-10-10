@@ -73,7 +73,12 @@ export interface Product {
   sku: string;
   title: string;
   brandId: ID;
+  /** brand and category display data, carried on the product so client components need no lookups */
+  brandName: string;
+  brandSlug: string;
   categoryId: ID;
+  categoryName: string;
+  categorySlug: string;
   subcategory: string;
   image: string;
   gallery: string[];
@@ -323,7 +328,7 @@ export interface Ticket {
   subject: string;
   customerName: string;
   orderId?: ID;
-  category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+  category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Other";
   channel: "chat" | "email" | "phone" | "app";
   priority: TicketPriority;
   status: TicketStatus;

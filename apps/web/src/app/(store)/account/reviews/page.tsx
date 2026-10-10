@@ -72,7 +72,7 @@ export default async function ReviewsPage(props: PageProps<"/account/reviews">) 
               <EmptyState icon={Star} title="You are all caught up" description="Items you receive will show up here so you can rate them." />
             </Panel>
           ) : (
-            <Panel title="How was it?" description="Tap a star to rate. Reviews help other shoppers and the sellers who make these products." bodyClassName="px-0 pb-1 sm:px-0">
+            <Panel title="How was it?" description="Tap a star to rate. Reviews help other shoppers and help us choose what to stock." bodyClassName="px-0 pb-1 sm:px-0">
               <ul className="divide-y divide-line">
                 {pending.map(({ order, item, product }) => (
                   <li key={product!.slug} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
@@ -154,7 +154,7 @@ export default async function ReviewsPage(props: PageProps<"/account/reviews">) 
       )}
 
       {tab === "questions" && (
-        <Panel title="Your questions" description="Answers come from sellers, brands and buyers who own the product." action={<AskQuestion products={questionProducts} />}>
+        <Panel title="Your questions" description="Answers come from AltasGoods, brands and buyers who own the product." action={<AskQuestion products={questionProducts} />}>
           <ul className="flex flex-col divide-y divide-line">
             {myQuestions.map((q) => {
               const p = productBySlug(q.slug);
@@ -173,7 +173,7 @@ export default async function ReviewsPage(props: PageProps<"/account/reviews">) 
                               <p className="text-[13.5px] text-ink-800">{a.body}</p>
                               <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
                                 {a.by}
-                                <Badge size="sm" tone={a.role === "Seller" ? "brand" : "success"}>
+                                <Badge size="sm" tone={a.role === "AltasGoods" ? "brand" : "success"}>
                                   {a.role}
                                 </Badge>
                                 <span>{dateLabel(a.at)}</span>
@@ -184,7 +184,7 @@ export default async function ReviewsPage(props: PageProps<"/account/reviews">) 
                       ) : (
                         <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-600">
                           <MessageSquareText size={13} aria-hidden="true" />
-                          Waiting for an answer. We have asked the seller and recent buyers.
+                          Waiting for an answer. We have asked our team and recent buyers.
                         </p>
                       )}
                     </div>

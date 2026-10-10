@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
 import { ActionButton, ToastButton } from "@/components/admin/action-button";
 import { COD_REMIT_STATUS, GATEWAY_STATUS, ORPHAN_STATUS, RECON_STATUS } from "@/components/admin/admin-status";
@@ -189,9 +188,9 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
                       <p className="text-xs text-ink-500">{formatDateTime(t.at)}</p>
                     </TD>
                     <TD className="hidden md:table-cell">
-                      <Link href={`/admin/orders/${t.orderId}`} className="font-mono text-[13px] text-brand-700 hover:underline">
+                      <span className="font-mono text-[13px] text-brand-700">
                         {t.orderId}
-                      </Link>
+                      </span>
                     </TD>
                     <TD className="hidden text-[13px] lg:table-cell">{t.customer}</TD>
                     <TD className="hidden sm:table-cell">

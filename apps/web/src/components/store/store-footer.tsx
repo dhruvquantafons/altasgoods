@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Building2, Headset, Mail, Phone, ShieldCheck, Smartphone } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
-import { SellerSignIn } from "@/components/seller/seller-sign-in";
 import { STORE_CONTAINER } from "./store-header";
 
 interface FooterProps {
@@ -41,16 +40,6 @@ const columns = [
       { label: "Grievance redressal", href: "/policies/grievance" },
     ],
   },
-  {
-    title: "Sell on AltasGoods",
-    links: [
-      { label: "Start selling", href: "/sell" },
-      { label: "Fees and rate card", href: "/sell/fees" },
-      { label: "AltasGoods Fulfilled", href: "/sell/fulfilled" },
-      { label: "Seller Hub login", href: "/seller" },
-      { label: "Register as a seller", href: "/seller/register" },
-    ],
-  },
 ];
 
 const payments = ["UPI", "Credit cards", "Debit cards", "Net banking", "EMI", "AltasGoods Pay Later", "Gift cards", "Cash on delivery"];
@@ -58,11 +47,11 @@ const payments = ["UPI", "Credit cards", "Debit cards", "Net banking", "EMI", "A
 export function StoreFooter({ company, grievance }: FooterProps) {
   return (
     <footer className="mt-auto bg-brand-950 text-brand-100">
-      <div className={`${STORE_CONTAINER} grid gap-10 py-12 lg:grid-cols-[1.3fr_repeat(4,1fr)]`}>
+      <div className={`${STORE_CONTAINER} grid gap-10 py-12 lg:grid-cols-[1.3fr_repeat(3,1fr)]`}>
         <div className="max-w-sm">
           <Logo inverted />
           <p className="mt-4 text-sm leading-relaxed text-brand-200">
-            India&apos;s calmer marketplace. Honest prices, real delivery dates and easy returns from thousands of trusted sellers.
+            Honest prices, real delivery dates and easy returns. Every order is sold, packed and shipped by AltasGoods.
           </p>
           <div id="app-download" className="mt-6 scroll-mt-24 rounded-xl bg-white/[0.05] p-4 ring-1 ring-white/10">
             <p className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -80,13 +69,9 @@ export function StoreFooter({ company, grievance }: FooterProps) {
             <ul className="mt-4 flex flex-col gap-2.5">
               {col.links.map((l) => (
                 <li key={l.label}>
-                  {l.href === "/seller" ? (
-                    <SellerSignIn className="text-left text-sm text-brand-100 transition-colors hover:text-white hover:underline hover:underline-offset-4">{l.label}</SellerSignIn>
-                  ) : (
-                    <Link href={l.href} className="text-sm text-brand-100 transition-colors hover:text-white hover:underline hover:underline-offset-4">
-                      {l.label}
-                    </Link>
-                  )}
+                  <Link href={l.href} className="text-sm text-brand-100 transition-colors hover:text-white hover:underline hover:underline-offset-4">
+                    {l.label}
+                  </Link>
                 </li>
               ))}
             </ul>

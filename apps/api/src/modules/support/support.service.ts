@@ -10,7 +10,6 @@ import type { Db, Tx } from "../../db/client.js";
 import {
   orderItems,
   orders,
-  sellers,
   supportActions,
   supportAttachments,
   supportEvents,
@@ -205,9 +204,9 @@ export class SupportService {
     await tx.insert(supportEvents).values({ ticketId, type, fromValue, toValue, actor: actor.name, actorId: actor.id, at: this.clock.now() });
   }
 
-  /** A line in the conversation from BluBuy: public ones reach the customer, the rest are internal. */
+  /** A line in the conversation from AltasGoods: public ones reach the customer, the rest are internal. */
   private async system(tx: Tx, ticketId: string, body: string, isPublic = false) {
-    await tx.insert(supportMessages).values({ ticketId, kind: isPublic ? "SYSTEM" : "NOTE", author: "BluBuy", body, at: this.clock.now() });
+    await tx.insert(supportMessages).values({ ticketId, kind: isPublic ? "SYSTEM" : "NOTE", author: "AltasGoods", body, at: this.clock.now() });
   }
 
   /** Moves toward a status, going through Open first when the spec requires it. */
@@ -303,7 +302,7 @@ export class SupportService {
 
   /* ------------------------------ Actions ----------------------------- */
 
-  /** Refund, replacement, seller escalation or Guarantee claim, recorded on the ticket. */
+  /** Refund, replacement or Guarantee claim, recorded on the ticket. */
   async act(me: Staff, id: string, input: z.infer<typeof actionBody>) {
     await this.db.transaction(async (tx) => {
       let t = await this.load(id, tx, true);
@@ -335,18 +334,12 @@ export class SupportService {
         await tx.insert(supportActions).values({ ...base, status: "CREATED", details: { itemId: input.itemId, itemTitle: item.title, reason: input.reason, collectOriginal: input.collectOriginal } });
         note = `Replacement created for ${item.title} by ${me.name}.`;
         await this.system(tx, id, `A replacement for ${item.title} is on its way.${input.collectOriginal ? " Please keep the original item ready; we collect it when the replacement is delivered." : ""}`, true);
-      } else if (input.kind === "SELLER_ESCALATION") {
-        const due = new Date(now.getTime() + 48 * 3600_000);
-        await tx.insert(supportActions).values({ ...base, status: "AWAITING_SELLER", details: { seller: order.seller, issue: input.issue, message: input.message, dueAt: due.toISOString() } });
-        note = `Escalated to ${order.seller} by ${me.name}. Response due by ${due.toISOString()}.`;
-        await this.system(tx, id, "We have asked the seller to look into this and will update you within 48 hours.", true);
-        t = await this.routeTo(tx, t, "PENDING_INTERNAL", me);
       } else {
-        const due = new Date(now.getTime() + 72 * 3600_000);
-        // spec 11.13: SUBMITTED, then AWAITING_SELLER_RESPONSE once the seller is notified
-        await tx.insert(supportActions).values({ ...base, status: "AWAITING_SELLER_RESPONSE", details: { claimType: input.claimType, seller: order.seller, sellerResponseDueAt: due.toISOString() } });
-        note = `BluBuy Guarantee claim filed by ${me.name} (${input.claimType.replace(/_/g, " ")}). ${order.seller} has 72 hours to respond.`;
-        await this.system(tx, id, "We have filed a BluBuy Guarantee claim for you. The seller has 72 hours to respond, and we decide within 7 days.", true);
+        // the store reviews Guarantee claims itself and decides within 7 days
+        const due = new Date(now.getTime() + 7 * 24 * 3600_000);
+        await tx.insert(supportActions).values({ ...base, status: "UNDER_REVIEW", details: { claimType: input.claimType, decisionDueAt: due.toISOString() } });
+        note = `AltasGoods Guarantee claim filed by ${me.name} (${input.claimType.replace(/_/g, " ")}). Decision due by ${due.toISOString()}.`;
+        await this.system(tx, id, "We have filed an AltasGoods Guarantee claim for you and will decide within 7 days.", true);
         t = await this.routeTo(tx, t, "PENDING_INTERNAL", me);
       }
       await this.event(tx, id, "ACTION", null, input.kind, me);
@@ -358,14 +351,14 @@ export class SupportService {
 
   /**
    * Online payments of orders in this database are refunded through the
-   * payment provider straight away. Refunds to BluBuy Credits, to a bank
+   * payment provider straight away. Refunds to AltasGoods Credits, to a bank
    * account for cash on delivery, and for imported history stay INITIATED
    * for Finance.
    */
   private async executeRefund(tx: Tx, action: typeof supportActions.$inferSelect, t: Ticket) {
     const destination = (action.details as { destination?: string }).destination;
     const [order] = await tx.select({ id: orders.id, method: orders.paymentMethod }).from(orders).where(eq(orders.id, t.orderId!));
-    const to = destination === "CREDITS" ? "BluBuy Credits" : t.orderSnapshot?.cod ? "your bank account" : t.orderSnapshot?.paymentLabel ?? "your payment method";
+    const to = destination === "CREDITS" ? "AltasGoods Credits" : t.orderSnapshot?.cod ? "your bank account" : t.orderSnapshot?.paymentLabel ?? "your payment method";
     if (destination === "SOURCE" && order && order.method !== "COD") {
       const refund = await this.payments.refundToSource(tx, order.id, action.amountPaise!, `Care Desk ticket ${t.id}`);
       await tx.update(supportActions).set({ status: refund.status === "COMPLETED" ? "COMPLETED" : "PROCESSING", details: { ...action.details, refundId: refund.id } }).where(eq(supportActions.id, action.id));
@@ -446,15 +439,13 @@ export class SupportService {
     const [order] = await tx.select().from(orders).where(and(eq(orders.id, orderId), eq(orders.userId, userId)));
     if (!order) throw notFound("Order");
     const items = await tx
-      .select({ id: orderItems.id, title: orderItems.title, price: orderItems.unitPricePaise, quantity: orderItems.qty, seller: sellers.displayName })
+      .select({ id: orderItems.id, title: orderItems.title, price: orderItems.unitPricePaise, quantity: orderItems.qty })
       .from(orderItems)
-      .innerJoin(sellers, eq(sellers.id, orderItems.sellerId))
       .where(eq(orderItems.orderId, orderId));
     return {
       total: order.totalPaise / 100,
       paymentLabel: METHOD_LABEL[order.paymentMethod] ?? order.paymentMethod,
       cod: order.paymentMethod === "COD",
-      seller: [...new Set(items.map((i) => i.seller))].join(", "),
       items: items.map((i) => ({ id: i.id, title: i.title, price: i.price / 100, quantity: i.quantity })),
     };
   }
@@ -548,7 +539,7 @@ export class SupportService {
       updatedAt: t.updatedAt.toISOString(),
       canReply: t.status !== "CLOSED",
       // internal notes (NOTE) are never selected
-      messages: messages.map((m) => ({ id: m.id, kind: m.kind as "CUSTOMER" | "AGENT" | "SYSTEM", author: m.kind === "AGENT" ? `${m.author.split(" ")[0]} from BluBuy` : m.author, body: m.body, attachments: m.attachments, at: m.at.toISOString() })),
+      messages: messages.map((m) => ({ id: m.id, kind: m.kind as "CUSTOMER" | "AGENT" | "SYSTEM", author: m.kind === "AGENT" ? `${m.author.split(" ")[0]} from AltasGoods` : m.author, body: m.body, attachments: m.attachments, at: m.at.toISOString() })),
     };
   }
 

@@ -1,18 +1,18 @@
 import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Param, Patch, Post, Put, Query, Req } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import type { Redis } from "ioredis";
 import { z } from "zod";
 import { forbidden } from "../../common/errors.js";
 import { REDIS } from "../../common/tokens.js";
 import { isProduction } from "../../config/env.js";
-import { CurrentSeller, CurrentUser, Public, SellerScoped, type AuthUser } from "../auth/auth.guard.js";
+import { CurrentUser, Public, StaffOnly, type AuthUser } from "../auth/auth.guard.js";
 import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
 import * as s from "./commerce.schemas.js";
 import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
-import { SellerOrdersService } from "./seller-orders.service.js";
+import { FulfilmentService } from "./fulfilment.service.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
 
 const uuidParam = { schema: z.uuid() };
@@ -171,31 +171,30 @@ export class PaymentsController {
   }
 }
 
-@ApiTags("Seller orders")
+@ApiTags("Admin orders")
 @ApiBearerAuth()
-@ApiHeader({ name: "X-Seller-Id", required: false, description: "Seller account to act for; defaults to your first membership" })
-@SellerScoped()
-@Controller("v1/seller")
-export class SellerOrdersController {
-  constructor(@Inject(SellerOrdersService) private readonly svc: SellerOrdersService) {}
+@StaffOnly("OPS_ADMIN")
+@Controller("v1/admin")
+export class AdminOrdersController {
+  constructor(@Inject(FulfilmentService) private readonly svc: FulfilmentService) {}
 
   @Get("order-items")
-  @ApiResponse({ status: 200, standardSchema: s.sellerItemList })
-  list(@CurrentSeller() sellerId: string, @Query({ schema: s.sellerItemsQuery }) q: z.infer<typeof s.sellerItemsQuery>) {
-    return this.svc.list(sellerId, q);
+  @ApiResponse({ status: 200, standardSchema: s.fulfilmentItemList })
+  list(@Query({ schema: s.fulfilmentItemsQuery }) q: z.infer<typeof s.fulfilmentItemsQuery>) {
+    return this.svc.list(q);
   }
 
   @Get("orders/:id")
-  @ApiResponse({ status: 200, standardSchema: s.sellerOrderSchema })
-  order(@CurrentSeller() sellerId: string, @Param("id") id: string) {
-    return this.svc.order(sellerId, id);
+  @ApiResponse({ status: 200, standardSchema: s.fulfilmentOrderSchema })
+  order(@Param("id") id: string) {
+    return this.svc.order(id);
   }
 
   @Post("order-items/transition")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.transitionResult })
-  transition(@CurrentSeller() sellerId: string, @CurrentUser() u: AuthUser, @Body({ schema: s.transitionBody }) body: z.infer<typeof s.transitionBody>) {
-    return this.svc.transition(sellerId, u.id, body);
+  transition(@CurrentUser() u: AuthUser, @Body({ schema: s.transitionBody }) body: z.infer<typeof s.transitionBody>) {
+    return this.svc.transition(u.id, body);
   }
 }
 
@@ -230,7 +229,7 @@ export class DevController {
     return { cleared };
   }
 
-  /** Stands in for BluBuy Logistics scans until phase 3. Disabled in production. */
+  /** Stands in for courier scans until a courier partner is connected. Disabled in production. */
   @Post("logistics/advance")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: z.object({ id: z.uuid(), status: z.string() }) })

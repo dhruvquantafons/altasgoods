@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Check, CircleCheck, CircleX, IndianRupee, Loader2, RefreshCcw, ShieldCheck, Store, TriangleAlert, X } from "lucide-react";
+import { Check, CircleCheck, CircleX, IndianRupee, Loader2, RefreshCcw, ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { decideTicketAction, runTicketAction, updateTicket } from "@/app/actions/support";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox, Field, Input, Radio, Select, Textarea } from "@/components/ui/input";
+import { Checkbox, Field, Input, Radio, Select } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
 import type { TicketAction, TicketDetail } from "@/lib/api/types";
 import { cn, formatINR } from "@/lib/utils";
@@ -109,7 +109,6 @@ export interface ActionOrder {
   paymentLabel: string;
   cod: boolean;
   items: { id: string; title: string; price: number; quantity: number }[];
-  seller: string;
 }
 
 export interface GuaranteeCheck {
@@ -117,12 +116,11 @@ export interface GuaranteeCheck {
   ok: boolean;
 }
 
-type Dialog = "refund" | "replacement" | "seller" | "guarantee" | null;
+type Dialog = "refund" | "replacement" | "guarantee" | null;
 
 const ACTION_LABEL: Record<TicketAction["kind"], string> = {
   REFUND: "Refund",
   REPLACEMENT: "Replacement",
-  SELLER_ESCALATION: "Seller escalation",
   GUARANTEE_CLAIM: "Guarantee claim",
 };
 const ACTION_STATUS: Record<string, { label: string; tone: "info" | "success" | "warning" | "danger" | "neutral" }> = {
@@ -132,8 +130,7 @@ const ACTION_STATUS: Record<string, { label: string; tone: "info" | "success" | 
   PENDING_APPROVAL: { label: "Awaiting approval", tone: "warning" },
   REJECTED: { label: "Rejected", tone: "danger" },
   CREATED: { label: "Created", tone: "success" },
-  AWAITING_SELLER: { label: "Waiting on seller", tone: "warning" },
-  AWAITING_SELLER_RESPONSE: { label: "Waiting on seller", tone: "warning" },
+  UNDER_REVIEW: { label: "Under review", tone: "warning" },
 };
 
 export function TicketActions({
@@ -142,7 +139,6 @@ export function TicketActions({
   limit,
   level,
   guarantee,
-  customerFirstName,
   history,
   closed,
 }: {
@@ -151,7 +147,6 @@ export function TicketActions({
   limit: number;
   level: string;
   guarantee: GuaranteeCheck[];
-  customerFirstName: string;
   history: TicketAction[];
   closed: boolean;
 }) {
@@ -163,11 +158,7 @@ export function TicketActions({
   const [itemId, setItemId] = useState(order?.items[0]?.id ?? "");
   const [replaceReason, setReplaceReason] = useState<"damaged" | "defective" | "wrong" | "missing">("damaged");
   const [collect, setCollect] = useState(true);
-  const [issue, setIssue] = useState<"product" | "cancel" | "invoice" | "warranty">("product");
   const [claim, setClaim] = useState<"not_delivered" | "damaged" | "wrong" | "different">("not_delivered");
-  const [sellerMsg, setSellerMsg] = useState(
-    `Customer ${customerFirstName} reports an issue with order ${order?.id ?? ""}. Please review the attached ticket ${ticketId} and respond with a resolution or evidence.`,
-  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { show, node } = useToast();
@@ -205,7 +196,6 @@ export function TicketActions({
   const actions = [
     { key: "refund" as const, label: "Issue refund", hint: `${level} limit ${formatINR(limit)}`, icon: IndianRupee },
     { key: "replacement" as const, label: "Create replacement", hint: "One replacement per item", icon: RefreshCcw },
-    { key: "seller" as const, label: "Escalate to seller", hint: "48 hour response", icon: Store },
     { key: "guarantee" as const, label: "File AltasGoods Guarantee claim", hint: eligible ? "Eligible" : "Check eligibility", icon: ShieldCheck },
   ];
 
@@ -386,48 +376,16 @@ export function TicketActions({
           </Modal>
 
           <Modal
-            open={open === "seller"}
-            onClose={close}
-            title="Escalate to seller"
-            description={`${order.seller} must reply within 48 hours. The ticket moves to Pending internal until they respond.`}
-            footer={
-              <>
-                <Button variant="ghost" onClick={close}>
-                  Cancel
-                </Button>
-                <Button disabled={busy || sellerMsg.trim().length < 20} onClick={() => run({ kind: "SELLER_ESCALATION", issue, message: sellerMsg.trim() }, `Escalated to ${order.seller}. Response due in 48 hours.`)}>
-                  Send to seller
-                </Button>
-              </>
-            }
-          >
-            <div className="flex flex-col gap-4">
-              {errorNote}
-              <Field label="Issue" htmlFor="es-issue">
-                <Select id="es-issue" value={issue} onChange={(e) => setIssue(e.target.value as typeof issue)}>
-                  <option value="product">Product quality or wrong item</option>
-                  <option value="cancel">Seller cancellation</option>
-                  <option value="invoice">Invoice or GST request</option>
-                  <option value="warranty">Warranty or installation</option>
-                </Select>
-              </Field>
-              <Field label="Message to seller" htmlFor="es-msg" hint="Customer contact details are never shared with the seller.">
-                <Textarea id="es-msg" value={sellerMsg} onChange={(e) => setSellerMsg(e.target.value)} />
-              </Field>
-            </div>
-          </Modal>
-
-          <Modal
             open={open === "guarantee"}
             onClose={close}
             title="File an AltasGoods Guarantee claim"
-            description="The seller has 72 hours to respond; no response auto-grants the claim. AltasGoods decides within 7 days."
+            description="The customer is told at once, and AltasGoods decides within 7 days."
             footer={
               <>
                 <Button variant="ghost" onClick={close}>
                   Cancel
                 </Button>
-                <Button disabled={!eligible || busy} onClick={() => run({ kind: "GUARANTEE_CLAIM", claimType: claim }, `Guarantee claim filed for order ${order.id}. Seller notified.`)}>
+                <Button disabled={!eligible || busy} onClick={() => run({ kind: "GUARANTEE_CLAIM", claimType: claim }, `Guarantee claim filed for order ${order.id}. Decision due within 7 days.`)}>
                   File claim
                 </Button>
               </>
@@ -458,7 +416,7 @@ export function TicketActions({
                   ))}
                 </div>
               </fieldset>
-              {!eligible && <p className="text-[13px] text-danger-700">Not eligible yet. Ask the customer to contact the seller or open a return, then file after 48 hours.</p>}
+              {!eligible && <p className="text-[13px] text-danger-700">Not eligible yet. Ask the customer to open a return first, then file after 48 hours.</p>}
             </div>
           </Modal>
         </>

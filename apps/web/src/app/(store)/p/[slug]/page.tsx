@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Building2, Check, ChevronRight, Globe, ShieldCheck, Undo2, Wrench } from "lucide-react";
+import { Building2, Check, ChevronRight, Globe, ShieldCheck, Undo2, Wrench } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/page-header";
-import { AddToCartButton } from "@/components/store/cart-buttons";
-import { daysFromNow, DEFAULT_PINCODE, formatDayMonthYear, formatPromise, lookupPincode, promiseDays, promiseLabel } from "@/components/store/delivery";
+import { formatDayMonthYear } from "@/components/store/delivery";
 import { Gallery, type GalleryView } from "@/components/store/gallery";
 import { OffersList } from "@/components/store/offers";
 import { BuyBox, LivePrice, MobileBuyBar, PdpProvider, VariantPicker, type PdpData, type PdpVariant } from "@/components/store/pdp-client";
-import { AssuredMark, percentOff } from "@/components/store/price";
+import { AssuredMark } from "@/components/store/price";
 import { cardBadge, featuredOffer, ProductCard } from "@/components/store/product-card";
 import { FrequentlyBoughtTogether, QnaSection } from "@/components/store/qna";
 import { Rail, RailItem } from "@/components/store/rail";
 import { ReviewsSection } from "@/components/store/reviews";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { Stars } from "@/components/ui/misc";
-import { CURRENT_CUSTOMER, getBrand, getCategory, getProduct, getSeller, products, reviewsFor } from "@/lib/mock";
+import { reviewsFor } from "@/lib/mock";
+import { currentUser } from "@/lib/api/server";
+import { getStoreCatalog } from "@/lib/store-catalog";
 import {
   aspectRatings,
   bankOffersFor,
+  COMPANY,
+  GRIEVANCE_OFFICER,
   dealFor,
   frequentlyBoughtWith,
   inStock,
@@ -26,23 +29,17 @@ import {
   questionsFor,
   ratingHistogram,
   returnPolicyFor,
-  sellerAddress,
-  sellerGrievance,
   similarProducts,
   storefrontCoupons,
   toCartProduct,
   warrantyFor,
 } from "@/lib/mock/store-extra";
 import type { Product } from "@/lib/types";
-import { cn, formatCompact, formatINR, formatNumber } from "@/lib/utils";
-
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
+import { cn, formatCompact, formatNumber } from "@/lib/utils";
 
 export async function generateMetadata(props: PageProps<"/p/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  const p = getProduct(slug);
+  const p = (await getStoreCatalog()).product(slug);
   if (!p) return { title: "Product not found" };
   return { title: p.title.split(/[,(]/)[0]!.trim(), description: `${p.title}. ${p.highlights.slice(0, 2).join(". ")}.` };
 }
@@ -70,19 +67,17 @@ function buildVariants(p: Product, price: number): PdpVariant[] {
   });
 }
 
-const pin = lookupPincode(DEFAULT_PINCODE);
 
 export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const { slug } = await props.params;
-  const p = getProduct(slug);
+  const [catalog, user] = await Promise.all([getStoreCatalog(), currentUser()]);
+  const p = catalog.product(slug);
   if (!p) notFound();
 
-  const brand = getBrand(p.brandId)!;
-  const cat = getCategory(p.categoryId)!;
+  const brand = { name: p.brandName, slug: p.brandSlug };
+  const cat = { name: p.categoryName, slug: p.categorySlug };
   const snapshot = toCartProduct(p);
   const offer = featuredOffer(p);
-  const featured = snapshot.offers.find((o) => o.sellerId === offer.sellerId)!;
-  const seller = getSeller(offer.sellerId)!;
   const deal = dealFor(p.id);
   const policy = returnPolicyFor(p, offer.returnWindowDays);
   const warranty = warrantyFor(p);
@@ -90,14 +85,12 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const reviews = reviewsFor(p.id);
   const histogram = ratingHistogram(p.rating, p.ratingCount);
   const qa = questionsFor(p);
-  const fbt = [p, ...frequentlyBoughtWith(p)];
-  const similar = similarProducts(p);
-  const plus = CURRENT_CUSTOMER.plusMember;
+  const fbt = [p, ...frequentlyBoughtWith(catalog.products, p)];
+  const similar = similarProducts(catalog.products, p);
+  const plus = !!user?.isPlus;
   const coins = Math.min(100, Math.floor(offer.price / 100) * (plus ? 2 : 1));
   const coupon = storefrontCoupons().find((c) => c.code === "BIGDAYS10" && offer.price >= c.minOrder);
   const badge = cardBadge(p, !!deal);
-  const others = snapshot.offers.filter((o) => o.sellerId !== offer.sellerId);
-  const allOffers = [featured, ...others].sort((a, b) => a.price - b.price);
 
   const data: PdpData = {
     id: p.id,
@@ -105,8 +98,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
     title: p.title,
     brand: brand.name,
     variants: buildVariants(p, offer.price),
-    offer: featured,
-    otherOffers: others.length,
+    offer: snapshot.offer,
     plus,
     large: snapshot.large,
     policyShort: policy.short,
@@ -114,8 +106,11 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
     deal: deal ? { endsAt: deal.endsAt, claimedPct: deal.claimedPct, kind: deal.kind } : undefined,
   };
 
-  const views: GalleryView[] = p.gallery.map((src, i) => ({ src, alt: `${p.title}, ${VIEW_NAMES[i] ?? `view ${i + 1}`}`, ...VIEWS[i % VIEWS.length]! }));
-  const sellerG = sellerGrievance(seller);
+  // distinct photos are shown as they are; a single repeated photo gets zoomed detail views
+  const distinct = new Set(p.gallery).size > 1;
+  const views: GalleryView[] = p.gallery.map((src, i) =>
+    distinct ? { src, alt: `${p.title}, image ${i + 1} of ${p.gallery.length}`, ...VIEWS[0]! } : { src, alt: `${p.title}, ${VIEW_NAMES[i] ?? `view ${i + 1}`}`, ...VIEWS[i % VIEWS.length]! },
+  );
 
   return (
     <div className={cn(STORE_CONTAINER, "pt-5 pb-28 lg:pt-6 lg:pb-24")}>
@@ -141,7 +136,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <div className="min-w-0">
             <Link href={`/s?brand=${brand.slug}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline">
               Visit the {brand.name} store
-              {brand.verified && <BadgeCheck size={15} className="text-brand-600" aria-label="Verified brand" />}
             </Link>
             <h1 className="mt-2 text-[22px] leading-snug font-semibold tracking-tight text-ink-900 lg:text-[26px]">{p.title}</h1>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
@@ -221,9 +215,8 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
       <nav aria-label="On this page" className="sticky top-[108px] z-20 -mx-4 mt-12 border-y border-line bg-white/95 px-4 backdrop-blur sm:-mx-6 sm:px-6 lg:top-16 lg:mx-0 lg:rounded-xl lg:border lg:px-2">
         <ul className="flex gap-1 overflow-x-auto scrollbar-none">
           {[
-            ["#other-sellers", `Other sellers (${others.length})`, others.length > 0],
             ["#details", "Details", true],
-            ["#returns", "Returns and seller", true],
+            ["#returns", "Returns and warranty", true],
             ["#reviews", "Reviews", true],
             ["#questions", "Questions", true],
             ["#similar", "Similar products", true],
@@ -239,53 +232,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
         </ul>
       </nav>
 
-      {/* Other sellers */}
-      {others.length > 0 && (
-        <section id="other-sellers" aria-labelledby="pdp-sellers" className="mt-12 scroll-mt-40">
-          <h2 id="pdp-sellers" className="text-xl font-semibold tracking-tight text-ink-900 lg:text-2xl">
-            Other sellers on AltasGoods ({others.length})
-          </h2>
-          <p className="mt-1 text-sm text-ink-500">All offers for this product, sorted by price including delivery to {pin?.city} {DEFAULT_PINCODE}.</p>
-          <ul className="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line">
-            {allOffers.map((o) => {
-              const days = promiseDays(o.deliveryDays, pin);
-              const isFeatured = o.sellerId === offer.sellerId;
-              return (
-                <li key={o.sellerId} className="grid gap-4 p-4 sm:grid-cols-[1.1fr_1fr_1fr_auto] sm:items-center lg:px-6">
-                  <div>
-                    <p className="flex flex-wrap items-baseline gap-2">
-                      <span className="text-lg font-semibold text-ink-900 tabular-nums">{formatINR(o.price)}</span>
-                      {percentOff(o.price, o.mrp) > 0 && <span className="text-[13px] font-semibold text-success-700">{percentOff(o.price, o.mrp)}% off</span>}
-                    </p>
-                    <p className="mt-0.5 text-xs text-ink-500">{plus || o.price >= 499 ? "Free delivery" : "₹40 delivery"}, inclusive of all taxes</p>
-                    {isFeatured && <p className="mt-1.5 inline-flex rounded bg-ink-100 px-1.5 py-px text-[11px] font-semibold text-ink-700">Featured offer</p>}
-                  </div>
-                  <div className="text-[13px]">
-                    <Link href={`/store/${o.sellerSlug}`} className="font-semibold text-brand-700 hover:underline">
-                      {o.sellerName}
-                    </Link>
-                    <p className="mt-0.5 text-ink-500">
-                      {o.sellerRating.toFixed(1)} rating, {formatNumber(o.sellerRatingCount)} ratings
-                    </p>
-                    {o.assured && <AssuredMark className="mt-1" label="AltasGoods Assured" />}
-                  </div>
-                  <div className="text-[13px] text-ink-700">
-                    <p>
-                      Delivery <span className="font-semibold text-ink-900">{days <= 1 ? promiseLabel(days) : `by ${formatPromise(daysFromNow(days))}`}</span>
-                    </p>
-                    <p className="mt-0.5 text-ink-500">
-                      {o.fulfilledBy === "blubuy" ? "Fulfilled by AltasGoods" : "Ships from seller"}, {o.returnWindowDays} day returns
-                      {o.codAvailable ? ", pay on delivery" : ""}
-                    </p>
-                  </div>
-                  <AddToCartButton productId={p.id} sellerId={o.sellerId} disabled={o.stock === 0} label={o.stock === 0 ? "Out of stock" : "Add to cart"} className="sm:w-36" />
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
       {/* Frequently bought together */}
       {fbt.length > 1 && (
         <section aria-labelledby="pdp-fbt" className="mt-14">
@@ -295,7 +241,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <FrequentlyBoughtTogether
             items={fbt.map((x) => {
               const o = featuredOffer(x);
-              return { id: x.id, slug: x.slug, title: x.title, image: x.image, price: o.price, mrp: o.mrp, sellerId: o.sellerId, inStock: inStock(x) };
+              return { id: x.id, slug: x.slug, title: x.title, image: x.image, price: o.price, mrp: o.mrp, inStock: inStock(x) };
             })}
           />
         </section>
@@ -311,7 +257,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
             <h3 className="text-base font-semibold text-ink-900">Description</h3>
             <p className="mt-3 max-w-[720px] text-[15px] leading-relaxed text-ink-700">{p.description}</p>
             <p className="mt-3 max-w-[720px] text-[15px] leading-relaxed text-ink-700">
-              Every unit sold by {seller.displayName} is checked against the listing before dispatch. If anything is not right, you can request a{" "}
+              Every unit is checked against this page before it leaves our warehouse. If anything is not right, you can request a{" "}
               {policy.short.toLowerCase()} from Your orders.
             </p>
             <h3 className="mt-8 text-base font-semibold text-ink-900">Product information</h3>
@@ -352,8 +298,8 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
         </div>
       </section>
 
-      {/* Returns, warranty and seller */}
-      <section id="returns" aria-label="Returns, warranty and seller" className="mt-14 grid scroll-mt-40 gap-4 lg:grid-cols-3 lg:gap-6">
+      {/* Returns, warranty and who sells it */}
+      <section id="returns" aria-label="Returns, warranty and who sells it" className="mt-14 grid scroll-mt-40 gap-4 lg:grid-cols-3 lg:gap-6">
         <div className="rounded-2xl border border-line p-5 lg:p-6">
           <p className="flex items-center gap-2 text-base font-semibold text-ink-900">
             <Undo2 size={18} className="text-ink-500" aria-hidden="true" /> Returns
@@ -378,44 +324,36 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               : `Claim with ${brand.name} using your AltasGoods invoice. Keep the box and accessories for faster service.`}
           </p>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-            AltasGoods Guarantee: if your item does not arrive or is not as described, we make it right, even when the seller does not.
+            AltasGoods Guarantee: if your item does not arrive or is not as described, we make it right.
           </p>
         </div>
         <div className="rounded-2xl border border-line p-5 lg:p-6">
           <p className="flex items-center gap-2 text-base font-semibold text-ink-900">
-            <Building2 size={18} className="text-ink-500" aria-hidden="true" /> Seller details
+            <Building2 size={18} className="text-ink-500" aria-hidden="true" /> Sold by AltasGoods
           </p>
-          <p className="mt-2 text-sm">
-            <Link href={`/store/${seller.slug}`} className="font-semibold text-brand-700 hover:underline">
-              {seller.displayName}
-            </Link>
-            <span className="text-ink-500">
-              {" "}
-              · {seller.rating.toFixed(1)} rating, {formatNumber(seller.ratingCount)} ratings
-            </span>
-          </p>
+          <p className="mt-2 text-sm text-ink-600">Sold, packed and shipped by AltasGoods.</p>
           <dl className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed">
             <div>
               <dt className="inline text-ink-500">Legal name: </dt>
-              <dd className="inline text-ink-800">{seller.legalName}</dd>
+              <dd className="inline text-ink-800">{COMPANY.legalName}</dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Address: </dt>
-              <dd className="inline text-ink-800">{sellerAddress(seller)}</dd>
+              <dd className="inline text-ink-800">{COMPANY.registeredOffice}</dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Customer care: </dt>
-              <dd className="inline text-ink-800">{seller.phone}</dd>
+              <dd className="inline text-ink-800">{COMPANY.customerCare}</dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Grievance officer: </dt>
               <dd className="inline text-ink-800">
-                {sellerG.name}, {sellerG.email}
+                {GRIEVANCE_OFFICER.name}, {GRIEVANCE_OFFICER.email}
               </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">GSTIN: </dt>
-              <dd className="inline font-mono text-xs text-ink-800">{seller.gstin}</dd>
+              <dd className="inline font-mono text-xs text-ink-800">{COMPANY.gstin}</dd>
             </div>
           </dl>
         </div>
@@ -432,7 +370,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           reviewCount={p.reviewCount}
           histogram={histogram}
           aspects={aspectRatings(p)}
-          sellerName={seller.displayName}
+          sellerName="AltasGoods"
           reviews={reviews.map((r) => ({
             id: r.id,
             author: r.author,

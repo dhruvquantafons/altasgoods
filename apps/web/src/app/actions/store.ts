@@ -17,10 +17,9 @@ const fail = (e: unknown, fallback: string): { ok: false; error: string; code?: 
 };
 const offline = { ok: false as const, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
 
-/** A cart line as the storefront keeps it: product plus the chosen seller. */
+/** A cart line as the storefront keeps it: a product and its chosen variant. */
 export interface LineInput {
   productId: string;
-  sellerId: string;
   qty: number;
   variant?: string;
   saved?: boolean;
@@ -29,15 +28,15 @@ export interface LineInput {
 /** UI payment keys to API payment methods. */
 const METHODS: Record<string, PaymentMethod> = { upi: "UPI", card: "CARD", netbanking: "NETBANKING", emi: "EMI", paylater: "PAY_LATER", cod: "COD" };
 
-/** Finds the API offer id for each product and seller pair. */
+/** Finds the store's offer id for each product; products no longer on sale are left out. */
 async function resolveOffers(lines: LineInput[]) {
   const client = publicApi();
   const ids = [...new Set(lines.map((l) => l.productId))];
   const products = await Promise.all(ids.map((id) => client.GET("/v1/products/{slug}", { params: { path: { slug: id } } }).then((r) => r.data)));
   const offerFor = new Map<string, string>();
-  products.forEach((p) => p?.offers.forEach((o) => offerFor.set(`${p.id}|${o.seller.id}`, o.id)));
+  products.forEach((p) => p && offerFor.set(p.id, p.offerId));
   const resolved = lines.flatMap((l) => {
-    const offerId = offerFor.get(`${l.productId}|${l.sellerId}`);
+    const offerId = offerFor.get(l.productId);
     return offerId ? [{ offerId, qty: l.qty, variant: l.variant ?? "", savedForLater: !!l.saved }] : [];
   });
   return { resolved, missing: lines.length - resolved.length };
@@ -128,7 +127,7 @@ export async function loadServerCart(): Promise<Result<LineInput[]>> {
   try {
     const r = await (await api()).GET("/v1/cart");
     if (!r.data) return fail(r.error, "Could not load your cart");
-    return { ok: true, data: r.data.lines.map((l) => ({ productId: l.productId, sellerId: l.seller.id, qty: l.qty, variant: l.variant || undefined, saved: l.savedForLater })) };
+    return { ok: true, data: r.data.lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant || undefined, saved: l.savedForLater })) };
   } catch {
     return offline;
   }

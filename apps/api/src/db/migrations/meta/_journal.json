@@ -29,6 +29,20 @@
       "when": 1790870635620,
       "tag": "0003_returns",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791525567610,
+      "tag": "0004_single_vendor",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791526025016,
+      "tag": "0005_product_media",
+      "breakpoints": true
     }
   ]
 }

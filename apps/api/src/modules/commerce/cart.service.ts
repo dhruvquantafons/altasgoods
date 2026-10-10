@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../../db/client.js";
-import { cartItems, offers, products, sellers } from "../../db/schema.js";
+import { cartItems, offers, products } from "../../db/schema.js";
 import { notFound, unprocessable } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import { addCartItemBody, cartLineInput, patchCartItemBody } from "./commerce.schemas.js";
@@ -15,15 +15,14 @@ export class CartService {
 
   async get(userId: string) {
     const rows = await this.db
-      .select({ item: cartItems, offer: offers, product: products, seller: sellers })
+      .select({ item: cartItems, offer: offers, product: products })
       .from(cartItems)
       .innerJoin(offers, eq(offers.id, cartItems.offerId))
       .innerJoin(products, eq(products.id, offers.productId))
-      .innerJoin(sellers, eq(sellers.id, offers.sellerId))
       .where(eq(cartItems.userId, userId))
       .orderBy(asc(cartItems.createdAt));
-    const lines = rows.map(({ item, offer, product, seller }) => {
-      const available = offer.status === "ACTIVE" && seller.status === "ACTIVE" ? offer.stock : 0;
+    const lines = rows.map(({ item, offer, product }) => {
+      const available = offer.status === "ACTIVE" && product.listingStatus === "LIVE" ? offer.stock : 0;
       return {
         id: item.id,
         offerId: offer.id,
@@ -34,7 +33,6 @@ export class CartService {
         variant: item.variant,
         qty: item.qty,
         savedForLater: item.savedForLater,
-        seller: { id: seller.id, slug: seller.slug, displayName: seller.displayName },
         pricePaise: offer.pricePaise,
         mrpPaise: offer.mrpPaise,
         inStock: available >= item.qty,

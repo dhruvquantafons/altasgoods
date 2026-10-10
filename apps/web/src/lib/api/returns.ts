@@ -1,13 +1,14 @@
 import "server-only";
 import type { RefundStatus, ReturnStatus as UiReturnStatus } from "@/lib/status";
 import type { AccountRefund, AccountReturn, ReturnReasonCode } from "@/lib/mock/account-extra";
+import { STORE_ID } from "./format";
 import { api } from "./server";
 import type { ApiReturnStatus, ReturnRequest } from "./types";
 
 /** API return statuses (spec 11.3) to the account screens' badge keys. */
 export const UI_STATUS: Record<ApiReturnStatus, UiReturnStatus> = {
   REQUESTED: "requested",
-  PENDING_SELLER_REVIEW: "requested",
+  PENDING_REVIEW: "requested",
   APPROVED: "approved",
   REJECTED: "rejected",
   PICKUP_SCHEDULED: "pickup_scheduled",
@@ -42,7 +43,7 @@ export function toAccountReturn(r: ReturnRequest, paymentLabel: string): Account
     productTitle: r.item.title,
     image: r.item.image,
     variant: r.item.variant || undefined,
-    sellerId: r.sellerId,
+    sellerId: STORE_ID,
     reasonCode: r.reasonCode as ReturnReasonCode,
     reason: r.reasonLabel,
     comment: r.comments ?? undefined,
@@ -51,7 +52,7 @@ export function toAccountReturn(r: ReturnRequest, paymentLabel: string): Account
     amount: r.refundAmountPaise / 100,
     requestedAt: r.createdAt,
     pickup: r.pickupDate ? { date: `${r.pickupDate}T09:00:00+05:30`, window: r.pickupSlot ?? "", addressId: "" } : undefined,
-    rejectionReason: r.status === "REJECTED" ? (r.sellerNote ?? r.qcNote ?? "The seller did not accept this return") : undefined,
+    rejectionReason: r.status === "REJECTED" ? (r.decisionNote ?? r.qcNote ?? "This return was not accepted") : undefined,
     refund:
       r.resolution === "REFUND"
         ? {
@@ -68,7 +69,7 @@ export function toAccountReturn(r: ReturnRequest, paymentLabel: string): Account
     events: closed
       ? r.events.map((e) => ({ label: e.toStatus === "CANCELLED" ? "Cancelled" : e.toStatus === "REJECTED" ? "Not accepted" : e.toStatus.charAt(0) + e.toStatus.slice(1).toLowerCase().replace(/_/g, " "), at: e.at, note: e.note ?? undefined, done: true }))
       : [
-          { label: "Requested", at: at(r, "REQUESTED"), done: true, note: r.status === "PENDING_SELLER_REVIEW" ? "Outside the return window, the seller reviews within 48 hours" : undefined },
+          { label: "Requested", at: at(r, "REQUESTED"), done: true, note: r.status === "PENDING_REVIEW" ? "Outside the return window, the seller reviews within 48 hours" : undefined },
           { label: "Approved, pickup booked", at: at(r, "PICKUP_SCHEDULED"), done: reached("PICKUP_SCHEDULED") },
           { label: "Picked up", at: at(r, "PICKED_UP"), done: reached("PICKED_UP"), note: r.instantRefund && r.refundStatus ? "Refund issued at the doorstep" : undefined },
           { label: "Received by the seller", at: at(r, "RECEIVED"), done: reached("RECEIVED") },

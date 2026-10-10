@@ -3,12 +3,11 @@ import { MapPinned, RotateCcw, ShieldCheck, Star, Truck, Undo2 } from "lucide-re
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { getProduct } from "@/lib/mock";
 import { CANCEL_REASONS, myReviews, SECURE_DELIVERY } from "@/lib/mock/account-extra";
 import type { Order, OrderItem } from "@/lib/types";
-import { cn, formatINR } from "@/lib/utils";
+import { cn, formatINR, productSlug } from "@/lib/utils";
 import { BuyAgainButton, CancelOrderButton, InvoiceButton, type RefundOption } from "./order-actions";
-import { cancelMode, dateLabel, isActive, itemState, needsSecureDelivery, paymentLabel, refundTiming, returnInfo, sellerName, shortDate, trackIndex } from "./lib";
+import { cancelMode, dateLabel, isActive, itemState, needsSecureDelivery, paymentLabel, refundTiming, returnInfo, shortDate, trackIndex } from "./lib";
 
 const reviewed = new Set(myReviews.map((r) => r.slug));
 
@@ -95,7 +94,7 @@ function OrderItemRow({ order, item, first }: { order: Order; item: OrderItem; f
   const ri = returnInfo(order, item);
   // live orders can be cancelled only until they ship; after that the customer refuses or returns them
   const mode = order.returns && ["shipped", "in_transit"].includes(order.status) ? null : cancelMode(order.status);
-  const slug = getProduct(item.productId)?.slug;
+  const slug = productSlug(item.productId);
   const active = isActive(order.status);
   const delivered = item.status === "delivered" || item.status === "return_requested" || item.status === "returned";
   const showReturnWindow = !st.ret && ri.eligible && ri.windowEndsAt;
@@ -116,7 +115,7 @@ function OrderItemRow({ order, item, first }: { order: Order; item: OrderItem; f
             {item.title}
           </Link>
           <p className="mt-1 text-xs text-ink-500">
-            {item.variant ? `${item.variant} · ` : ""}Qty {item.quantity} · Sold by {sellerName(item.sellerId)}
+            {item.variant ? `${item.variant} · ` : ""}Qty {item.quantity}
           </p>
           <p className="mt-1.5 text-sm font-semibold text-ink-900 tabular-nums">{formatINR(item.price * item.quantity)}</p>
           {showReturnWindow && (

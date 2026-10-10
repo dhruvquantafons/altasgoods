@@ -206,12 +206,12 @@ export default async function HelpPage(props: PageProps<"/help">) {
                   </Link>
                 </article>
                 {[
-                  { id: "shipping", title: "Shipping and delivery", body: "Orders confirmed before 2 pm count from the same day. Delivery is free for AltasGoods Plus members and for each seller shipment of ₹499 or more, otherwise ₹40 per shipment, always shown before you pay. Promise dates are calculated for your pincode and shown on every product." },
-                  { id: "cancellation", title: "Cancellation", body: "Cancel any item before it ships for a full refund and no fee. Once shipped, you can request cancellation and the parcel returns to the seller, or refuse it at the door. Prepaid refunds start within 1 hour, and AltasCoins and AltasGoods Credits are restored immediately." },
+                  { id: "shipping", title: "Shipping and delivery", body: "Orders confirmed before 2 pm count from the same day. Delivery is free for AltasGoods Plus members and for orders of ₹499 or more, otherwise ₹40 per order, always shown before you pay. Promise dates are calculated for your pincode and shown on every product." },
+                  { id: "cancellation", title: "Cancellation", body: "Cancel any item before it ships for a full refund and no fee. Once shipped, you can request cancellation and the parcel returns to us, or refuse it at the door. Prepaid refunds start within 1 hour, and AltasCoins and AltasGoods Credits are restored immediately." },
                   { id: "payments", title: "Payments", body: "Pay by UPI, credit or debit card, net banking, EMI, AltasGoods Pay Later, AltasGoods Credits and gift cards, or pay on delivery for orders up to ₹50,000. Card numbers are never stored by AltasGoods; saved cards are tokenised by our payment partner. Failed payments are reversed automatically within 1 business day." },
                   { id: "credits", title: "AltasGoods Credits, gift cards and AltasCoins", body: "Refund credits never expire and can be moved back to your bank. Gift cards are valid for 1 year from activation and cannot be reloaded or encashed. AltasCoins are earned on every order (2 per ₹100 for Plus members), can pay for up to 10% of an order and expire 6 months after they are credited." },
-                  { id: "guarantee", title: "AltasGoods Guarantee", body: "If an item does not arrive, arrives materially different, or a refund is not issued, contact the seller first. If it is not resolved within 48 hours, file a claim from the order page within 90 days of the latest promised delivery date and AltasGoods decides." },
-                  { id: "terms", title: "Terms of use", body: "AltasGoods is a marketplace operated by AltasGoods Commerce Private Limited. Products are sold by independent sellers whose names, addresses and ratings are shown on every product page. Prices include GST, and each seller issues its own tax invoice." },
+                  { id: "guarantee", title: "AltasGoods Guarantee", body: "If an item does not arrive, arrives materially different, or a refund is not issued, open a return or contact us first. If it is not resolved within 48 hours, file a claim from the order page within 90 days of the latest promised delivery date and AltasGoods decides." },
+                  { id: "terms", title: "Terms of use", body: "AltasGoods is operated by AltasGoods Commerce Private Limited, which sells and ships every product on the store. Prices include GST, and we issue one tax invoice for each order." },
                   { id: "privacy", title: "Privacy", body: "We collect only what we need to deliver your orders and keep your account safe, under the Digital Personal Data Protection Act, 2023. Promotional messages need your consent, which you can withdraw any time. Download or delete your data from Account, then Privacy and data." },
                   { id: "account", title: "Account and sign in", body: "Sign in with your mobile number and a one-time password. Changing your mobile number needs codes sent to both the old and new numbers. AltasGoods will never ask for your OTP, PIN or card details on a call." },
                 ].map((p) => (
@@ -234,7 +234,7 @@ export default async function HelpPage(props: PageProps<"/help">) {
                 About AltasGoods
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                AltasGoods is a calmer Indian marketplace built in Bengaluru, connecting customers with thousands of verified sellers across India. Our promise: honest prices,
+                AltasGoods is a calmer Indian store built in Bengaluru, selling and shipping every product itself. Our promise: honest prices,
                 real delivery dates and no hidden charges. {COMPANY.legalName}, CIN {COMPANY.cin}.
               </p>
               <Link href="/about" className="mt-3 inline-flex text-[13px] font-semibold text-brand-700 hover:underline">

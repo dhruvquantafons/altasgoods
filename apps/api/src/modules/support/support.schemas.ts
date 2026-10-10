@@ -38,7 +38,6 @@ export const actionBody = z.discriminatedUnion("kind", [
     reason: z.enum(["damaged", "not_delivered", "wrong", "late", "goodwill"]),
   }),
   z.object({ kind: z.literal("REPLACEMENT"), itemId: z.string().min(1).max(60), reason: z.enum(["damaged", "defective", "wrong", "missing"]), collectOriginal: z.boolean() }),
-  z.object({ kind: z.literal("SELLER_ESCALATION"), issue: z.enum(["product", "cancel", "invoice", "warranty"]), message: z.string().trim().min(20).max(2000) }),
   z.object({ kind: z.literal("GUARANTEE_CLAIM"), claimType: z.enum(["not_delivered", "damaged", "wrong", "different"]) }),
 ]);
 
@@ -56,7 +55,6 @@ const snapshotSchema = z.object({
   total: z.number().nonnegative(),
   paymentLabel: z.string().max(60),
   cod: z.boolean(),
-  seller: z.string().max(120),
   items: z.array(z.object({ id: z.string().max(60), title: z.string().max(200), price: z.number().nonnegative(), quantity: z.number().int().positive() })).max(30),
 });
 
@@ -123,7 +121,6 @@ export const ticketDetail = ticketSummary.extend({
       total: z.number(),
       paymentLabel: z.string(),
       cod: z.boolean(),
-      seller: z.string(),
       items: z.array(z.object({ id: z.string(), title: z.string(), price: z.number(), quantity: z.number() })),
     })
     .nullable(),

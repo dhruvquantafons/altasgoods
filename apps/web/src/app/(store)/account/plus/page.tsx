@@ -11,7 +11,7 @@ import { formatINR } from "@/lib/utils";
 export const metadata = { title: "AltasGoods Plus" };
 
 const BENEFITS = [
-  { icon: Truck, title: "Free delivery on every order", body: "No minimum order value, from every seller." },
+  { icon: Truck, title: "Free delivery on every order", body: "No minimum order value." },
   { icon: Zap, title: "One-day delivery", body: "In top cities on AltasGoods Fulfilled items." },
   { icon: Timer, title: "24 hour early access", body: "To AltasGoods Big Days and AltasGoods Plus Day deals." },
   { icon: Coins, title: "2x AltasCoins", body: "2 coins for every ₹100, up to 100 per order." },

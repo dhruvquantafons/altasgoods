@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/storefront/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_storefront"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/products": {
         parameters: {
             query?: never;
@@ -180,14 +196,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/sellers/{slug}": {
+    "/v1/admin/products": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["CatalogController_seller"];
+        get: operations["AdminCatalogController_products"];
+        put?: never;
+        post: operations["AdminCatalogController_createProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/products/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminCatalogController_product"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminCatalogController_updateProduct"];
+        trace?: never;
+    };
+    "/v1/admin/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminCatalogController_categories"];
+        put?: never;
+        post: operations["AdminCatalogController_createCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminCatalogController_deleteCategory"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminCatalogController_updateCategory"];
+        trace?: never;
+    };
+    "/v1/admin/brands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminCatalogController_brands"];
+        put?: never;
+        post: operations["AdminCatalogController_createBrand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/brands/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminCatalogController_deleteBrand"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminCatalogController_updateBrand"];
+        trace?: never;
+    };
+    "/v1/admin/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminCatalogController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/media/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MediaController_image"];
         put?: never;
         post?: never;
         delete?: never;
@@ -436,14 +564,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/order-items": {
+    "/v1/admin/order-items": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["SellerOrdersController_list"];
+        get: operations["AdminOrdersController_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -452,14 +580,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/orders/{id}": {
+    "/v1/admin/orders/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["SellerOrdersController_order"];
+        get: operations["AdminOrdersController_order"];
         put?: never;
         post?: never;
         delete?: never;
@@ -468,7 +596,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/order-items/transition": {
+    "/v1/admin/order-items/transition": {
         parameters: {
             query?: never;
             header?: never;
@@ -477,7 +605,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["SellerOrdersController_transition"];
+        post: operations["AdminOrdersController_transition"];
         delete?: never;
         options?: never;
         head?: never;
@@ -628,14 +756,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/returns": {
+    "/v1/admin/returns": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["SellerReturnsController_list"];
+        get: operations["AdminReturnsController_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -644,14 +772,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/returns/{id}": {
+    "/v1/admin/returns/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["SellerReturnsController_get"];
+        get: operations["AdminReturnsController_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -660,7 +788,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/returns/{id}/decision": {
+    "/v1/admin/returns/{id}/decision": {
         parameters: {
             query?: never;
             header?: never;
@@ -669,14 +797,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["SellerReturnsController_decide"];
+        post: operations["AdminReturnsController_decide"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/returns/{id}/qc": {
+    "/v1/admin/returns/{id}/qc": {
         parameters: {
             query?: never;
             header?: never;
@@ -685,21 +813,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["SellerReturnsController_qc"];
+        post: operations["AdminReturnsController_qc"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/seller/returns/{id}/photos/{photoId}": {
+    "/v1/admin/returns/{id}/photos/{photoId}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["SellerReturnsController_photo"];
+        get: operations["AdminReturnsController_photo"];
         put?: never;
         post?: never;
         delete?: never;
@@ -718,246 +846,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["DevReturnsController_advance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/seller-application": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["OnboardingController_get"];
-        put?: never;
-        post: operations["OnboardingController_start"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["OnboardingController_update"];
-        trace?: never;
-    };
-    "/v1/me/seller-application/verify/gstin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OnboardingController_verifyGstin"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/seller-application/verify/pan": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OnboardingController_verifyPan"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/seller-application/verify/bank": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OnboardingController_verifyBank"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/seller-application/store-name": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["OnboardingController_storeName"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/seller-application/documents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OnboardingController_upload"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/seller-application/documents/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["OnboardingController_document"];
-        put?: never;
-        post?: never;
-        delete: operations["OnboardingController_removeDocument"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/seller-application/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OnboardingController_submit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/seller-applications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ReviewController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/seller-applications/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ReviewController_detail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/seller-applications/{id}/documents/{documentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ReviewController_document"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/seller-applications/{id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ReviewController_approve"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/seller-applications/{id}/request-changes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ReviewController_requestChanges"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/seller-applications/{id}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ReviewController_reject"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/seller-applications/{id}/reopen": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ReviewController_reopen"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1315,16 +1203,7 @@ export interface operations {
                             email: string | null;
                             emailVerified: boolean;
                             isPlus: boolean;
-                            sellers: {
-                                id: string;
-                                displayName: string;
-                                role: string;
-                                /** @description APPROVED until the first listing goes live, then ACTIVE */
-                                status: string;
-                                tier: string;
-                                city: string;
-                            }[];
-                            /** @description BluBuy Control roles; empty for shoppers and sellers */
+                            /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
                         };
                         isNewUser: boolean;
@@ -1407,16 +1286,7 @@ export interface operations {
                         email: string | null;
                         emailVerified: boolean;
                         isPlus: boolean;
-                        sellers: {
-                            id: string;
-                            displayName: string;
-                            role: string;
-                            /** @description APPROVED until the first listing goes live, then ACTIVE */
-                            status: string;
-                            tier: string;
-                            city: string;
-                        }[];
-                        /** @description BluBuy Control roles; empty for shoppers and sellers */
+                        /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
                     };
                 };
@@ -1453,16 +1323,7 @@ export interface operations {
                         email: string | null;
                         emailVerified: boolean;
                         isPlus: boolean;
-                        sellers: {
-                            id: string;
-                            displayName: string;
-                            role: string;
-                            /** @description APPROVED until the first listing goes live, then ACTIVE */
-                            status: string;
-                            tier: string;
-                            city: string;
-                        }[];
-                        /** @description BluBuy Control roles; empty for shoppers and sellers */
+                        /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
                     };
                 };
@@ -1531,16 +1392,7 @@ export interface operations {
                         email: string | null;
                         emailVerified: boolean;
                         isPlus: boolean;
-                        sellers: {
-                            id: string;
-                            displayName: string;
-                            role: string;
-                            /** @description APPROVED until the first listing goes live, then ACTIVE */
-                            status: string;
-                            tier: string;
-                            city: string;
-                        }[];
-                        /** @description BluBuy Control roles; empty for shoppers and sellers */
+                        /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
                     };
                 };
@@ -1567,7 +1419,6 @@ export interface operations {
                         name: string;
                         icon: string | null;
                         image: string | null;
-                        commissionPercent: number;
                         productCount: number;
                         children: {
                             id: string;
@@ -1575,6 +1426,89 @@ export interface operations {
                             name: string;
                         }[];
                     }[];
+                };
+            };
+        };
+    };
+    CatalogController_storefront: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        categories: {
+                            id: string;
+                            slug: string;
+                            name: string;
+                            icon: string | null;
+                            image: string | null;
+                            children: {
+                                id: string;
+                                slug: string;
+                                name: string;
+                            }[];
+                        }[];
+                        brands: {
+                            id: string;
+                            slug: string;
+                            name: string;
+                        }[];
+                        products: {
+                            id: string;
+                            slug: string;
+                            sku: string;
+                            title: string;
+                            brandId: string;
+                            categoryId: string;
+                            subcategory: string;
+                            images: string[];
+                            description: string;
+                            highlights: string[];
+                            specs: {
+                                group: string;
+                                items: {
+                                    label: string;
+                                    value: string;
+                                }[];
+                            }[];
+                            variants: {
+                                name: string;
+                                values: {
+                                    label: string;
+                                    swatch?: string;
+                                    available: boolean;
+                                }[];
+                            }[];
+                            rating: number;
+                            ratingCount: number;
+                            reviewCount: number;
+                            assured: boolean;
+                            tags: string[];
+                            soldLast30d: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            offer: {
+                                /** Format: uuid */
+                                id: string;
+                                pricePaise: number;
+                                mrpPaise: number;
+                                /** @description Units available to order, capped at 10 */
+                                stock: number;
+                                deliveryDays: number;
+                                codAvailable: boolean;
+                                returnWindowDays: number;
+                            };
+                        }[];
+                    };
                 };
             };
         };
@@ -1589,8 +1523,6 @@ export interface operations {
                 subcategory?: string;
                 /** @description Comma separated brand slugs */
                 brand?: string;
-                /** @description Seller slug, for a seller's store page */
-                seller?: string;
                 /** @description Comma separated product ids or slugs */
                 ids?: string;
                 /** @description Paise */
@@ -1602,7 +1534,7 @@ export interface operations {
                 minDiscount?: number;
                 assured?: "0" | "1" | "true" | "false";
                 inStock?: "0" | "1" | "true" | "false";
-                tag?: "bestseller" | "new" | "deal" | "limited" | "plus";
+                tag?: "bestseller" | "new" | "deal" | "limited";
                 sort?: "relevance" | "popular" | "price_asc" | "price_desc" | "newest" | "discount" | "rating";
                 page?: number;
                 pageSize?: number;
@@ -1644,10 +1576,8 @@ export interface operations {
                             tags: string[];
                             inStock: boolean;
                             deliveryDays: number;
-                            sellerCount: number;
                             /** Format: uuid */
-                            featuredOfferId: string | null;
-                            featuredSellerId: string | null;
+                            offerId: string;
                         }[];
                         page: number;
                         pageSize: number;
@@ -1714,10 +1644,8 @@ export interface operations {
                         tags: string[];
                         inStock: boolean;
                         deliveryDays: number;
-                        sellerCount: number;
                         /** Format: uuid */
-                        featuredOfferId: string | null;
-                        featuredSellerId: string | null;
+                        offerId: string;
                         images: string[];
                         description: string;
                         highlights: string[];
@@ -1738,43 +1666,382 @@ export interface operations {
                         }[];
                         reviewCount: number;
                         soldLast30d: number;
-                        offers: {
-                            /** Format: uuid */
-                            id: string;
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                                city: string;
-                                rating: number;
-                                ratingCount: number;
-                                tier: string;
-                            };
-                            pricePaise: number;
-                            mrpPaise: number;
-                            discountPercent: number;
-                            inStock: boolean;
-                            /** @description Units left when 10 or fewer, otherwise null */
-                            lowStock: number | null;
-                            /** @enum {string} */
-                            fulfilledBy: "BLUBUY" | "SELLER";
-                            deliveryDays: number;
-                            codAvailable: boolean;
-                            returnWindowDays: number;
-                            isFeatured: boolean;
-                        }[];
+                        /** @description Units left when 10 or fewer, otherwise null */
+                        lowStock: number | null;
+                        codAvailable: boolean;
+                        returnWindowDays: number;
                     };
                 };
             };
         };
     };
-    CatalogController_seller: {
+    AdminCatalogController_products: {
+        parameters: {
+            query?: {
+                q?: string;
+                /** @description Category id */
+                category?: string;
+                status?: "active" | "inactive" | "all";
+                /** @description low is 10 or fewer */
+                stock?: "out" | "low" | "all";
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            slug: string;
+                            sku: string;
+                            title: string;
+                            image: string;
+                            brand: {
+                                id: string;
+                                name: string;
+                            };
+                            category: {
+                                id: string;
+                                name: string;
+                            };
+                            subcategory: string;
+                            pricePaise: number;
+                            mrpPaise: number;
+                            stock: number;
+                            active: boolean;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_createProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    /** @description Defaults to one made from the title */
+                    slug?: string;
+                    sku: string;
+                    /** @default  */
+                    description?: string;
+                    /** @default [] */
+                    highlights?: string[];
+                    /** @default [] */
+                    specs?: {
+                        group: string;
+                        items: {
+                            label: string;
+                            value: string;
+                        }[];
+                    }[];
+                    /** @default [] */
+                    variants?: {
+                        name: string;
+                        values: {
+                            label: string;
+                            swatch?: string;
+                            /** @default true */
+                            available?: boolean;
+                        }[];
+                    }[];
+                    images: string[];
+                    categoryId: string;
+                    subcategory: string;
+                    brandId: string;
+                    /** @default [] */
+                    tags?: ("bestseller" | "new" | "deal" | "limited")[];
+                    pricePaise: number;
+                    mrpPaise: number;
+                    stock: number;
+                    /** @default 3 */
+                    deliveryDays?: number;
+                    /** @default true */
+                    codAvailable?: boolean;
+                    /** @default 7 */
+                    returnWindowDays?: number;
+                    /** @default true */
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        slug: string;
+                        sku: string;
+                        /** @default  */
+                        description: string;
+                        /** @default [] */
+                        highlights: string[];
+                        /** @default [] */
+                        specs: {
+                            group: string;
+                            items: {
+                                label: string;
+                                value: string;
+                            }[];
+                        }[];
+                        /** @default [] */
+                        variants: {
+                            name: string;
+                            values: {
+                                label: string;
+                                swatch?: string;
+                                /** @default true */
+                                available: boolean;
+                            }[];
+                        }[];
+                        images: string[];
+                        categoryId: string;
+                        subcategory: string;
+                        brandId: string;
+                        /** @default [] */
+                        tags: ("bestseller" | "new" | "deal" | "limited")[];
+                        pricePaise: number;
+                        mrpPaise: number;
+                        stock: number;
+                        /** @default 3 */
+                        deliveryDays: number;
+                        /** @default true */
+                        codAvailable: boolean;
+                        /** @default 7 */
+                        returnWindowDays: number;
+                        /** @default true */
+                        active: boolean;
+                        id: string;
+                        rating: number;
+                        ratingCount: number;
+                        soldLast30d: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_product: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                slug: string;
+                id: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        slug: string;
+                        sku: string;
+                        /** @default  */
+                        description: string;
+                        /** @default [] */
+                        highlights: string[];
+                        /** @default [] */
+                        specs: {
+                            group: string;
+                            items: {
+                                label: string;
+                                value: string;
+                            }[];
+                        }[];
+                        /** @default [] */
+                        variants: {
+                            name: string;
+                            values: {
+                                label: string;
+                                swatch?: string;
+                                /** @default true */
+                                available: boolean;
+                            }[];
+                        }[];
+                        images: string[];
+                        categoryId: string;
+                        subcategory: string;
+                        brandId: string;
+                        /** @default [] */
+                        tags: ("bestseller" | "new" | "deal" | "limited")[];
+                        pricePaise: number;
+                        mrpPaise: number;
+                        stock: number;
+                        /** @default 3 */
+                        deliveryDays: number;
+                        /** @default true */
+                        codAvailable: boolean;
+                        /** @default 7 */
+                        returnWindowDays: number;
+                        /** @default true */
+                        active: boolean;
+                        id: string;
+                        rating: number;
+                        ratingCount: number;
+                        soldLast30d: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_updateProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    sku?: string;
+                    /** @default  */
+                    description?: string;
+                    /** @default [] */
+                    highlights?: string[];
+                    /** @default [] */
+                    specs?: {
+                        group: string;
+                        items: {
+                            label: string;
+                            value: string;
+                        }[];
+                    }[];
+                    /** @default [] */
+                    variants?: {
+                        name: string;
+                        values: {
+                            label: string;
+                            swatch?: string;
+                            /** @default true */
+                            available?: boolean;
+                        }[];
+                    }[];
+                    images?: string[];
+                    categoryId?: string;
+                    subcategory?: string;
+                    brandId?: string;
+                    /** @default [] */
+                    tags?: ("bestseller" | "new" | "deal" | "limited")[];
+                    pricePaise?: number;
+                    mrpPaise?: number;
+                    stock?: number;
+                    /** @default 3 */
+                    deliveryDays?: number;
+                    /** @default true */
+                    codAvailable?: boolean;
+                    /** @default 7 */
+                    returnWindowDays?: number;
+                    /** @default true */
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        slug: string;
+                        sku: string;
+                        /** @default  */
+                        description: string;
+                        /** @default [] */
+                        highlights: string[];
+                        /** @default [] */
+                        specs: {
+                            group: string;
+                            items: {
+                                label: string;
+                                value: string;
+                            }[];
+                        }[];
+                        /** @default [] */
+                        variants: {
+                            name: string;
+                            values: {
+                                label: string;
+                                swatch?: string;
+                                /** @default true */
+                                available: boolean;
+                            }[];
+                        }[];
+                        images: string[];
+                        categoryId: string;
+                        subcategory: string;
+                        brandId: string;
+                        /** @default [] */
+                        tags: ("bestseller" | "new" | "deal" | "limited")[];
+                        pricePaise: number;
+                        mrpPaise: number;
+                        stock: number;
+                        /** @default 3 */
+                        deliveryDays: number;
+                        /** @default true */
+                        codAvailable: boolean;
+                        /** @default 7 */
+                        returnWindowDays: number;
+                        /** @default true */
+                        active: boolean;
+                        id: string;
+                        rating: number;
+                        ratingCount: number;
+                        soldLast30d: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_categories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -1787,17 +2054,287 @@ export interface operations {
                     "application/json": {
                         id: string;
                         slug: string;
-                        displayName: string;
-                        city: string;
-                        rating: number;
-                        ratingCount: number;
-                        tier: string;
-                        state: string;
-                        /** Format: date-time */
-                        joinedAt: string;
-                        liveProducts: number;
+                        name: string;
+                        icon: string | null;
+                        image: string | null;
+                        sortOrder: number;
+                        subcategories: {
+                            id: string;
+                            name: string;
+                            productCount: number;
+                        }[];
+                        productCount: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminCatalogController_createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** @description Defaults to one made from the name */
+                    slug?: string;
+                    /** @description Lucide icon name for menus */
+                    icon?: string | null;
+                    image?: string | null;
+                    sortOrder?: number;
+                    subcategories?: string[];
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        slug: string;
+                        name: string;
+                        icon: string | null;
+                        image: string | null;
+                        sortOrder: number;
+                        subcategories: {
+                            id: string;
+                            name: string;
+                            productCount: number;
+                        }[];
+                        productCount: number;
                     };
                 };
+            };
+        };
+    };
+    AdminCatalogController_deleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminCatalogController_updateCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    /** @description Defaults to one made from the name */
+                    slug?: string;
+                    /** @description Lucide icon name for menus */
+                    icon?: string | null;
+                    image?: string | null;
+                    sortOrder?: number;
+                    subcategories?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        slug: string;
+                        name: string;
+                        icon: string | null;
+                        image: string | null;
+                        sortOrder: number;
+                        subcategories: {
+                            id: string;
+                            name: string;
+                            productCount: number;
+                        }[];
+                        productCount: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_brands: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        slug: string;
+                        name: string;
+                        productCount: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminCatalogController_createBrand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    slug?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        slug: string;
+                        name: string;
+                        productCount: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_deleteBrand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminCatalogController_updateBrand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    slug?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        slug: string;
+                        name: string;
+                        productCount: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        url: string;
+                        mimeType: string;
+                        sizeBytes: number;
+                    };
+                };
+            };
+        };
+    };
+    MediaController_image: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1988,11 +2525,6 @@ export interface operations {
                             variant: string;
                             qty: number;
                             savedForLater: boolean;
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             pricePaise: number;
                             mrpPaise: number;
                             inStock: boolean;
@@ -2052,11 +2584,6 @@ export interface operations {
                             variant: string;
                             qty: number;
                             savedForLater: boolean;
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             pricePaise: number;
                             mrpPaise: number;
                             inStock: boolean;
@@ -2116,11 +2643,6 @@ export interface operations {
                             variant: string;
                             qty: number;
                             savedForLater: boolean;
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             pricePaise: number;
                             mrpPaise: number;
                             inStock: boolean;
@@ -2176,11 +2698,6 @@ export interface operations {
                             variant: string;
                             qty: number;
                             savedForLater: boolean;
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             pricePaise: number;
                             mrpPaise: number;
                             inStock: boolean;
@@ -2228,11 +2745,6 @@ export interface operations {
                             variant: string;
                             qty: number;
                             savedForLater: boolean;
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             pricePaise: number;
                             mrpPaise: number;
                             inStock: boolean;
@@ -2287,11 +2799,6 @@ export interface operations {
                             variant: string;
                             qty: number;
                             savedForLater: boolean;
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             pricePaise: number;
                             mrpPaise: number;
                             inStock: boolean;
@@ -2343,32 +2850,21 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        shipments: {
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
-                            /** @enum {string} */
-                            fulfilledBy: "BLUBUY" | "SELLER";
-                            lines: {
-                                /** Format: uuid */
-                                offerId: string;
-                                productId: string;
-                                slug: string;
-                                title: string;
-                                image: string;
-                                variant: string;
-                                qty: number;
-                                unitPricePaise: number;
-                                mrpPaise: number;
-                                lineTotalPaise: number;
-                            }[];
-                            subtotalPaise: number;
-                            deliveryFeePaise: number;
-                            /** Format: date-time */
-                            promisedBy: string;
+                        lines: {
+                            /** Format: uuid */
+                            offerId: string;
+                            productId: string;
+                            slug: string;
+                            title: string;
+                            image: string;
+                            variant: string;
+                            qty: number;
+                            unitPricePaise: number;
+                            mrpPaise: number;
+                            lineTotalPaise: number;
                         }[];
+                        /** Format: date-time */
+                        promisedBy: string;
                         mrpTotalPaise: number;
                         subtotalPaise: number;
                         couponDiscountPaise: number;
@@ -2472,11 +2968,6 @@ export interface operations {
                                 mrpPaise: number;
                                 /** @enum {string} */
                                 status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
-                                seller: {
-                                    id: string;
-                                    slug: string;
-                                    displayName: string;
-                                };
                                 /** Format: date-time */
                                 promisedBy: string;
                                 /** Format: date-time */
@@ -2646,11 +3137,6 @@ export interface operations {
                             mrpPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             /** Format: date-time */
                             promisedBy: string;
                             /** Format: date-time */
@@ -2761,11 +3247,6 @@ export interface operations {
                             mrpPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
-                            seller: {
-                                id: string;
-                                slug: string;
-                                displayName: string;
-                            };
                             /** Format: date-time */
                             promisedBy: string;
                             /** Format: date-time */
@@ -2937,7 +3418,7 @@ export interface operations {
             };
         };
     };
-    SellerOrdersController_list: {
+    AdminOrdersController_list: {
         parameters: {
             query?: {
                 status?: string;
@@ -2945,10 +3426,7 @@ export interface operations {
                 page?: number;
                 pageSize?: number;
             };
-            header?: {
-                /** @description Seller account to act for; defaults to your first membership */
-                "X-Seller-Id"?: string;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2986,7 +3464,6 @@ export interface operations {
                             /** Format: date-time */
                             promisedBy: string;
                             awb: string | null;
-                            netSettlementPaise: number | null;
                         }[];
                         page: number;
                         pageSize: number;
@@ -2999,13 +3476,10 @@ export interface operations {
             };
         };
     };
-    SellerOrdersController_order: {
+    AdminOrdersController_order: {
         parameters: {
             query?: never;
-            header?: {
-                /** @description Seller account to act for; defaults to your first membership */
-                "X-Seller-Id"?: string;
-            };
+            header?: never;
             path: {
                 id: string;
             };
@@ -3026,8 +3500,21 @@ export interface operations {
                         status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
                         /** @enum {string} */
                         paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                        /** @enum {string} */
+                        paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                        totalPaise: number;
                         shipTo: {
                             name: string;
+                            city: string;
+                            state: string;
+                            pincode: string;
+                        };
+                        address: {
+                            name: string;
+                            phone: string;
+                            line1: string;
+                            line2: string | null;
+                            landmark: string | null;
                             city: string;
                             state: string;
                             pincode: string;
@@ -3048,12 +3535,6 @@ export interface operations {
                             /** Format: date-time */
                             promisedBy: string;
                             awb: string | null;
-                            netSettlementPaise: number | null;
-                            fees: {
-                                code: string;
-                                label: string;
-                                amountPaise: number;
-                            }[] | null;
                             allowedActions: ("PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED")[];
                         }[];
                         events: {
@@ -3071,13 +3552,10 @@ export interface operations {
             };
         };
     };
-    SellerOrdersController_transition: {
+    AdminOrdersController_transition: {
         parameters: {
             query?: never;
-            header?: {
-                /** @description Seller account to act for; defaults to your first membership */
-                "X-Seller-Id"?: string;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -3184,7 +3662,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3197,7 +3674,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3212,7 +3689,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3223,13 +3700,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3261,7 +3738,7 @@ export interface operations {
                     reasonCode: string;
                     reasonLabel: string;
                     /** @enum {string} */
-                    fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                    fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                     comments?: string;
                     /** @default [] */
                     photoIds?: string[];
@@ -3292,7 +3769,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3305,7 +3781,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3320,7 +3796,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3331,13 +3807,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3373,7 +3849,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3386,7 +3861,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3401,7 +3876,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3412,13 +3887,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3454,7 +3929,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3467,7 +3941,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3482,7 +3956,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3493,13 +3967,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3542,7 +4016,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3555,7 +4028,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3570,7 +4043,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3581,13 +4054,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3693,7 +4166,7 @@ export interface operations {
             };
         };
     };
-    SellerReturnsController_list: {
+    AdminReturnsController_list: {
         parameters: {
             query?: {
                 status?: string;
@@ -3714,7 +4187,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3727,7 +4199,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3742,7 +4214,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3753,13 +4225,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3774,7 +4246,7 @@ export interface operations {
             };
         };
     };
-    SellerReturnsController_get: {
+    AdminReturnsController_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3795,7 +4267,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3808,7 +4279,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3823,7 +4294,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3834,13 +4305,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3855,7 +4326,7 @@ export interface operations {
             };
         };
     };
-    SellerReturnsController_decide: {
+    AdminReturnsController_decide: {
         parameters: {
             query?: never;
             header?: never;
@@ -3883,7 +4354,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3896,7 +4366,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3911,7 +4381,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -3922,13 +4392,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -3943,7 +4413,7 @@ export interface operations {
             };
         };
     };
-    SellerReturnsController_qc: {
+    AdminReturnsController_qc: {
         parameters: {
             query?: never;
             header?: never;
@@ -3971,7 +4441,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -3984,7 +4453,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -3999,7 +4468,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -4010,13 +4479,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -4031,7 +4500,7 @@ export interface operations {
             };
         };
     };
-    SellerReturnsController_photo: {
+    AdminReturnsController_photo: {
         parameters: {
             query?: never;
             header?: never;
@@ -4079,7 +4548,6 @@ export interface operations {
                         orderId: string;
                         /** Format: uuid */
                         orderItemId: string;
-                        sellerId: string;
                         item: {
                             title: string;
                             image: string;
@@ -4092,7 +4560,7 @@ export interface operations {
                         reasonCode: string;
                         reasonLabel: string;
                         /** @enum {string} */
-                        fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
                         comments: string | null;
                         photos: {
                             id: string;
@@ -4107,7 +4575,7 @@ export interface operations {
                         instantRefund: boolean;
                         refundStatus: string | null;
                         /** @enum {string} */
-                        status: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                         pickupDate: string | null;
                         pickupSlot: string | null;
                         address: {
@@ -4118,13 +4586,13 @@ export interface operations {
                         };
                         awb: string | null;
                         qcNote: string | null;
-                        sellerNote: string | null;
+                        decisionNote: string | null;
                         cancellable: boolean;
                         events: {
                             /** @enum {string|null} */
-                            fromStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
                             /** @enum {string} */
-                            toStatus: "REQUESTED" | "PENDING_SELLER_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
                             actor: string;
                             note: string | null;
                             /** Format: date-time */
@@ -4134,2523 +4602,6 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_start: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Started, or the existing application */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    constitution?: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                    gstExempt?: boolean;
-                    /** @description Only for GST exempt sellers; otherwise it comes from the GSTIN */
-                    legalName?: string;
-                    /** @description Only for GST exempt sellers */
-                    registeredAddress?: string;
-                    storeName?: string;
-                    storeDescription?: string;
-                    careNumber?: string;
-                    grievanceContact?: string;
-                    pickup?: {
-                        line1: string;
-                        line2?: string;
-                        landmark?: string;
-                        city: string;
-                        state: string;
-                        pincode: string;
-                        contactName: string;
-                        contactPhone: string;
-                        slot: string;
-                    };
-                    categories?: string[];
-                    brand?: {
-                        ownBrand: boolean;
-                        brandName?: string;
-                        trademark?: string;
-                        trademarkClass?: string;
-                        reseller: boolean;
-                    };
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_verifyGstin: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    gstin: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_verifyPan: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    pan: string;
-                    legalName: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_verifyBank: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    holder: string;
-                    account: string;
-                    ifsc: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_storeName: {
-        parameters: {
-            query: {
-                name: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        available: boolean;
-                        reason?: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_upload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": {
-                    /** @enum {string} */
-                    kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                    /**
-                     * Format: binary
-                     * @description PDF, PNG or JPG, up to 4 MB (signature: PNG or JPG, up to 1 MB)
-                     */
-                    file: string;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    OnboardingController_document: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OnboardingController_removeDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OnboardingController_submit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {boolean} */
-                    acceptAgreement: true;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-        };
-    };
-    ReviewController_list: {
-        parameters: {
-            query?: {
-                tab?: "open" | "in_progress" | "decided";
-                q?: string;
-                page?: number;
-                pageSize?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            id: string;
-                            /** @enum {string} */
-                            status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            storeName: string | null;
-                            legalName: string | null;
-                            ownerName: string | null;
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            city: string | null;
-                            state: string | null;
-                            checks: {
-                                /** @enum {string|null} */
-                                gst: "VERIFIED" | "PARTIAL" | "FAILED" | null;
-                                /** @enum {string|null} */
-                                pan: "VERIFIED" | "PARTIAL" | "FAILED" | null;
-                                /** @enum {string|null} */
-                                bank: "VERIFIED" | "PARTIAL" | "FAILED" | null;
-                            };
-                            riskFlags: {
-                                code: string;
-                                /** @enum {string} */
-                                severity: "LOW" | "MEDIUM" | "HIGH";
-                                message: string;
-                            }[];
-                            /** Format: date-time */
-                            submittedAt: string | null;
-                            /** Format: date-time */
-                            slaDueAt: string | null;
-                            /** Format: date-time */
-                            decidedAt: string | null;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        }[];
-                        page: number;
-                        pageSize: number;
-                        total: number;
-                        counts: {
-                            open: number;
-                            inProgress: number;
-                            decided: number;
-                            awaitingReview: number;
-                            waitingOnSeller: number;
-                        };
-                        /** Format: date-time */
-                        oldestOpenSubmittedAt: string | null;
-                        /** @description Share of applications decided in the last 30 days that were approved, 0 to 1 */
-                        approvalRate30d: number | null;
-                    };
-                };
-            };
-        };
-    };
-    ReviewController_detail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountMasked: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                            actorName: string | null;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                        owner: {
-                            name: string | null;
-                            phone: string;
-                            email: string | null;
-                        };
-                        riskFlags: {
-                            code: string;
-                            /** @enum {string} */
-                            severity: "LOW" | "MEDIUM" | "HIGH";
-                            message: string;
-                        }[];
-                        blockers: string[];
-                        /** Format: date-time */
-                        agreementAcceptedAt: string | null;
-                        /** @description Internal reviewer notes */
-                        notes: {
-                            byName: string | null;
-                            at: string;
-                            body: string;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    ReviewController_document: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                documentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ReviewController_approve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    note?: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountMasked: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                            actorName: string | null;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                        owner: {
-                            name: string | null;
-                            phone: string;
-                            email: string | null;
-                        };
-                        riskFlags: {
-                            code: string;
-                            /** @enum {string} */
-                            severity: "LOW" | "MEDIUM" | "HIGH";
-                            message: string;
-                        }[];
-                        blockers: string[];
-                        /** Format: date-time */
-                        agreementAcceptedAt: string | null;
-                        /** @description Internal reviewer notes */
-                        notes: {
-                            byName: string | null;
-                            at: string;
-                            body: string;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    ReviewController_requestChanges: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @description Section keys (business, bank, ...) or document kinds (ADDRESS_PROOF, ...) */
-                    items: string[];
-                    message: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountMasked: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                            actorName: string | null;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                        owner: {
-                            name: string | null;
-                            phone: string;
-                            email: string | null;
-                        };
-                        riskFlags: {
-                            code: string;
-                            /** @enum {string} */
-                            severity: "LOW" | "MEDIUM" | "HIGH";
-                            message: string;
-                        }[];
-                        blockers: string[];
-                        /** Format: date-time */
-                        agreementAcceptedAt: string | null;
-                        /** @description Internal reviewer notes */
-                        notes: {
-                            byName: string | null;
-                            at: string;
-                            body: string;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    ReviewController_reject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    reason: string;
-                    note?: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountMasked: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                            actorName: string | null;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                        owner: {
-                            name: string | null;
-                            phone: string;
-                            email: string | null;
-                        };
-                        riskFlags: {
-                            code: string;
-                            /** @enum {string} */
-                            severity: "LOW" | "MEDIUM" | "HIGH";
-                            message: string;
-                        }[];
-                        blockers: string[];
-                        /** Format: date-time */
-                        agreementAcceptedAt: string | null;
-                        /** @description Internal reviewer notes */
-                        notes: {
-                            byName: string | null;
-                            at: string;
-                            body: string;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    ReviewController_reopen: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        /** @enum {string} */
-                        status: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                        account: {
-                            phone: string;
-                            name: string | null;
-                            email: string | null;
-                            emailVerified: boolean;
-                        };
-                        business: {
-                            /** @enum {string|null} */
-                            constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED" | null;
-                            gstExempt: boolean;
-                            gstin: string | null;
-                            legalName: string | null;
-                            tradeName: string | null;
-                            registeredAddress: string | null;
-                            gstState: string | null;
-                            pan: string | null;
-                        };
-                        store: {
-                            name: string | null;
-                            description: string | null;
-                            careNumber: string | null;
-                            grievanceContact: string | null;
-                        };
-                        pickup: {
-                            line1: string;
-                            line2?: string;
-                            landmark?: string;
-                            city: string;
-                            state: string;
-                            pincode: string;
-                            contactName: string;
-                            contactPhone: string;
-                            slot: string;
-                        } | null;
-                        bank: {
-                            holder: string;
-                            accountMasked: string;
-                            accountLast4: string;
-                            ifsc: string;
-                        } | null;
-                        categories: string[];
-                        brand: {
-                            ownBrand: boolean;
-                            brandName?: string;
-                            trademark?: string;
-                            trademarkClass?: string;
-                            reseller: boolean;
-                        } | null;
-                        checks: {
-                            gst: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                gstin: string;
-                                /** @enum {string} */
-                                portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-                                legalName: string;
-                                tradeName: string;
-                                /** @enum {string} */
-                                constitution: "PROPRIETORSHIP" | "PARTNERSHIP" | "LLP" | "PRIVATE_LIMITED" | "PUBLIC_LIMITED";
-                                state: string;
-                                principalAddress: string;
-                                registeredOn: string;
-                                filing: string;
-                                checkedAt: string;
-                            } | null;
-                            pan: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                pan: string;
-                                holderName: string;
-                                holderType: string;
-                                nameMatchScore: number;
-                                aadhaarLinked: boolean;
-                                checkedAt: string;
-                            } | null;
-                            bank: {
-                                /** @enum {string} */
-                                result: "VERIFIED" | "PARTIAL" | "FAILED";
-                                bankName: string;
-                                branch: string;
-                                ifsc: string;
-                                accountLast4: string;
-                                beneficiaryName: string | null;
-                                nameMatchScore: number;
-                                reference: string;
-                                failureReason?: string;
-                                checkedAt: string;
-                            } | null;
-                        };
-                        documents: {
-                            /** Format: uuid */
-                            id: string;
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            fileName: string;
-                            mimeType: string;
-                            sizeBytes: number;
-                            /** @enum {string} */
-                            status: "PENDING" | "VERIFIED" | "REJECTED";
-                            note: string | null;
-                            /** Format: date-time */
-                            uploadedAt: string;
-                        }[];
-                        requiredDocuments: {
-                            /** @enum {string} */
-                            kind: "SIGNATURE" | "ID_PROOF" | "ADDRESS_PROOF" | "PARTNERSHIP_DEED" | "LLP_CERTIFICATE" | "INCORPORATION_CERTIFICATE" | "BANK_PROOF" | "TRADEMARK";
-                            label: string;
-                            hint: string;
-                            required: boolean;
-                        }[];
-                        /** @description What still blocks submission */
-                        missing: {
-                            key: string;
-                            message: string;
-                        }[];
-                        flaggedItems: {
-                            key: string;
-                            label: string;
-                        }[];
-                        reviewerMessage: string | null;
-                        rejectionReason: string | null;
-                        agreementVersion: string;
-                        /** Format: date-time */
-                        submittedAt: string | null;
-                        /** Format: date-time */
-                        slaDueAt: string | null;
-                        /** Format: date-time */
-                        decidedAt: string | null;
-                        sellerId: string | null;
-                        events: {
-                            /** @enum {string|null} */
-                            fromStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED" | null;
-                            /** @enum {string} */
-                            toStatus: "KYC_IN_PROGRESS" | "SUBMITTED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "APPROVED" | "REJECTED";
-                            /** @enum {string} */
-                            actor: "SELLER" | "SYSTEM" | "STAFF";
-                            note: string | null;
-                            /** Format: date-time */
-                            at: string;
-                            actorName: string | null;
-                        }[];
-                        /** Format: date-time */
-                        updatedAt: string;
-                        owner: {
-                            name: string | null;
-                            phone: string;
-                            email: string | null;
-                        };
-                        riskFlags: {
-                            code: string;
-                            /** @enum {string} */
-                            severity: "LOW" | "MEDIUM" | "HIGH";
-                            message: string;
-                        }[];
-                        blockers: string[];
-                        /** Format: date-time */
-                        agreementAcceptedAt: string | null;
-                        /** @description Internal reviewer notes */
-                        notes: {
-                            byName: string | null;
-                            at: string;
-                            body: string;
-                        }[];
                     };
                 };
             };
@@ -6742,7 +4693,7 @@ export interface operations {
                 "application/json": {
                     subject: string;
                     /** @enum {string} */
-                    category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+                    category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Other";
                     /**
                      * @default PHONE
                      * @enum {string}
@@ -6758,7 +4709,6 @@ export interface operations {
                         total: number;
                         paymentLabel: string;
                         cod: boolean;
-                        seller: string;
                         items: {
                             id: string;
                             title: string;
@@ -6816,7 +4766,6 @@ export interface operations {
                             total: number;
                             paymentLabel: string;
                             cod: boolean;
-                            seller: string;
                             items: {
                                 id: string;
                                 title: string;
@@ -6852,7 +4801,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            kind: "REFUND" | "REPLACEMENT" | "GUARANTEE_CLAIM";
                             status: string;
                             orderId: string | null;
                             amountPaise: number | null;
@@ -6961,7 +4910,6 @@ export interface operations {
                             total: number;
                             paymentLabel: string;
                             cod: boolean;
-                            seller: string;
                             items: {
                                 id: string;
                                 title: string;
@@ -6997,7 +4945,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            kind: "REFUND" | "REPLACEMENT" | "GUARANTEE_CLAIM";
                             status: string;
                             orderId: string | null;
                             amountPaise: number | null;
@@ -7093,7 +5041,6 @@ export interface operations {
                             total: number;
                             paymentLabel: string;
                             cod: boolean;
-                            seller: string;
                             items: {
                                 id: string;
                                 title: string;
@@ -7129,7 +5076,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            kind: "REFUND" | "REPLACEMENT" | "GUARANTEE_CLAIM";
                             status: string;
                             orderId: string | null;
                             amountPaise: number | null;
@@ -7258,7 +5205,6 @@ export interface operations {
                             total: number;
                             paymentLabel: string;
                             cod: boolean;
-                            seller: string;
                             items: {
                                 id: string;
                                 title: string;
@@ -7294,7 +5240,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            kind: "REFUND" | "REPLACEMENT" | "GUARANTEE_CLAIM";
                             status: string;
                             orderId: string | null;
                             amountPaise: number | null;
@@ -7352,12 +5298,6 @@ export interface operations {
                     collectOriginal: boolean;
                 } | {
                     /** @enum {string} */
-                    kind: "SELLER_ESCALATION";
-                    /** @enum {string} */
-                    issue: "product" | "cancel" | "invoice" | "warranty";
-                    message: string;
-                } | {
-                    /** @enum {string} */
                     kind: "GUARANTEE_CLAIM";
                     /** @enum {string} */
                     claimType: "not_delivered" | "damaged" | "wrong" | "different";
@@ -7409,7 +5349,6 @@ export interface operations {
                             total: number;
                             paymentLabel: string;
                             cod: boolean;
-                            seller: string;
                             items: {
                                 id: string;
                                 title: string;
@@ -7445,7 +5384,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            kind: "REFUND" | "REPLACEMENT" | "GUARANTEE_CLAIM";
                             status: string;
                             orderId: string | null;
                             amountPaise: number | null;
@@ -7536,7 +5475,6 @@ export interface operations {
                             total: number;
                             paymentLabel: string;
                             cod: boolean;
-                            seller: string;
                             items: {
                                 id: string;
                                 title: string;
@@ -7572,7 +5510,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            kind: "REFUND" | "REPLACEMENT" | "GUARANTEE_CLAIM";
                             status: string;
                             orderId: string | null;
                             amountPaise: number | null;
@@ -7663,7 +5601,6 @@ export interface operations {
                             total: number;
                             paymentLabel: string;
                             cod: boolean;
-                            seller: string;
                             items: {
                                 id: string;
                                 title: string;
@@ -7699,7 +5636,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            kind: "REFUND" | "REPLACEMENT" | "SELLER_ESCALATION" | "GUARANTEE_CLAIM";
+                            kind: "REFUND" | "REPLACEMENT" | "GUARANTEE_CLAIM";
                             status: string;
                             orderId: string | null;
                             amountPaise: number | null;
@@ -7846,7 +5783,7 @@ export interface operations {
                 "application/json": {
                     subject: string;
                     /** @enum {string} */
-                    category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+                    category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Other";
                     orderId?: string;
                     body: string;
                     /**

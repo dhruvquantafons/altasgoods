@@ -18,8 +18,8 @@ export default function AboutPage() {
       <InfoHero
         crumbs={[{ label: "Home", href: "/" }, { label: "About AltasGoods" }]}
         eyebrow="About AltasGoods"
-        title="A calmer way to shop India's best sellers"
-        description="AltasGoods is an Indian marketplace built in Bengaluru. We connect customers with thousands of verified sellers and promise three simple things: honest prices, real delivery dates and no hidden charges."
+        title="A calmer way to shop"
+        description="AltasGoods is an Indian store built in Bengaluru. We pick every product we sell, ship it ourselves and promise three simple things: honest prices, real delivery dates and no hidden charges."
       />
 
       <div className={cn(STORE_CONTAINER, "mt-10 lg:mt-14")}>
@@ -42,8 +42,8 @@ export default function AboutPage() {
             </h2>
             <div className="mt-4 flex flex-col gap-4 text-[15px] leading-relaxed text-ink-600">
               <p>
-                Shopping online in India had become loud: countdown timers that reset, prices that rise just before a sale, fees that appear at the last step. Sellers, meanwhile,
-                struggled with complex rate cards and slow payouts.
+                Shopping online in India had become loud: countdown timers that reset, prices that rise just before a sale, fees that appear at the last step. We wanted a store
+                that simply tells you the truth.
               </p>
               <p>
                 We started AltasGoods in 2025 to build the marketplace we wanted to use ourselves. One that is fast and wide in selection, but also honest, calm and fair to the
@@ -116,10 +116,10 @@ export default function AboutPage() {
             </span>
             <ArrowRight size={20} className="shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>
-          <Link href="/sell" className="group flex items-center justify-between rounded-2xl border border-line bg-white p-6 lg:p-8">
+          <Link href="/contact" className="group flex items-center justify-between rounded-2xl border border-line bg-white p-6 lg:p-8">
             <span>
-              <span className="block font-display text-lg font-semibold text-ink-900">Sell on AltasGoods</span>
-              <span className="mt-1 block text-sm text-ink-500">Zero commission on items up to ₹999 and payouts three times a week.</span>
+              <span className="block font-display text-lg font-semibold text-ink-900">Talk to us</span>
+              <span className="mt-1 block text-sm text-ink-500">Questions about an order, a product or bulk buying? We reply within a day.</span>
             </span>
             <ArrowRight size={20} className="shrink-0 text-ink-400 transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>

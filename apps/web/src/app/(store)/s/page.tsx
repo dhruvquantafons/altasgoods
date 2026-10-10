@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ListingView, parseFilters, didYouMean } from "@/components/store/listing";
 import { searchCatalog } from "@/lib/api/catalog";
-import { brands, categories, getCategory, products } from "@/lib/mock";
+import { getStoreCatalog } from "@/lib/store-catalog";
 
 export async function generateMetadata(props: PageProps<"/s">): Promise<Metadata> {
   const sp = await props.searchParams;
@@ -12,9 +12,11 @@ export async function generateMetadata(props: PageProps<"/s">): Promise<Metadata
 
 export default async function SearchPage(props: PageProps<"/s">) {
   const f = parseFilters(await props.searchParams);
-  const { products: base, ranked } = f.q ? await searchCatalog(f.q) : { products, ranked: false };
+  const catalog = await getStoreCatalog();
+  const { brands, categories, products } = catalog;
+  const { products: base, ranked } = f.q ? await searchCatalog(catalog, f.q) : { products, ranked: false };
   const suggestion = f.q && base.length === 0 ? didYouMean(f.q, [...brands.map((b) => b.name), ...categories.map((c) => c.name), ...products.map((p) => p.title)]) : null;
-  const cat = f.cat ? getCategory(f.cat) : undefined;
+  const cat = f.cat ? catalog.category(f.cat) : undefined;
 
   const heading = f.q ? (
     <>

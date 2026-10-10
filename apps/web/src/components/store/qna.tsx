@@ -18,7 +18,7 @@ export interface QnaItem {
   answers: { by: string; role: "seller" | "brand" | "buyer"; body: string; on: string; helpful: number }[];
 }
 
-const roleLabel = { seller: "Seller", brand: "Brand", buyer: "Verified buyer" };
+const roleLabel = { seller: "AltasGoods", brand: "Brand", buyer: "Verified buyer" };
 
 export function QnaSection({ items, productTitle }: { items: QnaItem[]; productTitle: string }) {
   const [query, setQuery] = useState("");
@@ -70,7 +70,7 @@ export function QnaSection({ items, productTitle }: { items: QnaItem[]; productT
         >
           {sent ? (
             <p className="text-sm text-ink-700">
-              <span className="font-semibold text-ink-900">Thanks, your question is in review.</span> Once approved, the seller, the brand and buyers of this product can answer. We
+              <span className="font-semibold text-ink-900">Thanks, your question is in review.</span> Once approved, our team, the brand and buyers of this product can answer. We
               will notify you when it is answered.
             </p>
           ) : (
@@ -167,7 +167,6 @@ export interface FbtItem {
   image: string;
   price: number;
   mrp: number;
-  sellerId: string;
   inStock: boolean;
 }
 
@@ -244,7 +243,7 @@ export function FrequentlyBoughtTogether({ items }: { items: FbtItem[] }) {
         <button
           type="button"
           onClick={() => {
-            chosen.forEach((c) => add({ productId: c.id, sellerId: c.sellerId, silent: true }));
+            chosen.forEach((c) => add({ productId: c.id, silent: true }));
             notify({ message: `${chosen.length} item${chosen.length === 1 ? "" : "s"} added to your cart`, action: { label: "View cart", href: "/cart" } });
           }}
           className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-sm font-semibold text-white hover:bg-brand-700"

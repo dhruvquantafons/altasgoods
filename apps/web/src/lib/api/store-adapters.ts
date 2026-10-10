@@ -32,8 +32,6 @@ export const methodLabel = (m: Order["paymentMethod"]) => PAYMENT_METHOD[METHOD_
 
 /** A placed order in the shape the confirmation screen renders. */
 export function toPlacedOrder(order: Order, isPlus: boolean): PlacedOrder {
-  const bySeller = new Map<string, Order["items"]>();
-  for (const it of order.items) bySeller.set(it.seller.displayName, [...(bySeller.get(it.seller.displayName) ?? []), it]);
   const spent = (order.subtotalPaise - order.couponDiscountPaise) / 100;
   return {
     id: order.id,
@@ -43,16 +41,13 @@ export function toPlacedOrder(order: Order, isPlus: boolean): PlacedOrder {
       image: i.image,
       qty: i.qty,
       price: i.unitPricePaise / 100,
-      seller: i.seller.displayName,
       variant: i.variant || undefined,
       slug: i.productId.replace(/^p-/, ""),
     })),
-    shipments: [...bySeller.entries()].map(([seller, items]) => ({
-      seller,
-      date: formatPromise(items.reduce((d, i) => (i.promisedBy > d ? i.promisedBy : d), items[0]!.promisedBy)),
+    delivery: {
+      date: formatPromise(order.items.reduce((d, i) => (i.promisedBy > d ? i.promisedBy : d), order.items[0]?.promisedBy ?? order.placedAt)),
       option: "Standard",
-      items: items.reduce((a, i) => a + i.qty, 0),
-    })),
+    },
     address: { id: "order-address", ...order.address, line2: order.address.line2 ?? undefined, landmark: order.address.landmark ?? undefined, type: order.address.type.toLowerCase() as "home" | "work" | "other" },
     paymentLabel: methodLabel(order.paymentMethod),
     payable: order.totalPaise / 100,

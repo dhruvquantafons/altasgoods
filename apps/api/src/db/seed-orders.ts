@@ -1,22 +1,22 @@
 /**
  * Demo order history, created through the real services (quote, place, pay,
- * seller transitions, courier scans) and then back-dated, so every number in
- * Seller Hub and My Account comes from genuine order flows.
+ * store fulfilment, courier scans) and then back-dated, so every number in
+ * AltasGoods Control and My Account comes from genuine order flows.
  */
 import { randomUUID } from "node:crypto";
 import { NestFactory } from "@nestjs/core";
 import { eq, inArray, sql } from "drizzle-orm";
 import { AppModule } from "../app.module.js";
 import type { Db } from "./client.js";
-import { addresses, orderEvents, orderItems, orders, payments, sellerMembers, users, type OrderItemStatus } from "./schema.js";
+import { addresses, orderEvents, orderItems, orders, payments, users, type OrderItemStatus } from "./schema.js";
 import { DB } from "../common/tokens.js";
 import { OrdersService } from "../modules/commerce/orders.service.js";
 import { PaymentsService } from "../modules/commerce/payments/payments.service.js";
 import { SandboxPaymentProvider } from "../modules/commerce/payments/sandbox.provider.js";
-import { SellerOrdersService } from "../modules/commerce/seller-orders.service.js";
+import { FulfilmentService } from "../modules/commerce/fulfilment.service.js";
 import { DevLogisticsService } from "../modules/commerce/dev-logistics.service.js";
 import { ReturnsService } from "../modules/commerce/returns/returns.service.js";
-import { DEMO_CUSTOMER_PHONE, DEMO_SELLER_PHONE } from "./demo.js";
+import { DEMO_CUSTOMER_PHONE, DEMO_STAFF_PHONE } from "./demo.js";
 
 type Target = Exclude<OrderItemStatus, "PENDING"> | "PAYMENT_PENDING";
 
@@ -36,18 +36,19 @@ export async function seedOrders() {
   const db = app.get<Db>(DB);
   const ordersSvc = app.get(OrdersService);
   const paymentsSvc = app.get(PaymentsService);
-  const sellerSvc = app.get(SellerOrdersService);
+  const fulfilment = app.get(FulfilmentService);
   const courier = app.get(DevLogisticsService);
 
-  // shoppers only: nobody who belongs to a seller account
+  // shoppers only: no staff
+  const [staff] = await db.select({ id: users.id }).from(users).where(eq(users.phone, DEMO_STAFF_PHONE));
   const shoppers = await db
     .select({ id: users.id, phone: users.phone })
     .from(users)
-    .where(sql`${users.phone} <> ${DEMO_SELLER_PHONE} and not exists (select 1 from ${sellerMembers} m where m.user_id = ${users.id})`)
+    .where(sql`cardinality(${users.staffRoles}) = 0`)
     .orderBy(users.createdAt)
     .limit(30);
   const others = shoppers.filter((s) => s.phone !== DEMO_CUSTOMER_PHONE).map((s) => s.phone);
-  const apex = ["headphones-studio", "earbuds-pods", "speaker-boom", "airfryer-crisp", "laptop-air", "phone-aurora", "cookware-pan", "camera-mirrorless", "tablet-slate", "blender-pro"];
+  const featured = ["headphones-studio", "earbuds-pods", "speaker-boom", "airfryer-crisp", "laptop-air", "phone-aurora", "cookware-pan", "camera-mirrorless", "tablet-slate", "blender-pro"];
   const anyone = ["tee-classic", "serum-glow", "coffee-beans", "vase-ceramic", "yoga-mat", "books-stack", "lamp-arc", "sneakers-white"];
 
   const plans: Plan[] = [
@@ -65,7 +66,7 @@ export async function seedOrders() {
     const days = target === "NEW" ? 0 : target === "ACCEPTED" || target === "PACKED" ? 0.3 : target === "READY_TO_SHIP" ? 1 : target === "SHIPPED" ? 2 : target === "OUT_FOR_DELIVERY" ? 3 : target === "DELIVERED" ? 4 + i : 5;
     plans.push({
       phone: others[i % others.length]!,
-      products: i % 4 === 3 ? [apex[i % apex.length]!, anyone[i % anyone.length]!] : [apex[i % apex.length]!],
+      products: i % 4 === 3 ? [featured[i % featured.length]!, anyone[i % anyone.length]!] : [featured[i % featured.length]!],
       method: (["UPI", "UPI", "COD", "CARD", "NETBANKING"] as const)[i % 5]!,
       target,
       daysAgo: days,
@@ -106,15 +107,15 @@ export async function seedOrders() {
       await paymentsSvc.process(SandboxPaymentProvider.event(p!.ref!, "SUCCESS"));
     }
 
-    const items = await db.select({ id: orderItems.id, sellerId: orderItems.sellerId }).from(orderItems).where(eq(orderItems.orderId, orderId));
+    const items = await db.select({ id: orderItems.id }).from(orderItems).where(eq(orderItems.orderId, orderId));
     if (plan.target === "CANCELLED") await ordersSvc.cancel(user.id, orderId, { reason: "Ordered by mistake" });
     else if (plan.target !== "NEW" && plan.target !== "PAYMENT_PENDING") {
       for (const item of items) {
         for (const step of STEPS) {
           if (step === "ACCEPTED" || step === "PACKED" || step === "READY_TO_SHIP") {
-            await sellerSvc.transition(item.sellerId, item.sellerId, { ids: [item.id], to: step });
+            await fulfilment.transition(staff!.id, { ids: [item.id], to: step });
           } else {
-            await courier.advance({ id: user.id, sessionId: "seed", sellers: [], staff: [] }, item.id, step);
+            await courier.advance({ id: user.id, sessionId: "seed", staff: [] }, item.id, step);
           }
           if (step === plan.target) break;
         }
@@ -128,10 +129,10 @@ export async function seedOrders() {
   return created;
 }
 
-/** A few returns in different stages, so My Account and Seller Hub show real ones. */
+/** A few returns in different stages, so My Account and AltasGoods Control show real ones. */
 async function seedReturns(db: Db, svc: ReturnsService) {
   const delivered = await db
-    .select({ itemId: orderItems.id, userId: orders.userId, phone: users.phone, sellerId: orderItems.sellerId })
+    .select({ itemId: orderItems.id, userId: orders.userId, phone: users.phone })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
     .innerJoin(users, eq(users.id, orders.userId))
@@ -142,7 +143,7 @@ async function seedReturns(db: Db, svc: ReturnsService) {
     qty: 1,
     reasonCode: "DEFECTIVE",
     reasonLabel: "Item is defective or not working",
-    fault: "SELLER" as const,
+    fault: "STORE" as const,
     resolution: "REFUND" as const,
     refundTo: "SOURCE" as const,
     pickupDate: today,
@@ -150,20 +151,20 @@ async function seedReturns(db: Db, svc: ReturnsService) {
     photoIds: [],
   };
   const demo = delivered.find((d) => d.phone === DEMO_CUSTOMER_PHONE);
-  const apex = delivered.filter((d) => d.sellerId === "s-apex" && d.phone !== DEMO_CUSTOMER_PHONE);
+  const others = delivered.filter((d) => d.phone !== DEMO_CUSTOMER_PHONE);
   const plans: { line: (typeof delivered)[number] | undefined; stages: ("OUT_FOR_PICKUP" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED")[]; extra?: object }[] = [
     { line: demo, stages: [], extra: { reasonCode: "NOT_AS_DESCRIBED", reasonLabel: "Item is not as described", comments: "The colour is much darker than the photos." } },
-    { line: apex[0], stages: ["OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"], extra: { comments: "Stops working after a few minutes." } },
-    { line: apex[1], stages: ["OUT_FOR_PICKUP", "PICKED_UP"], extra: { reasonCode: "WRONG_ITEM", reasonLabel: "Received a different item", resolution: "REPLACEMENT", refundTo: undefined } },
-    // left for the seller to decide
-    { line: apex[2], stages: [], extra: { reasonCode: "MISSING_PARTS", reasonLabel: "Parts or accessories are missing", comments: "The charging cable was not in the box." } },
+    { line: others[0], stages: ["OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"], extra: { comments: "Stops working after a few minutes." } },
+    { line: others[1], stages: ["OUT_FOR_PICKUP", "PICKED_UP"], extra: { reasonCode: "WRONG_ITEM", reasonLabel: "Received a different item", resolution: "REPLACEMENT", refundTo: undefined } },
+    // left for the store to decide
+    { line: others[2], stages: [], extra: { reasonCode: "MISSING_PARTS", reasonLabel: "Parts or accessories are missing", comments: "The charging cable was not in the box." } },
   ];
   for (const p of plans) {
     if (!p.line) continue;
     try {
       const r = await svc.create(p.line.userId, { ...base, ...p.extra, orderItemId: p.line.itemId } as Parameters<ReturnsService["create"]>[1]);
-      // demo orders are backdated past the return window, so the seller approves before pickup
-      if (p.stages.length && r.status === "PENDING_SELLER_REVIEW") await svc.decide(p.line.sellerId, r.id, true, "Approved as a goodwill return");
+      // demo orders are backdated past the return window, so the store approves before pickup
+      if (p.stages.length && r.status === "PENDING_REVIEW") await svc.decide(r.id, true, "Approved as a goodwill return");
       for (const to of p.stages) await svc.advance(r.id, to);
     } catch (e) {
       console.warn(`Skipped a demo return: ${String(e)}`);

@@ -5,7 +5,7 @@ import { expect, type Browser, type BrowserContext, type Page } from "@playwrigh
 export const WEB = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 export const API = process.env.E2E_API_URL ?? "http://localhost:4000";
 
-export const PHONES = { shopper: "9845012345", seller: "9820011223", staff: "9811012345", applicant: "9700011004" } as const;
+export const PHONES = { shopper: "9845012345", staff: "9811012345" } as const;
 
 /** A fresh, unused mobile number for tests that need a new account. */
 export const newPhone = () => `7${String(Math.floor(Math.random() * 1e9)).padStart(9, "0")}`;
@@ -69,23 +69,21 @@ export function apiAs(session: { accessToken: string }) {
 
 type Api = ReturnType<typeof apiAs>;
 
-/** Places and pays (sandbox UPI) an order for one unit of a product from Apex Retail; returns the order and its item. */
+/** Places and pays (sandbox UPI) an order for one unit of a product; returns the order and its item. */
 export async function paidOrder(shopper: Api, slug: string) {
-  const product = await shopper.get<{ offers: { id: string; seller: { id: string } }[] }>(`/v1/products/${slug}`);
-  const offer = product.offers.find((o) => o.seller.id === "s-apex");
-  if (!offer) throw new Error(`Apex Retail does not sell ${slug}`);
+  const product = await shopper.get<{ offerId: string }>(`/v1/products/${slug}`);
   const [address] = await shopper.get<{ id: string }[]>("/v1/me/addresses");
-  const placed = await shopper.post<{ order: { id: string }; payment: { id: string } }>("/v1/orders", { addressId: address!.id, paymentMethod: "UPI", lines: [{ offerId: offer.id, qty: 1, variant: "" }] }, { "idempotency-key": crypto.randomUUID() });
+  const placed = await shopper.post<{ order: { id: string }; payment: { id: string } }>("/v1/orders", { addressId: address!.id, paymentMethod: "UPI", lines: [{ offerId: product.offerId, qty: 1, variant: "" }] }, { "idempotency-key": crypto.randomUUID() });
   await shopper.post(`/v1/payments/${placed.payment.id}/sandbox/complete`, { outcome: "SUCCESS" });
   const order = await shopper.get<{ id: string; items: { id: string }[] }>(`/v1/me/orders/${placed.order.id}`);
   return { orderId: order.id, itemId: order.items[0]!.id };
 }
 
-/** Takes a paid item through the seller's steps and simulated courier scans to delivered. */
-export async function deliver(seller: Api, itemId: string, deliveredDaysAgo?: number) {
-  for (const to of ["ACCEPTED", "PACKED", "READY_TO_SHIP"]) await seller.post("/v1/seller/order-items/transition", { ids: [itemId], to });
-  for (const to of ["SHIPPED", "OUT_FOR_DELIVERY"]) await seller.post("/v1/dev/logistics/advance", { orderItemId: itemId, to });
-  await seller.post("/v1/dev/logistics/advance", { orderItemId: itemId, to: "DELIVERED", deliveredDaysAgo });
+/** Takes a paid item through the store's fulfilment steps and simulated courier scans to delivered. */
+export async function deliver(staff: Api, itemId: string, deliveredDaysAgo?: number) {
+  for (const to of ["ACCEPTED", "PACKED", "READY_TO_SHIP"]) await staff.post("/v1/admin/order-items/transition", { ids: [itemId], to });
+  for (const to of ["SHIPPED", "OUT_FOR_DELIVERY"]) await staff.post("/v1/dev/logistics/advance", { orderItemId: itemId, to });
+  await staff.post("/v1/dev/logistics/advance", { orderItemId: itemId, to: "DELIVERED", deliveredDaysAgo });
 }
 
 /** A return request body for an item, refunded to the source, picked up today. */
@@ -94,7 +92,7 @@ export const returnRequest = (itemId: string, extra: Json = {}) => ({
   qty: 1,
   reasonCode: "DEFECTIVE",
   reasonLabel: "Item is defective or not working",
-  fault: "SELLER",
+  fault: "STORE",
   resolution: "REFUND",
   refundTo: "SOURCE",
   pickupDate: new Date().toISOString().slice(0, 10),
@@ -189,13 +187,12 @@ export const AREAS: Area[] = [
   {
     name: "storefront and public pages",
     phone: null,
-    roots: ["/", "/portals", "/sell", "/careers", "/login", "/signup", "/seller/register", "/s?q=laptop"],
+    roots: ["/", "/portals", "/careers", "/login", "/signup", "/s?q=laptop"],
     include: /^\//,
-    exclude: /^\/(account|checkout|order|seller|admin|logistics|support)(\/|$)/,
+    exclude: /^\/(account|checkout|order|admin|logistics|support)(\/|$)/,
   },
   { name: "My Account and checkout", phone: PHONES.shopper, roots: ["/account", "/cart", "/checkout"], include: /^\/(account|cart|checkout)(\/|$)/ },
-  { name: "Seller Hub", phone: PHONES.seller, roots: ["/seller"], include: /^\/seller(\/|$)/, exclude: /^\/seller\/register/ },
-  { name: "BluBuy Control", phone: PHONES.staff, roots: ["/admin"], include: /^\/admin(\/|$)/ },
+  { name: "AltasGoods Control", phone: PHONES.staff, roots: ["/admin"], include: /^\/admin(\/|$)/ },
   { name: "Hub Console", phone: PHONES.staff, roots: ["/logistics"], include: /^\/logistics(\/|$)/ },
   { name: "Care Desk", phone: PHONES.staff, roots: ["/support"], include: /^\/support(\/|$)/ },
 ];

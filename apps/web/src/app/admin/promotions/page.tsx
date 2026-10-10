@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CircleCheck, CircleX } from "lucide-react";
 import { ActionButton } from "@/components/admin/action-button";
 import { EVENT_STATUS } from "@/components/admin/admin-status";
@@ -10,7 +9,10 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { coupons, sellers } from "@/lib/mock";
+import { coupons as allCoupons } from "@/lib/mock";
+
+// seller-funded coupons in the demo data have no place in a single store
+const coupons = allCoupons.filter((c) => c.fundedBy !== "seller");
 import { dealSubmissions, saleEvents } from "@/lib/mock/admin-extra";
 import { COUPON_STATUS } from "@/lib/status";
 import { cn, formatCompact, formatDateShort, formatINR, formatNumber, NOW } from "@/lib/utils";
@@ -22,8 +24,7 @@ const RANGE_END = new Date("2027-01-01T00:00:00+05:30").getTime();
 const MONTHS = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const pos = (iso: string | number) => Math.max(0, Math.min(100, ((new Date(iso).getTime() - RANGE_START) / (RANGE_END - RANGE_START)) * 100));
 const BAR_LABEL = { ended: "Ended", live: "Live now", submissions_open: "Deals open", planning: "Planning" } as const;
-const FUNDING = { blubuy: "AltasGoods funded", seller: "Seller funded", bank: "Bank funded" } as const;
-const sellerName = (id: string) => sellers.find((s) => s.id === id)?.displayName ?? id;
+const FUNDING = { blubuy: "AltasGoods funded", seller: "Brand funded", bank: "Bank funded" } as const;
 
 function dealCheck(d: (typeof dealSubmissions)[number]) {
   const pct = Math.round(((d.low30d - d.dealPrice) / d.low30d) * 100);
@@ -136,7 +137,7 @@ export default function PromotionsPage() {
       </Card>
 
       <Card className="mb-6">
-        <CardHeader title="Coupons" description="Platform, bank and seller coupons. A coupon ends automatically when its budget or limit is used." />
+        <CardHeader title="Coupons" description="Store and bank coupons. A coupon ends automatically when its budget or limit is used." />
         <TableContainer className="mt-3">
           <Table>
             <THead>
@@ -230,10 +231,7 @@ export default function PromotionsPage() {
                         <span className="min-w-0">
                           <span className="block truncate text-[13px] font-medium text-ink-900">{d.title}</span>
                           <span className="block text-xs text-ink-500">
-                            <Link href={`/admin/sellers/${d.sellerId}`} className="hover:text-brand-700">
-                              {sellerName(d.sellerId)}
-                            </Link>
-                            , <span className="font-mono">{d.id}</span>
+                            <span className="font-mono">{d.id}</span>
                           </span>
                         </span>
                       </div>
@@ -268,7 +266,7 @@ export default function PromotionsPage() {
                           icon="check"
                           size="xs"
                           title="Approve deal"
-                          description="The deal price is locked once the event's price lock starts; the seller may only lower it."
+                          description="The deal price is locked once the event's price lock starts; it may only be lowered."
                           summary={[
                             { label: "Deal price", value: formatINR(d.dealPrice) },
                             { label: "30 day low", value: formatINR(d.low30d) },

@@ -59,5 +59,5 @@ export async function signIn(http: TestContext["http"], phone: string, name?: st
 }
 
 export const DEMO_CUSTOMER = "9845012345";
-export const DEMO_SELLER = "9820011223";
 export const DEMO_STAFF = "9811012345";
+export const DEMO_AGENT = "9811020001";

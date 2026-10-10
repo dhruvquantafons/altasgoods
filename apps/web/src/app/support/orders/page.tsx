@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabLinks } from "@/components/ui/tabs";
-import { customers, orders, sellerName, shipments } from "@/lib/mock";
+import { customers, orders, shipments } from "@/lib/mock";
 import { shipmentForOrder } from "@/lib/mock/ops-extra";
 import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS, SHIPMENT_STATUS, type OrderStatus } from "@/lib/status";
 import type { Order } from "@/lib/types";
@@ -27,7 +27,7 @@ function late(o: Order) {
   return [...PRE_SHIP, ...MOVING, "undelivered"].includes(o.status) && minsUntil(o.promisedBy) < 0;
 }
 
-type Category = "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+type Category = "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Other";
 
 /** Order actions an agent can raise; each opens a ticket for the team that carries it out. */
 function actionsFor(o: Order): { label: string; subject: string; category: Category; body: string; primary?: boolean }[] {
@@ -126,7 +126,7 @@ export default async function OrderLookupPage(props: PageProps<"/support/orders"
                           <div className="min-w-0 flex-1">
                             <p className="line-clamp-2 text-[13px] font-medium text-ink-900">{it.title}</p>
                             <p className="mt-0.5 text-xs text-ink-500">
-                              {it.quantity} x {formatINR(it.price)}, sold by {sellerName(it.sellerId)}
+                              {it.quantity} x {formatINR(it.price)}
                             </p>
                           </div>
                         </li>
@@ -181,7 +181,6 @@ export default async function OrderLookupPage(props: PageProps<"/support/orders"
                           total: o.total,
                           paymentLabel: PAYMENT_METHOD[o.payment.method],
                           cod: o.payment.method === "cod",
-                          seller: sellerName(o.items[0]!.sellerId),
                           items: o.items.map((it) => ({ id: it.id, title: it.title, price: it.price, quantity: it.quantity })),
                         }}
                         defaultSubject={a.subject}

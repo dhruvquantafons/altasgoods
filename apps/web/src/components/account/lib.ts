@@ -16,7 +16,7 @@ import {
   type StatusMeta,
   type TicketStatus,
 } from "@/lib/status";
-import { getProduct, getSeller } from "@/lib/mock";
+import { getProduct } from "@/lib/mock";
 import { returnForItem, returnPolicyFor, SECURE_DELIVERY, type AccountReturn, type ReturnPolicy } from "@/lib/mock/account-extra";
 import { formatINR, NOW } from "@/lib/utils";
 
@@ -90,7 +90,7 @@ export const CUSTOMER_ITEM_STATUS: Record<OrderStatus, StatusMeta> = {
   delivered: label("Delivered", "success"),
   cancelled: label("Cancelled", "neutral"),
   undelivered: label("Delivery attempted", "warning"),
-  rto_in_transit: label("Returning to seller", "warning"),
+  rto_in_transit: label("Returning to AltasGoods", "warning"),
   returned_to_seller: label("Returned to seller", "neutral"),
   return_requested: label("Return in progress", "info"),
   returned: label("Returned", "neutral"),
@@ -101,7 +101,7 @@ export const CUSTOMER_RETURN_STATUS: Record<ReturnStatus, StatusMeta> = {
   ...RETURN_STATUS,
   requested: label("Requested", "info"),
   rejected: label("Not accepted", "danger"),
-  received: label("Received by seller", "brand"),
+  received: label("Received by AltasGoods", "brand"),
   qc_passed: label("Quality check passed", "success"),
   qc_failed: label("Quality check failed", "danger"),
   refund_initiated: label("Refund initiated", "info"),
@@ -180,9 +180,9 @@ export function itemState(order: Order, item: OrderItem): ItemState {
     case "undelivered":
       return { meta, headline: "We missed you. Next attempt tomorrow", detail: "Choose a new date or update the address details" };
     case "rto_in_transit":
-      return { meta, headline: "Delivery could not be completed", detail: order.payment.method === "cod" ? "No payment was taken" : "Refund starts when the seller receives it" };
+      return { meta, headline: "Delivery could not be completed", detail: order.payment.method === "cod" ? "No payment was taken" : "Refund starts when we receive it" };
     case "returned_to_seller":
-      return { meta, headline: "Returned to the seller", detail: order.payment.method === "cod" ? "No payment was taken" : "Refund completed" };
+      return { meta, headline: "Returned to AltasGoods", detail: order.payment.method === "cod" ? "No payment was taken" : "Refund completed" };
     case "return_requested":
       return { meta, headline: "Return requested" };
     case "returned":
@@ -307,9 +307,6 @@ export function refundTiming(method: PaymentMethod) {
   }
 }
 
-export function sellerName(id: string) {
-  return getSeller(id)?.displayName ?? "AltasGoods seller";
-}
 
 export function shortTitle(title: string) {
   return title.split(/[,(]/)[0]!.trim();

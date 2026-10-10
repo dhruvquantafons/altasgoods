@@ -254,7 +254,7 @@ export function ShipmentActions({
                 if (!rtoReason) return;
                 close();
                 setRto(RTO_REASONS[rtoReason]);
-                show(`RTO initiated for ${awb}. Reason: ${RTO_REASONS[rtoReason]}. Seller and customer notified.`);
+                show(`RTO initiated for ${awb}. Reason: ${RTO_REASONS[rtoReason]}. Customer notified.`);
               }}
             >
               Mark RTO
@@ -275,11 +275,11 @@ export function ShipmentActions({
               ))}
             </Select>
           </Field>
-          <Field label="Note for the audit log" htmlFor="rto-note" required hint="At least 8 characters. Visible to the seller and Care Desk.">
+          <Field label="Note for the audit log" htmlFor="rto-note" required hint="At least 8 characters. Visible to store operations and Care Desk.">
             <Textarea id="rto-note" value={rtoNote} onChange={(e) => setRtoNote(e.target.value)} placeholder="For example: customer confirmed cancellation on IVR at 10:12 am" />
           </Field>
           <p className="rounded-lg border border-line bg-ink-50 px-3 py-2.5 text-[13px] leading-relaxed text-ink-600">
-            Customer-caused RTO charges the seller forward shipping only. COD refusals count toward the customer&apos;s COD risk.
+            COD refusals count toward the customer&apos;s COD risk.
           </p>
         </div>
       </Modal>

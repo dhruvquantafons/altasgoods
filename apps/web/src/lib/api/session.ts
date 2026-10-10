@@ -26,11 +26,11 @@ export async function clearSession() {
 }
 
 /** Reads (without verifying) the claims of an access token, for optimistic checks only. */
-export function peekClaims(token: string | undefined): { sub: string; exp: number; sellers: string[]; staff: string[] } | null {
+export function peekClaims(token: string | undefined): { sub: string; exp: number; staff: string[] } | null {
   if (!token) return null;
   try {
     const payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8"));
-    return { sub: String(payload.sub), exp: Number(payload.exp), sellers: payload.sellers ?? [], staff: payload.staff ?? [] };
+    return { sub: String(payload.sub), exp: Number(payload.exp), staff: payload.staff ?? [] };
   } catch {
     return null;
   }

@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
-import { getBrand } from "@/lib/mock";
 import type { DealSlot } from "@/lib/mock/store-extra";
 import { cn, formatINR } from "@/lib/utils";
 import { WishlistButton } from "./cart-buttons";
@@ -16,7 +15,7 @@ import { percentOff } from "./price";
 export function DealCard({ product: p, deal, showTimer = true, className }: { product: Product; deal: DealSlot; showTimer?: boolean; className?: string }) {
   const offer = featuredOffer(p);
   const off = percentOff(offer.price, offer.mrp);
-  const brand = getBrand(p.brandId)?.name;
+  const brand = p.brandName;
   return (
     <article className={cn("group relative flex flex-col rounded-2xl border border-line bg-white p-3 transition-shadow hover:shadow-raised", className)}>
       <div className="relative aspect-square overflow-hidden rounded-xl bg-ink-50">

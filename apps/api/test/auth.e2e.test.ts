@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestApp, DEMO_SELLER, signIn, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 beforeAll(async () => {
@@ -11,7 +11,7 @@ describe("OTP sign in", () => {
   it("creates an account on first sign in and returns tokens", async () => {
     const { session } = await signIn(t.http, "7000000001", "Test Shopper");
     expect(session.isNewUser).toBe(true);
-    expect(session.user).toMatchObject({ phone: "+917000000001", name: "Test Shopper", sellers: [] });
+    expect(session.user).toMatchObject({ phone: "+917000000001", name: "Test Shopper", staffRoles: [] });
     expect(session.expiresIn).toBe(900);
   });
 
@@ -33,9 +33,10 @@ describe("OTP sign in", () => {
     expect(r.status).toBe(429);
   });
 
-  it("includes seller memberships for seller owners", async () => {
-    const { session } = await signIn(t.http, DEMO_SELLER);
-    expect(session.user.sellers).toEqual([expect.objectContaining({ id: "s-apex", displayName: "Apex Retail", role: "OWNER" })]);
+  it("includes staff roles for store staff", async () => {
+    const { session } = await signIn(t.http, DEMO_STAFF);
+    expect(session.user.staffRoles).toEqual(["SUPER_ADMIN"]);
+    expect(session.user).not.toHaveProperty("sellers");
   });
 });
 

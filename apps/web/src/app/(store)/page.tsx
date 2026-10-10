@@ -8,7 +8,7 @@ import { Rail, RailItem } from "@/components/store/rail";
 import { Section, SectionTitle } from "@/components/store/section";
 import { SaleCountdown } from "@/components/store/countdown";
 import { formatPromise, formatTime } from "@/components/store/delivery";
-import { categories, getProduct, SALE_EVENT } from "@/lib/mock";
+import { SALE_EVENT } from "@/lib/mock";
 import {
   BANK_OFFERS,
   bestSellers,
@@ -21,17 +21,21 @@ import {
   recommendedForYou,
   SPONSORED_PRODUCT_IDS,
 } from "@/lib/mock/store-extra";
+import { getStoreCatalog } from "@/lib/store-catalog";
 import { cn, formatINR } from "@/lib/utils";
 
 export const metadata = {
   title: { absolute: "AltasGoods: Shop smarter, live better" },
 };
 
-export default function HomePage() {
-  // suppressed listings cannot be bought, so their deal tiles are not shown (they would fail at order placement)
-  const deals = DEALS_OF_THE_DAY.map((d) => ({ deal: d, product: getProduct(d.productId)! })).filter((x) => x.product && isBrowsable(x.product));
-  const best = bestSellers();
-  const recommended = recommendedForYou();
+export default async function HomePage() {
+  const catalog = await getStoreCatalog();
+  // only products on sale get a deal tile (the others would fail at order placement)
+  const deals = DEALS_OF_THE_DAY.map((d) => ({ deal: d, product: catalog.product(d.productId)! })).filter((x) => x.product && isBrowsable(x.product));
+  const best = bestSellers(catalog.products);
+  const recommended = recommendedForYou(catalog.products);
+  const categories = catalog.categories.filter((c) => c.image);
+  const spotlights = BRAND_SPOTLIGHTS.filter((b) => catalog.brand(b.slug));
   const dealEnds = DEALS_OF_THE_DAY[0]!.endsAt;
   const annual = PLUS_PLANS.find((p) => p.id === "annual")!;
 
@@ -159,10 +163,11 @@ export default function HomePage() {
       </Section>
 
       {/* Brand spotlights */}
+      {spotlights.length > 0 && (
       <Section className="mt-12 lg:mt-16" labelledBy="home-brands">
         <SectionTitle id="home-brands" title="Brands in the spotlight" description="Verified brand stores on AltasGoods" />
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
-          {BRAND_SPOTLIGHTS.map((b) => (
+          {spotlights.map((b) => (
             <Link key={b.slug} href={`/s?brand=${b.slug}`} className={cn("group relative flex flex-col overflow-hidden rounded-2xl p-5 lg:p-6", b.tone)}>
               <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-600">
                 <BadgeCheck size={14} className="text-brand-600" aria-hidden="true" /> Verified brand
@@ -179,6 +184,7 @@ export default function HomePage() {
           ))}
         </div>
       </Section>
+      )}
 
       {/* Trust strip */}
       <Section className="mt-12 lg:mt-16">

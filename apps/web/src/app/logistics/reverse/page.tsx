@@ -9,7 +9,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabLinks } from "@/components/ui/tabs";
-import { associates, getHub, sellerName } from "@/lib/mock";
+import { associates, getHub } from "@/lib/mock";
 import { reversePickups, rtoShipments, type QcCheck } from "@/lib/mock/ops-extra";
 import { NDR_REASON, type NdrReason } from "@/lib/status";
 import { cn, formatINR, sum } from "@/lib/utils";
@@ -42,7 +42,7 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
     <>
       <PageHeader
         title="Reverse and RTO"
-        description="Customer return pickups with doorstep quality check, and shipments returning to sellers and fulfilment centres."
+        description="Customer return pickups with doorstep quality check, and shipments returning to the AltasGoods warehouse."
         actions={
           tab === "pickups" ? (
             <ToastButton label="Assign pickups" icon="user" variant="primary" message="4 scheduled pickups added to wave 2 runsheets by beat" size="md" />
@@ -57,7 +57,7 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
         active={tab}
         items={[
           { key: "pickups", label: "Return pickups", href: "/logistics/reverse", count: reversePickups.length },
-          { key: "rto", label: "RTO to sellers", href: "/logistics/reverse?tab=rto", count: rtoShipments.filter((r) => r.status !== "rto_delivered").length },
+          { key: "rto", label: "Return to origin", href: "/logistics/reverse?tab=rto", count: rtoShipments.filter((r) => r.status !== "rto_delivered").length },
         ]}
       />
 
@@ -183,17 +183,17 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
           <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
             <MetricTile label="Waiting to bag" value={rtoShipments.filter((r) => r.status === "rto_initiated").length} tone="warning" hint="Bag before the 6:00 pm return lanes" icon={PackageOpen} />
             <MetricTile label="Bagged" value={rtoShipments.filter((r) => r.status === "bagged").length} hint="Sealed on return manifests" icon={ShieldCheck} />
-            <MetricTile label="In transit to origin" value={rtoShipments.filter((r) => r.status === "rto_in_transit").length} hint="On line haul back to FC or seller" icon={Truck} />
+            <MetricTile label="In transit to origin" value={rtoShipments.filter((r) => r.status === "rto_in_transit").length} hint="On line haul back to the warehouse" icon={Truck} />
             <MetricTile label="Returned, last 7 days" value={rtoShipments.filter((r) => r.status === "rto_delivered").length} hint={`${formatINR(sum(rtoShipments, (r) => r.value))} value in the RTO flow`} icon={Undo2} />
           </div>
           <Card>
-            <CardHeader title="Return to origin" description="Shipments closed for delivery and moving back to the seller pickup address or fulfilment centre" />
+            <CardHeader title="Return to origin" description="Shipments closed for delivery and moving back to the AltasGoods warehouse" />
             <TableContainer className="mt-3">
               <Table>
                 <THead>
                   <TR>
                     <TH>AWB</TH>
-                    <TH>Seller</TH>
+                    <TH>Origin</TH>
                     <TH>Reason</TH>
                     <TH align="right">Attempts</TH>
                     <TH>Return lane</TH>
@@ -219,8 +219,7 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
                           <p className="text-xs text-ink-500">{r.cod ? "COD, not collected" : "Prepaid"}</p>
                         </TD>
                         <TD>
-                          <p className="text-[13px] text-ink-900">{sellerName(r.sellerId)}</p>
-                          <p className="text-xs text-ink-500">{getHub(r.originHubId)?.type === "fulfillment_center" ? "AltasGoods Fulfilled" : "AltasGoods Ship"}</p>
+                          <p className="text-[13px] text-ink-900">{getHub(r.originHubId)?.name ?? "AltasGoods warehouse"}</p>
                         </TD>
                         <TD className="text-[13px]">{rtoReason(r.reason)}</TD>
                         <TD align="right">{r.attempts}</TD>
@@ -243,7 +242,7 @@ export default async function ReversePage(props: PageProps<"/logistics/reverse">
               </Table>
             </TableContainer>
             <p className="border-t border-line px-5 py-3 text-xs leading-relaxed text-ink-500">
-              Customer-caused RTO charges the seller forward shipping only, with no commission, fixed or reverse fee. Damaged and lost shipments in the AltasGoods network raise a SafeClaim automatically.
+              Customer-caused RTO counts toward the customer&apos;s COD risk. Damaged and lost shipments raise a courier claim automatically.
             </p>
           </Card>
         </>

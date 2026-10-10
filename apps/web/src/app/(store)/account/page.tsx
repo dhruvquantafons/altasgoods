@@ -7,7 +7,7 @@ import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { IconTile } from "@/components/ui/misc";
-import { CURRENT_CUSTOMER, getProduct } from "@/lib/mock";
+import { CURRENT_CUSTOMER } from "@/lib/mock";
 import {
   ACCOUNT_PROFILE,
   accountReturns,
@@ -22,7 +22,7 @@ import {
   wishlists,
 } from "@/lib/mock/account-extra";
 import type { Tone } from "@/lib/status";
-import { formatINR, formatNumber } from "@/lib/utils";
+import { formatINR, formatNumber, productSlug } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
@@ -131,7 +131,7 @@ export default async function AccountOverviewPage() {
               {recent.map((o) => {
                 const first = o.items[0]!;
                 const st = itemState(o, first);
-                const slug = getProduct(first.productId)?.slug;
+                const slug = productSlug(first.productId);
                 return (
                   <li key={o.id} className="flex items-center gap-4 px-5 py-4 sm:px-6">
                     <ProductImage src={first.image} alt="" size={52} rounded="md" />

@@ -17,7 +17,7 @@ const ticketTemplates: [Ticket["category"], string, string, OrderStatus[]][] = [
   ["Product quality", "Received damaged product", "The product I received is damaged. I want a replacement as soon as possible.", ["delivered"]],
   ["Product quality", "Wrong colour delivered", "I ordered a different colour from the one I received.", ["delivered"]],
   ["Account", "Unable to log in with OTP", "I am not receiving the OTP on my registered mobile number.", []],
-  ["Seller dispute", "Seller cancelled my order without reason", "The seller cancelled my order. I want to know why and get it from another seller.", ["cancelled"]],
+  ["Delivery", "My order was cancelled without a reason", "My order was cancelled. I want to know why and when the item will be back.", ["cancelled"]],
   ["Other", "Need GST invoice for business purchase", "Please share a GST invoice with my company GSTIN for order reimbursement.", ["delivered"]],
 ];
 
@@ -158,14 +158,6 @@ export const campaigns: Campaign[] = campaignSeeds.map(([name, type, status, dai
 /* ---------------------------- Notifications --------------------------- */
 
 const t = (mins: number) => new Date(NOW.getTime() - mins * 60_000).toISOString();
-
-export const sellerNotifications: Notification[] = [
-  { id: "n-1", kind: "order", title: "38 orders need confirmation", body: "Confirm before 2:00 PM today to avoid late dispatch.", at: t(12), read: false, href: "/seller/orders" },
-  { id: "n-2", kind: "alert", title: "Listing suppressed", body: "Pulse Boom 2 is missing a required image. Fix it to restore visibility.", at: t(95), read: false, href: "/seller/catalog" },
-  { id: "n-3", kind: "payment", title: "Payout scheduled", body: "Your next settlement will be credited on 6 Oct.", at: t(300), read: false, href: "/seller/payments" },
-  { id: "n-4", kind: "promo", title: "Diwali Dhamaka deals open", body: "Nominate up to 50 products for the Diwali event by 10 Oct.", at: t(1440), read: true, href: "/seller/promotions" },
-  { id: "n-5", kind: "account", title: "Account health is Healthy", body: "All performance targets met for the last 60 days.", at: t(2880), read: true, href: "/seller/performance" },
-];
 
 export const adminNotifications: Notification[] = [
   { id: "a-1", kind: "alert", title: "Payment gateway latency high", body: "UPI success rate dipped to 94.1% in the last 15 minutes.", at: t(6), read: false, href: "/admin/payments" },

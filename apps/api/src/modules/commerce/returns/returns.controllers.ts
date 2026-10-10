@@ -5,7 +5,7 @@ import type { Response } from "express";
 import { z } from "zod";
 import { forbidden } from "../../../common/errors.js";
 import { isProduction } from "../../../config/env.js";
-import { CurrentSeller, CurrentUser, SellerScoped, type AuthUser } from "../../auth/auth.guard.js";
+import { CurrentUser, StaffOnly, type AuthUser } from "../../auth/auth.guard.js";
 import * as s from "./returns.schemas.js";
 import { ReturnsService } from "./returns.service.js";
 
@@ -82,43 +82,43 @@ export class CustomerReturnsController {
   }
 }
 
-@ApiTags("Seller returns")
+@ApiTags("Admin returns")
 @ApiBearerAuth()
-@SellerScoped()
-@Controller("v1/seller/returns")
-export class SellerReturnsController {
+@StaffOnly("OPS_ADMIN")
+@Controller("v1/admin/returns")
+export class AdminReturnsController {
   constructor(@Inject(ReturnsService) private readonly svc: ReturnsService) {}
 
   @Get()
   @ApiResponse({ status: 200, standardSchema: z.array(s.returnSchema) })
-  list(@CurrentSeller() sellerId: string, @Query({ schema: s.sellerListQuery }) q: z.infer<typeof s.sellerListQuery>) {
-    return this.svc.sellerReturns(sellerId, q.status);
+  list(@Query({ schema: s.returnListQuery }) q: z.infer<typeof s.returnListQuery>) {
+    return this.svc.storeReturns(q.status);
   }
 
   @Get(":id")
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
-  get(@CurrentSeller() sellerId: string, @Param("id", returnId) id: string) {
-    return this.svc.sellerReturn(sellerId, id);
+  get(@Param("id", returnId) id: string) {
+    return this.svc.storeReturn(id);
   }
 
   @Post(":id/decision")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
-  decide(@CurrentSeller() sellerId: string, @Param("id", returnId) id: string, @Body({ schema: s.decisionBody }) body: z.infer<typeof s.decisionBody>) {
-    return this.svc.decide(sellerId, id, body.approve, body.note);
+  decide(@Param("id", returnId) id: string, @Body({ schema: s.decisionBody }) body: z.infer<typeof s.decisionBody>) {
+    return this.svc.decide(id, body.approve, body.note);
   }
 
   @Post(":id/qc")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
-  qc(@CurrentSeller() sellerId: string, @Param("id", returnId) id: string, @Body({ schema: s.qcBody }) body: z.infer<typeof s.qcBody>) {
-    return this.svc.qc(sellerId, id, body.pass, body.note);
+  qc(@Param("id", returnId) id: string, @Body({ schema: s.qcBody }) body: z.infer<typeof s.qcBody>) {
+    return this.svc.qc(id, body.pass, body.note);
   }
 
   @Get(":id/photos/:photoId")
   @ApiProduces("image/png", "image/jpeg")
-  async photo(@CurrentSeller() sellerId: string, @Param("id", returnId) id: string, @Param("photoId", uuidParam) photoId: string, @Res() res: Response) {
-    sendFile(res, await this.svc.photo(id, photoId, { sellerId }));
+  async photo(@Param("id", returnId) id: string, @Param("photoId", uuidParam) photoId: string, @Res() res: Response) {
+    sendFile(res, await this.svc.photo(id, photoId, {}));
   }
 }
 

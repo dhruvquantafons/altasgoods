@@ -20,8 +20,8 @@ export interface SupportOrder {
   label: string;
 }
 
-type Category = "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
-const CATEGORIES: Category[] = ["Delivery", "Return and refund", "Payment", "Product quality", "Account", "Seller dispute", "Other"];
+type Category = "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Other";
+const CATEGORIES: Category[] = ["Delivery", "Return and refund", "Payment", "Product quality", "Account", "Other"];
 const MB = 1024 * 1024;
 
 function useAutoOpen(flag: boolean | undefined, open: () => void) {
@@ -244,12 +244,12 @@ export function RaiseTicketButton({
 }
 
 const CLAIM_REASONS = [
-  { key: "not_received", label: "Item not received", note: "Available 3 days after the latest promised date. No need to contact the seller first." },
-  { key: "not_as_described", label: "Item damaged, defective or different", note: "Contact the seller or open a return first, then wait 48 hours." },
-  { key: "refund_not_issued", label: "Refund not issued", note: "If a refund has not arrived 2 days after the seller received your return." },
+  { key: "not_received", label: "Item not received", note: "Available 3 days after the latest promised date. No need to contact us first." },
+  { key: "not_as_described", label: "Item damaged, defective or different", note: "Open a return first, then wait 48 hours." },
+  { key: "refund_not_issued", label: "Refund not issued", note: "If a refund has not arrived 2 days after we received your return." },
 ];
 
-/** Ask AltasGoods to file a Guarantee claim (spec 10.10). Care Desk checks it and files it with the seller. */
+/** Ask AltasGoods to file a Guarantee claim (spec 10.10). Care Desk checks it and the store decides. */
 export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, className }: { orders: SupportOrder[]; defaultOrderId?: string; autoOpen?: boolean; className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -290,7 +290,7 @@ export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, classNa
         }}
         size="lg"
         title={done ? "Claim received" : "File an AltasGoods Guarantee claim"}
-        description={done ? undefined : "For orders from any seller, within 90 days of the latest promised delivery date."}
+        description={done ? undefined : "For any order, within 90 days of the latest promised delivery date."}
         footer={
           done ? (
             <Button onClick={() => setOpen(false)}>Done</Button>
@@ -313,7 +313,7 @@ export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, classNa
               <CircleCheck size={18} aria-hidden="true" />
               Claim {done} is with AltasGoods Care
             </p>
-            <p>An agent checks it and files it with the seller, who then has 72 hours to respond with a refund or evidence. AltasGoods decides within 7 days and refunds you directly if it goes your way. Follow it under My tickets.</p>
+            <p>An agent checks it and AltasGoods decides within 7 days and refunds you directly if it goes your way. Follow it under My tickets.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
@@ -341,7 +341,7 @@ export function GuaranteeClaimButton({ orders, defaultOrderId, autoOpen, classNa
                 ))}
               </div>
             </fieldset>
-            <Field label="Tell us what happened" htmlFor="gc-body" hint="Include what the seller said, if you contacted them">
+            <Field label="Tell us what happened" htmlFor="gc-body" hint="Include anything our team told you, if you contacted us">
               <Textarea id="gc-body" className="min-h-24" value={body} onChange={(e) => setBody(e.target.value)} maxLength={1500} />
             </Field>
           </div>

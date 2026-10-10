@@ -80,29 +80,29 @@ const DEFAULT_CART: CartState = { lines: [], coupon: null };
 function mergeLines(local: CartLine[], server: LineInput[]): CartLine[] {
   const byKey = new Map(local.map((l) => [l.key, l]));
   for (const s of server) {
-    const key = lineKey(s.productId, s.sellerId, s.variant);
+    const key = lineKey(s.productId, s.variant);
     const mine = byKey.get(key);
-    byKey.set(key, mine ? { ...mine, qty: Math.max(mine.qty, s.qty) } : { key, productId: s.productId, sellerId: s.sellerId, qty: s.qty, variant: s.variant, saved: s.saved });
+    byKey.set(key, mine ? { ...mine, qty: Math.max(mine.qty, s.qty) } : { key, productId: s.productId, qty: s.qty, variant: s.variant, saved: s.saved });
   }
   return [...byKey.values()];
 }
 
-const cartStore = createPersistedStore<CartState>("blubuy.cart.v1", DEFAULT_CART, (raw) => {
+const cartStore = createPersistedStore<CartState>("altasgoods.cart.v1", DEFAULT_CART, (raw) => {
   if (!raw || typeof raw !== "object" || !Array.isArray((raw as CartState).lines)) return null;
   const r = raw as CartState;
   return {
     coupon: typeof r.coupon === "string" ? r.coupon : null,
     lines: r.lines
-      .filter((l) => l && typeof l.productId === "string" && typeof l.sellerId === "string")
-      .map((l) => ({ ...l, qty: Math.max(1, Math.min(10, Number(l.qty) || 1)), key: lineKey(l.productId, l.sellerId, l.variant) })),
+      .filter((l) => l && typeof l.productId === "string")
+      .map((l) => ({ productId: l.productId, variant: l.variant, saved: l.saved, qty: Math.max(1, Math.min(10, Number(l.qty) || 1)), key: lineKey(l.productId, l.variant) })),
   };
 });
 
-const wishlistStore = createPersistedStore<string[]>("blubuy.wishlist.v1", ["p-bag-leather", "p-camera-mirrorless", "p-chair-lounge"], (raw) =>
+const wishlistStore = createPersistedStore<string[]>("altasgoods.wishlist.v1", ["p-bag-leather", "p-camera-mirrorless", "p-chair-lounge"], (raw) =>
   Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : null,
 );
 
-const pincodeStore = createPersistedStore<string>("blubuy.pincode.v1", DEFAULT_PINCODE, (raw) => (typeof raw === "string" && /^[1-8]\d{5}$/.test(raw) ? raw : null));
+const pincodeStore = createPersistedStore<string>("altasgoods.pincode.v1", DEFAULT_PINCODE, (raw) => (typeof raw === "string" && /^[1-8]\d{5}$/.test(raw) ? raw : null));
 
 export const MAX_QTY = 10;
 
@@ -120,7 +120,7 @@ interface CartApi {
   saved: CartLine[];
   coupon: string | null;
   count: number;
-  add: (input: { productId: string; sellerId: string; qty?: number; variant?: string; silent?: boolean }) => void;
+  add: (input: { productId: string; qty?: number; variant?: string; silent?: boolean }) => void;
   setQty: (key: string, qty: number) => void;
   remove: (key: string) => void;
   saveForLater: (key: string) => void;
@@ -152,7 +152,7 @@ export function CartProvider({ children, signedIn = false }: { children: ReactNo
   useEffect(() => {
     if (!signedIn || !merged) return;
     const t = setTimeout(() => {
-      syncCart(state.lines.map((l) => ({ productId: l.productId, sellerId: l.sellerId, qty: l.qty, variant: l.variant, saved: l.saved })));
+      syncCart(state.lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant, saved: l.saved })));
     }, 600);
     return () => clearTimeout(t);
   }, [state.lines, signedIn, merged]);
@@ -174,8 +174,8 @@ export function CartProvider({ children, signedIn = false }: { children: ReactNo
       saved: state.lines.filter((l) => l.saved),
       coupon: state.coupon,
       count: active.reduce((a, l) => a + l.qty, 0),
-      add: ({ productId, sellerId, qty = 1, variant, silent }) => {
-        const key = lineKey(productId, sellerId, variant);
+      add: ({ productId, qty = 1, variant, silent }) => {
+        const key = lineKey(productId, variant);
         update((s) => {
           const existing = s.lines.find((l) => l.key === key);
           if (existing)
@@ -183,7 +183,7 @@ export function CartProvider({ children, signedIn = false }: { children: ReactNo
               ...s,
               lines: s.lines.map((l) => (l.key === key ? { ...l, saved: false, qty: Math.min(MAX_QTY, (l.saved ? 0 : l.qty) + qty) } : l)),
             };
-          return { ...s, lines: [{ key, productId, sellerId, qty: Math.min(MAX_QTY, qty), variant }, ...s.lines] };
+          return { ...s, lines: [{ key, productId, qty: Math.min(MAX_QTY, qty), variant }, ...s.lines] };
         });
         if (!silent) notify({ message: "Added to your cart", action: { label: "View cart", href: "/cart" } });
       },

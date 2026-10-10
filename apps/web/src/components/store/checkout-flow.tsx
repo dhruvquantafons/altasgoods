@@ -36,7 +36,7 @@ import { cn, formatINR, formatNumber } from "@/lib/utils";
 import { useCart } from "./cart-context";
 import { COD_LIMIT, daysFromNow, formatPromise, isValidPincode, lookupPincode, promiseDays } from "./delivery";
 import { PriceDetails } from "./price-details";
-import { bestBankOffer, computeTotals, type SellerGroup } from "./pricing";
+import { bestBankOffer, computeTotals } from "./pricing";
 import { QrArt } from "./qr-art";
 import type { AddressLite, BankOffer, CartCatalog, CartLine, CouponLite, WalletLite } from "./types";
 
@@ -87,8 +87,8 @@ export function CheckoutFlow({
   const [addresses, setAddresses] = useState(initialAddresses);
   const [addressId, setAddressId] = useState(initialAddresses.find((a) => a.isDefault)?.id ?? initialAddresses[0]?.id ?? "");
   const [adding, setAdding] = useState(false);
-  const [choices, setChoices] = useState<Record<string, Choice>>({});
-  const [install, setInstall] = useState<Record<string, boolean>>({});
+  const [choice, setChoice] = useState<Choice | null>(null);
+  const [install, setInstall] = useState(false);
   const [method, setMethod] = useState<PayMethod>("upi");
   const [upiMode, setUpiMode] = useState<"id" | "qr">("id");
   const [upiId, setUpiId] = useState("");
@@ -117,7 +117,7 @@ export function CheckoutFlow({
 
   // The API prices the order; its quote is the authority for every amount shown.
   const request = useMemo(
-    () => ({ addressId, couponCode: cart.coupon, method, lines: lines.map((l) => ({ productId: l.productId, sellerId: l.sellerId, qty: l.qty, variant: l.variant })) }),
+    () => ({ addressId, couponCode: cart.coupon, method, lines: lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant })) }),
     [addressId, cart.coupon, method, lines],
   );
   useEffect(() => {
@@ -144,10 +144,6 @@ export function CheckoutFlow({
         delivery: quote.deliveryFeePaise / 100,
         total: quote.totalPaise / 100,
         savings: quote.savingsPaise / 100,
-        groups: localTotals.groups.map((g) => {
-          const shipment = quote.shipments.find((x) => x.seller.id === g.sellerId);
-          return shipment ? { ...g, deliveryFee: shipment.deliveryFeePaise / 100 } : g;
-        }),
       }
     : localTotals;
 
@@ -191,19 +187,19 @@ export function CheckoutFlow({
           : null;
   const payLaterBlock = payable > wallet.payLaterLimit ? `Your available limit is ${formatINR(wallet.payLaterLimit)}` : null;
 
-  /* ----- delivery per group ----- */
-  const groupInfo = (g: SellerGroup) => {
-    const days = promiseDays(g.deliveryDays, info);
-    const large = g.lines.some((l) => l.product.large);
-    const oneDay = wallet.plusMember && g.fulfilledBy === "blubuy" && info?.zone === "metro" && days > 1 && !large;
-    const choice: Choice = choices[g.sellerId] ?? (large ? "slot1" : "standard");
+  /* ----- delivery: everything ships together from the store ----- */
+  const deliveryInfo = () => {
+    const days = promiseDays(totals.deliveryDays, info);
+    const large = totals.lines.some((l) => l.product.large);
+    const oneDay = wallet.plusMember && info?.zone === "metro" && days > 1 && !large;
+    const picked: Choice = choice ?? (large ? "slot1" : "standard");
     const slots = [
       { key: "slot1" as const, label: `${formatPromise(daysFromNow(days))}, 9 am to 1 pm` },
       { key: "slot2" as const, label: `${formatPromise(daysFromNow(days + 1))}, 2 pm to 6 pm` },
     ];
-    const date = choice === "oneday" ? daysFromNow(1) : choice === "slot2" ? daysFromNow(days + 1) : daysFromNow(days);
-    const optionLabel = choice === "oneday" ? "Plus one-day" : large ? `Scheduled, ${slots.find((s) => s.key === choice)?.label}` : "Standard";
-    return { days, large, oneDay, choice, slots, date, optionLabel };
+    const date = picked === "oneday" ? daysFromNow(1) : picked === "slot2" ? daysFromNow(days + 1) : daysFromNow(days);
+    const optionLabel = picked === "oneday" ? "Plus one-day" : large ? `Scheduled, ${slots.find((s) => s.key === picked)?.label}` : "Standard";
+    return { days, large, oneDay, choice: picked, slots, date, optionLabel };
   };
 
   if (!lines.length || !totals.lines.length)
@@ -373,27 +369,27 @@ export function CheckoutFlow({
             icon={Truck}
             done={step > 2}
             active={step === 2}
-            summary={step > 2 ? totals.groups.map((g) => `${formatPromise(groupInfo(g).date)} from ${g.sellerName}`).join(", ") : undefined}
+            summary={step > 2 ? `Arrives ${formatPromise(deliveryInfo().date)}` : undefined}
             action={step > 2 ? <EditButton onClick={() => setStep(2)} /> : null}
           >
             <div className="flex flex-col gap-4">
-              {totals.groups.map((g, gi) => {
-                const d = groupInfo(g);
+              {(() => {
+                const d = deliveryInfo();
+                const fee = totals.delivery ? formatINR(totals.delivery) : "Free";
                 const opts: { key: Choice; title: string; sub: string; price: string }[] = d.large
-                  ? d.slots.map((s) => ({ key: s.key, title: s.label, sub: "Scheduled delivery, our team calls 1 hour before", price: g.deliveryFee ? formatINR(g.deliveryFee) : "Free" }))
+                  ? d.slots.map((s) => ({ key: s.key, title: s.label, sub: "Scheduled delivery, our team calls 1 hour before", price: fee }))
                   : [
-                      { key: "standard", title: `Delivery by ${formatPromise(daysFromNow(d.days))}`, sub: "Standard delivery", price: g.deliveryFee ? formatINR(g.deliveryFee) : "Free" },
+                      { key: "standard", title: `Delivery by ${formatPromise(daysFromNow(d.days))}`, sub: "Standard delivery", price: fee },
                       ...(d.oneDay ? [{ key: "oneday" as const, title: `Tomorrow, ${formatPromise(daysFromNow(1))}`, sub: "Plus one-day delivery", price: "Free with Plus" }] : []),
                     ];
                 return (
-                  <div key={g.sellerId} className="rounded-xl border border-line">
+                  <div className="rounded-xl border border-line">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
                       <p className="text-sm font-semibold text-ink-900">
-                        Shipment {gi + 1} of {totals.groups.length}
-                        <span className="font-normal text-ink-500"> from {g.sellerName}</span>
+                        One shipment<span className="font-normal text-ink-500"> from AltasGoods</span>
                       </p>
                       <div className="flex -space-x-2">
-                        {g.lines.map((l) => (
+                        {totals.lines.map((l) => (
                           <span key={l.line.key} className="relative size-9 overflow-hidden rounded-lg bg-ink-50 ring-2 ring-white">
                             <Image src={l.product.image} alt={l.product.title} fill sizes="36px" className="object-cover" />
                           </span>
@@ -401,10 +397,10 @@ export function CheckoutFlow({
                       </div>
                     </div>
                     <fieldset className="flex flex-col gap-2 p-3">
-                      <legend className="sr-only">Delivery option for shipment {gi + 1}</legend>
+                      <legend className="sr-only">Delivery option</legend>
                       {opts.map((o) => (
                         <label key={o.key} className={cn("flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5", d.choice === o.key ? "bg-brand-50/60" : "hover:bg-ink-50")}>
-                          <input type="radio" name={`ship-${g.sellerId}`} checked={d.choice === o.key} onChange={() => setChoices((c) => ({ ...c, [g.sellerId]: o.key }))} className="size-4 accent-brand-600" />
+                          <input type="radio" name="ship" checked={d.choice === o.key} onChange={() => setChoice(o.key)} className="size-4 accent-brand-600" />
                           <span className="flex-1 text-sm">
                             <span className="block font-semibold text-ink-900">{o.title}</span>
                             <span className="block text-xs text-ink-500">{o.sub}</span>
@@ -415,8 +411,8 @@ export function CheckoutFlow({
                       {d.large && (
                         <Checkbox
                           className="mt-1 px-3"
-                          checked={!!install[g.sellerId]}
-                          onChange={(e) => setInstall((x) => ({ ...x, [g.sellerId]: e.target.checked }))}
+                          checked={install}
+                          onChange={(e) => setInstall(e.target.checked)}
                           label="Request free installation"
                           description="A technician visits within 48 hours of delivery."
                         />
@@ -424,7 +420,7 @@ export function CheckoutFlow({
                     </fieldset>
                   </div>
                 );
-              })}
+              })()}
             </div>
             <StepActions>
               <button type="button" onClick={next} className="h-11 rounded-xl bg-brand-600 px-6 text-sm font-semibold text-white hover:bg-brand-700">
@@ -452,7 +448,7 @@ export function CheckoutFlow({
                   <div className="min-w-0 flex-1 text-sm">
                     <p className="line-clamp-2 text-ink-900">{l.product.title}</p>
                     <p className="mt-0.5 text-xs text-ink-500">
-                      {l.line.variant ? `${l.line.variant}, ` : ""}Qty {l.line.qty}, sold by {l.offer.sellerName}
+                      {l.line.variant ? `${l.line.variant}, ` : ""}Qty {l.line.qty}
                     </p>
                     <p className="mt-1 text-xs text-ink-600">
                       {l.offer.returnWindowDays ? `${l.offer.returnWindowDays} day return policy` : "Not returnable, damage covered"}
@@ -464,7 +460,7 @@ export function CheckoutFlow({
               ))}
             </ul>
             <p className="mt-3 text-xs leading-relaxed text-ink-500">
-              Nothing has been added to your order for you: no insurance, extended warranty or donations. Each seller issues a GST invoice for their items.
+              Nothing has been added to your order for you: no insurance, extended warranty or donations. AltasGoods issues one GST invoice for your order.
             </p>
             <StepActions>
               <button type="button" onClick={next} className="h-11 rounded-xl bg-brand-600 px-6 text-sm font-semibold text-white hover:bg-brand-700">
@@ -681,7 +677,7 @@ export function CheckoutFlow({
                       </tbody>
                     </table>
                   </div>
-                  <p className="mt-2 text-xs text-ink-500">No cost EMI: the interest is given to you as an upfront discount by the brand or seller. Bank GST on interest may apply on interest bearing plans.</p>
+                  <p className="mt-2 text-xs text-ink-500">No cost EMI: the interest is given to you as an upfront discount by the brand or AltasGoods. Bank GST on interest may apply on interest bearing plans.</p>
                 </PayOption>
 
                 <PayOption id="paylater" icon={Wallet} title="AltasGoods Pay Later" sub={payLaterBlock ?? `Available limit ${formatINR(wallet.payLaterLimit)}. Pay by 15 Nov, no extra cost.`} method={method} setMethod={setMethod} disabled={!!payLaterBlock}>
@@ -705,7 +701,7 @@ export function CheckoutFlow({
               </p>
             )}
             <div className="mt-5 hidden flex-col gap-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-ink-500">By placing this order you agree to AltasGoods&apos;s terms of use and the seller&apos;s return policy.</p>
+              <p className="text-xs text-ink-500">By placing this order you agree to AltasGoods&apos;s terms of use and return policy.</p>
               <button type="button" onClick={place} disabled={placing} className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-400">
                 {placing ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Lock size={16} aria-hidden="true" />}
                 {placing ? "Processing payment" : ctaLabel}

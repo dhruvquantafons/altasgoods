@@ -10,7 +10,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Avatar, Timeline } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { associates, CURRENT_HUB_ID, getOrder, sellerName, shipments } from "@/lib/mock";
+import { associates, CURRENT_HUB_ID, getOrder, shipments } from "@/lib/mock";
 import { runsheetFor, shipmentJourney, type RouteNode } from "@/lib/mock/ops-extra";
 import { NDR_REASON, SHIPMENT_STATUS, type ShipmentStatus } from "@/lib/status";
 import { addDays, cn, formatINR, NOW, timeAgo } from "@/lib/utils";
@@ -306,7 +306,6 @@ export default async function ShipmentDetailPage(props: PageProps<"/logistics/sh
               <KeyRow label="Order">
                 <Mono>{s.orderId}</Mono>
               </KeyRow>
-              <KeyRow label="Seller">{sellerName(s.sellerId)}</KeyRow>
               <KeyRow label="Service">{j.service}</KeyRow>
               <KeyRow label="Weight">{s.weightKg} kg</KeyRow>
               <KeyRow label="Promised by">{formatDay(s.promisedBy)}</KeyRow>

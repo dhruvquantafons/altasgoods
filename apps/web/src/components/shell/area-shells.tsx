@@ -4,33 +4,22 @@ import type { ReactNode } from "react";
 import {
   Activity,
   BadgePercent,
-  Banknote,
   BookOpen,
-  Boxes,
-  Building2,
   ChartColumn,
   ClipboardList,
   FileText,
-  Gauge,
-  Headset,
   Image as ImageIcon,
   Inbox,
   IndianRupee,
   Layers,
   LayoutDashboard,
   Map,
-  Megaphone,
-  MessageSquare,
   Package,
-  PackageCheck,
   PackageOpen,
-  Percent,
   Receipt,
   RotateCcw,
   Route,
-  ScrollText,
   Settings,
-  ShieldAlert,
   ShoppingCart,
   Smartphone,
   Star,
@@ -39,7 +28,6 @@ import {
   Undo2,
   UserCog,
   Users,
-  Wallet,
   Warehouse,
 } from "lucide-react";
 import type { Notification } from "@/lib/types";
@@ -54,82 +42,6 @@ interface AreaShellProps {
   counts?: Counts;
 }
 
-/* ---------------------------- Seller Central --------------------------- */
-
-export function sellerNav(c: Counts = {}): NavGroup[] {
-  return [
-    { items: [{ label: "Dashboard", href: "/seller", icon: LayoutDashboard, exact: true }] },
-    {
-      label: "Sell",
-      items: [
-        { label: "Orders", href: "/seller/orders", icon: ShoppingCart, badge: c.pendingOrders },
-        { label: "Returns", href: "/seller/returns", icon: Undo2, badge: c.openReturns },
-        { label: "Listings", href: "/seller/catalog", icon: Package },
-        { label: "Inventory", href: "/seller/inventory", icon: Boxes },
-        { label: "Pricing", href: "/seller/pricing", icon: Tags },
-      ],
-    },
-    {
-      label: "Grow",
-      items: [
-        { label: "Advertising", href: "/seller/advertising", icon: Megaphone },
-        { label: "Promotions", href: "/seller/promotions", icon: BadgePercent },
-        { label: "Analytics", href: "/seller/analytics", icon: ChartColumn },
-      ],
-    },
-    {
-      label: "Account",
-      items: [
-        { label: "Payments", href: "/seller/payments", icon: Wallet },
-        { label: "Account health", href: "/seller/performance", icon: Gauge },
-        { label: "Reviews and questions", href: "/seller/feedback", icon: Star },
-        { label: "Messages", href: "/seller/messages", icon: MessageSquare, badge: c.messages },
-        { label: "Support cases", href: "/seller/support", icon: Headset },
-        { label: "Settings", href: "/seller/settings", icon: Settings },
-      ],
-    },
-  ];
-}
-
-export function SellerShell({
-  children,
-  notifications,
-  counts,
-  store,
-  user = { name: "Rohan Mehta", role: "Owner, Apex Retail" },
-}: AreaShellProps & { store: { name: string; tier: string; city: string; status: string }; user?: { name: string; role: string } }) {
-  return (
-    <DashboardShell
-      workspace="seller"
-      nav={sellerNav(counts)}
-      user={user}
-      notifications={notifications}
-      searchPlaceholder="Search orders, SKUs, listings"
-      searchAction="/seller/orders"
-      context={
-        <div className="flex items-center gap-3 rounded-xl border border-line bg-gradient-to-br from-white to-ink-50 px-3 py-2.5">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-ink-900 text-[13px] font-semibold text-white">
-            {store.name
-              .split(" ")
-              .map((p) => p[0])
-              .join("")
-              .slice(0, 2)}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-semibold text-ink-900">{store.name}</span>
-            <span className="flex items-center gap-1.5 text-[11px] text-ink-500">
-              <span className="size-1.5 rounded-full bg-success-500" aria-hidden="true" />
-              {store.tier} seller, {store.city}
-            </span>
-          </span>
-        </div>
-      }
-    >
-      {children}
-    </DashboardShell>
-  );
-}
-
 /* ------------------------------ Admin Console -------------------------- */
 
 export function adminNav(c: Counts = {}): NavGroup[] {
@@ -138,43 +50,33 @@ export function adminNav(c: Counts = {}): NavGroup[] {
     {
       label: "Commerce",
       items: [
-        { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
+        { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: c.toAccept },
         { label: "Returns and refunds", href: "/admin/returns", icon: RotateCcw, badge: c.returns },
         { label: "Customers", href: "/admin/customers", icon: Users },
       ],
     },
     {
-      label: "Marketplace",
+      label: "Catalog",
       items: [
-        { label: "Sellers", href: "/admin/sellers", icon: Building2, badge: c.sellerApprovals },
-        { label: "Catalog moderation", href: "/admin/catalog", icon: PackageCheck, badge: c.catalogQueue },
+        { label: "Products", href: "/admin/catalog", icon: Package },
         { label: "Categories", href: "/admin/categories", icon: Layers },
         { label: "Brands", href: "/admin/brands", icon: Tags },
       ],
     },
     {
       label: "Finance",
-      items: [
-        { label: "Payments", href: "/admin/payments", icon: IndianRupee },
-        { label: "Seller payouts", href: "/admin/payouts", icon: Banknote },
-        { label: "Fees and commission", href: "/admin/fees", icon: Percent },
-      ],
+      items: [{ label: "Payments", href: "/admin/payments", icon: IndianRupee }],
     },
     {
       label: "Growth",
       items: [
         { label: "Coupons and sales", href: "/admin/promotions", icon: BadgePercent },
         { label: "Storefront CMS", href: "/admin/cms", icon: ImageIcon },
-        { label: "Ads platform", href: "/admin/ads", icon: Megaphone },
       ],
     },
     {
       label: "Trust",
-      items: [
-        { label: "Reviews", href: "/admin/reviews", icon: Star },
-        { label: "Risk and fraud", href: "/admin/risk", icon: ShieldAlert },
-        { label: "Disputes and claims", href: "/admin/disputes", icon: ScrollText },
-      ],
+      items: [{ label: "Reviews", href: "/admin/reviews", icon: Star }],
     },
     {
       label: "System",

@@ -46,8 +46,6 @@ export const putCartBody = z.object({ lines: z.array(cartLineInput).max(50) });
 export const addCartItemBody = cartLineInput.omit({ savedForLater: true });
 export const patchCartItemBody = z.object({ qty: z.number().int().min(1).max(10).optional(), savedForLater: z.boolean().optional() });
 
-const sellerMini = z.object({ id: z.string(), slug: z.string(), displayName: z.string() });
-
 export const cartLineSchema = z.object({
   id: z.uuid(),
   offerId: z.uuid(),
@@ -58,7 +56,6 @@ export const cartLineSchema = z.object({
   variant: z.string(),
   qty: z.number().int(),
   savedForLater: z.boolean(),
-  seller: sellerMini,
   pricePaise: z.number().int(),
   mrpPaise: z.number().int(),
   inStock: z.boolean(),
@@ -94,16 +91,9 @@ export const quoteLineSchema = z.object({
 });
 
 export const quoteSchema = z.object({
-  shipments: z.array(
-    z.object({
-      seller: sellerMini,
-      fulfilledBy: z.enum(["BLUBUY", "SELLER"]),
-      lines: z.array(quoteLineSchema),
-      subtotalPaise: z.number().int(),
-      deliveryFeePaise: z.number().int(),
-      promisedBy: z.iso.datetime(),
-    }),
-  ),
+  lines: z.array(quoteLineSchema),
+  /** one shipment from the store, promised by the slowest line */
+  promisedBy: z.iso.datetime(),
   mrpTotalPaise: z.number().int(),
   subtotalPaise: z.number().int(),
   couponDiscountPaise: z.number().int(),
@@ -130,7 +120,6 @@ export const orderItemSchema = z.object({
   unitPricePaise: z.number().int(),
   mrpPaise: z.number().int(),
   status: z.enum(ORDER_ITEM_STATUSES),
-  seller: sellerMini,
   promisedBy: z.iso.datetime(),
   shippedAt: z.iso.datetime().nullable(),
   deliveredAt: z.iso.datetime().nullable(),
@@ -198,9 +187,9 @@ export const cancelBody = z.object({ itemIds: z.array(z.uuid()).optional().descr
 export const sandboxCompleteBody = z.object({ outcome: z.enum(["SUCCESS", "FAILURE"]) });
 export const paymentDetailSchema = paymentSummary.extend({ orderId: z.string(), provider: z.string(), failureReason: z.string().nullable(), orderStatus: z.enum(ORDER_STATUSES) });
 
-/* ------------------------------ Seller orders ----------------------------- */
+/* ------------------------------- Fulfilment ------------------------------- */
 
-export const sellerItemsQuery = z.object({
+export const fulfilmentItemsQuery = z.object({
   status: z
     .string()
     .optional()
@@ -209,7 +198,7 @@ export const sellerItemsQuery = z.object({
   ...pageQuery,
 });
 
-export const sellerItemSchema = z.object({
+export const fulfilmentItemSchema = z.object({
   id: z.uuid(),
   orderId: z.string(),
   placedAt: z.iso.datetime(),
@@ -225,19 +214,21 @@ export const sellerItemSchema = z.object({
   dispatchBy: z.iso.datetime().nullable(),
   promisedBy: z.iso.datetime(),
   awb: z.string().nullable(),
-  netSettlementPaise: z.number().int().nullable(),
 });
-export const sellerItemList = paginated(sellerItemSchema).extend({ counts: z.record(z.string(), z.number().int()) });
+export const fulfilmentItemList = paginated(fulfilmentItemSchema).extend({ counts: z.record(z.string(), z.number().int()) });
 
-export const sellerOrderSchema = z.object({
+export const fulfilmentOrderSchema = z.object({
   id: z.string(),
   placedAt: z.iso.datetime(),
   status: z.enum(ORDER_STATUSES),
   paymentMethod: z.enum(PAYMENT_METHODS),
+  paymentStatus: z.enum(PAYMENT_STATUSES),
+  totalPaise: z.number().int(),
   shipTo: z.object({ name: z.string(), city: z.string(), state: z.string(), pincode: z.string() }),
+  /** the full delivery address and phone for the shipping label */
+  address: z.object({ name: z.string(), phone: z.string(), line1: z.string(), line2: z.string().nullable(), landmark: z.string().nullable(), city: z.string(), state: z.string(), pincode: z.string() }),
   items: z.array(
-    sellerItemSchema.omit({ orderId: true, placedAt: true, paymentMethod: true, shipTo: true }).extend({
-      fees: z.array(z.object({ code: z.string(), label: z.string(), amountPaise: z.number().int() })).nullable(),
+    fulfilmentItemSchema.omit({ orderId: true, placedAt: true, paymentMethod: true, shipTo: true }).extend({
       allowedActions: z.array(z.enum(ORDER_ITEM_STATUSES)),
     }),
   ),

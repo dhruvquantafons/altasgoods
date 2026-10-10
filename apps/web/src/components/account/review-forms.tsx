@@ -180,7 +180,7 @@ export function WriteReview({
               </div>
             </div>
             <p className="rounded-lg bg-ink-50 px-3.5 py-3 text-xs leading-relaxed text-ink-600">
-              Keep it about the product. Delivery and seller feedback has its own place on the order page. No phone numbers, links or personal details. Sellers can never
+              Keep it about the product. Delivery feedback has its own place on the order page. No phone numbers, links or personal details. We never
               offer anything in return for a review.
             </p>
           </div>
@@ -209,7 +209,7 @@ export function AskQuestion({ products }: { products: ReviewProduct[] }) {
           setQ("");
         }}
         title={done ? "Question posted" : "Ask a question"}
-        description={done ? undefined : "The seller, the brand and verified buyers can answer."}
+        description={done ? undefined : "Our team, the brand and verified buyers can answer."}
         footer={
           done ? (
             <Button onClick={() => setOpen(false)}>Done</Button>

@@ -69,13 +69,13 @@ export default async function FulfilmentPage(props: PageProps<"/logistics/fulfil
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="min-w-0 xl:col-span-2">
-          <CardHeader title="Inbound appointments and GRN" description="Seller shipments to AltasGoods Fulfilled, by dock slot" />
+          <CardHeader title="Inbound appointments and GRN" description="Supplier deliveries to the AltasGoods warehouse, by dock slot" />
           <TableContainer className="mt-3">
             <Table>
               <THead>
                 <TR>
                   <TH>Appointment</TH>
-                  <TH>Seller and slot</TH>
+                  <TH>Supplier and slot</TH>
                   <TH>Dock</TH>
                   <TH>Received</TH>
                   <TH>Status</TH>

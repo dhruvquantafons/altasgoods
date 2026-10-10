@@ -22,12 +22,11 @@ const ME = "/v1/me/support";
 async function paidOrder(qty: number) {
   const addresses = await t.http.get("/v1/me/addresses").set(shopper).expect(200);
   const p = await t.http.get("/v1/products/headphones-studio").expect(200);
-  const offer = p.body.offers.find((o: { isFeatured: boolean }) => o.isFeatured);
   const placed = await t.http
     .post("/v1/orders")
     .set(shopper)
     .set("Idempotency-Key", randomUUID())
-    .send({ addressId: addresses.body[0].id, paymentMethod: "UPI", lines: [{ offerId: offer.id, qty, variant: "" }] })
+    .send({ addressId: addresses.body[0].id, paymentMethod: "UPI", lines: [{ offerId: p.body.offerId, qty, variant: "" }] })
     .expect(201);
   await t.http.post(`/v1/payments/${placed.body.payment.id}/sandbox/complete`).set(shopper).send({ outcome: "SUCCESS" }).expect(200);
   return placed.body.order.id as string;
@@ -92,7 +91,7 @@ describe("a customer conversation, end to end", () => {
     );
 
     let mine = await t.http.get(`${ME}/tickets/${id}`).set(shopper).expect(200);
-    expect(mine.body.messages.map((m: { author: string }) => m.author)).toContain("Revathi from BluBuy");
+    expect(mine.body.messages.map((m: { author: string }) => m.author)).toContain("Revathi from AltasGoods");
     expect(JSON.stringify(mine.body)).not.toContain("Batch 24B");
 
     const upload = await t.http.post(`${ME}/tickets/${id}/attachments`).set(shopper).attach("file", samplePdf("Serial label"), "serial.pdf").expect(201);
@@ -144,18 +143,16 @@ describe("a customer conversation, end to end", () => {
     expect(approved.body.actions[0].decidedBy).toBe("Arvind Menon");
   });
 
-  it("records replacements once per item, escalations and claims", async () => {
+  it("records replacements once per item, and Guarantee claims for the store to decide", async () => {
     const detail = await t.http.get(`${S}/tickets/${id}`).set(revathi).expect(200);
     const itemId = detail.body.orderSnapshot.items[0].id;
     await t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "REPLACEMENT", itemId, reason: "defective", collectOriginal: true }).expect(200);
     const again = await t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "REPLACEMENT", itemId, reason: "defective", collectOriginal: true }).expect(409);
     expect(again.body.code).toBe("ALREADY_REPLACED");
-    const esc = await t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "SELLER_ESCALATION", issue: "product", message: "Please confirm the replacement unit is from a newer batch." }).expect(200);
-    expect(esc.body.status).toBe("PENDING_INTERNAL");
+    await t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "SELLER_ESCALATION", issue: "product", message: "Please confirm the replacement unit is from a newer batch." }).expect(422);
     const claim = await t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "GUARANTEE_CLAIM", claimType: "damaged" }).expect(200);
-    expect(claim.body.actions.map((a: { kind: string; status: string }) => `${a.kind}:${a.status}`)).toEqual(
-      expect.arrayContaining(["REPLACEMENT:CREATED", "SELLER_ESCALATION:AWAITING_SELLER", "GUARANTEE_CLAIM:AWAITING_SELLER_RESPONSE"]),
-    );
+    expect(claim.body.status).toBe("PENDING_INTERNAL");
+    expect(claim.body.actions.map((a: { kind: string; status: string }) => `${a.kind}:${a.status}`)).toEqual(expect.arrayContaining(["REPLACEMENT:CREATED", "GUARANTEE_CLAIM:UNDER_REVIEW"]));
   });
 
   it("resolves, reopens on a customer reply, and closes for good", async () => {

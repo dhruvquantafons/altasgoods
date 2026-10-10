@@ -138,6 +138,9 @@ export function Gallery({ views, badge }: { views: GalleryView[]; badge?: string
             <div className="relative aspect-square h-full max-h-[calc(100vh-11rem)] max-w-full overflow-hidden rounded-2xl">
               <Image src={v.src} alt={v.alt} fill sizes="90vw" className="object-cover" style={viewStyle(v)} />
             </div>
+            {/* a single photo has nothing to step through */}
+            {views.length > 1 && (
+              <>
             <button
               type="button"
               onClick={() => setIndex((i) => (i - 1 + views.length) % views.length)}
@@ -154,7 +157,10 @@ export function Gallery({ views, badge }: { views: GalleryView[]; badge?: string
             >
               <ChevronRight size={20} aria-hidden="true" />
             </button>
+              </>
+            )}
           </div>
+          {views.length > 1 && (
           <div className="flex justify-center gap-2.5 border-t border-line p-3">
             {views.map((t, i) => (
               <button
@@ -169,6 +175,7 @@ export function Gallery({ views, badge }: { views: GalleryView[]; badge?: string
               </button>
             ))}
           </div>
+          )}
         </div>,
           document.body,
         )}

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Compass } from "lucide-react";
-import { categories } from "@/lib/mock";
+import { getStoreCatalog } from "@/lib/store-catalog";
 
-export default function StoreNotFound() {
+export default async function StoreNotFound() {
+  const { categories } = await getStoreCatalog();
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col items-center px-4 py-20 text-center sm:px-6 lg:px-8 lg:py-28">
       <span className="flex size-14 items-center justify-center rounded-2xl bg-ink-50 text-ink-500 ring-1 ring-line">

@@ -63,42 +63,37 @@ export function OrderConfirmation({ fallback, requestedId, firstName, phone }: {
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-4">
-          {order.shipments.map((s, i) => {
-            const items = order.items.filter((it) => it.seller === s.seller);
-            return (
-              <section key={s.seller} aria-label={`Shipment ${i + 1}`} className="rounded-2xl border border-line bg-white">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
-                  <div>
-                    <p className="flex items-center gap-2 text-xs font-medium text-ink-500">
-                      <Truck size={14} aria-hidden="true" /> Shipment {i + 1} of {order.shipments.length}, {s.option}
+          <section aria-label="Your shipment" className="rounded-2xl border border-line bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
+              <div>
+                <p className="flex items-center gap-2 text-xs font-medium text-ink-500">
+                  <Truck size={14} aria-hidden="true" /> {order.delivery.option} delivery
+                </p>
+                <p className="mt-1 font-display text-xl font-semibold text-ink-900">Arriving {order.delivery.date}</p>
+              </div>
+              <p className="text-[13px] text-ink-600">
+                Shipped by <span className="font-semibold text-ink-900">AltasGoods</span>
+              </p>
+            </div>
+            <ul className="divide-y divide-line">
+              {order.items.map((it) => (
+                <li key={it.slug + (it.variant ?? "")} className="flex items-center gap-4 px-5 py-3.5">
+                  <span className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-ink-50">
+                    <Image src={it.image} alt="" fill sizes="56px" className="object-cover" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/p/${it.slug}`} className="line-clamp-1 text-sm text-ink-900 hover:underline">
+                      {it.title}
+                    </Link>
+                    <p className="text-xs text-ink-500">
+                      {it.variant ? `${it.variant}, ` : ""}Qty {it.qty}
                     </p>
-                    <p className="mt-1 font-display text-xl font-semibold text-ink-900">Arriving {s.date}</p>
                   </div>
-                  <p className="text-[13px] text-ink-600">
-                    Sold by <span className="font-semibold text-ink-900">{s.seller}</span>
-                  </p>
-                </div>
-                <ul className="divide-y divide-line">
-                  {items.map((it) => (
-                    <li key={it.slug + (it.variant ?? "")} className="flex items-center gap-4 px-5 py-3.5">
-                      <span className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-ink-50">
-                        <Image src={it.image} alt="" fill sizes="56px" className="object-cover" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <Link href={`/p/${it.slug}`} className="line-clamp-1 text-sm text-ink-900 hover:underline">
-                          {it.title}
-                        </Link>
-                        <p className="text-xs text-ink-500">
-                          {it.variant ? `${it.variant}, ` : ""}Qty {it.qty}
-                        </p>
-                      </div>
-                      <p className="text-sm font-semibold text-ink-900 tabular-nums">{formatINR(it.price * it.qty)}</p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
+                  <p className="text-sm font-semibold text-ink-900 tabular-nums">{formatINR(it.price * it.qty)}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
 
           <section aria-labelledby="next-heading" className="rounded-2xl border border-line bg-white p-5">
             <h2 id="next-heading" className="text-base font-semibold text-ink-900">
@@ -107,11 +102,11 @@ export function OrderConfirmation({ fallback, requestedId, firstName, phone }: {
             <Timeline
               className="mt-4"
               items={[
-                { title: "Order confirmed", time: "Just now", description: "The seller has been notified and your payment is secured.", tone: "success" },
-                { title: "Packed by the seller", description: "Usually within a day. You can still cancel for free until it ships.", done: false },
-                { title: "Shipped with AltasGoods Logistics", description: "You get a tracking link by SMS and in Your orders.", done: false },
+                { title: "Order confirmed", time: "Just now", description: "We have your order and your payment is secured.", tone: "success" },
+                { title: "Packed by AltasGoods", description: "Usually within a day. You can still cancel for free until it ships.", done: false },
+                { title: "Shipped", description: "You get a tracking link by SMS and in Your orders.", done: false },
                 { title: "Out for delivery", description: "For high value items, share the one-time code with the delivery associate.", done: false },
-                { title: "Delivered", description: "On or before each promised date above. Easy returns from the order page if anything is not right.", done: false },
+                { title: "Delivered", description: "On or before the promised date above. Easy returns from the order page if anything is not right.", done: false },
               ]}
             />
           </section>

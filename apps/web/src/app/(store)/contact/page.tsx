@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Briefcase, Building2, Clock, Headset, Mail, MessageCircle, Newspaper, Package, PhoneCall, Scale, Store } from "lucide-react";
+import { ArrowRight, Briefcase, Building2, Clock, Headset, Mail, MessageCircle, Newspaper, Package, PhoneCall, Scale } from "lucide-react";
 import { CallbackRequest } from "@/components/store/callback-request";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
@@ -18,7 +18,6 @@ const channels = [
 ];
 
 const teams = [
-  { icon: Store, title: "Sellers", body: "Raise a support case from Seller Hub, or write to seller.support@altasgoods.in.", href: "/seller/support", cta: "Seller support" },
   { icon: Newspaper, title: "Press and media", body: "Write to press@altasgoods.in for interviews, data and images.", href: "/press", cta: "Press room" },
   { icon: Briefcase, title: "Careers", body: "See open roles and how we hire.", href: "/careers", cta: "Open roles" },
 ];

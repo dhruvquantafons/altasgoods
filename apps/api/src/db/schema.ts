@@ -1,6 +1,6 @@
 /**
- * BluBuy database schema (phase 2: identity, catalog, cart, checkout, orders,
- * payments, seller onboarding). Follows docs/research/01-marketplace-workflows.md section 12:
+ * AltasGoods database schema: identity, catalog, cart, checkout, orders,
+ * payments, returns and support. Follows docs/research/01-marketplace-workflows.md section 12:
  * money is integer paise, statuses use the canonical UPPER_SNAKE_CASE names,
  * and every order change is recorded in order_events.
  */
@@ -52,7 +52,7 @@ export const ORDER_STATUSES = [
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-/** PENDING is internal: the line exists while payment is outstanding and is never shown to sellers. */
+/** PENDING is internal: the line exists while payment is outstanding and is not ready to fulfil. */
 export const ORDER_ITEM_STATUSES = [
   "PENDING",
   "NEW",
@@ -96,16 +96,16 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const REFUND_STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "FAILED"] as const;
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
 
-export type Actor = "CUSTOMER" | "SELLER" | "SYSTEM" | "PAYMENT" | "LOGISTICS" | "STAFF";
+export type Actor = "CUSTOMER" | "SYSTEM" | "PAYMENT" | "LOGISTICS" | "STAFF";
 
-/** BluBuy Control roles from spec section 8.1 that the API knows about so far. */
-export const STAFF_ROLES = ["SUPER_ADMIN", "OPS_ADMIN", "SELLER_VERIFIER", "RISK_ANALYST", "AUDITOR", "SUPPORT_AGENT", "SUPPORT_SPECIALIST", "SUPPORT_SUPERVISOR"] as const;
+/** AltasGoods Control roles. SUPER_ADMIN passes every staff check. */
+export const STAFF_ROLES = ["SUPER_ADMIN", "OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR", "SUPPORT_AGENT", "SUPPORT_SPECIALIST", "SUPPORT_SUPERVISOR"] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 
 /** Returns, spec section 11.3. */
 export const RETURN_STATUSES = [
   "REQUESTED",
-  "PENDING_SELLER_REVIEW",
+  "PENDING_REVIEW",
   "APPROVED",
   "REJECTED",
   "PICKUP_SCHEDULED",
@@ -129,9 +129,9 @@ export const TICKET_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;
 export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
 export const TICKET_CHANNELS = ["CHAT", "EMAIL", "PHONE", "APP"] as const;
 export type TicketChannel = (typeof TICKET_CHANNELS)[number];
-export const TICKET_CATEGORIES = ["Delivery", "Return and refund", "Payment", "Product quality", "Account", "Seller dispute", "Other"] as const;
+export const TICKET_CATEGORIES = ["Delivery", "Return and refund", "Payment", "Product quality", "Account", "Other"] as const;
 export type TicketCategory = (typeof TICKET_CATEGORIES)[number];
-export const TICKET_ACTION_KINDS = ["REFUND", "REPLACEMENT", "SELLER_ESCALATION", "GUARANTEE_CLAIM"] as const;
+export const TICKET_ACTION_KINDS = ["REFUND", "REPLACEMENT", "GUARANTEE_CLAIM"] as const;
 export type TicketActionKind = (typeof TICKET_ACTION_KINDS)[number];
 
 /** What a ticket knows about its order, so actions can be checked even for imported history. */
@@ -139,7 +139,6 @@ export interface OrderSnapshot {
   total: number;
   paymentLabel: string;
   cod: boolean;
-  seller: string;
   items: { id: string; title: string; price: number; quantity: number }[];
 }
 
@@ -148,110 +147,6 @@ export interface Attachment {
   name: string;
   mimeType: string;
   sizeBytes: number;
-}
-
-/** Seller onboarding, spec section 11.8. The account exists (REGISTERED) once the mobile number is verified. */
-export const APPLICATION_STATUSES = ["KYC_IN_PROGRESS", "SUBMITTED", "UNDER_REVIEW", "ACTION_REQUIRED", "APPROVED", "REJECTED"] as const;
-export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
-
-export const CONSTITUTIONS = ["PROPRIETORSHIP", "PARTNERSHIP", "LLP", "PRIVATE_LIMITED", "PUBLIC_LIMITED"] as const;
-export type Constitution = (typeof CONSTITUTIONS)[number];
-
-export const KYC_DOCUMENT_KINDS = [
-  "SIGNATURE",
-  "ID_PROOF",
-  "ADDRESS_PROOF",
-  "PARTNERSHIP_DEED",
-  "LLP_CERTIFICATE",
-  "INCORPORATION_CERTIFICATE",
-  "BANK_PROOF",
-  "TRADEMARK",
-] as const;
-export type KycDocumentKind = (typeof KYC_DOCUMENT_KINDS)[number];
-
-export type CheckResult = "VERIFIED" | "PARTIAL" | "FAILED";
-
-export interface GstCheck {
-  result: CheckResult;
-  gstin: string;
-  portalStatus: "ACTIVE" | "CANCELLED" | "SUSPENDED";
-  legalName: string;
-  tradeName: string;
-  constitution: Constitution;
-  state: string;
-  principalAddress: string;
-  registeredOn: string;
-  filing: string;
-  checkedAt: string;
-}
-
-export interface PanCheck {
-  result: CheckResult;
-  pan: string;
-  holderName: string;
-  holderType: string;
-  nameMatchScore: number;
-  aadhaarLinked: boolean;
-  checkedAt: string;
-}
-
-export interface BankCheck {
-  result: CheckResult;
-  bankName: string;
-  branch: string;
-  ifsc: string;
-  accountLast4: string;
-  beneficiaryName: string | null;
-  nameMatchScore: number;
-  reference: string;
-  failureReason?: string;
-  checkedAt: string;
-}
-
-export interface RiskFlag {
-  code: string;
-  severity: "LOW" | "MEDIUM" | "HIGH";
-  message: string;
-}
-
-export interface PickupAddress {
-  line1: string;
-  line2?: string;
-  landmark?: string;
-  city: string;
-  state: string;
-  pincode: string;
-  contactName: string;
-  contactPhone: string;
-  slot: string;
-}
-
-export interface BrandDetails {
-  ownBrand: boolean;
-  brandName?: string;
-  trademark?: string;
-  trademarkClass?: string;
-  reseller: boolean;
-}
-
-/** Internal reviewer note, never shown to the applicant. */
-export interface StaffNote {
-  byUserId: string;
-  byName: string | null;
-  at: string;
-  body: string;
-}
-
-/** An item a verifier asked the applicant to fix (a wizard step or a document kind). */
-export interface FlaggedItem {
-  key: string;
-  label: string;
-}
-
-export interface FeeLine {
-  code: "COMMISSION" | "FIXED_FEE" | "SHIPPING_FEE" | "GST_ON_FEES" | "TCS" | "TDS";
-  label: string;
-  amountPaise: number;
 }
 
 export interface AddressSnapshot {
@@ -281,7 +176,7 @@ export const users = pgTable(
     isPlus: boolean("is_plus").notNull().default(false),
     plusRenewsAt: ts("plus_renews_at"),
     status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED">(),
-    /** BluBuy Control access; empty for shoppers and sellers */
+    /** AltasGoods Control access; empty for shoppers */
     staffRoles: text("staff_roles").array().notNull().$type<StaffRole[]>().default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -322,7 +217,7 @@ export const sessions = pgTable(
   (t) => [uniqueIndex("sessions_refresh_uq").on(t.refreshHash), index("sessions_user_idx").on(t.userId)],
 );
 
-/* ---------------------------- Catalog & sellers -------------------------- */
+/* -------------------------------- Catalog -------------------------------- */
 
 export const categories = pgTable("categories", {
   id: text("id").primaryKey(),
@@ -331,7 +226,6 @@ export const categories = pgTable("categories", {
   parentId: text("parent_id"),
   icon: text("icon"),
   image: text("image"),
-  commissionBps: integer("commission_bps").notNull().default(800),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
@@ -342,6 +236,7 @@ export const brands = pgTable("brands", {
   verified: boolean("verified").notNull().default(false),
 });
 
+/** Kept for the single built-in store record (HOUSE_SELLER_ID) that offers, order lines and returns point at. */
 export const sellers = pgTable("sellers", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
@@ -401,7 +296,6 @@ export const products = pgTable(
     reviewCount: integer("review_count").notNull().default(0),
     tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
     assured: boolean("assured").notNull().default(false),
-    featuredSellerId: text("featured_seller_id"),
     listingStatus: text("listing_status").notNull().default("LIVE"),
     soldLast30d: integer("sold_last_30d").notNull().default(0),
     /** title, brand, category and subcategory, maintained by the catalog service */
@@ -431,7 +325,6 @@ export const offers = pgTable(
     pricePaise: paise("price_paise").notNull(),
     mrpPaise: paise("mrp_paise").notNull(),
     stock: integer("stock").notNull().default(0),
-    fulfilledBy: text("fulfilled_by").notNull().default("SELLER").$type<"BLUBUY" | "SELLER">(),
     handlingDays: integer("handling_days").notNull().default(1),
     deliveryDays: integer("delivery_days").notNull().default(3),
     codAvailable: boolean("cod_available").notNull().default(true),
@@ -504,7 +397,7 @@ export const coupons = pgTable("coupons", {
   startsAt: ts("starts_at").notNull(),
   endsAt: ts("ends_at").notNull(),
   status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "PAUSED">(),
-  fundedBy: text("funded_by").notNull().default("BLUBUY").$type<"BLUBUY" | "SELLER" | "BANK">(),
+  fundedBy: text("funded_by").notNull().default("STORE").$type<"STORE" | "BANK">(),
   usageLimit: integer("usage_limit"),
   usageCount: integer("usage_count").notNull().default(0),
 });
@@ -568,8 +461,6 @@ export const orderItems = pgTable(
     unitPricePaise: paise("unit_price_paise").notNull(),
     mrpPaise: paise("mrp_paise").notNull(),
     status: text("status").notNull().$type<OrderItemStatus>(),
-    fees: jsonb("fees").$type<FeeLine[]>(),
-    netSettlementPaise: paise("net_settlement_paise"),
     dispatchBy: ts("dispatch_by"),
     promisedBy: ts("promised_by").notNull(),
     shippedAt: ts("shipped_at"),
@@ -582,7 +473,7 @@ export const orderItems = pgTable(
   },
   (t) => [
     index("order_items_order_idx").on(t.orderId),
-    index("order_items_seller_idx").on(t.sellerId, t.status, t.createdAt),
+    index("order_items_status_idx").on(t.status, t.createdAt),
     check("order_items_qty_ck", sql`${t.qty} between 1 and 10`),
     check("order_items_status_ck", inList("status", ORDER_ITEM_STATUSES)),
   ],
@@ -657,13 +548,13 @@ export const refunds = pgTable(
   (t) => [index("refunds_order_idx").on(t.orderId)],
 );
 
-/* ---------------------------- Seller onboarding --------------------------- */
+/* ---------------------------------- Files --------------------------------- */
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
 /**
  * Uploaded file bytes. Kept apart from the metadata so the storage can move to
- * object storage (S3 with KMS) without touching the onboarding tables.
+ * object storage (S3 with KMS) without touching the tables that reference it.
  */
 export const files = pgTable("files", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -674,101 +565,18 @@ export const files = pgTable("files", {
   createdAt: createdAt(),
 });
 
-/** Readable application numbers: SA-50001, SA-50002, ... */
-export const sellerApplicationSeq = pgSequence("seller_application_seq", { startWith: 50001 });
-
-/** One application per user; it records the wizard, the automatic checks and the review. */
-export const sellerApplications = pgTable(
-  "seller_applications",
-  {
-    id: text("id").primaryKey(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    status: text("status").notNull().default("KYC_IN_PROGRESS").$type<ApplicationStatus>(),
-    constitution: text("constitution").$type<Constitution>(),
-    gstExempt: boolean("gst_exempt").notNull().default(false),
-    gstin: text("gstin"),
-    legalName: text("legal_name"),
-    tradeName: text("trade_name"),
-    registeredAddress: text("registered_address"),
-    gstState: text("gst_state"),
-    pan: text("pan"),
-    storeName: text("store_name"),
-    storeDescription: text("store_description"),
-    careNumber: text("care_number"),
-    grievanceContact: text("grievance_contact"),
-    pickup: jsonb("pickup").$type<PickupAddress>(),
-    bankHolder: text("bank_holder"),
-    /** full number is needed for payouts; production encrypts this column with a KMS key */
-    bankAccount: text("bank_account"),
-    bankIfsc: text("bank_ifsc"),
-    categories: text("categories").array().notNull().default(sql`'{}'::text[]`),
-    brand: jsonb("brand").$type<BrandDetails>(),
-    gstCheck: jsonb("gst_check").$type<GstCheck>(),
-    panCheck: jsonb("pan_check").$type<PanCheck>(),
-    bankCheck: jsonb("bank_check").$type<BankCheck>(),
-    riskFlags: jsonb("risk_flags").notNull().$type<RiskFlag[]>().default([]),
-    flaggedItems: jsonb("flagged_items").notNull().$type<FlaggedItem[]>().default([]),
-    reviewerMessage: text("reviewer_message"),
-    staffNotes: jsonb("staff_notes").notNull().$type<StaffNote[]>().default([]),
-    rejectionReason: text("rejection_reason"),
-    agreementVersion: text("agreement_version"),
-    agreementAcceptedAt: ts("agreement_accepted_at"),
-    submittedAt: ts("submitted_at"),
-    slaDueAt: ts("sla_due_at"),
-    decidedAt: ts("decided_at"),
-    decidedBy: uuid("decided_by"),
-    sellerId: text("seller_id").references(() => sellers.id),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [
-    uniqueIndex("seller_applications_user_uq").on(t.userId),
-    index("seller_applications_status_idx").on(t.status, t.submittedAt),
-    index("seller_applications_pan_idx").on(t.pan),
-    check("seller_applications_status_ck", inList("status", APPLICATION_STATUSES)),
-  ],
-);
-
-export const sellerApplicationEvents = pgTable(
-  "seller_application_events",
-  {
-    id: bigserial("id", { mode: "number" }).primaryKey(),
-    applicationId: text("application_id")
-      .notNull()
-      .references(() => sellerApplications.id, { onDelete: "cascade" }),
-    fromStatus: text("from_status").$type<ApplicationStatus>(),
-    toStatus: text("to_status").notNull().$type<ApplicationStatus>(),
-    actor: text("actor").notNull().$type<"SELLER" | "SYSTEM" | "STAFF">(),
-    actorUserId: uuid("actor_user_id"),
-    note: text("note"),
-    at: ts("at").notNull().defaultNow(),
-  },
-  (t) => [index("seller_application_events_app_idx").on(t.applicationId, t.at)],
-);
-
-export const kycDocuments = pgTable(
-  "kyc_documents",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    applicationId: text("application_id")
-      .notNull()
-      .references(() => sellerApplications.id, { onDelete: "cascade" }),
-    kind: text("kind").notNull().$type<KycDocumentKind>(),
-    fileId: uuid("file_id")
-      .notNull()
-      .references(() => files.id),
-    fileName: text("file_name").notNull(),
-    mimeType: text("mime_type").notNull(),
-    sizeBytes: integer("size_bytes").notNull(),
-    status: text("status").notNull().default("PENDING").$type<"PENDING" | "VERIFIED" | "REJECTED">(),
-    note: text("note"),
-    uploadedAt: ts("uploaded_at").notNull().defaultNow(),
-    reviewedAt: ts("reviewed_at"),
-  },
-  (t) => [uniqueIndex("kyc_documents_app_kind_uq").on(t.applicationId, t.kind)],
-);
+/** Public images, such as product photos. Only files listed here are served without sign in; every other file stays private. */
+export const media = pgTable("media", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fileId: uuid("file_id")
+    .notNull()
+    .references(() => files.id),
+  kind: text("kind").notNull().default("PRODUCT_IMAGE").$type<"PRODUCT_IMAGE">(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  createdById: uuid("created_by_id"),
+  createdAt: createdAt(),
+});
 
 /* --------------------------------- Support -------------------------------- */
 
@@ -841,7 +649,7 @@ export const supportEvents = pgTable(
   (t) => [index("support_events_ticket_idx").on(t.ticketId, t.at)],
 );
 
-/** Refunds, replacements, seller escalations and Guarantee claims raised from a ticket. */
+/** Refunds, replacements and Guarantee claims raised from a ticket. */
 export const supportActions = pgTable(
   "support_actions",
   {
@@ -909,7 +717,8 @@ export const returns = pgTable(
     qty: integer("qty").notNull(),
     reasonCode: text("reason_code").notNull(),
     reasonLabel: text("reason_label").notNull(),
-    fault: text("fault").notNull().$type<"SELLER" | "LOGISTICS" | "CUSTOMER">(),
+    /** STORE covers a defective, damaged or wrong item */
+    fault: text("fault").notNull().$type<"STORE" | "LOGISTICS" | "CUSTOMER">(),
     comments: text("comments"),
     photos: jsonb("photos").notNull().$type<{ id: string; name: string }[]>().default([]),
     resolution: text("resolution").notNull().$type<"REFUND" | "REPLACEMENT" | "EXCHANGE">(),
@@ -926,13 +735,14 @@ export const returns = pgTable(
     address: jsonb("address").notNull().$type<AddressSnapshot>(),
     awb: text("awb"),
     qcNote: text("qc_note"),
-    sellerNote: text("seller_note"),
+    /** the store's note when it decides an out-of-policy return */
+    decisionNote: text("seller_note"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     index("returns_user_idx").on(t.userId, t.createdAt),
-    index("returns_seller_idx").on(t.sellerId, t.status),
+    index("returns_status_idx").on(t.status, t.updatedAt),
     index("returns_item_idx").on(t.orderItemId),
     check("returns_status_ck", inList("status", RETURN_STATUSES)),
   ],

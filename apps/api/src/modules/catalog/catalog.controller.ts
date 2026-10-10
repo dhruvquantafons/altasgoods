@@ -2,7 +2,7 @@ import { Controller, Get, Inject, Param, Query } from "@nestjs/common";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import { z } from "zod";
 import { Public } from "../auth/auth.guard.js";
-import { categoryNode, productDetail, productList, productQuery, sellerProfile, type ProductQuery } from "./catalog.schemas.js";
+import { categoryNode, productDetail, productList, productQuery, storefrontCatalog, type ProductQuery } from "./catalog.schemas.js";
 import { CatalogService } from "./catalog.service.js";
 
 @ApiTags("Catalog")
@@ -17,6 +17,12 @@ export class CatalogController {
     return this.catalog.categoryTree();
   }
 
+  @Get("storefront/catalog")
+  @ApiResponse({ status: 200, standardSchema: storefrontCatalog })
+  storefront() {
+    return this.catalog.storefront();
+  }
+
   @Get("products")
   @ApiResponse({ status: 200, standardSchema: productList })
   list(@Query({ schema: productQuery }) query: ProductQuery) {
@@ -27,11 +33,5 @@ export class CatalogController {
   @ApiResponse({ status: 200, standardSchema: productDetail })
   detail(@Param("slug") slug: string) {
     return this.catalog.productDetail(slug);
-  }
-
-  @Get("sellers/:slug")
-  @ApiResponse({ status: 200, standardSchema: sellerProfile })
-  seller(@Param("slug") slug: string) {
-    return this.catalog.sellerProfile(slug);
   }
 }

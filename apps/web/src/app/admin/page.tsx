@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgePercent,
-  Building2,
   CreditCard,
   Download,
   FileText,
@@ -17,8 +16,6 @@ import { BarList, Funnel } from "@/components/charts/static";
 import { ShareBar } from "@/components/admin/share-bar";
 import { GmvTrend } from "@/components/admin/gmv-trend";
 import { KpiStrip } from "@/components/admin/kpi-strip";
-import { ScoreMeter } from "@/components/admin/bits";
-import { HEALTH_BAND, healthBand, TIER_TONE } from "@/components/admin/admin-status";
 import { pctChange } from "@/components/admin/helpers";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -26,10 +23,11 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { IconTile } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { categoryMix, funnel, orders, paymentMix, platformDaily, regionMix, SALE_EVENT, sellers } from "@/lib/mock";
-import { CATALOG_QUEUE_TOTAL, gatewayStats, hourlyOrdersYesterday, opsSnapshot, ordersPerMinute, saleEvents } from "@/lib/mock/admin-extra";
-import { loadKycSummary } from "@/lib/api/review";
-import { ORDER_STATUS, PAYMENT_METHOD, SELLER_STATUS, type Tone } from "@/lib/status";
+import { categoryMix, funnel, getCategory, orders, paymentMix, platformDaily, products, regionMix, SALE_EVENT } from "@/lib/mock";
+import { gatewayStats, hourlyOrdersYesterday, opsSnapshot, ordersPerMinute, saleEvents } from "@/lib/mock/admin-extra";
+import { loadAdminItems } from "@/lib/api/admin-fulfilment";
+import { featuredOffer } from "@/components/store/product-card";
+import { ORDER_STATUS, PAYMENT_METHOD, type Tone } from "@/lib/status";
 import type { LucideIcon } from "lucide-react";
 import { cn, formatCompact, formatDateShort, formatINR, formatNumber, formatTime, formatWeekday, NOW, timeAgo } from "@/lib/utils";
 
@@ -73,31 +71,28 @@ export default async function AdminOverview() {
     return { method: m, rate: rows.reduce((a, g) => a + g.success24h * g.volume24h, 0) / vol, degraded: rows.some((g) => g.status !== "operational") };
   });
 
-  const kyc = await loadKycSummary();
+  const queue = await loadAdminItems({ status: ["NEW"], pageSize: 1 }).catch(() => null);
+  const toAccept = queue?.counts.NEW ?? 0;
 
   const alerts: { icon: LucideIcon; tone: Tone; title: string; detail: string; href: string; cta: string }[] = [
     { icon: CreditCard, tone: "danger", title: `UPI success ${upi15.toFixed(1)}%, last 15 min`, detail: "Collect requests degraded at Kanakpay", href: "/admin/payments", cta: "Gateway health" },
     { icon: Timer, tone: "warning", title: `${formatNumber(opsSnapshot.slaBreaches)} items past dispatch-by`, detail: `${formatNumber(opsSnapshot.dispatchAtRisk)} more at risk before 6 pm`, href: "/admin/orders?view=attention", cta: "Review orders" },
     { icon: RotateCcw, tone: "danger", title: `${opsSnapshot.refundsFailed} refunds failed at the bank`, detail: "Retry or reroute to AltasGoods Credits", href: "/admin/returns?refund=failed", cta: "Fix refunds" },
-    { icon: PackageCheck, tone: "warning", title: `${CATALOG_QUEUE_TOTAL} listings awaiting QC`, detail: `Oldest ${opsSnapshot.oldestQcHours} h against a 48 h target`, href: "/admin/catalog", cta: "Open queue" },
     {
-      icon: Building2,
-      tone: "info",
-      title: `${kyc?.open ?? 0} seller applications open`,
-      detail: kyc?.oldestDays != null ? `Oldest awaiting review: ${kyc.oldestDays === 0 ? "under a day" : `${kyc.oldestDays} ${kyc.oldestDays === 1 ? "day" : "days"}`}` : "None awaiting review",
-      href: "/admin/sellers/approvals",
-      cta: "Review KYC",
+      icon: PackageCheck,
+      tone: toAccept ? "warning" : "info",
+      title: `${formatNumber(toAccept)} order ${toAccept === 1 ? "line" : "lines"} to accept`,
+      detail: queue ? "Accept and pack before the dispatch by time" : "The order queue is unavailable right now",
+      href: "/admin/orders",
+      cta: "Open orders",
     },
-    { icon: ScrollText, tone: "info", title: `${opsSnapshot.claimsDueToday} Guarantee claims due today`, detail: "7 day decision clock", href: "/admin/disputes", cta: "Open claims" },
+    { icon: ScrollText, tone: "info", title: `${opsSnapshot.claimsDueToday} Guarantee claims due today`, detail: "7 day decision clock", href: "/support/tickets", cta: "Open claims" },
   ];
 
   const trend = completed.map((d) => ({ label: formatDateShort(d.date), gmv: Math.round(d.gmv), orders: d.orders }));
   const peak = hourlyOrdersYesterday.reduce((m, h, i, arr) => (h.orders > arr[m]!.orders ? i : m), 0);
 
-  const topSellers = sellers
-    .filter((s) => s.gmv30d > 0)
-    .sort((a, b) => b.gmv30d - a.gmv30d)
-    .slice(0, 7);
+  const topProducts = [...products].sort((a, b) => b.soldLast30d - a.soldLast30d).slice(0, 7);
 
   const feed = orders.slice(0, 8);
 
@@ -317,11 +312,11 @@ export default async function AdminOverview() {
 
         <Card className="xl:col-span-2">
           <CardHeader
-            title="Top sellers"
-            description="By GMV, last 30 days"
+            title="Top products"
+            description="Units sold, last 30 days"
             action={
-              <ButtonLink href="/admin/sellers" variant="ghost" size="sm" iconRight={ArrowRight}>
-                All sellers
+              <ButtonLink href="/admin/catalog" variant="ghost" size="sm" iconRight={ArrowRight}>
+                All products
               </ButtonLink>
             }
           />
@@ -329,44 +324,28 @@ export default async function AdminOverview() {
             <Table>
               <THead>
                 <TR>
-                  <TH>Seller</TH>
-                  <TH>Tier</TH>
-                  <TH>Seller Health</TH>
-                  <TH align="right">GMV</TH>
-                  <TH align="right" className="hidden sm:table-cell">
-                    Orders
-                  </TH>
-                  <TH>Status</TH>
+                  <TH>Product</TH>
+                  <TH className="hidden sm:table-cell">Category</TH>
+                  <TH align="right">Price</TH>
+                  <TH align="right">Sold</TH>
                 </TR>
               </THead>
               <TBody>
-                {topSellers.map((s) => {
-                  const band = healthBand(s.health.score);
+                {topProducts.map((p) => {
+                  const o = featuredOffer(p);
                   return (
-                    <TR key={s.id}>
+                    <TR key={p.id}>
                       <TD>
-                        <Link href={`/admin/sellers/${s.id}`} className="font-medium text-ink-900 hover:text-brand-700">
-                          {s.displayName}
+                        <Link href={`/admin/catalog/${p.id}`} className="line-clamp-1 font-medium text-ink-900 hover:text-brand-700">
+                          {p.title}
                         </Link>
-                        <p className="text-xs text-ink-500">{s.city}</p>
+                        <p className="text-xs text-ink-500">{p.subcategory}</p>
                       </TD>
-                      <TD>
-                        <Badge tone={TIER_TONE[s.tier]} size="sm">
-                          {s.tier}
-                        </Badge>
-                      </TD>
-                      <TD>
-                        <ScoreMeter value={s.health.score} max={1000} tone={HEALTH_BAND[band].tone} label={`Seller Health ${HEALTH_BAND[band].label}`} />
-                      </TD>
+                      <TD className="hidden sm:table-cell">{getCategory(p.categoryId)?.name}</TD>
                       <TD align="right" className="font-medium text-ink-900">
-                        {formatCompact(s.gmv30d, true)}
+                        {formatINR(o.price)}
                       </TD>
-                      <TD align="right" className="hidden sm:table-cell">
-                        {formatNumber(s.orders30d)}
-                      </TD>
-                      <TD>
-                        <StatusBadge meta={SELLER_STATUS[s.status]} size="sm" />
-                      </TD>
+                      <TD align="right">{formatNumber(p.soldLast30d)}</TD>
                     </TR>
                   );
                 })}
@@ -389,7 +368,7 @@ export default async function AdminOverview() {
           <ul className="mt-2 divide-y divide-line">
             {feed.map((o) => (
               <li key={o.id}>
-                <Link href={`/admin/orders/${o.id}`} className="flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-ink-50/70">
+                <div className="flex items-center gap-3 px-5 py-2.5">
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="font-mono text-[12.5px] font-medium text-brand-700">{o.id}</span>
@@ -403,7 +382,7 @@ export default async function AdminOverview() {
                     <span className="text-[13px] font-semibold text-ink-900 tabular-nums">{formatINR(o.total)}</span>
                     <StatusBadge meta={ORDER_STATUS[o.status]} size="sm" />
                   </span>
-                </Link>
+                </div>
               </li>
             ))}
           </ul>

@@ -8,7 +8,7 @@ export const createReturnBody = z.object({
   qty: z.number().int().min(1).max(10).default(1),
   reasonCode: z.string().regex(/^[A-Z_]{3,40}$/),
   reasonLabel: z.string().trim().min(3).max(120),
-  fault: z.enum(["SELLER", "LOGISTICS", "CUSTOMER"]),
+  fault: z.enum(["STORE", "LOGISTICS", "CUSTOMER"]),
   comments: z.string().trim().max(1000).optional(),
   photoIds: z.array(z.uuid()).max(6).default([]),
   resolution: z.enum(["REFUND", "REPLACEMENT", "EXCHANGE"]),
@@ -42,19 +42,18 @@ export const refundSchema = z.object({
 export const decisionBody = z.object({ approve: z.boolean(), note: z.string().trim().max(500).optional() });
 export const qcBody = z.object({ pass: z.boolean(), note: z.string().trim().max(500).optional() });
 export const advanceBody = z.object({ to: z.enum(["OUT_FOR_PICKUP", "PICKED_UP", "PICKUP_FAILED", "IN_TRANSIT", "RECEIVED"]) });
-export const sellerListQuery = z.object({ status: z.string().max(200).optional() });
+export const returnListQuery = z.object({ status: z.string().max(200).optional() });
 
 export const returnSchema = z.object({
   id: z.string(),
   orderId: z.string(),
   orderItemId: z.uuid(),
-  sellerId: z.string(),
   item: z.object({ title: z.string(), image: z.string(), variant: z.string(), unitPricePaise: z.number().int(), productId: z.string() }),
   customerName: z.string(),
   qty: z.number().int(),
   reasonCode: z.string(),
   reasonLabel: z.string(),
-  fault: z.enum(["SELLER", "LOGISTICS", "CUSTOMER"]),
+  fault: z.enum(["STORE", "LOGISTICS", "CUSTOMER"]),
   comments: z.string().nullable(),
   photos: z.array(z.object({ id: z.string(), name: z.string() })),
   resolution: z.enum(["REFUND", "REPLACEMENT", "EXCHANGE"]),
@@ -69,7 +68,7 @@ export const returnSchema = z.object({
   address: z.object({ name: z.string(), city: z.string(), pincode: z.string(), line1: z.string() }),
   awb: z.string().nullable(),
   qcNote: z.string().nullable(),
-  sellerNote: z.string().nullable(),
+  decisionNote: z.string().nullable(),
   cancellable: z.boolean(),
   events: z.array(z.object({ fromStatus: status.nullable(), toStatus: status, actor: z.string(), note: z.string().nullable(), at: z.iso.datetime() })),
   createdAt: z.iso.datetime(),

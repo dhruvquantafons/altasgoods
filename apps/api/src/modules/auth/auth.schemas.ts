@@ -22,17 +22,7 @@ export const userSchema = z.object({
   email: z.string().nullable(),
   emailVerified: z.boolean(),
   isPlus: z.boolean(),
-  sellers: z.array(
-    z.object({
-      id: z.string(),
-      displayName: z.string(),
-      role: z.string(),
-      status: z.string().describe("APPROVED until the first listing goes live, then ACTIVE"),
-      tier: z.string(),
-      city: z.string(),
-    }),
-  ),
-  staffRoles: z.array(z.string()).describe("BluBuy Control roles; empty for shoppers and sellers"),
+  staffRoles: z.array(z.string()).describe("AltasGoods Control roles; empty for shoppers"),
 });
 
 export const sessionResponse = z.object({

@@ -20,17 +20,11 @@ const keyPages: Record<string, { label: string; href: string }[]> = {
     { label: "Returns and refunds", href: "/account/returns" },
     { label: "AltasCoins and Plus", href: "/account/rewards" },
   ],
-  seller: [
-    { label: "Dashboard", href: "/seller" },
-    { label: "Orders", href: "/seller/orders" },
-    { label: "Payments", href: "/seller/payments" },
-    { label: "Seller registration", href: "/seller/register" },
-  ],
   admin: [
     { label: "Overview", href: "/admin" },
-    { label: "Seller approvals", href: "/admin/sellers/approvals" },
-    { label: "Catalog moderation", href: "/admin/catalog" },
-    { label: "Seller payouts", href: "/admin/payouts" },
+    { label: "Orders", href: "/admin/orders" },
+    { label: "Products", href: "/admin/catalog" },
+    { label: "Returns", href: "/admin/returns" },
   ],
   logistics: [
     { label: "Hub overview", href: "/logistics" },
@@ -47,11 +41,10 @@ const keyPages: Record<string, { label: string; href: string }[]> = {
 };
 
 const lifecycle = [
-  { icon: ShoppingCart, title: "Customer orders", body: "Search, compare offers, pay by UPI, card, EMI or cash on delivery.", where: "Storefront", href: "/" },
-  { icon: PackageCheck, title: "Seller confirms and packs", body: "Accept, print label and invoice, hand over within the dispatch SLA.", where: "Seller Hub", href: "/seller/orders" },
+  { icon: ShoppingCart, title: "Customer orders", body: "Search, pick a product, pay by UPI, card, EMI or cash on delivery.", where: "Storefront", href: "/" },
+  { icon: PackageCheck, title: "The store accepts and packs", body: "Accept, pack and hand over to the courier within the dispatch time.", where: "AltasGoods Control", href: "/admin/orders" },
   { icon: Warehouse, title: "Pickup and line haul", body: "First mile pickup, sort centre, line haul to the delivery hub.", where: "Hub Console", href: "/logistics/inbound" },
   { icon: Truck, title: "Last mile delivery", body: "Runsheets, Secure Delivery OTP, COD collection, NDR re-attempts.", where: "Rider app", href: "/logistics/associate-app" },
-  { icon: Wallet, title: "Seller gets paid", body: "Fees, GST, TCS and TDS settled after delivery plus the tier hold.", where: "Seller Hub and Control", href: "/seller/payments" },
   { icon: RotateCcw, title: "Returns and support", body: "Doorstep QC pickups, refunds to source or Credits, Care Desk tickets.", where: "Account and Care Desk", href: "/support/tickets" },
 ];
 
@@ -73,7 +66,7 @@ export default function PortalsPage() {
           <p className="text-[13px] font-semibold tracking-[0.08em] text-brand-700 uppercase">One marketplace, six workspaces</p>
           <h1 className="mt-3 text-[34px] leading-[1.15] font-semibold text-ink-900 sm:text-[42px]">Everything that powers AltasGoods, in one place</h1>
           <p className="mt-4 text-[15px] leading-relaxed text-ink-600">
-            Shoppers, sellers, AltasGoods staff, logistics teams and support agents each get a workspace built for their job. They share one design system, one data
+            Shoppers, AltasGoods staff, logistics teams and support agents each get a workspace built for their job. They share one design system, one data
             model and one order lifecycle, so the web app today and the Flutter apps next speak the same language.
           </p>
         </div>

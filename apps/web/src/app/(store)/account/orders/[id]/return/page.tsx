@@ -14,7 +14,7 @@ import { pickupSlots, returnPolicyFor, RETURN_REASONS } from "@/lib/mock/account
 import { PAYMENT_METHOD } from "@/lib/status";
 
 const DAY = 86_400_000;
-/** Damage, defect and wrong item claims stay open this long after delivery; the seller reviews late ones (spec 11.3). */
+/** Damage, defect and wrong item claims stay open this long after delivery; the store reviews late ones (spec 11.3). */
 const CLAIM_DAYS = 90;
 
 export const metadata = { title: "Return or replace" };

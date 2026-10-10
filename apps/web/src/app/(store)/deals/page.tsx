@@ -9,7 +9,8 @@ import { ProductCard, featuredOffer } from "@/components/store/product-card";
 import { percentOff } from "@/components/store/price";
 import { Rail, RailItem } from "@/components/store/rail";
 import { Section, SectionTitle } from "@/components/store/section";
-import { categories, getProduct, products, SALE_EVENT } from "@/lib/mock";
+import { SALE_EVENT } from "@/lib/mock";
+import { getStoreCatalog } from "@/lib/store-catalog";
 import { BANK_OFFERS, DEALS_OF_THE_DAY, FLASH_DEALS, inStock, isBrowsable, storefrontCoupons } from "@/lib/mock/store-extra";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,9 @@ const DISCOUNTS = [20, 30, 40];
 
 export default async function DealsPage(props: PageProps<"/deals">) {
   const sp = await props.searchParams;
+  const catalog = await getStoreCatalog();
+  const { categories, products } = catalog;
+  const getProduct = catalog.product;
   const cat = typeof sp.cat === "string" ? sp.cat : "";
   const minOff = Number(typeof sp.off === "string" ? sp.off : 0) || 0;
   const match = (id: string) => {
@@ -26,7 +30,7 @@ export default async function DealsPage(props: PageProps<"/deals">) {
     // suppressed listings cannot be bought, so their deal tiles are not shown
     if (!p || !isBrowsable(p)) return false;
     const o = featuredOffer(p);
-    return (!cat || p.categoryId === `cat-${cat}`) && percentOff(o.price, o.mrp) >= minOff;
+    return (!cat || p.categorySlug === cat) && percentOff(o.price, o.mrp) >= minOff;
   };
   const flash = FLASH_DEALS.filter((d) => match(d.productId)).sort((a, b) => +new Date(a.endsAt) - +new Date(b.endsAt));
   const dotd = DEALS_OF_THE_DAY.filter((d) => match(d.productId));
@@ -40,7 +44,12 @@ export default async function DealsPage(props: PageProps<"/deals">) {
     const s = q.toString();
     return `/deals${s ? `?${s}` : ""}#deals`;
   };
-  const railCats = ["electronics", "fashion", "home", "beauty"].filter((c) => !cat || c === cat);
+  // the four categories with the most products on sale (or just the chosen one)
+  const railCats = [...categories]
+    .sort((a, b) => catalog.inCategory(b.slug).length - catalog.inCategory(a.slug).length)
+    .slice(0, 4)
+    .map((c) => c.slug)
+    .filter((c) => !cat || c === cat);
 
   return (
     <div className="pb-16 lg:pb-24">
@@ -234,8 +243,8 @@ export default async function DealsPage(props: PageProps<"/deals">) {
           <div className="text-sm leading-relaxed text-ink-600">
             <p className="font-semibold text-ink-900">How AltasGoods prices deals</p>
             <p className="mt-1 max-w-3xl">
-              A deal price must be below the lowest price the item sold for in the last 30 days and can never exceed the M.R.P. During the event, sellers can lower a
-              deal price but not raise it. &ldquo;Claimed&rdquo; bars show the share of the deal quantity already sold, and timers end at the real end time.
+              A deal price must be below the lowest price the item sold for in the last 30 days and can never exceed the M.R.P. During the event, we can lower a
+              deal price but never raise it. &ldquo;Claimed&rdquo; bars show the share of the deal quantity already sold, and timers end at the real end time.
             </p>
           </div>
         </div>

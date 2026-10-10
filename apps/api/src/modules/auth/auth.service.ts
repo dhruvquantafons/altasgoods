@@ -4,7 +4,7 @@ import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import type { Redis } from "ioredis";
 import { env, isProduction } from "../../config/env.js";
 import type { Db } from "../../db/client.js";
-import { otpChallenges, sellerMembers, sellers, users } from "../../db/schema.js";
+import { otpChallenges, users } from "../../db/schema.js";
 import { ApiError, notFound, unprocessable } from "../../common/errors.js";
 import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB, EMAIL_PROVIDER, REDIS, SMS_PROVIDER } from "../../common/tokens.js";
@@ -95,24 +95,15 @@ export class AuthService {
     return this.tokens.revoke(refreshToken);
   }
 
-  /** Seller memberships and staff roles, as carried in the access token. */
+  /** Staff roles, as carried in the access token. */
   async grants(userId: string): Promise<Grants> {
-    const [rows, [user]] = await Promise.all([
-      this.db.select({ id: sellerMembers.sellerId }).from(sellerMembers).where(eq(sellerMembers.userId, userId)).orderBy(desc(sellerMembers.createdAt)),
-      this.db.select({ staff: users.staffRoles }).from(users).where(eq(users.id, userId)),
-    ]);
-    return { sellers: rows.map((r) => r.id), staff: user?.staff ?? [] };
+    const [user] = await this.db.select({ staff: users.staffRoles }).from(users).where(eq(users.id, userId));
+    return { staff: user?.staff ?? [] };
   }
 
   async me(userId: string) {
     const [user] = await this.db.select().from(users).where(eq(users.id, userId));
     if (!user) throw notFound("User");
-    const memberships = await this.db
-      .select({ id: sellers.id, displayName: sellers.displayName, role: sellerMembers.role, status: sellers.status, tier: sellers.tier, city: sellers.city })
-      .from(sellerMembers)
-      .innerJoin(sellers, eq(sellers.id, sellerMembers.sellerId))
-      .where(eq(sellerMembers.userId, userId))
-      .orderBy(desc(sellerMembers.createdAt));
     return {
       id: user.id,
       phone: user.phone,
@@ -120,7 +111,6 @@ export class AuthService {
       email: user.email,
       emailVerified: !!user.emailVerifiedAt,
       isPlus: user.isPlus,
-      sellers: memberships,
       staffRoles: user.staffRoles,
     };
   }

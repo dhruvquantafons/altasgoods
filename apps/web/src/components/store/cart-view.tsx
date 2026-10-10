@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { BadgeCheck, Bookmark, Lock, Minus, Plus, ShoppingBag, Store, Tag, Trash2, Truck, X } from "lucide-react";
+import { BadgeCheck, Bookmark, Lock, Minus, Plus, ShoppingBag, Tag, Trash2, Truck, X } from "lucide-react";
 import { cn, formatINR } from "@/lib/utils";
 import { MAX_QTY, useCart, usePincode } from "./cart-context";
 import { daysFromNow, formatPromise, FREE_DELIVERY_THRESHOLD, lookupPincode, promiseDays } from "./delivery";
@@ -30,7 +30,7 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
           <h1 className="text-2xl font-semibold tracking-tight text-ink-900 lg:text-[28px]">Your cart</h1>
           {!empty && (
             <p className="mt-1 text-sm text-ink-500">
-              {totals.itemCount} item{totals.itemCount === 1 ? "" : "s"} from {totals.groups.length} seller{totals.groups.length === 1 ? "" : "s"}, delivering to {info?.city}{" "}
+              {totals.itemCount} item{totals.itemCount === 1 ? "" : "s"}, delivering to {info?.city}{" "}
               {pincode}
             </p>
           )}
@@ -63,45 +63,37 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
           <div className="flex min-w-0 flex-col gap-5">
-            {totals.groups.map((g) => {
-              const days = promiseDays(g.deliveryDays, info);
-              const short = FREE_DELIVERY_THRESHOLD - g.subtotal;
+            {(() => {
+              const days = promiseDays(totals.deliveryDays, info);
+              const short = FREE_DELIVERY_THRESHOLD - totals.priceTotal;
               return (
-                <section key={g.sellerId} aria-label={`Items from ${g.sellerName}`} className="overflow-hidden rounded-2xl border border-line">
+                <section aria-label="Items in your cart" className="overflow-hidden rounded-2xl border border-line">
                   <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-ink-25 px-4 py-3 sm:px-5">
                     <p className="flex items-center gap-2 text-[13px] text-ink-700">
-                      <Store size={15} className="text-ink-500" aria-hidden="true" />
-                      Sold by{" "}
-                      <Link href={`/store/${g.sellerSlug}`} className="font-semibold text-ink-900 hover:underline">
-                        {g.sellerName}
-                      </Link>
-                      {g.fulfilledBy === "blubuy" && (
-                        <span className="hidden items-center gap-1 text-xs font-medium text-brand-700 sm:inline-flex">
-                          <BadgeCheck size={13} aria-hidden="true" /> Fulfilled by AltasGoods
-                        </span>
-                      )}
+                      <BadgeCheck size={15} className="text-brand-700" aria-hidden="true" />
+                      Shipped together by AltasGoods
                     </p>
                     <p className="flex items-center gap-1.5 text-[13px] text-ink-700">
                       <Truck size={15} className="text-ink-500" aria-hidden="true" />
                       <span>
                         Delivery by <span className="font-semibold text-ink-900">{formatPromise(daysFromNow(days))}</span>
-                        <span className="text-ink-500">{g.deliveryFee ? `, ${formatINR(g.deliveryFee)}` : ", free"}</span>
+                        <span className="text-ink-500">{totals.delivery ? `, ${formatINR(totals.delivery)}` : ", free"}</span>
                       </span>
                     </p>
                   </header>
                   {!plus && short > 0 && (
                     <p className="border-b border-line bg-brand-50/50 px-5 py-2 text-xs text-brand-800">
-                      Add {formatINR(short)} more from this seller for free delivery, or join AltasGoods Plus.
+                      Add {formatINR(short)} more for free delivery, or join AltasGoods Plus.
                     </p>
                   )}
                   <ul className="divide-y divide-line">
-                    {g.lines.map((l) => (
+                    {totals.lines.map((l) => (
                       <CartLineRow key={l.line.key} l={l} />
                     ))}
                   </ul>
                 </section>
               );
-            })}
+            })()}
           </div>
 
           <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
@@ -195,7 +187,7 @@ function CartLineRow({ l }: { l: PricedLine }) {
             </Link>
             {l.line.variant && <p className="mt-1 text-[13px] text-ink-500">{l.line.variant}</p>}
             <p className={cn("mt-1 text-xs font-medium", oos ? "text-danger-700" : l.offer.stock <= 8 ? "text-warning-700" : "text-success-700")}>
-              {oos ? "Out of stock with this seller" : l.offer.stock <= 8 ? `Only ${l.offer.stock} left` : "In stock"}
+              {oos ? "Out of stock" : l.offer.stock <= 8 ? `Only ${l.offer.stock} left` : "In stock"}
               <span className="font-normal text-ink-500">, {l.offer.returnWindowDays ? `${l.offer.returnWindowDays} day returns` : "not returnable"}</span>
             </p>
           </div>

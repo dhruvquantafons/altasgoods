@@ -1,14 +1,23 @@
 import "server-only";
-import { getProduct, searchProducts } from "@/lib/mock";
+import type { StoreCatalog } from "@/lib/store-catalog";
 import type { Product } from "@/lib/types";
 import { publicApi } from "./server";
 
+/** Every search term appears in the product's title, brand, category or subcategory. */
+function localMatch(products: Product[], q: string) {
+  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+  return products.filter((p) => {
+    const hay = `${p.title} ${p.brandName} ${p.subcategory} ${p.categoryName}`.toLowerCase();
+    return terms.every((t) => hay.includes(t));
+  });
+}
+
 /**
- * Storefront search ranked by the API (typo tolerant, category aware). The
- * cards still render from the shared catalog data, which carries the same ids;
- * if the API is unreachable the simple local match is used instead.
+ * Storefront search ranked by the API (typo tolerant, category aware), shown
+ * as the live catalog's products. If the search call fails, a simple local
+ * match over the same products is used instead.
  */
-export async function searchCatalog(q: string): Promise<{ products: Product[]; ranked: boolean }> {
+export async function searchCatalog(catalog: StoreCatalog, q: string): Promise<{ products: Product[]; ranked: boolean }> {
   try {
     const client = publicApi();
     const ids: string[] = [];
@@ -18,8 +27,8 @@ export async function searchCatalog(q: string): Promise<{ products: Product[]; r
       ids.push(...r.data.items.map((i) => i.id));
       if (ids.length >= r.data.total) break;
     }
-    return { products: ids.map((id) => getProduct(id)).filter((p): p is Product => !!p), ranked: true };
+    return { products: ids.map((id) => catalog.product(id)).filter((p): p is Product => !!p), ranked: true };
   } catch {
-    return { products: searchProducts(q), ranked: false };
+    return { products: localMatch(catalog.products, q), ranked: false };
   }
 }

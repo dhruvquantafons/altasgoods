@@ -8,7 +8,7 @@ import { AppModule } from "./app.module.js";
 
 /** Applies the global HTTP setup shared by the server, tests and the OpenAPI export. */
 export function configureApp(app: INestApplication) {
-  app.enableCors({ origin: [env().WEB_ORIGIN], credentials: true, allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key", "X-Seller-Id"] });
+  app.enableCors({ origin: [env().WEB_ORIGIN], credentials: true, allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"] });
   app.useGlobalPipes(new StandardSchemaValidationPipe({ errorHttpStatusCode: 422 }));
   app.useGlobalFilters(new ProblemDetailsFilter());
   app.enableShutdownHooks();

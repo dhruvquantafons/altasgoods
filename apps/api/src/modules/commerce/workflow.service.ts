@@ -5,9 +5,9 @@ import type { Clock } from "../../common/infra.module.js";
 import { notFound } from "../../common/errors.js";
 import { CLOCK, PAYMENT_PROVIDER } from "../../common/tokens.js";
 import type { Tx } from "../../db/client.js";
-import { categories, offers, orderEvents, orderItems, orders, payments, products, refunds, sellers, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
+import { offers, orderEvents, orderItems, orders, payments, refunds, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
 import type { PaymentProvider } from "./payments/provider.js";
-import { dispatchByDate, settleLine, type Tier } from "./pricing.js";
+import { dispatchByDate } from "./pricing.js";
 import { assertTransition, deriveOrderStatus } from "./state.js";
 
 export type OrderRow = typeof orders.$inferSelect;
@@ -43,7 +43,7 @@ export class OrderWorkflow {
     const targets = args.itemIds ? items.filter((i) => args.itemIds!.includes(i.id)) : items;
     if (args.itemIds && targets.length !== new Set(args.itemIds).size) throw notFound("Order item");
 
-    const confirming = args.to === "NEW" ? await this.settlementInputs(tx, targets) : new Map();
+    const handling = args.to === "NEW" ? await this.handlingDays(tx, targets) : new Map<string, number>();
     const updated = new Map<string, OrderItemRow>();
 
     for (const item of targets) {
@@ -54,13 +54,7 @@ export class OrderWorkflow {
         patch.cancelReason = args.note ?? null;
         await tx.update(offers).set({ stock: sql`${offers.stock} + ${item.qty}` }).where(eq(offers.id, item.offerId));
       }
-      if (args.to === "NEW") {
-        const s = confirming.get(item.id)!;
-        const settled = settleLine({ unitPricePaise: item.unitPricePaise, qty: item.qty, commissionBps: s.commissionBps, tier: s.tier, weightGrams: s.weightGrams });
-        patch.fees = settled.fees;
-        patch.netSettlementPaise = settled.netPaise;
-        patch.dispatchBy = dispatchByDate(now, s.handlingDays);
-      }
+      if (args.to === "NEW") patch.dispatchBy = dispatchByDate(now, handling.get(item.id) ?? 1);
       if (args.to === "READY_TO_SHIP" && !item.awb) patch.awb = `BBL${randomInt(1_000_000_000, 9_999_999_999)}`;
       if (args.to === "SHIPPED" && !item.shippedAt) patch.shippedAt = now;
       // a line back from a withdrawn return keeps its original delivery date
@@ -86,17 +80,15 @@ export class OrderWorkflow {
     return next;
   }
 
-  private async settlementInputs(tx: Tx, items: OrderItemRow[]) {
-    if (!items.length) return new Map<string, { commissionBps: number; tier: Tier; weightGrams: number; handlingDays: number }>();
+  /** How many days the store takes to pack each line, from its offer. */
+  private async handlingDays(tx: Tx, items: OrderItemRow[]) {
+    if (!items.length) return new Map<string, number>();
     const rows = await tx
-      .select({ itemId: orderItems.id, commissionBps: categories.commissionBps, tier: sellers.tier, weightGrams: offers.weightGrams, handlingDays: offers.handlingDays })
+      .select({ itemId: orderItems.id, handlingDays: offers.handlingDays })
       .from(orderItems)
       .innerJoin(offers, eq(offers.id, orderItems.offerId))
-      .innerJoin(products, eq(products.id, orderItems.productId))
-      .innerJoin(categories, eq(categories.id, products.categoryId))
-      .innerJoin(sellers, eq(sellers.id, orderItems.sellerId))
       .where(inArray(orderItems.id, items.map((i) => i.id)));
-    return new Map(rows.map((r) => [r.itemId, r]));
+    return new Map(rows.map((r) => [r.itemId, r.handlingDays]));
   }
 
   /**

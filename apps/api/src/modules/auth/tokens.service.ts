@@ -15,14 +15,12 @@ const REFRESH_TTL_MS = 30 * 24 * 3600_000;
 export interface AccessClaims {
   sub: string;
   sid: string;
-  sellers: string[];
-  /** BluBuy Control roles; absent for shoppers and sellers */
+  /** AltasGoods Control roles; absent for shoppers */
   staff: string[];
 }
 
 /** What a session may act as, re-read from the database on every refresh. */
 export interface Grants {
-  sellers: string[];
   staff: string[];
 }
 
@@ -46,7 +44,7 @@ export class TokensService {
   }
 
   sign(claims: AccessClaims) {
-    return new SignJWT({ sid: claims.sid, sellers: claims.sellers, ...(claims.staff.length ? { staff: claims.staff } : {}) })
+    return new SignJWT({ sid: claims.sid, ...(claims.staff.length ? { staff: claims.staff } : {}) })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject(claims.sub)
       .setIssuer("blubuy-api")
@@ -58,7 +56,7 @@ export class TokensService {
   async verify(token: string): Promise<AccessClaims> {
     try {
       const { payload } = await jwtVerify(token, secret(), { issuer: "blubuy-api" });
-      return { sub: String(payload.sub), sid: String(payload.sid), sellers: (payload.sellers as string[]) ?? [], staff: (payload.staff as string[]) ?? [] };
+      return { sub: String(payload.sub), sid: String(payload.sid), staff: (payload.staff as string[]) ?? [] };
     } catch {
       throw new ApiError(401, "TOKEN_INVALID", "Your session has expired. Please sign in again.");
     }

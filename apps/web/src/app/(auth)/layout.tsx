@@ -30,7 +30,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {[
               { icon: Truck, t: "Real delivery dates for your pincode" },
               { icon: Undo2, t: "Free doorstep returns, refunds in 2 hours to AltasGoods Credits" },
-              { icon: BadgeCheck, t: "Verified sellers with their details on every product" },
+              { icon: BadgeCheck, t: "Every product sold and shipped by AltasGoods" },
             ].map((x) => (
               <li key={x.t} className="flex items-center gap-3">
                 <x.icon size={18} className="text-accent-300" aria-hidden="true" /> {x.t}

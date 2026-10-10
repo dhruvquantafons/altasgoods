@@ -14,7 +14,7 @@ import { Avatar, Progress, Timeline } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { currentTime, isActiveTicket, loadAgents, loadTicket, slaOf, tickets, UI_TICKET_STATUS } from "@/lib/api/support";
 import type { TicketDetail } from "@/lib/api/types";
-import { customers, getOrder, sellerName } from "@/lib/mock";
+import { customers, getOrder } from "@/lib/mock";
 import { macros, PRIORITY_POLICY, shipmentForOrder } from "@/lib/mock/ops-extra";
 import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS, SHIPMENT_STATUS, TICKET_PRIORITY, TICKET_STATUS, type TicketPriority } from "@/lib/status";
 import { addDays, cn, formatDate, formatINR, formatNumber, timeAgo } from "@/lib/utils";
@@ -66,12 +66,12 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
         order.status === "delivered" || order.status === "return_requested"
           ? { label: "Delivered: claim covers damaged, defective, wrong or different items", ok: true }
           : { label: "Not delivered by the promised date plus 3 days", ok: now > addDays(order.promisedBy, 3).getTime() },
-        { label: "Customer contacted the seller or opened a return at least 48 hours ago", ok: contactedLongAgo },
+        { label: "Customer opened a return or contacted us at least 48 hours ago", ok: contactedLongAgo },
       ]
     : snapshot
       ? [
           { label: "Order placed on AltasGoods within the last 90 days", ok: true },
-          { label: "Customer contacted the seller or opened a return at least 48 hours ago", ok: contactedLongAgo },
+          { label: "Customer opened a return or contacted us at least 48 hours ago", ok: contactedLongAgo },
         ]
       : [];
 
@@ -180,7 +180,6 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                 level={detail.you.level}
                 limit={detail.you.refundLimitPaise / 100}
                 guarantee={guarantee}
-                customerFirstName={firstName}
                 history={detail.actions}
                 closed={detail.status === "CLOSED"}
                 order={t.orderId && snapshot ? { id: t.orderId, ...snapshot } : undefined}
@@ -287,7 +286,7 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-[13px] leading-snug font-medium text-ink-900">{it.title}</p>
                         <p className="mt-0.5 text-xs text-ink-500">
-                          {it.quantity} x {formatINR(it.price)}, sold by {sellerName(it.sellerId)}
+                          {it.quantity} x {formatINR(it.price)}
                         </p>
                       </div>
                     </li>
@@ -334,7 +333,6 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                     Order <Mono className="text-[13px] font-normal text-ink-600">{t.orderId}</Mono>
                   </span>
                 }
-                description={`Sold by ${snapshot.seller}`}
               />
               <div className="px-5 pt-3 pb-5">
                 <ul className="flex flex-col gap-2">

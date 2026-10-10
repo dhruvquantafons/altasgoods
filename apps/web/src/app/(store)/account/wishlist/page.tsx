@@ -1,11 +1,13 @@
 import { shortDate } from "@/components/account/lib";
 import { WishlistView, type WishList } from "@/components/account/wishlist-view";
 import { PageHeader } from "@/components/ui/page-header";
-import { productBySlug, wishlists } from "@/lib/mock/account-extra";
+import { wishlists } from "@/lib/mock/account-extra";
+import { getStoreCatalog } from "@/lib/store-catalog";
 
 export const metadata = { title: "Wishlist" };
 
-export default function WishlistPage() {
+export default async function WishlistPage() {
+  const catalog = await getStoreCatalog();
   const lists: WishList[] = wishlists.map((l) => ({
     id: l.id,
     name: l.name,
@@ -13,7 +15,7 @@ export default function WishlistPage() {
     visibility: l.visibility,
     sharedWith: l.sharedWith,
     items: l.items.flatMap((i) => {
-      const p = productBySlug(i.slug);
+      const p = catalog.product(i.slug);
       if (!p) return [];
       return [
         {

@@ -343,12 +343,12 @@ export type ReturnReasonCode =
   | "BETTER_PRICE"
   | "ORDERED_BY_MISTAKE";
 
-export const RETURN_REASONS: { code: ReturnReasonCode; label: string; fault: "seller" | "logistics" | "customer"; photos: boolean; fashionOnly?: boolean }[] = [
+export const RETURN_REASONS: { code: ReturnReasonCode; label: string; fault: "store" | "logistics" | "customer"; photos: boolean; fashionOnly?: boolean }[] = [
   { code: "DAMAGED_IN_TRANSIT", label: "Item arrived damaged", fault: "logistics", photos: true },
-  { code: "DEFECTIVE", label: "Item is defective or not working", fault: "seller", photos: true },
-  { code: "WRONG_ITEM", label: "Received a different item", fault: "seller", photos: true },
-  { code: "MISSING_PARTS", label: "Parts or accessories are missing", fault: "seller", photos: true },
-  { code: "NOT_AS_DESCRIBED", label: "Item is not as described", fault: "seller", photos: true },
+  { code: "DEFECTIVE", label: "Item is defective or not working", fault: "store", photos: true },
+  { code: "WRONG_ITEM", label: "Received a different item", fault: "store", photos: true },
+  { code: "MISSING_PARTS", label: "Parts or accessories are missing", fault: "store", photos: true },
+  { code: "NOT_AS_DESCRIBED", label: "Item is not as described", fault: "store", photos: true },
   { code: "SIZE_FIT_ISSUE", label: "Size or fit is not right", fault: "customer", photos: false, fashionOnly: true },
   { code: "QUALITY_NOT_EXPECTED", label: "Quality is not as expected", fault: "customer", photos: false },
   { code: "NO_LONGER_NEEDED", label: "No longer needed", fault: "customer", photos: false },
@@ -733,7 +733,7 @@ export const myQuestions = [
     question: "Does the kit lens have image stabilisation?",
     askedAt: ist("2026-09-26", "19:20"),
     answers: [
-      { by: "Apex Retail", role: "Seller", body: "Yes, the 18-55 mm kit lens has optical stabilisation rated at 4.5 stops.", at: ist("2026-09-27", "10:05") },
+      { by: "AltasGoods", role: "AltasGoods", body: "Yes, the 18-55 mm kit lens has optical stabilisation rated at 4.5 stops.", at: ist("2026-09-27", "10:05") },
       { by: "Karthik V.", role: "Verified buyer", body: "Yes, handheld video is quite smooth with it.", at: ist("2026-09-28", "18:40") },
     ],
   },

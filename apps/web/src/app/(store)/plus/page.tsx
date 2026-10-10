@@ -10,7 +10,7 @@ import { cn, formatINR, formatNumber } from "@/lib/utils";
 export const metadata = { title: "AltasGoods Plus" };
 
 const BENEFITS = [
-  { icon: Truck, title: "Free delivery, every order", body: "No minimum order value, on every seller." },
+  { icon: Truck, title: "Free delivery, every order", body: "No minimum order value." },
   { icon: Zap, title: "One-day delivery", body: "On AltasGoods Fulfilled items in top cities." },
   { icon: Timer, title: "24 hour early access", body: "Shop AltasGoods Big Days and Plus Day a day before everyone." },
   { icon: Coins, title: "2x AltasCoins", body: "2 coins per ₹100 instead of 1, up to 100 coins per order." },
@@ -19,7 +19,7 @@ const BENEFITS = [
 ];
 
 const COMPARE: [string, string | boolean, string | boolean][] = [
-  ["Delivery fee", "Free on every order", "Free above ₹499 per seller, else ₹40"],
+  ["Delivery fee", "Free on every order", "Free above ₹499, else ₹40"],
   ["One-day delivery in top cities", true, false],
   ["Early access to sale events", "24 hours early", false],
   ["AltasCoins per ₹100", "2", "1"],

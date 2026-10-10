@@ -3,7 +3,6 @@ import Form from "next/form";
 import type { ReactNode } from "react";
 import { Check, ChevronLeft, ChevronRight, SearchX, Star, X } from "lucide-react";
 import type { Product } from "@/lib/types";
-import { categories, getBrand, getCategory } from "@/lib/mock";
 import { DELIVERY_OPTIONS, DISCOUNT_BANDS, inStock, isBrowsable, PRICE_BANDS, RATING_OPTIONS, SORT_OPTIONS, SPONSORED_PRODUCT_IDS } from "@/lib/mock/store-extra";
 import { cn, formatINR, formatNumber } from "@/lib/utils";
 import { Breadcrumbs, type Crumb } from "@/components/ui/page-header";
@@ -99,9 +98,9 @@ export function applyFilters(list: Product[], f: Filters, skip?: Facet) {
   return list.filter((p) => {
     if (!isBrowsable(p)) return false;
     const d = derived(p);
-    if (skip !== "cat" && f.cat && getCategory(p.categoryId)?.slug !== f.cat) return false;
+    if (skip !== "cat" && f.cat && p.categorySlug !== f.cat) return false;
     if (skip !== "sub" && f.sub && p.subcategory !== f.sub) return false;
-    if (skip !== "brands" && f.brands.length && !f.brands.includes(getBrand(p.brandId)?.slug ?? "")) return false;
+    if (skip !== "brands" && f.brands.length && !f.brands.includes(p.brandSlug)) return false;
     if (skip !== "price" && band && (d.price < band.min || d.price > band.max)) return false;
     if (skip !== "price" && min !== undefined && d.price < min) return false;
     if (skip !== "price" && max !== undefined && d.price > max) return false;
@@ -121,7 +120,7 @@ function relevance(p: Product, q: string) {
   let s = 0;
   if (term) {
     if (t.startsWith(term)) s += 6;
-    if ((getBrand(p.brandId)?.name ?? "").toLowerCase() === term) s += 4;
+    if (p.brandName.toLowerCase() === term) s += 4;
     if (p.subcategory.toLowerCase().includes(term)) s += 3;
     if (t.includes(term)) s += 2;
   }
@@ -233,16 +232,17 @@ function FilterPanel({ base, f, basePath, mode }: { base: Product[]; f: Filters;
 
   const catOptions =
     mode === "search"
-      ? categories.map((c) => ({ key: c.slug, label: c.name, n: count("cat", (p) => p.categoryId === c.id) })).filter((c) => c.n > 0 || f.cat === c.key)
+      ? [...new Map(base.map((p) => [p.categorySlug, p.categoryName])).entries()]
+          .map(([slug, name]) => ({ key: slug, label: name, n: count("cat", (p) => p.categorySlug === slug) }))
+          .filter((c) => c.n > 0 || f.cat === c.key)
       : [];
   const subOptions =
     mode === "category"
       ? [...new Set(base.map((p) => p.subcategory))].map((s) => ({ key: s, label: s, n: count("sub", (p) => p.subcategory === s) }))
       : [];
-  const brandIds = [...new Set(base.filter(isBrowsable).map((p) => p.brandId))];
-  const brandOptions = brandIds
-    .map((id) => getBrand(id)!)
-    .map((b) => ({ key: b.slug, label: b.name, n: count("brands", (p) => p.brandId === b.id) }))
+  const brandList = [...new Map(base.filter(isBrowsable).map((p) => [p.brandSlug, p.brandName])).entries()];
+  const brandOptions = brandList
+    .map(([slug, name]) => ({ key: slug, label: name, n: count("brands", (p) => p.brandSlug === slug) }))
     .sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
   const topBrands = brandOptions.slice(0, 8);
   const moreBrands = brandOptions.slice(8);
@@ -426,9 +426,9 @@ export function ListingView({
   const href = (patch: Partial<Filters>) => `${basePath}${toQuery(f, patch)}`;
 
   const chips: { label: string; href: string }[] = [];
-  if (mode === "search" && f.cat) chips.push({ label: getCategory(f.cat)?.name ?? f.cat, href: href({ cat: "", sub: "" }) });
+  if (mode === "search" && f.cat) chips.push({ label: base.find((p) => p.categorySlug === f.cat)?.categoryName ?? f.cat, href: href({ cat: "", sub: "" }) });
   if (f.sub) chips.push({ label: f.sub, href: href({ sub: "" }) });
-  f.brands.forEach((b) => chips.push({ label: getBrand(b)?.name ?? b, href: href({ brands: f.brands.filter((x) => x !== b) }) }));
+  f.brands.forEach((b) => chips.push({ label: base.find((p) => p.brandSlug === b)?.brandName ?? b, href: href({ brands: f.brands.filter((x) => x !== b) }) }));
   if (f.price) chips.push({ label: PRICE_BANDS.find((b) => b.key === f.price)?.label ?? f.price, href: href({ price: "" }) });
   if (f.min || f.max)
     chips.push({ label: `${f.min ? formatINR(Number(f.min)) : "₹0"} to ${f.max ? formatINR(Number(f.max)) : "any"}`, href: href({ min: "", max: "" }) });

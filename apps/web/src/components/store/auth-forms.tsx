@@ -213,7 +213,6 @@ function OtpStep({
 
 const COPY = {
   shopper: { title: "Sign in or create an account", body: "Use your mobile number. We will send you a one-time code, no password needed." },
-  seller: { title: "Sign in to Seller Hub", body: "Use the mobile number registered to your seller account." },
   staff: { title: "Sign in to AltasGoods Control", body: "For AltasGoods staff. Use the mobile number on your staff account." },
 };
 
@@ -243,8 +242,8 @@ export function LoginForm({ next, audience = "shopper", denied = false, signedIn
       <p className="mt-2 text-[15px] text-ink-600">{COPY[audience].body}</p>
       {(denied || signedInAs) && (
         <p role="alert" className="mt-4 rounded-xl border border-warning-100 bg-warning-50 px-3.5 py-3 text-[13px] text-warning-700">
-          {signedInAs ? `You are signed in as ${signedInAs}, which has no ${audience === "staff" ? "AltasGoods staff access" : "seller account"}.` : "The account you are signed in with does not have access here."} Sign in with a{" "}
-          {audience === "staff" ? "AltasGoods staff" : "seller"} account to continue.
+          {signedInAs ? `You are signed in as ${signedInAs}, which has no AltasGoods staff access.` : "The account you are signed in with does not have access here."} Sign in with an
+          AltasGoods staff account to continue.
         </p>
       )}
       <div className="mt-8">
@@ -267,9 +266,9 @@ export function LoginForm({ next, audience = "shopper", denied = false, signedIn
       </p>
       {audience !== "staff" && (
         <div className="mt-8 border-t border-line pt-6 text-center text-sm text-ink-600">
-          {audience === "seller" ? "Not selling on AltasGoods yet?" : "New to AltasGoods?"}{" "}
-          <Link href={audience === "seller" ? "/seller/register" : "/signup"} className="font-semibold text-brand-700 hover:underline">
-            {audience === "seller" ? "Start selling" : "Create an account"}
+          New to AltasGoods?{" "}
+          <Link href="/signup" className="font-semibold text-brand-700 hover:underline">
+            Create an account
           </Link>
         </div>
       )}

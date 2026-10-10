@@ -1,24 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, eq, sql, type SQL } from "drizzle-orm";
 import type { Db } from "../../db/client.js";
-import { categories, offers, products, sellers } from "../../db/schema.js";
+import { brands, categories, offers, products } from "../../db/schema.js";
 import { notFound } from "../../common/errors.js";
+import { HOUSE_SELLER_ID } from "../../common/house.js";
 import { DB } from "../../common/tokens.js";
 import type { ProductQuery, ProductSummary } from "./catalog.schemas.js";
 
 export const discountPercent = (price: number, mrp: number) => (mrp > price ? Math.floor(((mrp - price) / mrp) * 100) : 0);
 
-/**
- * Featured offer (buy box), spec 10.2 simplified: an active, in stock offer
- * wins over out of stock, then the lowest price, then the better rated seller.
- */
-const BEST_OFFER = sql`
-  select distinct on (o.product_id)
-    o.product_id, o.id as offer_id, o.seller_id, o.price_paise, o.mrp_paise, o.stock, o.delivery_days
+/** The store's offer for each product; a paused offer takes the product off sale. */
+const HOUSE_OFFER = sql`
+  select o.product_id, o.id as offer_id, o.price_paise, o.mrp_paise, o.stock, o.delivery_days, o.cod_available, o.return_window_days
   from offers o
-  join sellers s on s.id = o.seller_id
-  where o.status = 'ACTIVE' and s.status = 'ACTIVE'
-  order by o.product_id, (o.stock > 0) desc, o.price_paise asc, s.rating desc`;
+  where o.seller_id = ${HOUSE_SELLER_ID} and o.status = 'ACTIVE'`;
 
 @Injectable()
 export class CatalogService {
@@ -38,20 +33,24 @@ export class CatalogService {
         name: c.name,
         icon: c.icon,
         image: c.image,
-        commissionPercent: c.commissionBps / 100,
         productCount: countBy.get(c.id) ?? 0,
         children: rows.filter((x) => x.parentId === c.id).map((x) => ({ id: x.id, slug: x.slug, name: x.name })),
       }));
   }
 
   async listProducts(q: ProductQuery) {
+    const list = await this.search(q);
+    return { ...list, items: list.items.map(({ stock: _s, codAvailable: _c, returnWindowDays: _r, ...item }) => item) };
+  }
+
+  /** The product query behind listProducts and productDetail; items also carry the offer terms. */
+  private async search(q: ProductQuery) {
     const where: SQL[] = [sql`p.listing_status = 'LIVE'`];
     const search = q.q?.trim();
     if (search) where.push(sql`(p.search_vector @@ websearch_to_tsquery('simple', ${search}) or p.search_text ilike ${"%" + search + "%"} or word_similarity(${search}, p.search_text) > 0.45)`);
     if (q.category) where.push(sql`c.slug = ${q.category}`);
     if (q.subcategory) where.push(sql`p.subcategory = ${q.subcategory}`);
     if (q.ids.length) where.push(sql`(p.id = any(string_to_array(${q.ids.join(",")}, ',')) or p.slug = any(string_to_array(${q.ids.join(",")}, ',')))`);
-    if (q.seller) where.push(sql`exists (select 1 from offers so join sellers ss on ss.id = so.seller_id where so.product_id = p.id and ss.slug = ${q.seller} and so.status = 'ACTIVE')`);
     if (q.minRating) where.push(sql`p.rating >= ${q.minRating}`);
     if (q.assured) where.push(sql`p.assured`);
     if (q.tag) where.push(sql`${q.tag} = any(p.tags)`);
@@ -67,7 +66,7 @@ export class CatalogService {
       from products p
       join brands b on b.id = p.brand_id
       join categories c on c.id = p.category_id
-      join (${BEST_OFFER}) bo on bo.product_id = p.id`;
+      join (${HOUSE_OFFER}) bo on bo.product_id = p.id`;
     const whereAll = sql.join([...where, ...priceAndBrand], sql` and `);
 
     const orderBy = {
@@ -88,8 +87,7 @@ export class CatalogService {
         select p.id, p.slug, p.title, p.subcategory, p.images, p.rating, p.rating_count, p.assured, p.tags,
                b.id as brand_id, b.slug as brand_slug, b.name as brand_name,
                c.id as category_id, c.slug as category_slug, c.name as category_name,
-               bo.offer_id, bo.seller_id, bo.price_paise, bo.mrp_paise, bo.stock, bo.delivery_days,
-               (select count(*)::int from offers x where x.product_id = p.id and x.status = 'ACTIVE') as seller_count
+               bo.offer_id, bo.price_paise, bo.mrp_paise, bo.stock, bo.delivery_days, bo.cod_available, bo.return_window_days
         ${base} where ${whereAll}
         order by ${orderBy}, p.id
         limit ${q.pageSize} offset ${offset}`),
@@ -118,17 +116,66 @@ export class CatalogService {
     };
   }
 
+  /**
+   * Everything the storefront renders, in one response: every product on sale
+   * with its full details and the store's offer, plus categories and brands.
+   * The web app caches it and refreshes it when the catalog changes.
+   */
+  async storefront() {
+    const [rows, cats, brandRows] = await Promise.all([
+      this.db
+        .select({ product: products, offer: offers })
+        .from(products)
+        .innerJoin(offers, and(eq(offers.productId, products.id), eq(offers.sellerId, HOUSE_SELLER_ID), eq(offers.status, "ACTIVE")))
+        .where(eq(products.listingStatus, "LIVE"))
+        .orderBy(asc(products.createdAt), asc(products.id)),
+      this.db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.name)),
+      this.db.select().from(brands).orderBy(asc(brands.name)),
+    ]);
+    return {
+      categories: cats
+        .filter((c) => !c.parentId)
+        .map((c) => ({ id: c.id, slug: c.slug, name: c.name, icon: c.icon, image: c.image, children: cats.filter((x) => x.parentId === c.id).map((x) => ({ id: x.id, slug: x.slug, name: x.name })) })),
+      brands: brandRows.map((b) => ({ id: b.id, slug: b.slug, name: b.name })),
+      products: rows.map(({ product: p, offer: o }) => ({
+        id: p.id,
+        slug: p.slug,
+        sku: p.sku,
+        title: p.title,
+        brandId: p.brandId,
+        categoryId: p.categoryId,
+        subcategory: p.subcategory,
+        images: p.images,
+        description: p.description,
+        highlights: p.highlights,
+        specs: p.specs,
+        variants: p.variants.map((v) => ({ ...v, values: v.values.map((x) => ({ ...x, available: x.available ?? true })) })),
+        rating: p.rating,
+        ratingCount: p.ratingCount,
+        reviewCount: p.reviewCount,
+        assured: p.assured,
+        tags: p.tags,
+        soldLast30d: p.soldLast30d,
+        createdAt: p.createdAt.toISOString(),
+        offer: {
+          id: o.id,
+          pricePaise: o.pricePaise,
+          mrpPaise: o.mrpPaise,
+          // exact stock stays private; a cart line is capped at 10 anyway
+          stock: Math.min(o.stock, 10),
+          deliveryDays: o.deliveryDays,
+          codAvailable: o.codAvailable,
+          returnWindowDays: o.returnWindowDays,
+        },
+      })),
+    };
+  }
+
   async productDetail(idOrSlug: string) {
-    const list = await this.listProducts({ ids: [idOrSlug], sort: "relevance", page: 1, pageSize: 1, brand: [], assured: false, inStock: false });
+    const list = await this.search({ ids: [idOrSlug], sort: "relevance", page: 1, pageSize: 1, brand: [], assured: false, inStock: false });
     const summary = list.items[0];
     if (!summary) throw notFound("Product");
     const [p] = await this.db.select().from(products).where(eq(products.id, summary.id));
-    const offerRows = await this.db
-      .select({ offer: offers, seller: sellers })
-      .from(offers)
-      .innerJoin(sellers, eq(sellers.id, offers.sellerId))
-      .where(and(eq(offers.productId, summary.id), eq(offers.status, "ACTIVE"), eq(sellers.status, "ACTIVE")))
-      .orderBy(asc(offers.pricePaise));
     return {
       ...summary,
       images: p!.images,
@@ -138,43 +185,15 @@ export class CatalogService {
       variants: p!.variants,
       reviewCount: p!.reviewCount,
       soldLast30d: p!.soldLast30d,
-      offers: offerRows.map(({ offer, seller }) => ({
-        id: offer.id,
-        seller: { id: seller.id, slug: seller.slug, displayName: seller.displayName, city: seller.city, rating: seller.rating, ratingCount: seller.ratingCount, tier: seller.tier },
-        pricePaise: offer.pricePaise,
-        mrpPaise: offer.mrpPaise,
-        discountPercent: discountPercent(offer.pricePaise, offer.mrpPaise),
-        inStock: offer.stock > 0,
-        lowStock: offer.stock > 0 && offer.stock <= 10 ? offer.stock : null,
-        fulfilledBy: offer.fulfilledBy,
-        deliveryDays: offer.deliveryDays,
-        codAvailable: offer.codAvailable,
-        returnWindowDays: offer.returnWindowDays,
-        isFeatured: offer.id === summary.featuredOfferId,
-      })),
-    };
-  }
-
-  async sellerProfile(slug: string) {
-    const [s] = await this.db.select().from(sellers).where(and(eq(sellers.slug, slug), eq(sellers.status, "ACTIVE")));
-    if (!s) throw notFound("Seller");
-    const live = await this.db.execute<{ n: number }>(sql`select count(distinct product_id)::int as n from offers where seller_id = ${s.id} and status = 'ACTIVE'`);
-    return {
-      id: s.id,
-      slug: s.slug,
-      displayName: s.displayName,
-      city: s.city,
-      state: s.state,
-      rating: s.rating,
-      ratingCount: s.ratingCount,
-      tier: s.tier,
-      joinedAt: s.joinedAt.toISOString(),
-      liveProducts: Number(live.rows[0]?.n ?? 0),
+      lowStock: summary.stock > 0 && summary.stock <= 10 ? summary.stock : null,
+      codAvailable: summary.codAvailable,
+      returnWindowDays: summary.returnWindowDays,
     };
   }
 }
 
-function toSummary(r: Record<string, unknown>): ProductSummary {
+/** A list row, plus the offer terms productDetail needs (extra keys are dropped from list responses by the schema). */
+function toSummary(r: Record<string, unknown>): ProductSummary & { stock: number; codAvailable: boolean; returnWindowDays: number } {
   const price = Number(r.price_paise);
   const mrp = Number(r.mrp_paise);
   const images = r.images as string[];
@@ -195,8 +214,9 @@ function toSummary(r: Record<string, unknown>): ProductSummary {
     tags: (r.tags as string[]) ?? [],
     inStock: Number(r.stock) > 0,
     deliveryDays: Number(r.delivery_days),
-    sellerCount: Number(r.seller_count),
-    featuredOfferId: (r.offer_id as string) ?? null,
-    featuredSellerId: (r.seller_id as string) ?? null,
+    offerId: String(r.offer_id),
+    stock: Number(r.stock),
+    codAvailable: Boolean(r.cod_available),
+    returnWindowDays: Number(r.return_window_days),
   };
 }

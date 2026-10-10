@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { BadgeCheck, Flag, ShieldAlert } from "lucide-react";
 import { ActionButton } from "@/components/admin/action-button";
 import { REVIEW_MOD_STATUS } from "@/components/admin/admin-status";
@@ -150,11 +149,6 @@ export default async function ReviewsPage(props: PageProps<"/admin/reviews">) {
                 </li>
               ))}
             </ul>
-            <div className="border-t border-line px-5 py-3">
-              <Link href="/admin/risk" className="text-[13px] font-medium text-brand-700 hover:underline">
-                Open in Risk and fraud
-              </Link>
-            </div>
           </Card>
 
           <Card>
@@ -164,8 +158,8 @@ export default async function ReviewsPage(props: PageProps<"/admin/reviews">) {
                 "One review per customer per parent product",
                 "Verified purchase when the price paid was at least 50% of the item price",
                 "No PII, external links or profanity",
-                "No reviews by sellers, their staff or relatives",
-                "Delivery and seller feedback is redirected to seller ratings",
+                "No reviews by AltasGoods staff or their relatives",
+                "Delivery feedback is kept separate from product reviews",
                 "Edits to published reviews are moderated again",
               ].map((rule) => (
                 <li key={rule} className="flex gap-2">

@@ -13,20 +13,20 @@ export const ITEM_TRANSITIONS: Partial<Record<OrderItemStatus, Rule[]>> = {
     { to: "CANCELLED", actors: ["PAYMENT", "SYSTEM", "CUSTOMER"] },
   ],
   NEW: [
-    { to: "ACCEPTED", actors: ["SELLER", "SYSTEM"] },
-    { to: "CANCELLED", actors: ["SELLER", "CUSTOMER", "STAFF"] },
+    { to: "ACCEPTED", actors: ["STAFF", "SYSTEM"] },
+    { to: "CANCELLED", actors: ["STAFF", "CUSTOMER"] },
   ],
   ACCEPTED: [
-    { to: "PACKED", actors: ["SELLER"] },
-    { to: "CANCELLED", actors: ["SELLER", "CUSTOMER", "STAFF"] },
+    { to: "PACKED", actors: ["STAFF"] },
+    { to: "CANCELLED", actors: ["STAFF", "CUSTOMER"] },
   ],
   PACKED: [
-    { to: "READY_TO_SHIP", actors: ["SELLER"] },
-    { to: "CANCELLED", actors: ["SELLER", "CUSTOMER", "STAFF"] },
+    { to: "READY_TO_SHIP", actors: ["STAFF"] },
+    { to: "CANCELLED", actors: ["STAFF", "CUSTOMER"] },
   ],
   READY_TO_SHIP: [
     { to: "SHIPPED", actors: ["LOGISTICS"] },
-    { to: "CANCELLED", actors: ["SELLER", "CUSTOMER", "STAFF"] },
+    { to: "CANCELLED", actors: ["STAFF", "CUSTOMER"] },
   ],
   SHIPPED: [
     { to: "OUT_FOR_DELIVERY", actors: ["LOGISTICS"] },
@@ -38,7 +38,7 @@ export const ITEM_TRANSITIONS: Partial<Record<OrderItemStatus, Rule[]>> = {
     { to: "SHIPPED", actors: ["LOGISTICS"] },
     { to: "RTO_IN_TRANSIT", actors: ["LOGISTICS"] },
   ],
-  RTO_IN_TRANSIT: [{ to: "RTO_RECEIVED", actors: ["LOGISTICS", "SELLER"] }],
+  RTO_IN_TRANSIT: [{ to: "RTO_RECEIVED", actors: ["LOGISTICS", "STAFF"] }],
   DELIVERED: [
     { to: "RETURN_REQUESTED", actors: ["CUSTOMER", "STAFF"] },
     { to: "CLOSED", actors: ["SYSTEM"] },
@@ -46,16 +46,16 @@ export const ITEM_TRANSITIONS: Partial<Record<OrderItemStatus, Rule[]>> = {
   // spec 11.3: a withdrawn or rejected return puts the line back to delivered
   RETURN_REQUESTED: [
     { to: "RETURN_IN_PROGRESS", actors: ["LOGISTICS", "SYSTEM"] },
-    { to: "DELIVERED", actors: ["CUSTOMER", "SELLER", "SYSTEM", "STAFF"] },
+    { to: "DELIVERED", actors: ["CUSTOMER", "STAFF", "SYSTEM"] },
   ],
   RETURN_IN_PROGRESS: [
-    { to: "RETURNED", actors: ["SELLER", "SYSTEM", "STAFF"] },
-    { to: "REPLACED", actors: ["SELLER", "SYSTEM", "STAFF"] },
+    { to: "RETURNED", actors: ["STAFF", "SYSTEM"] },
+    { to: "REPLACED", actors: ["STAFF", "SYSTEM"] },
     { to: "DELIVERED", actors: ["SYSTEM", "STAFF"] },
   ],
 };
 
-/** Customer facing cancellation is allowed until the parcel leaves with BluBuy Logistics. */
+/** Customer facing cancellation is allowed until the parcel leaves with the courier. */
 export const CUSTOMER_CANCELLABLE: OrderItemStatus[] = ["NEW", "ACCEPTED", "PACKED", "READY_TO_SHIP"];
 
 export function canTransition(from: OrderItemStatus, to: OrderItemStatus, actor: Actor) {

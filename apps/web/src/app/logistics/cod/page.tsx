@@ -215,7 +215,7 @@ export default function CodPage() {
             </Table>
           </TableContainer>
           <div className="border-t border-line p-4">
-            <Note tone="neutral">Remittance includes cash deposits and UPI QR settlements. Finance reconciles each remittance to delivered COD orders before sellers become eligible for payout.</Note>
+            <Note tone="neutral">Remittance includes cash deposits and UPI QR settlements. Finance reconciles each remittance to delivered COD orders.</Note>
           </div>
         </Card>
       </div>

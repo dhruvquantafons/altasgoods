@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Truck } from "lucide-react";
 import type { Product } from "@/lib/types";
-import { CURRENT_CUSTOMER, getBrand } from "@/lib/mock";
+import { CURRENT_CUSTOMER } from "@/lib/mock";
 import { dealFor } from "@/lib/mock/store-extra";
 import { cn } from "@/lib/utils";
 import { AddToCartButton, WishlistButton } from "./cart-buttons";
@@ -12,11 +12,8 @@ import { AssuredMark, PriceRow, RatingChip } from "./price";
 
 const defaultPin = lookupPincode(DEFAULT_PINCODE);
 
-export function featuredOffer(p: Product, sellerId?: string) {
-  if (sellerId) {
-    const own = p.offers.find((o) => o.sellerId === sellerId);
-    if (own) return own;
-  }
+/** The store's offer for a product. */
+export function featuredOffer(p: Product) {
   return p.offers.find((o) => o.sellerId === p.featuredSellerId && o.stock > 0) ?? p.offers.find((o) => o.stock > 0) ?? p.offers[0]!;
 }
 
@@ -28,8 +25,8 @@ export function cardBadge(p: Product, deal?: boolean): { label: string; classNam
 }
 
 /** "Free delivery by Sat, 3 Oct" for the default pincode. */
-export function deliveryLine(p: Product, sellerId?: string) {
-  const offer = featuredOffer(p, sellerId);
+export function deliveryLine(p: Product) {
+  const offer = featuredOffer(p);
   const days = promiseDays(offer.deliveryDays, defaultPin);
   const free = CURRENT_CUSTOMER.plusMember || offer.price >= FREE_DELIVERY_THRESHOLD;
   const when = promiseLabel(days);
@@ -52,24 +49,21 @@ export function ProductCard({
   showAdd = false,
   priority = false,
   className,
-  sellerId,
   sizes = "(min-width: 1280px) 20vw, (min-width: 768px) 30vw, 50vw",
 }: {
   product: Product;
-  /** show this seller's offer instead of the featured offer (seller storefront) */
-  sellerId?: string;
   sponsored?: boolean;
   showAdd?: boolean;
   priority?: boolean;
   className?: string;
   sizes?: string;
 }) {
-  const brand = getBrand(p.brandId)?.name;
-  const offer = featuredOffer(p, sellerId);
-  const available = sellerId ? offer.stock > 0 : p.offers.some((o) => o.stock > 0);
+  const brand = p.brandName;
+  const offer = featuredOffer(p);
+  const available = offer.stock > 0;
   const deal = dealFor(p.id);
   const badge = cardBadge(p, !!deal);
-  const delivery = deliveryLine(p, sellerId);
+  const delivery = deliveryLine(p);
   const lowStock = available && offer.stock > 0 && offer.stock <= 8;
   const vs = variantSummary(p);
 
@@ -126,7 +120,7 @@ export function ProductCard({
         {showAdd && (
           <div className="mt-auto pt-3">
             {available && !p.variants.length ? (
-              <AddToCartButton productId={p.id} sellerId={offer.sellerId} className="w-full" />
+              <AddToCartButton productId={p.id} className="w-full" />
             ) : (
               <Link
                 href={`/p/${p.slug}`}

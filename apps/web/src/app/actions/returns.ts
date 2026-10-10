@@ -5,7 +5,7 @@ import { api, authHeader } from "@/lib/api/server";
 import { apiUrl } from "@/lib/api/session";
 import type { ReturnRequest } from "@/lib/api/types";
 
-/** Returns for shoppers and sellers. The API checks ownership and the return policy on every call. */
+/** Returns for shoppers. The API checks ownership and the return policy on every call. */
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string; code?: string };
 
@@ -34,7 +34,7 @@ export async function createReturn(input: {
   qty: number;
   reasonCode: string;
   reasonLabel: string;
-  fault: "SELLER" | "LOGISTICS" | "CUSTOMER";
+  fault: "STORE" | "LOGISTICS" | "CUSTOMER";
   comments?: string;
   photoIds: string[];
   resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
@@ -70,20 +70,4 @@ export async function uploadReturnPhoto(form: FormData): Promise<Result<{ id: st
   } catch {
     return offline;
   }
-}
-
-/* ------------------------------- Sellers ------------------------------ */
-
-export async function decideReturn(id: string, approve: boolean, note?: string): Promise<Result<ReturnRequest>> {
-  return call(async () => (await api()).POST("/v1/seller/returns/{id}/decision", { ...path(id), body: { approve, note: note || undefined } }), "Could not save the decision", ["/seller/returns", `/seller/returns/${id}`]);
-}
-
-export async function gradeReturn(id: string, pass: boolean, note?: string): Promise<Result<ReturnRequest>> {
-  return call(async () => (await api()).POST("/v1/seller/returns/{id}/qc", { ...path(id), body: { pass, note: note || undefined } }), "Could not save the check", ["/seller/returns", `/seller/returns/${id}`]);
-}
-
-/** Development only: stands in for AltasGoods Logistics reverse pickup scans. */
-export async function simulateReturnScan(id: string, to: "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED"): Promise<Result<ReturnRequest>> {
-  if (process.env.NODE_ENV === "production") return { ok: false, error: "Not available in production" };
-  return call(async () => (await api()).POST("/v1/dev/returns/{id}/advance", { ...path(id), body: { to } }), "Could not record the scan", ["/seller/returns", `/seller/returns/${id}`]);
 }

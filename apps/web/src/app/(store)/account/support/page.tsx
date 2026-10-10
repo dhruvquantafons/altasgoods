@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, CreditCard, Crown, Mail, Package, PhoneCall, ShieldCheck, Store, Undo2, UserRound } from "lucide-react";
+import { ChevronRight, CreditCard, Crown, Mail, Package, PhoneCall, ShieldCheck, Undo2, UserRound } from "lucide-react";
 import { CUSTOMER_TICKET_STATUS, dateLabel, isActive, itemState, shortTitle } from "@/components/account/lib";
 import { CallBackButton, ChatButton, GuaranteeClaimButton, RaiseTicketButton, TicketReplyButton } from "@/components/account/support-forms";
 import { Notice, Panel } from "@/components/account/ui";
@@ -10,10 +10,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { loadAccountOrders } from "@/lib/api/account-orders";
 import { api, currentUser } from "@/lib/api/server";
 import { currentTime } from "@/lib/api/support";
-import { formatPhone } from "@/lib/onboarding";
 import type { OrderStatus } from "@/lib/status";
 import { UI_TICKET_STATUS } from "@/lib/support-status";
-import { timeAgo } from "@/lib/utils";
+import { formatPhone, timeAgo } from "@/lib/utils";
 
 export const metadata = { title: "Help and support" };
 
@@ -23,7 +22,6 @@ const TOPICS = [
   { key: "payment", label: "Payments", body: "Charges, EMI, UPI and Pay Later", icon: CreditCard },
   { key: "account", label: "Account and security", body: "Sign-in, OTP, profile and privacy", icon: UserRound },
   { key: "plus", label: "AltasGoods Plus", body: "Benefits, renewal and cancellation", icon: Crown },
-  { key: "seller", label: "Report a seller", body: "Wrong items, fake products, conduct", icon: Store },
 ];
 
 const TOPIC_CATEGORY: Record<string, string> = {
@@ -33,7 +31,6 @@ const TOPIC_CATEGORY: Record<string, string> = {
   payment: "Payment",
   account: "Account",
   plus: "Other",
-  seller: "Seller dispute",
 };
 
 function issuesFor(status: OrderStatus) {
@@ -199,11 +196,11 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
 
           <Panel title="AltasGoods Guarantee" action={<ShieldCheck size={18} className="text-brand-600" aria-hidden="true" />}>
             <p className="text-[13px] leading-relaxed text-ink-600">
-              If an item never arrives, is not what was described, or a refund is not issued, we step in, whichever seller you bought from.
+              If an item never arrives, is not what was described, or a refund is not issued, we step in.
             </p>
             <ul className="mt-3 flex flex-col gap-1.5 text-xs text-ink-600">
               <li>· File within 90 days of the latest promised date</li>
-              <li>· For damaged or different items, contact the seller first and wait 48 hours</li>
+              <li>· For damaged or different items, open a return first and wait 48 hours</li>
               <li>· We decide within 7 days and refund you directly</li>
             </ul>
             <GuaranteeClaimButton orders={orderOptions} defaultOrderId={focus?.id} autoOpen={topic === "guarantee"} className="mt-4 w-full" />

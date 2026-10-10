@@ -38,7 +38,6 @@ export function WishlistButton({ productId, title, className, size = "md" }: { p
 
 export function AddToCartButton({
   productId,
-  sellerId,
   variant,
   qty = 1,
   disabled,
@@ -49,7 +48,6 @@ export function AddToCartButton({
   icon = true,
 }: {
   productId: string;
-  sellerId: string;
   variant?: string;
   qty?: number;
   disabled?: boolean;
@@ -66,7 +64,7 @@ export function AddToCartButton({
       disabled={disabled}
       onClick={(e) => {
         e.preventDefault();
-        add({ productId, sellerId, variant, qty });
+        add({ productId, variant, qty });
       }}
       className={cn(buttonClasses({ variant: style, size }), "relative z-10 disabled:opacity-60", className)}
     >
@@ -78,7 +76,6 @@ export function AddToCartButton({
 
 export function BuyNowButton({
   productId,
-  sellerId,
   variant,
   qty = 1,
   disabled,
@@ -86,7 +83,6 @@ export function BuyNowButton({
   className,
 }: {
   productId: string;
-  sellerId: string;
   variant?: string;
   qty?: number;
   disabled?: boolean;
@@ -100,7 +96,7 @@ export function BuyNowButton({
       disabled={disabled}
       onClick={() => {
         // Buy now checks out just this item; the cart is left untouched.
-        const sp = new URLSearchParams({ buy: productId, seller: sellerId, qty: String(qty) });
+        const sp = new URLSearchParams({ buy: productId, qty: String(qty) });
         if (variant) sp.set("variant", variant);
         router.push(`/checkout?${sp}`);
       }}

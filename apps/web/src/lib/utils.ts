@@ -159,3 +159,9 @@ export function between(rand: () => number, min: number, max: number) {
 export function sum<T>(arr: readonly T[], fn: (x: T) => number) {
   return arr.reduce((acc, x) => acc + fn(x), 0);
 }
+
+/** "+91 98450 12345" from "+919845012345"; other numbers are left as they are. */
+export const formatPhone = (p: string) => p.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
+
+/** A product's storefront slug from its id: ids are always "p-" plus the slug. */
+export const productSlug = (productId: string) => productId.replace(/^p-/, "");

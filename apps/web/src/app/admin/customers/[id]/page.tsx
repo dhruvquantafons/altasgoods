@@ -136,9 +136,9 @@ export default async function CustomerDetail(props: PageProps<"/admin/customers/
                     {myOrders.slice(0, 8).map((o) => (
                       <TR key={o.id}>
                         <TD>
-                          <Link href={`/admin/orders/${o.id}`} className="font-mono text-[13px] font-medium text-brand-700 hover:underline">
+                          <span className="font-mono text-[13px] font-medium text-brand-700">
                             {o.id}
-                          </Link>
+                          </span>
                           <p className="text-xs text-ink-500">{formatDateTime(o.placedAt)}</p>
                         </TD>
                         <TD className="hidden max-w-[240px] md:table-cell">

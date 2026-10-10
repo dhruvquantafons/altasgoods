@@ -16,17 +16,17 @@ import type { z } from "zod";
 type Return = typeof returns.$inferSelect;
 const DAY = 86_400_000;
 const INSTANT_REFUND_LIMIT_PAISE = 500_000;
-/** Categories where refunds wait for the seller's check (spec 10.6). */
+/** Categories where refunds wait for the store's check (spec 10.6). */
 const HIGH_RISK = ["cat-mobiles"];
-const OPEN: ReturnStatus[] = ["REQUESTED", "PENDING_SELLER_REVIEW", "APPROVED", "PICKUP_SCHEDULED", "OUT_FOR_PICKUP", "PICKUP_FAILED", "PICKED_UP", "IN_TRANSIT", "RECEIVED", "QC_PASSED", "QC_FAILED"];
-const CUSTOMER_CANCELLABLE: ReturnStatus[] = ["REQUESTED", "PENDING_SELLER_REVIEW", "APPROVED", "PICKUP_SCHEDULED"];
+const OPEN: ReturnStatus[] = ["REQUESTED", "PENDING_REVIEW", "APPROVED", "PICKUP_SCHEDULED", "OUT_FOR_PICKUP", "PICKUP_FAILED", "PICKED_UP", "IN_TRANSIT", "RECEIVED", "QC_PASSED", "QC_FAILED"];
+const CUSTOMER_CANCELLABLE: ReturnStatus[] = ["REQUESTED", "PENDING_REVIEW", "APPROVED", "PICKUP_SCHEDULED"];
 /** A pickup date (YYYY-MM-DD, a calendar day in India) as people read it, such as 3 Oct. */
 const pickupDay = (date: string) => new Date(`${date}T12:00:00+05:30`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 
 /** Spec 11.3 moves the platform makes for a return. */
 const MOVES: Partial<Record<ReturnStatus, ReturnStatus[]>> = {
-  REQUESTED: ["APPROVED", "PENDING_SELLER_REVIEW", "REJECTED", "CANCELLED"],
-  PENDING_SELLER_REVIEW: ["APPROVED", "REJECTED", "CANCELLED"],
+  REQUESTED: ["APPROVED", "PENDING_REVIEW", "REJECTED", "CANCELLED"],
+  PENDING_REVIEW: ["APPROVED", "REJECTED", "CANCELLED"],
   APPROVED: ["PICKUP_SCHEDULED", "COMPLETED", "CANCELLED"],
   PICKUP_SCHEDULED: ["OUT_FOR_PICKUP", "CANCELLED"],
   OUT_FOR_PICKUP: ["PICKED_UP", "PICKUP_FAILED"],
@@ -38,7 +38,7 @@ const MOVES: Partial<Record<ReturnStatus, ReturnStatus[]>> = {
   QC_FAILED: ["COMPLETED", "REJECTED"],
 };
 
-/** Customer returns (spec 2.7, 9.1.5, 11.3): request, pickup, seller QC and the resolution. */
+/** Customer returns (spec 2.7, 9.1.5, 11.3): request, pickup, the store's check and the resolution. */
 @Injectable()
 export class ReturnsService {
   constructor(
@@ -72,7 +72,7 @@ export class ReturnsService {
 
   /** Books the reverse pickup once a return is approved. */
   private async schedulePickup(tx: Tx, r: Return, actor: Actor) {
-    const approved = r.status === "APPROVED" ? r : await this.move(tx, r, "APPROVED", actor, r.status === "PENDING_SELLER_REVIEW" ? "Approved by the seller" : "In-policy return, approved automatically");
+    const approved = r.status === "APPROVED" ? r : await this.move(tx, r, "APPROVED", actor, r.status === "PENDING_REVIEW" ? "Approved by the store" : "In-policy return, approved automatically");
     return this.move(tx, approved, "PICKUP_SCHEDULED", "SYSTEM", ["Pickup booked", approved.pickupDate && `for ${pickupDay(approved.pickupDate)}`].filter(Boolean).join(" ") + (approved.pickupSlot ? `, ${approved.pickupSlot}` : ""), { awb: approved.awb ?? `BBR${randomInt(1_000_000_000, 9_999_999_999)}` });
   }
 
@@ -126,7 +126,7 @@ export class ReturnsService {
       const now = this.clock.now();
       const windowEnds = item.deliveredAt.getTime() + Math.max(row.window, 7) * DAY;
       const inPolicy = now.getTime() <= windowEnds;
-      // late claims for damage or a wrong item go to the seller; late change of mind is closed (spec 11.3)
+      // late claims for damage or a wrong item go to the store for review; late change of mind is closed (spec 11.3)
       if (!inPolicy && (input.fault === "CUSTOMER" || now.getTime() > item.deliveredAt.getTime() + 90 * DAY)) {
         throw new ApiError(422, "RETURN_WINDOW_CLOSED", `The return window closed on ${new Date(windowEnds).toISOString().slice(0, 10)}`);
       }
@@ -183,7 +183,7 @@ export class ReturnsService {
       await tx.insert(returnEvents).values({ returnId: created!.id, toStatus: "REQUESTED", actor: "CUSTOMER", note: input.reasonLabel, at: now });
       await this.workflow.transition(tx, { orderId: order.id, itemIds: [item.id], to: "RETURN_REQUESTED", actor: "CUSTOMER", actorId: userId, note: `Return ${created!.id}` });
       if (inPolicy) await this.schedulePickup(tx, created!, "SYSTEM");
-      else await this.move(tx, created!, "PENDING_SELLER_REVIEW", "SYSTEM", "Outside the return window, the seller reviews within 48 hours");
+      else await this.move(tx, created!, "PENDING_REVIEW", "SYSTEM", "Outside the return window, the store reviews within 48 hours");
       return created!.id;
     });
     return this.view(id);
@@ -270,62 +270,61 @@ export class ReturnsService {
     return { id: row!.id, name: row!.name, mimeType: row!.mimeType, sizeBytes: row!.sizeBytes };
   }
 
-  /** A return photo for its customer or the seller handling the return. */
-  async photo(id: string, photoId: string, who: { userId?: string; sellerId?: string }) {
+  /** A return photo for its customer, or for store staff (no userId). */
+  async photo(id: string, photoId: string, who: { userId?: string }) {
     const [r] = await this.db.select().from(returns).where(eq(returns.id, id));
-    if (!r || (who.userId && r.userId !== who.userId) || (who.sellerId && r.sellerId !== who.sellerId) || !r.photos.some((p) => p.id === photoId)) throw notFound("Photo");
+    const allowed = r && (!who.userId || r.userId === who.userId);
+    if (!r || !allowed || !r.photos.some((p) => p.id === photoId)) throw notFound("Photo");
     const [u] = await this.db.select().from(customerUploads).where(eq(customerUploads.id, photoId));
     const file = u ? await this.files.get(u.fileId) : null;
     if (!u || !file) throw notFound("Photo");
     return { content: file.content, mimeType: u.mimeType, fileName: u.name };
   }
 
-  /* ------------------------------ Seller ------------------------------ */
+  /* ------------------------------- Store ------------------------------- */
 
-  async sellerReturns(sellerId: string, statuses?: string) {
+  async storeReturns(statuses?: string) {
     const wanted = statuses?.split(",").filter(Boolean) as ReturnStatus[] | undefined;
     const rows = await this.db
       .select({ id: returns.id })
       .from(returns)
-      .where(and(eq(returns.sellerId, sellerId), wanted?.length ? inArray(returns.status, wanted) : undefined))
+      .where(wanted?.length ? inArray(returns.status, wanted) : undefined)
       .orderBy(desc(returns.updatedAt));
     return Promise.all(rows.map((r) => this.view(r.id)));
   }
 
-  async sellerReturn(sellerId: string, id: string) {
-    const v = await this.view(id);
-    if (v.sellerId !== sellerId) throw notFound("Return");
-    return v;
+  storeReturn(id: string) {
+    return this.view(id);
   }
 
-  /** Out-of-policy requests: the seller approves (pickup is booked) or rejects with a reason. */
-  async decide(sellerId: string, id: string, approve: boolean, note?: string) {
+  /** Out-of-policy requests: the store approves (pickup is booked) or rejects with a reason. */
+  async decide(id: string, approve: boolean, note?: string) {
+    const actor: Actor = "STAFF";
     await this.db.transaction(async (tx) => {
       const r = await this.lock(tx, id);
-      if (r.sellerId !== sellerId) throw notFound("Return");
-      if (r.status !== "PENDING_SELLER_REVIEW") throw conflict("NOT_PENDING", "This return is not waiting for your decision");
-      if (approve) await this.schedulePickup(tx, { ...r, sellerNote: note ?? null }, "SELLER");
+      if (r.status !== "PENDING_REVIEW") throw conflict("NOT_PENDING", "This return is not waiting for your decision");
+      if (approve) await this.schedulePickup(tx, { ...r, decisionNote: note ?? null }, actor);
       else {
         if (!note || note.length < 5) throw unprocessable("REASON_REQUIRED", "Give the customer a reason");
-        await this.move(tx, r, "REJECTED", "SELLER", note, { sellerNote: note });
-        await this.workflow.transition(tx, { orderId: r.orderId, itemIds: [r.orderItemId], to: "DELIVERED", actor: "SELLER", note: `Return ${r.id} rejected` });
+        await this.move(tx, r, "REJECTED", actor, note, { decisionNote: note });
+        await this.workflow.transition(tx, { orderId: r.orderId, itemIds: [r.orderItemId], to: "DELIVERED", actor, note: `Return ${r.id} rejected` });
       }
     });
     return this.view(id);
   }
 
-  /** The seller grades the returned item (spec 11.3 RECEIVED to QC_PASSED or QC_FAILED). */
-  async qc(sellerId: string, id: string, pass: boolean, note?: string) {
+  /** The store grades the returned item (spec 11.3 RECEIVED to QC_PASSED or QC_FAILED). */
+  async qc(id: string, pass: boolean, note?: string) {
+    const actor: Actor = "STAFF";
     await this.db.transaction(async (tx) => {
       const r = await this.lock(tx, id);
-      if (r.sellerId !== sellerId) throw notFound("Return");
       if (r.status !== "RECEIVED") throw conflict("NOT_RECEIVED", "Grade the item once it has been received");
       if (!pass && (!note || note.length < 5)) throw unprocessable("EVIDENCE_REQUIRED", "Describe what is wrong with the returned item");
       if (pass) {
-        const passed = await this.move(tx, r, "QC_PASSED", "SELLER", note ?? "Item checked and accepted", { qcNote: note ?? null });
-        await this.finish(tx, passed, "SELLER");
+        const passed = await this.move(tx, r, "QC_PASSED", actor, note ?? "Item checked and accepted", { qcNote: note ?? null });
+        await this.finish(tx, passed, actor);
       } else {
-        await this.move(tx, r, "QC_FAILED", "SELLER", note!, { qcNote: note! });
+        await this.move(tx, r, "QC_FAILED", actor, note!, { qcNote: note! });
       }
     });
     return this.view(id);
@@ -365,7 +364,6 @@ export class ReturnsService {
       userId: r.userId,
       orderId: r.orderId,
       orderItemId: r.orderItemId,
-      sellerId: r.sellerId,
       item: row.item,
       customerName: row.customer ?? r.address.name,
       qty: r.qty,
@@ -386,7 +384,7 @@ export class ReturnsService {
       address: { name: r.address.name, city: r.address.city, pincode: r.address.pincode, line1: r.address.line1 },
       awb: r.awb,
       qcNote: r.qcNote,
-      sellerNote: r.sellerNote,
+      decisionNote: r.decisionNote,
       cancellable: CUSTOMER_CANCELLABLE.includes(r.status),
       events: events.map((e) => ({ fromStatus: e.fromStatus, toStatus: e.toStatus, actor: e.actor, note: e.note, at: e.at.toISOString() })),
       createdAt: r.createdAt.toISOString(),

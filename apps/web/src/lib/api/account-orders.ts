@@ -1,25 +1,10 @@
 import "server-only";
 import type { Address, Order as UiOrder, OrderEvent, OrderItem as UiOrderItem } from "@/lib/types";
-import type { OrderStatus as UiStatus, PaymentMethod as UiMethod, PaymentStatus as UiPaymentStatus } from "@/lib/status";
-import { uiItemStatus } from "./format";
+import type { OrderStatus as UiStatus } from "@/lib/status";
+import { STORE_ID, uiItemStatus, uiPaymentMethod, uiPaymentStatus } from "./format";
 import { loadMyReturns, toAccountReturn } from "./returns";
 import { api, unwrap } from "./server";
 import type { Order } from "./types";
-
-const METHOD: Record<Order["paymentMethod"], UiMethod> = { UPI: "upi", CARD: "card", NETBANKING: "netbanking", EMI: "emi", PAY_LATER: "paylater", COD: "cod" };
-const PAYMENT: Record<Order["paymentStatus"], UiPaymentStatus> = {
-  CREATED: "pending",
-  PENDING: "pending",
-  AUTHORIZED: "authorized",
-  CAPTURED: "captured",
-  FAILED: "failed",
-  EXPIRED: "failed",
-  CANCELLED: "failed",
-  PARTIALLY_REFUNDED: "partially_refunded",
-  REFUNDED: "refunded",
-  COD_PENDING: "cod_pending",
-  COD_COLLECTED: "cod_collected",
-};
 
 const EVENT_LABEL: Record<string, string> = {
   PAYMENT_PENDING: "Order placed, awaiting payment",
@@ -57,7 +42,7 @@ export function toUiOrder(o: Order): UiOrder {
     title: i.title,
     image: i.image,
     variant: i.variant || undefined,
-    sellerId: i.seller.id,
+    sellerId: STORE_ID,
     quantity: i.qty,
     price: i.unitPricePaise / 100,
     mrp: i.mrpPaise / 100,
@@ -80,7 +65,7 @@ export function toUiOrder(o: Order): UiOrder {
     placedAt: o.placedAt,
     items,
     status: headerStatus(o),
-    payment: { method: METHOD[o.paymentMethod], status: PAYMENT[o.paymentStatus], txnId: o.payments[0]?.id.slice(0, 12).toUpperCase() ?? "" },
+    payment: { method: uiPaymentMethod(o.paymentMethod), status: uiPaymentStatus(o.paymentStatus), txnId: o.payments[0]?.id.slice(0, 12).toUpperCase() ?? "" },
     address,
     subtotal: o.subtotalPaise / 100,
     discount: o.couponDiscountPaise / 100,

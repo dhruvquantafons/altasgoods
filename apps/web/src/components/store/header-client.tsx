@@ -18,7 +18,6 @@ import {
   Package,
   Search,
   ShoppingCart,
-  Store,
   Tag,
   UserRound,
   Wallet,
@@ -627,7 +626,6 @@ export function MobileNav({ categories, customer }: { categories: NavCategory[];
                   { href: "/account/orders", label: "Orders and returns", icon: Package },
                   { href: "/account/wishlist", label: "Wishlist", icon: Heart },
                   { href: "/plus", label: "AltasGoods Plus", icon: Crown },
-                  { href: "/sell", label: "Sell on AltasGoods", icon: Store },
                   { href: "/help", label: "Help centre", icon: HelpCircle },
                 ].map((l) => (
                   <Link key={l.href} href={l.href} className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium text-ink-800 hover:bg-ink-50">

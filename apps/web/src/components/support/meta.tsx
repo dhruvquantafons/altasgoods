@@ -16,7 +16,7 @@ export const CHANNEL: Record<Ticket["channel"], { label: string; icon: typeof Ma
   app: { label: "App", icon: Smartphone },
 };
 
-export const CATEGORIES: Ticket["category"][] = ["Delivery", "Return and refund", "Payment", "Product quality", "Account", "Seller dispute", "Other"];
+export const CATEGORIES: Ticket["category"][] = ["Delivery", "Return and refund", "Payment", "Product quality", "Account", "Other"];
 
 export const PRESENCE: Record<AgentPresence, { label: string; tone: Tone }> = {
   online: { label: "Available", tone: "success" },

@@ -1,6 +1,9 @@
-import type { OrderStatus as UiOrderStatus } from "@/lib/status";
+import type { OrderStatus as UiOrderStatus, PaymentMethod as UiMethod, PaymentStatus as UiPaymentStatus } from "@/lib/status";
 import { formatINR } from "@/lib/utils";
-import type { ApiOrderItemStatus, ApiOrderStatus } from "./types";
+import type { ApiOrderItemStatus, ApiOrderStatus, Order } from "./types";
+
+/** The built-in store record every real order line belongs to (the API's HOUSE_SELLER_ID). */
+export const STORE_ID = "s-altasgoods";
 
 /** The API speaks paise; the UI shows rupees with Indian grouping. */
 export const paise = (p: number) => formatINR(p / 100);
@@ -47,3 +50,21 @@ const ORDER_TO_UI: Record<ApiOrderStatus, UiOrderStatus> = {
   CLOSED: "delivered",
 };
 export const uiOrderStatus = (s: ApiOrderStatus) => ORDER_TO_UI[s];
+
+const METHOD: Record<Order["paymentMethod"], UiMethod> = { UPI: "upi", CARD: "card", NETBANKING: "netbanking", EMI: "emi", PAY_LATER: "paylater", COD: "cod" };
+export const uiPaymentMethod = (m: Order["paymentMethod"]) => METHOD[m];
+
+const PAYMENT: Record<Order["paymentStatus"], UiPaymentStatus> = {
+  CREATED: "pending",
+  PENDING: "pending",
+  AUTHORIZED: "authorized",
+  CAPTURED: "captured",
+  FAILED: "failed",
+  EXPIRED: "failed",
+  CANCELLED: "failed",
+  PARTIALLY_REFUNDED: "partially_refunded",
+  REFUNDED: "refunded",
+  COD_PENDING: "cod_pending",
+  COD_COLLECTED: "cod_collected",
+};
+export const uiPaymentStatus = (s: Order["paymentStatus"]) => PAYMENT[s];

@@ -12,7 +12,6 @@ type Attachment = { id: string; name: string; mimeType: string; sizeBytes: numbe
 type ActionInput =
   | { kind: "REFUND"; amountPaise: number; destination: "SOURCE" | "CREDITS"; reason: "damaged" | "not_delivered" | "wrong" | "late" | "goodwill" }
   | { kind: "REPLACEMENT"; itemId: string; reason: "damaged" | "defective" | "wrong" | "missing"; collectOriginal: boolean }
-  | { kind: "SELLER_ESCALATION"; issue: "product" | "cancel" | "invoice" | "warranty"; message: string }
   | { kind: "GUARANTEE_CLAIM"; claimType: "not_delivered" | "damaged" | "wrong" | "different" };
 
 const fail = (e: unknown, fallback: string): { ok: false; error: string; code?: string } => {
@@ -61,12 +60,12 @@ export async function decideTicketAction(ticketId: string, actionId: string, app
 
 export async function openTicketForCustomer(input: {
   subject: string;
-  category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other";
+  category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Other";
   channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
   customerName: string;
   customerRef?: string;
   orderId?: string;
-  orderSnapshot?: { total: number; paymentLabel: string; cod: boolean; seller: string; items: { id: string; title: string; price: number; quantity: number }[] };
+  orderSnapshot?: { total: number; paymentLabel: string; cod: boolean; items: { id: string; title: string; price: number; quantity: number }[] };
   body: string;
 }): Promise<Result<TicketDetail>> {
   return call(async () => (await api()).POST("/v1/support/tickets", { body: input }), "Could not open the ticket", ["/support/tickets", "/support"]);
@@ -89,7 +88,7 @@ export async function uploadTicketAttachment(id: string, form: FormData, asCusto
 
 /* ------------------------------ Customers ----------------------------- */
 
-export async function startConversation(input: { subject: string; category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Seller dispute" | "Other"; orderId?: string; body: string; channel?: "CHAT" | "PHONE" }): Promise<Result<CustomerTicket>> {
+export async function startConversation(input: { subject: string; category: "Delivery" | "Return and refund" | "Payment" | "Product quality" | "Account" | "Other"; orderId?: string; body: string; channel?: "CHAT" | "PHONE" }): Promise<Result<CustomerTicket>> {
   return call(async () => (await api()).POST("/v1/me/support/tickets", { body: { ...input, channel: input.channel ?? "CHAT" } }), "Could not start the conversation", ["/account/support"]);
 }
 

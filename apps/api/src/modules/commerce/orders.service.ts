@@ -3,7 +3,8 @@ import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../config/env.js";
 import type { Db, Tx } from "../../db/client.js";
-import { coupons, offers, orderEvents, orderItems, orders, payments, refunds, sellers, users, type OrderStatus } from "../../db/schema.js";
+import { coupons, offers, orderEvents, orderItems, orders, payments, refunds, users, type OrderStatus } from "../../db/schema.js";
+import { HOUSE_SELLER_ID } from "../../common/house.js";
 import { ApiError, conflict, notFound, unprocessable } from "../../common/errors.js";
 import type { Clock } from "../../common/infra.module.js";
 import { istStamp } from "../../common/time.js";
@@ -69,15 +70,14 @@ export class OrdersService {
       const q = await this.quotes.build(tx, { lines, isPlus, couponCode: body.couponCode, paymentMethod: body.paymentMethod, lock: true });
       if (!q.canPlaceOrder) throw new ApiError(409, q.issues[0]?.code ?? "CANNOT_PLACE_ORDER", q.issues.map((i) => i.message).join(". ") || "This order cannot be placed");
 
-      for (const s of q.shipments)
-        for (const r of s._rows) {
-          const updated = await tx
-            .update(offers)
-            .set({ stock: sql`${offers.stock} - ${r.input.qty}` })
-            .where(and(eq(offers.id, r.offer.id), sql`${offers.stock} >= ${r.input.qty}`))
-            .returning({ id: offers.id });
-          if (!updated.length) throw conflict("INSUFFICIENT_STOCK", `${r.product.title} just sold out`);
-        }
+      for (const l of q.lines) {
+        const updated = await tx
+          .update(offers)
+          .set({ stock: sql`${offers.stock} - ${l.qty}` })
+          .where(and(eq(offers.id, l.offerId), sql`${offers.stock} >= ${l.qty}`))
+          .returning({ id: offers.id });
+        if (!updated.length) throw conflict("INSUFFICIENT_STOCK", `${l.title} just sold out`);
+      }
 
       const [{ n }] = (await tx.execute<{ n: number }>(sql`select nextval('order_number_seq')::int as n`)).rows as [{ n: number }];
       const id = `BB-${istStamp(now)}-${String(n).padStart(5, "0")}`;
@@ -107,22 +107,20 @@ export class OrdersService {
         .returning();
 
       await tx.insert(orderItems).values(
-        q.shipments.flatMap((s) =>
-          s.lines.map((l) => ({
-            orderId: id,
-            productId: l.productId,
-            offerId: l.offerId,
-            sellerId: s.seller.id,
-            title: l.title,
-            image: l.image,
-            variant: l.variant,
-            qty: l.qty,
-            unitPricePaise: l.unitPricePaise,
-            mrpPaise: l.mrpPaise,
-            status: "PENDING" as const,
-            promisedBy: new Date(s.promisedBy),
-          })),
-        ),
+        q.lines.map((l) => ({
+          orderId: id,
+          productId: l.productId,
+          offerId: l.offerId,
+          sellerId: HOUSE_SELLER_ID,
+          title: l.title,
+          image: l.image,
+          variant: l.variant,
+          qty: l.qty,
+          unitPricePaise: l.unitPricePaise,
+          mrpPaise: l.mrpPaise,
+          status: "PENDING" as const,
+          promisedBy: new Date(q.promisedBy),
+        })),
       );
       await tx.insert(orderEvents).values({ orderId: id, toStatus: order!.status, actor: "CUSTOMER", actorId: userId, note: cod ? "Order placed, pay on delivery" : "Order placed, awaiting payment" });
       if (couponApplied) await tx.update(coupons).set({ usageCount: sql`${coupons.usageCount} + 1` }).where(eq(coupons.code, couponApplied));
@@ -183,12 +181,7 @@ export class OrdersService {
 
   async serialize(order: typeof orders.$inferSelect) {
     const [items, pays, refundRows, events] = await Promise.all([
-      this.db
-        .select({ item: orderItems, seller: { id: sellers.id, slug: sellers.slug, displayName: sellers.displayName } })
-        .from(orderItems)
-        .innerJoin(sellers, eq(sellers.id, orderItems.sellerId))
-        .where(eq(orderItems.orderId, order.id))
-        .orderBy(asc(orderItems.createdAt)),
+      this.db.select().from(orderItems).where(eq(orderItems.orderId, order.id)).orderBy(asc(orderItems.createdAt)),
       this.db.select().from(payments).where(eq(payments.orderId, order.id)).orderBy(desc(payments.createdAt)),
       this.db.select().from(refunds).where(eq(refunds.orderId, order.id)).orderBy(desc(refunds.createdAt)),
       this.db.select().from(orderEvents).where(eq(orderEvents.orderId, order.id)).orderBy(asc(orderEvents.id)),
@@ -208,7 +201,7 @@ export class OrdersService {
       couponDiscountPaise: order.couponDiscountPaise,
       deliveryFeePaise: order.deliveryFeePaise,
       totalPaise: order.totalPaise,
-      items: items.map(({ item, seller }) => ({
+      items: items.map((item) => ({
         id: item.id,
         productId: item.productId,
         title: item.title,
@@ -218,7 +211,6 @@ export class OrdersService {
         unitPricePaise: item.unitPricePaise,
         mrpPaise: item.mrpPaise,
         status: item.status,
-        seller,
         promisedBy: item.promisedBy.toISOString(),
         shippedAt: iso(item.shippedAt),
         deliveredAt: iso(item.deliveredAt),

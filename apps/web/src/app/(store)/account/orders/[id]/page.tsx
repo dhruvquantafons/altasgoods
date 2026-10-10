@@ -8,16 +8,14 @@ import {
   CreditCard,
   Headset,
   LifeBuoy,
-  MessageSquareText,
   PackageX,
   RotateCcw,
   ShieldCheck,
   Star,
-  Store,
   Truck,
   Undo2,
 } from "lucide-react";
-import { CANCELLED_STATUSES, cancelMode, dateLabel, dayLabel, deliveredAt, itemCountLabel, itemState, needsSecureDelivery, paymentLabel, returnInfo, sellerName, shortDate } from "@/components/account/lib";
+import { CANCELLED_STATUSES, cancelMode, dateLabel, dayLabel, deliveredAt, itemCountLabel, itemState, needsSecureDelivery, paymentLabel, returnInfo, shortDate } from "@/components/account/lib";
 import { cancelProps, invoiceAvailable } from "@/components/account/order-card";
 import { BuyAgainButton, CancelOrderButton, InvoiceButton } from "@/components/account/order-actions";
 import { AssociateRow, SecureDeliveryBanner, TrackingHistory, TrackingStepper } from "@/components/account/tracking";
@@ -26,12 +24,12 @@ import { ProductImage } from "@/components/commerce/product-image";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { getProduct, getSeller } from "@/lib/mock";
+import { getProduct } from "@/lib/mock";
 import { addressExtras, BLUCOINS, DELIVERY_ASSOCIATES, myReviews, returnPolicyFor, SECURE_DELIVERY } from "@/lib/mock/account-extra";
 import { loadAccountOrder } from "@/lib/api/account-orders";
 import { PAYMENT_STATUS } from "@/lib/status";
 import type { Order, OrderItem } from "@/lib/types";
-import { formatINR, NOW } from "@/lib/utils";
+import { formatINR, NOW, productSlug } from "@/lib/utils";
 
 export async function generateMetadata(props: PageProps<"/account/orders/[id]">) {
   const { id } = await props.params;
@@ -40,21 +38,17 @@ export async function generateMetadata(props: PageProps<"/account/orders/[id]">)
 
 const reviewed = new Set(myReviews.map((r) => r.slug));
 
-/** Real AWB once the seller hands the package over; null before that. */
-function awbFor(awbs: Map<string, string>, sellerId: string) {
-  return awbs.get(sellerId) ?? null;
-}
-
 export default async function OrderDetailPage(props: PageProps<"/account/orders/[id]">) {
   const { id } = await props.params;
   const { raw: apiOrder, order } = await loadAccountOrder(id);
-  const awbs = new Map(apiOrder.items.filter((i) => i.awb).map((i) => [i.seller.id, i.awb!]));
+  // the real AWB once the store hands the parcel to the courier
+  const awb = apiOrder.items.find((i) => i.awb)?.awb ?? null;
   const cancellable = new Set(apiOrder.items.filter((i) => i.canCancel).map((i) => i.id));
   const unpaid = apiOrder.status === "PAYMENT_PENDING" || apiOrder.status === "PAYMENT_FAILED";
   const openPayment = apiOrder.payments.find((p) => p.status === "CREATED" || p.status === "PENDING" || p.status === "FAILED");
 
-  const sellerIds = [...new Set(order.items.map((it) => it.sellerId))];
-  const packages = sellerIds.map((sid) => ({ sellerId: sid, items: order.items.filter((it) => it.sellerId === sid) }));
+  // everything ships together from the store
+  const packages = [{ items: order.items }];
   const mode = cancellable.size ? cancelMode(order.status) ?? "cancel" : null;
   const cancelInput = { ...cancelProps(order), items: cancelProps(order).items.filter((it) => cancellable.has(it.id)) };
   const secure = needsSecureDelivery(order);
@@ -114,11 +108,11 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
           {packages.map((pkg, i) => {
             const st = itemState(order, pkg.items[0]!);
             return (
-              <Panel key={pkg.sellerId} bodyClassName="pt-5">
+              <Panel key={i} bodyClassName="pt-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-ink-500">
-                      {packages.length > 1 ? `Package ${i + 1} of ${packages.length} · ` : ""}Sold by {sellerName(pkg.sellerId)}
+                      Sold and shipped by AltasGoods
                     </p>
                     <p className="mt-1 font-display text-[19px] leading-snug font-semibold text-ink-900">{st.headline}</p>
                     {st.detail && <p className="mt-0.5 text-[13px] text-ink-500">{st.detail}</p>}
@@ -162,7 +156,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                 </ul>
 
                 <div className="mt-2">
-                  <TrackingHistory order={order} awb={awbFor(awbs, pkg.sellerId) ?? "Assigned at pickup"} />
+                  <TrackingHistory order={order} awb={awb ?? "Assigned at pickup"} />
                 </div>
               </Panel>
             );
@@ -236,39 +230,6 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
             )}
           </Panel>
 
-          <Panel title={sellerIds.length > 1 ? "Sellers" : "Seller"}>
-            <ul className="flex flex-col gap-4">
-              {sellerIds.map((sid) => {
-                const s = getSeller(sid);
-                const item = order.items.find((it) => it.sellerId === sid)!;
-                const offer = getProduct(item.productId)?.offers.find((o) => o.sellerId === sid);
-                return (
-                  <li key={sid} className="flex items-start gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-500">
-                      <Store size={16} aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13.5px] font-semibold text-ink-900">{s?.displayName ?? "AltasGoods seller"}</p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
-                        {s && (
-                          <span className="inline-flex items-center gap-1">
-                            <Star size={11} className="text-accent-500" fill="currentColor" strokeWidth={0} aria-hidden="true" />
-                            {s.rating.toFixed(1)}
-                          </span>
-                        )}
-                        {s && <span>{s.city}</span>}
-                        {offer?.fulfilledBy === "blubuy" && <span className="text-brand-700">Fulfilled by AltasGoods</span>}
-                      </p>
-                      <Link href={`/account/support?order=${order.id}&topic=seller`} className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:underline">
-                        <MessageSquareText size={14} aria-hidden="true" />
-                        Contact seller
-                      </Link>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </Panel>
 
 
         </aside>
@@ -281,7 +242,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                 ? { label: "Cancel an item", hint: "Free before it ships", href: `/account/support?order=${order.id}&topic=cancel`, icon: PackageX }
                 : { label: "Return or replace an item", hint: "Doorstep pickup and quick refunds", href: `/account/orders/${order.id}/return`, icon: RotateCcw },
               { label: "Payment or refund question", hint: "Charges, EMI and refund status", href: `/account/support?order=${order.id}&topic=payment`, icon: CreditCard },
-              { label: "File an AltasGoods Guarantee claim", hint: "If the seller has not resolved it", href: `/account/support?order=${order.id}&topic=guarantee`, icon: ShieldCheck },
+              { label: "File an AltasGoods Guarantee claim", hint: "If something is still not right", href: `/account/support?order=${order.id}&topic=guarantee`, icon: ShieldCheck },
             ].map((h) => (
               <Link key={h.label} href={h.href} className="group flex items-center gap-3 rounded-xl border border-line px-3.5 py-3 transition-colors hover:border-line-strong hover:bg-ink-50/60">
                 <h.icon size={18} strokeWidth={1.8} className="shrink-0 text-ink-400 group-hover:text-brand-600" aria-hidden="true" />
@@ -315,7 +276,7 @@ function ItemRow({ order, item }: { order: Order; item: OrderItem }) {
       <div className="flex min-w-0 flex-1 gap-4">
         <ProductImage src={item.image} alt={item.title} size={76} />
         <div className="min-w-0 flex-1">
-          <Link href={product ? `/p/${product.slug}` : "#"} className="line-clamp-2 text-[14px] leading-snug font-medium text-ink-900 hover:text-brand-700">
+          <Link href={`/p/${productSlug(item.productId)}`} className="line-clamp-2 text-[14px] leading-snug font-medium text-ink-900 hover:text-brand-700">
             {item.title}
           </Link>
           <p className="mt-1 text-xs text-ink-500">

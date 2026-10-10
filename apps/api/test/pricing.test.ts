@@ -1,26 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { couponDiscount, deliveryFee, dispatchByDate, promiseDate, settleLine } from "../src/modules/commerce/pricing.js";
+import { couponDiscount, deliveryFee, dispatchByDate, promiseDate } from "../src/modules/commerce/pricing.js";
 import { canTransition, deriveOrderStatus } from "../src/modules/commerce/state.js";
-
-describe("settleLine (spec 14.2 worked example)", () => {
-  it("settles a ₹1,499 home item for a Gold seller to ₹1,211.84", () => {
-    const r = settleLine({ unitPricePaise: 149_900, qty: 1, commissionBps: 1_000, tier: "Gold", weightGrams: 800 });
-    const by = Object.fromEntries(r.fees.map((f) => [f.code, f.amountPaise]));
-    expect(by).toEqual({ COMMISSION: -14_990, FIXED_FEE: -4_200, SHIPPING_FEE: -4_500, GST_ON_FEES: -4_264, TCS: -635, TDS: -127 });
-    expect(r.netPaise).toBe(121_184);
-  });
-
-  it("charges no commission on items up to ₹999", () => {
-    const r = settleLine({ unitPricePaise: 99_900, qty: 1, commissionBps: 1_000, tier: "Platinum", weightGrams: 400 });
-    expect(r.fees.find((f) => f.code === "COMMISSION")!.amountPaise).toBe(-0);
-  });
-
-  it("halves the fixed fee for additional units", () => {
-    const one = settleLine({ unitPricePaise: 60_000, qty: 1, commissionBps: 0, tier: "Platinum", weightGrams: 400 });
-    const two = settleLine({ unitPricePaise: 60_000, qty: 2, commissionBps: 0, tier: "Platinum", weightGrams: 400 });
-    expect(two.fees.find((f) => f.code === "FIXED_FEE")!.amountPaise).toBe(one.fees.find((f) => f.code === "FIXED_FEE")!.amountPaise * 1.5);
-  });
-});
 
 describe("customer pricing", () => {
   const now = new Date("2026-10-01T05:00:00Z"); // 10:30 am IST
@@ -47,10 +27,10 @@ describe("customer pricing", () => {
 });
 
 describe("order state machine", () => {
-  it("lets sellers accept and pack but not ship", () => {
-    expect(canTransition("NEW", "ACCEPTED", "SELLER")).toBe(true);
-    expect(canTransition("ACCEPTED", "PACKED", "SELLER")).toBe(true);
-    expect(canTransition("READY_TO_SHIP", "SHIPPED", "SELLER")).toBe(false);
+  it("lets store staff accept and pack but leaves shipping to courier scans", () => {
+    expect(canTransition("NEW", "ACCEPTED", "STAFF")).toBe(true);
+    expect(canTransition("ACCEPTED", "PACKED", "STAFF")).toBe(true);
+    expect(canTransition("READY_TO_SHIP", "SHIPPED", "STAFF")).toBe(false);
     expect(canTransition("SHIPPED", "CANCELLED", "CUSTOMER")).toBe(false);
   });
 

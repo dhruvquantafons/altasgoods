@@ -1,13 +1,13 @@
 /**
- * Storefront-only mock data: merchandising slots, deals, bank offers, Q&A,
- * search facets, legal and help content. Server side only; client components
- * receive plain snapshots built by the helpers at the bottom of this file.
+ * Storefront content that is not in the catalog yet: merchandising slots,
+ * deals, bank offers, Q&A, search facets, legal and help content. Helpers that
+ * pick products take the live catalog's products (lib/store-catalog.ts);
+ * client components receive plain snapshots built at the bottom of this file.
  */
-import type { Product, Seller } from "../types";
+import type { Brand, Category, Product, Seller } from "../types";
 import { addDays, NOW, seeded, slugify } from "../utils";
-import { brands, categories, getBrand, getCategory, products } from "./catalog";
 import { coupons } from "./engagement";
-import { CURRENT_CUSTOMER, getSeller } from "./people";
+import { CURRENT_CUSTOMER } from "./people";
 import type { BankOffer, CartProduct, CouponLite, NavCategory, Suggestion, WalletLite } from "@/components/store/types";
 
 /* ------------------------------ Company ------------------------------- */
@@ -205,7 +205,7 @@ export const NET_BANKING_BANKS = ["Kaveri Bank", "Sahyadri Bank", "Coral Bank", 
 /** Customer-facing coupons. Bank-specific codes are surfaced as bank offers instead. */
 export function storefrontCoupons(): CouponLite[] {
   return coupons
-    .filter((c) => c.status === "active" && !/HDFC/i.test(c.code))
+    .filter((c) => c.status === "active" && c.fundedBy !== "seller" && !/HDFC/i.test(c.code))
     .map((c) => ({
       code: c.code,
       description: c.description.replace(/(\d[\d,]*)/g, (m) => (/^\d/.test(m) && Number(m.replace(/,/g, "")) >= 100 ? `₹${m}` : m)),
@@ -214,12 +214,10 @@ export function storefrontCoupons(): CouponLite[] {
       maxDiscount: c.maxDiscount,
       minOrder: c.minOrder,
       endsAt: c.endsAt,
-      fundedBy: c.fundedBy,
-      sellerId: c.code.startsWith("APEX") ? "s-apex" : undefined,
+      fundedBy: c.fundedBy === "bank" ? ("bank" as const) : ("store" as const),
       plusOnly: c.code.startsWith("PLUS") || undefined,
       upiOnly: c.code.startsWith("UPI") || undefined,
       firstOrderOnly: c.code === "BLUFIRST" || undefined,
-      subcategories: c.code === "APEXAUDIO" ? ["Headphones", "Speakers"] : undefined,
     }));
 }
 
@@ -290,14 +288,19 @@ export function inStock(p: Product) {
   return p.offers.some((o) => o.stock > 0);
 }
 
-export const bestSellers = () =>
+export const bestSellers = (products: Product[]) =>
   products
     .filter((p) => isBrowsable(p) && inStock(p))
     .sort((a, b) => b.soldLast30d - a.soldLast30d)
     .slice(0, 12);
 
 const recommendedKeys = ["laptop-air", "bag-leather", "coffee-maker", "lamp-arc", "perfume-noir", "shoes-running", "camera-mirrorless", "mugs-stone", "dress-summer", "keyboard-mech", "chair-lounge", "tea-assam"];
-export const recommendedForYou = () => recommendedKeys.map((k) => products.find((p) => p.slug === k)!).filter(Boolean);
+/** Hand-picked slugs first (when they are on sale), topped up with recent best sellers. */
+export const recommendedForYou = (products: Product[]) => {
+  const picked = recommendedKeys.map((k) => products.find((p) => p.slug === k)).filter((p): p is Product => !!p);
+  const more = [...products].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)).filter((p) => !picked.includes(p));
+  return [...picked, ...more].slice(0, 12);
+};
 
 export const BRAND_SPOTLIGHTS = [
   { brand: "Kestrel", tagline: "Laptops engineered in Bengaluru", productKey: "laptop-air", tone: "bg-[#eef1f6]" },
@@ -306,7 +309,7 @@ export const BRAND_SPOTLIGHTS = [
   { brand: "Linen & Loom", tagline: "Everyday cotton, honestly made", productKey: "tee-classic", tone: "bg-[#eef0ee]" },
 ].map((b) => ({ ...b, slug: slugify(b.brand), image: `/images/products/${b.productKey}.jpg` }));
 
-export function similarProducts(p: Product, n = 10) {
+export function similarProducts(products: Product[], p: Product, n = 10) {
   const sameSub = products.filter((x) => x.id !== p.id && x.subcategory === p.subcategory && isBrowsable(x));
   const sameCat = products.filter((x) => x.id !== p.id && x.categoryId === p.categoryId && x.subcategory !== p.subcategory && isBrowsable(x));
   const rest = products.filter((x) => x.id !== p.id && x.categoryId !== p.categoryId && isBrowsable(x)).sort((a, b) => b.soldLast30d - a.soldLast30d);
@@ -329,7 +332,7 @@ const FBT: Record<string, string[]> = {
   "serum-glow": ["cream-hydra", "lipstick-velvet"],
 };
 
-export function frequentlyBoughtWith(p: Product) {
+export function frequentlyBoughtWith(products: Product[], p: Product) {
   // suppressed listings cannot be ordered, so they never appear in (or anchor) a bundle; the curated pairs are filtered too
   if (!isBrowsable(p)) return [];
   const keys = FBT[p.slug];
@@ -340,9 +343,15 @@ export function frequentlyBoughtWith(p: Product) {
     .slice(0, 2);
 }
 
-export function topBrandsIn(categoryId: string) {
-  const ids = [...new Set(products.filter((p) => p.categoryId === categoryId).map((p) => p.brandId))];
-  return ids.map((id) => getBrand(id)!).filter(Boolean);
+/** Brands with products in a category, most products first. */
+export function topBrandsIn(products: Product[], categoryId: string) {
+  const counts = new Map<string, { name: string; slug: string; n: number }>();
+  for (const p of products.filter((x) => x.categoryId === categoryId)) {
+    const c = counts.get(p.brandId) ?? { name: p.brandName, slug: p.brandSlug, n: 0 };
+    c.n++;
+    counts.set(p.brandId, c);
+  }
+  return [...counts.entries()].sort((a, b) => b[1].n - a[1].n).map(([id, b]) => ({ id, name: b.name, slug: b.slug }));
 }
 
 /* ------------------------------ Ratings ------------------------------ */
@@ -370,7 +379,7 @@ export function ratingHistogram(avg: number, count: number) {
 /** Aspect ratings shown under the histogram, by category. */
 export function aspectRatings(p: Product) {
   const r = seeded(p.id.length * 31 + Math.round(p.rating * 10));
-  const cat = getCategory(p.categoryId)?.slug;
+  const cat = p.categorySlug;
   const labels: Record<string, string[]> = {
     mobiles: ["Camera", "Battery", "Display", "Value for money"],
     electronics: ["Sound or performance", "Build quality", "Battery", "Value for money"],
@@ -462,9 +471,8 @@ const buyerNames = ["Verified buyer, Pune", "Verified buyer, Kochi", "Verified b
 
 export function questionsFor(p: Product): Question[] {
   const r = seeded(p.title.length * 13 + 7);
-  const cat = getCategory(p.categoryId)?.slug ?? "electronics";
-  const brand = getBrand(p.brandId)?.name ?? "Brand";
-  const seller = getSeller(p.featuredSellerId);
+  const cat = p.categorySlug || "electronics";
+  const brand = p.brandName || "Brand";
   return (qaByCat[cat] ?? qaByCat.electronics!).map(([q, a, role], i) => ({
     id: `q-${p.slug}-${i}`,
     question: q,
@@ -473,7 +481,7 @@ export function questionsFor(p: Product): Question[] {
     votes: Math.floor(4 + r() * 80),
     answers: [
       {
-        by: role === "brand" ? `${brand} (brand)` : role === "seller" ? `${seller?.displayName ?? "Seller"} (seller)` : buyerNames[i % buyerNames.length]!,
+        by: role === "brand" ? `${brand} (brand)` : role === "seller" ? "AltasGoods" : buyerNames[i % buyerNames.length]!,
         role,
         body: a,
         at: addDays(NOW, -Math.floor(2 + r() * 9)).toISOString(),
@@ -486,7 +494,7 @@ export function questionsFor(p: Product): Question[] {
 /* --------------------------- Policy and legal -------------------------- */
 
 export function returnPolicyFor(p: Product, windowDays?: number) {
-  const cat = getCategory(p.categoryId)?.slug;
+  const cat = p.categorySlug;
   const sub = p.subcategory;
   if (cat === "fashion") return { days: 10, short: "10 day return or exchange", detail: "Return, replacement or size and colour exchange within 10 days of delivery. Tags intact and unworn." };
   if (cat === "home" && sub === "Furniture") return { days: 10, short: "10 day return or replacement", detail: "Returnable within 10 days if installed by AltasGoods or the brand installer." };
@@ -500,7 +508,7 @@ export function returnPolicyFor(p: Product, windowDays?: number) {
 export function warrantyFor(p: Product) {
   const spec = p.specs.flatMap((s) => s.items).find((i) => i.label === "Warranty")?.value;
   if (spec) return `${spec} warranty`;
-  const cat = getCategory(p.categoryId)?.slug;
+  const cat = p.categorySlug;
   if (cat === "mobiles") return "1 year brand warranty on the device, 6 months on accessories";
   if (cat === "electronics") return "1 year brand warranty";
   if (cat === "appliances") return "2 years comprehensive brand warranty";
@@ -519,8 +527,7 @@ function netQuantity(title: string) {
 
 /** Legal Metrology declarations, shown in full on every PDP. */
 export function legalDeclarations(p: Product) {
-  const brand = getBrand(p.brandId)?.name ?? "";
-  const seller = getSeller(p.featuredSellerId);
+  const brand = p.brandName;
   const brandSlug = slugify(brand);
   return [
     { label: "Generic name", value: p.subcategory.replace(/s$/, "") },
@@ -528,7 +535,7 @@ export function legalDeclarations(p: Product) {
     { label: "M.R.P.", value: `₹${p.mrp.toLocaleString("en-IN")} (inclusive of all taxes)` },
     { label: "Country of origin", value: p.specs.flatMap((s) => s.items).find((i) => i.label === "Country of origin")?.value ?? "India" },
     { label: "Manufacturer", value: `${brand} India Private Limited, Plot 42, KIADB Industrial Area, Bengaluru, Karnataka 562114` },
-    { label: "Packer", value: seller ? `${seller.legalName}, ${seller.city}, ${seller.state} ${seller.pincode}` : `${brand} India Private Limited` },
+    { label: "Packer", value: `${COMPANY.legalName}, ${COMPANY.registeredOffice}` },
     { label: "Importer", value: "Not applicable (made in India)" },
     { label: "Consumer care", value: `care@${brandSlug}.in, 1800 120 ${String(3000 + brand.length * 37).slice(0, 4)}` },
   ];
@@ -589,51 +596,40 @@ export const SELL_PROGRAMS = [
 const LARGE_SUBS = new Set(["Furniture", "Large Appliances", "Air Conditioners", "Washing Machines", "Cycling"]);
 
 export function toCartProduct(p: Product): CartProduct {
-  const cat = getCategory(p.categoryId);
+  const o = p.offers.find((x) => x.sellerId === p.featuredSellerId) ?? p.offers[0]!;
   return {
     id: p.id,
     slug: p.slug,
     title: p.title,
-    brand: getBrand(p.brandId)?.name ?? "",
+    brand: p.brandName,
     image: p.image,
-    category: cat?.name ?? "",
-    categorySlug: cat?.slug ?? "",
+    category: p.categoryName,
+    categorySlug: p.categorySlug,
     subcategory: p.subcategory,
     rating: p.rating,
     ratingCount: p.ratingCount,
-    featuredSellerId: p.featuredSellerId,
     large: LARGE_SUBS.has(p.subcategory),
     defaultVariant: p.variants.length ? p.variants.map((v) => v.values.find((x) => x.available)?.label).filter(Boolean).join(", ") : undefined,
-    offers: p.offers.map((o) => {
-      const s = getSeller(o.sellerId);
-      return {
-        sellerId: o.sellerId,
-        sellerName: s?.displayName ?? o.sellerId,
-        sellerSlug: s?.slug ?? o.sellerId,
-        sellerRating: s?.rating ?? 0,
-        sellerRatingCount: s?.ratingCount ?? 0,
-        sellerCity: s?.city ?? "",
-        price: o.price,
-        mrp: o.mrp,
-        stock: o.stock,
-        deliveryDays: o.deliveryDays,
-        fulfilledBy: o.fulfilledBy,
-        codAvailable: o.codAvailable,
-        returnWindowDays: returnPolicyFor(p, o.returnWindowDays).days,
-        assured: p.assured && (o.fulfilledBy === "blubuy" || s?.tier === "Gold" || s?.tier === "Platinum"),
-      };
-    }),
+    offer: {
+      price: o.price,
+      mrp: o.mrp,
+      stock: o.stock,
+      deliveryDays: o.deliveryDays,
+      codAvailable: o.codAvailable,
+      returnWindowDays: returnPolicyFor(p, o.returnWindowDays).days,
+      assured: p.assured,
+    },
   };
 }
 
-/** Whole catalogue as plain data for the cart and checkout (48 products, small). */
-export function cartCatalog() {
+/** Whole catalogue as plain data for the cart and checkout. */
+export function cartCatalog(products: Product[]) {
   return Object.fromEntries(products.map((p) => [p.id, toCartProduct(p)]));
 }
 
 /* --------------------------- Navigation data -------------------------- */
 
-export function navCategories(): NavCategory[] {
+export function navCategories(categories: Category[], products: Product[]): NavCategory[] {
   return categories.map((c) => ({
     slug: c.slug,
     name: c.name,
@@ -641,7 +637,7 @@ export function navCategories(): NavCategory[] {
     icon: c.icon,
     image: c.image ?? "",
     subs: (c.children ?? []).map((s) => ({ name: s.name, slug: s.slug })),
-    brands: topBrandsIn(c.id).slice(0, 6).map((b) => ({ name: b.name, slug: b.slug })),
+    brands: topBrandsIn(products, c.id).slice(0, 6).map((b) => ({ name: b.name, slug: b.slug })),
     featured: products
       .filter((p) => p.categoryId === c.id && isBrowsable(p))
       .sort((a, b) => b.soldLast30d - a.soldLast30d)
@@ -651,15 +647,14 @@ export function navCategories(): NavCategory[] {
 }
 
 /** Autocomplete corpus for the header search (small, plain data). */
-export function searchSuggestions(): Suggestion[] {
+export function searchSuggestions(categories: Category[], brands: Brand[], products: Product[]): Suggestion[] {
   return [
     ...categories.flatMap((c) => [
       { label: c.name, href: `/c/${c.slug}`, kind: "category" as const },
       ...(c.children ?? []).map((s) => ({ label: s.name, href: `/s?q=${encodeURIComponent(s.name)}&cat=${c.slug}`, kind: "category" as const, context: c.name })),
     ]),
     ...brands.map((b) => ({ label: b.name, href: `/s?brand=${b.slug}`, kind: "brand" as const })),
-    ...products.filter(isBrowsable).map((p) => ({ label: p.title.split(/[,(]/)[0]!.trim(), href: `/p/${p.slug}`, kind: "product" as const, context: getCategory(p.categoryId)?.name })),
+    ...products.filter(isBrowsable).map((p) => ({ label: p.title.split(/[,(]/)[0]!.trim(), href: `/p/${p.slug}`, kind: "product" as const, context: p.categoryName })),
   ];
 }
 
-export { brands };

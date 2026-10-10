@@ -6,7 +6,6 @@ import {
   BadgeCheck,
   Banknote,
   Check,
-  ChevronRight,
   FileText,
   Heart,
   Lock,
@@ -15,12 +14,11 @@ import {
   PackageCheck,
   Plus,
   ShieldCheck,
-  Store,
   Truck,
   Undo2,
   Wrench,
 } from "lucide-react";
-import { cn, formatINR, formatNumber } from "@/lib/utils";
+import { cn, formatINR } from "@/lib/utils";
 import { useCart, usePincode, useWishlist } from "./cart-context";
 import { AddToCartButton, BuyNowButton } from "./cart-buttons";
 import { CutoffNote, DealTimer, useClock } from "./countdown";
@@ -43,7 +41,6 @@ export interface PdpData {
   brand: string;
   variants: PdpVariant[];
   offer: CartOffer;
-  otherOffers: number;
   plus: boolean;
   large: boolean;
   policyShort: string;
@@ -201,7 +198,7 @@ function DeliveryModule() {
   const o = data.offer;
   const days = promiseDays(o.deliveryDays, info, now);
   const free = data.plus || price * qty >= FREE_DELIVERY_THRESHOLD;
-  const oneDay = data.plus && o.fulfilledBy === "blubuy" && info?.zone === "metro" && days > 1;
+  const oneDay = data.plus && info?.zone === "metro" && days > 1;
   const codReason = !o.codAvailable
     ? "Pay on delivery is not offered for this item"
     : !(info?.codAvailable ?? false)
@@ -379,8 +376,8 @@ export function BuyBox() {
       )}
 
       <div id="buy-actions" className="mt-4 flex flex-col gap-2.5">
-        <AddToCartButton productId={data.id} sellerId={o.sellerId} variant={variantLabel} qty={qty} disabled={!inStock} size="lg" style="primary" className="w-full" />
-        <BuyNowButton productId={data.id} sellerId={o.sellerId} variant={variantLabel} qty={qty} disabled={!inStock} className="w-full" />
+        <AddToCartButton productId={data.id} variant={variantLabel} qty={qty} disabled={!inStock} size="lg" style="primary" className="w-full" />
+        <BuyNowButton productId={data.id} variant={variantLabel} qty={qty} disabled={!inStock} className="w-full" />
       </div>
 
       <button
@@ -398,19 +395,6 @@ export function BuyBox() {
 
       <dl className="mt-3 flex flex-col gap-2.5 border-t border-line pt-4 text-[13px]">
         <div className="flex items-start gap-2.5">
-          <dt className="sr-only">Seller</dt>
-          <Store size={15} className="mt-px shrink-0 text-ink-500" aria-hidden="true" />
-          <dd className="min-w-0 text-ink-700">
-            Sold by{" "}
-            <Link href={`/store/${o.sellerSlug}`} className="font-semibold text-brand-700 hover:underline">
-              {o.sellerName}
-            </Link>
-            <span className="mt-0.5 block text-xs text-ink-500">
-              {o.sellerRating.toFixed(1)} seller rating, {formatNumber(o.sellerRatingCount)} ratings, {o.sellerCity}
-            </span>
-          </dd>
-        </div>
-        <div className="flex items-start gap-2.5">
           <dt className="sr-only">Fulfilment</dt>
           {o.assured ? (
             <BadgeCheck size={15} className="mt-px shrink-0 text-brand-600" aria-hidden="true" />
@@ -418,7 +402,7 @@ export function BuyBox() {
             <PackageCheck size={15} className="mt-px shrink-0 text-ink-500" aria-hidden="true" />
           )}
           <dd className="text-ink-700">
-            {o.fulfilledBy === "blubuy" ? "Ships from an AltasGoods fulfilment centre" : `Ships from the seller in ${o.sellerCity}`}
+            Sold and shipped by AltasGoods
             {o.assured && <span className="block text-xs font-medium text-brand-700">AltasGoods Assured: extra quality checks</span>}
           </dd>
         </div>
@@ -442,15 +426,6 @@ export function BuyBox() {
           <dd className="text-ink-700">Secure transaction, no extra fees at checkout</dd>
         </div>
       </dl>
-      {data.otherOffers > 0 && (
-        <Link
-          href="#other-sellers"
-          className="mt-4 flex items-center justify-between rounded-lg border border-line px-3 py-2.5 text-[13px] font-medium text-ink-800 transition-colors hover:border-ink-300"
-        >
-          Other sellers on AltasGoods ({data.otherOffers})
-          <ChevronRight size={16} className="text-ink-400" aria-hidden="true" />
-        </Link>
-      )}
     </div>
   );
 }
@@ -494,8 +469,8 @@ export function MobileBuyBar() {
         <span className="shrink-0 text-sm font-semibold text-ink-900 tabular-nums">{formatINR(price * qty)}</span>
       </div>
       <div className="grid grid-cols-2 gap-2.5">
-        <AddToCartButton productId={data.id} sellerId={data.offer.sellerId} variant={variantLabel} qty={qty} disabled={!inStock} size="lg" style="outline" className="h-11 w-full" />
-        <BuyNowButton productId={data.id} sellerId={data.offer.sellerId} variant={variantLabel} qty={qty} disabled={!inStock} className="h-11 w-full" />
+        <AddToCartButton productId={data.id} variant={variantLabel} qty={qty} disabled={!inStock} size="lg" style="outline" className="h-11 w-full" />
+        <BuyNowButton productId={data.id} variant={variantLabel} qty={qty} disabled={!inStock} className="h-11 w-full" />
       </div>
     </div>
   );

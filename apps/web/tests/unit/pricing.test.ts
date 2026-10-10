@@ -3,23 +3,16 @@ import { COD_LIMIT, DELIVERY_FEE, FREE_DELIVERY_THRESHOLD, formatCountdown, form
 import { bestBankOffer, computeTotals, couponBlocker, lineKey, priceLines } from "@/components/store/pricing";
 import type { BankOffer, CartCatalog, CartLine, CartOffer, CouponLite } from "@/components/store/types";
 
-const offer = (sellerId: string, price: number, mrp: number): CartOffer => ({
-  sellerId,
-  sellerName: sellerId,
-  sellerSlug: sellerId,
-  sellerRating: 4.5,
-  sellerRatingCount: 100,
-  sellerCity: "Mumbai",
+const offer = (price: number, mrp: number, deliveryDays = 2): CartOffer => ({
   price,
   mrp,
   stock: 10,
-  deliveryDays: 2,
-  fulfilledBy: "seller",
+  deliveryDays,
   codAvailable: true,
   returnWindowDays: 7,
   assured: false,
 });
-const product = (id: string, offers: CartOffer[], subcategory = "Headphones") => ({
+const product = (id: string, o: CartOffer, subcategory = "Headphones") => ({
   id,
   slug: id,
   title: id,
@@ -30,37 +23,45 @@ const product = (id: string, offers: CartOffer[], subcategory = "Headphones") =>
   subcategory,
   rating: 4,
   ratingCount: 10,
-  featuredSellerId: offers[0]!.sellerId,
-  offers,
+  offer: o,
   large: false,
 });
 const catalog: CartCatalog = {
-  pods: product("pods", [offer("s-a", 4999, 8999), offer("s-b", 5199, 8999)]),
-  cable: product("cable", [offer("s-b", 299, 499)], "Cables"),
+  pods: product("pods", offer(4999, 8999)),
+  cable: product("cable", offer(299, 499, 4), "Cables"),
 };
-const line = (productId: string, sellerId: string, qty = 1): CartLine => ({ key: lineKey(productId, sellerId), productId, sellerId, qty });
-const coupon = (c: Partial<CouponLite>): CouponLite => ({ code: "SAVE", description: "", type: "percent", value: 10, minOrder: 0, endsAt: "2027-01-01", fundedBy: "blubuy", ...c });
+const line = (productId: string, qty = 1, variant?: string): CartLine => ({ key: lineKey(productId, variant), productId, qty, variant });
+const coupon = (c: Partial<CouponLite>): CouponLite => ({ code: "SAVE", description: "", type: "percent", value: 10, minOrder: 0, endsAt: "2027-01-01", fundedBy: "store", ...c });
 
 describe("cart totals", () => {
-  it("prices each line from the chosen seller's offer", () => {
-    const [p] = priceLines([line("pods", "s-b", 2)], catalog);
-    expect(p).toMatchObject({ unitPrice: 5199, lineTotal: 10398, lineMrp: 17998 });
-    expect(priceLines([line("missing", "s-a")], catalog)).toEqual([]);
+  it("prices each line from the store's offer", () => {
+    const [p] = priceLines([line("pods", 2)], catalog);
+    expect(p).toMatchObject({ unitPrice: 4999, lineTotal: 9998, lineMrp: 17998 });
+    expect(priceLines([line("missing")], catalog)).toEqual([]);
   });
 
-  it("charges delivery per seller below the free delivery threshold, and never for Plus", () => {
-    const lines = [line("pods", "s-a"), line("cable", "s-b")];
+  it("keeps variants of the same product as separate lines", () => {
+    expect(lineKey("pods", "Black")).not.toBe(lineKey("pods", "White"));
+    expect(lineKey("pods")).toBe(lineKey("pods", undefined));
+  });
+
+  it("ships the order together: one delivery fee below the threshold, none for Plus", () => {
+    const lines = [line("pods"), line("cable")];
     const t = computeTotals(lines, catalog, { couponCode: null, coupons: [], plus: false });
-    expect(299).toBeLessThan(FREE_DELIVERY_THRESHOLD);
-    expect(t.groups).toHaveLength(2);
-    expect(t.delivery).toBe(DELIVERY_FEE);
-    expect(t.total).toBe(4999 + 299 + DELIVERY_FEE);
+    expect(t.delivery).toBe(0);
+    expect(t.deliveryDays).toBe(4);
+    expect(t.total).toBe(4999 + 299);
     expect(t.savings).toBe(8999 + 499 - 4999 - 299);
-    expect(computeTotals(lines, catalog, { couponCode: null, coupons: [], plus: true }).delivery).toBe(0);
+
+    const small = computeTotals([line("cable")], catalog, { couponCode: null, coupons: [], plus: false });
+    expect(299).toBeLessThan(FREE_DELIVERY_THRESHOLD);
+    expect(small.delivery).toBe(DELIVERY_FEE);
+    expect(small.total).toBe(299 + DELIVERY_FEE);
+    expect(computeTotals([line("cable")], catalog, { couponCode: null, coupons: [], plus: true }).delivery).toBe(0);
   });
 
   it("applies a coupon only when it is eligible, capped at its maximum", () => {
-    const lines = [line("pods", "s-a")];
+    const lines = [line("pods")];
     const capped = computeTotals(lines, catalog, { couponCode: "SAVE", coupons: [coupon({ maxDiscount: 300 })], plus: false });
     expect(capped.couponDiscount).toBe(300);
     const blocked = computeTotals(lines, catalog, { couponCode: "SAVE", coupons: [coupon({ minOrder: 10000 })], plus: false });
@@ -69,7 +70,7 @@ describe("cart totals", () => {
   });
 
   it("explains why a coupon cannot apply", () => {
-    const priced = priceLines([line("pods", "s-a")], catalog);
+    const priced = priceLines([line("pods")], catalog);
     expect(couponBlocker(coupon({ plusOnly: true }), priced, { plus: false })).toMatch(/Plus/);
     expect(couponBlocker(coupon({ upiOnly: true }), priced, { plus: false, method: "card" })).toMatch(/UPI/);
     expect(couponBlocker(coupon({}), priced, { plus: false })).toBeNull();

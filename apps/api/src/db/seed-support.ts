@@ -38,7 +38,7 @@ const STATUS: Record<MockTicket["status"], t.TicketStatus> = {
 
 export async function seedSupport(db: Db, owners: { phone: string; id: string }[]) {
   const load = (base: URL, f: string) => import(pathToFileURL(fileURLToPath(new URL(f, base))).href);
-  const [ops, engagement, orderMod, logistics, people, status, utils] = await Promise.all([
+  const [ops, engagement, orderMod, _logistics, people, status, utils] = await Promise.all([
     load(WEB_MOCK, "ops-extra.ts"),
     load(WEB_MOCK, "engagement.ts"),
     load(WEB_MOCK, "orders.ts"),
@@ -53,7 +53,6 @@ export async function seedSupport(db: Db, owners: { phone: string; id: string }[
   const ticketThread = ops.ticketThread as (x: MockTicket) => MockThreadEntry[];
   const ticketCustomer = ops.ticketCustomer as (x: MockTicket) => { id: string; name: string } | undefined;
   const getOrder = orderMod.getOrder as (id: string) => MockOrder | undefined;
-  const sellerName = logistics.sellerName as (id: string) => string;
   const customers = people.customers as { id: string; name: string }[];
   const paymentLabel = status.PAYMENT_METHOD as Record<string, string>;
   const demoNow = (utils.NOW as Date).getTime();
@@ -67,11 +66,11 @@ export async function seedSupport(db: Db, owners: { phone: string; id: string }[
       ...careAgents.map((a, i) => ({
         phone: careAgentPhone(i),
         name: a.fullName,
-        email: `${a.fullName.toLowerCase().replace(/[^a-z]+/g, ".")}@blubuy.in`,
+        email: `${a.fullName.toLowerCase().replace(/[^a-z]+/g, ".")}@altasgoods.in`,
         emailVerifiedAt: new Date(),
         staffRoles: [a.level === "L2" ? "SUPPORT_SPECIALIST" : "SUPPORT_AGENT"] as t.StaffRole[],
       })),
-      { phone: DEMO_SUPERVISOR_PHONE, name: supervisor.name, email: "arvind.menon@blubuy.in", emailVerifiedAt: new Date(), staffRoles: ["SUPPORT_SUPERVISOR"] as t.StaffRole[] },
+      { phone: DEMO_SUPERVISOR_PHONE, name: supervisor.name, email: "arvind.menon@altasgoods.in", emailVerifiedAt: new Date(), staffRoles: ["SUPPORT_SUPERVISOR"] as t.StaffRole[] },
     ])
     .returning({ id: t.users.id, name: t.users.name });
   const agentId = new Map(careAgents.map((a, i) => [a.name, agentRows[i]!.id]));
@@ -90,7 +89,8 @@ export async function seedSupport(db: Db, owners: { phone: string; id: string }[
     await db.insert(t.supportTickets).values({
       id: mt.id,
       subject: mt.subject,
-      category: mt.category,
+      // the demo data has seller disputes, which a single store files under Other
+      category: ((mt.category as string) === "Seller dispute" ? "Other" : mt.category) as t.TicketCategory,
       channel: mt.channel.toUpperCase() as t.TicketChannel,
       priority: mt.priority.toUpperCase() as t.TicketPriority,
       status: st,
@@ -103,7 +103,6 @@ export async function seedSupport(db: Db, owners: { phone: string; id: string }[
             total: order.total,
             paymentLabel: paymentLabel[order.payment.method] ?? order.payment.method,
             cod: order.payment.method === "cod",
-            seller: sellerName(order.items[0]!.sellerId),
             items: order.items.map((i) => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity })),
           }
         : null,

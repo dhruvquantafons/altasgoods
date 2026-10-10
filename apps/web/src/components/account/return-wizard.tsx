@@ -53,7 +53,7 @@ export interface WizardItem {
 export interface WizardReason {
   code: string;
   label: string;
-  fault: "seller" | "logistics" | "customer";
+  fault: "store" | "logistics" | "customer";
   photos: boolean;
   fashionOnly?: boolean;
 }
@@ -204,10 +204,10 @@ export function ReturnWizard({
     refundTo === "credits"
       ? item?.instantRefund
         ? "Instantly, as soon as the pickup is done"
-        : "Under 2 hours after the seller's quality check"
+        : "Under 2 hours after our quality check"
       : refundTo === "bank"
         ? "1 to 2 business days after pickup"
-        : `${payment.timing} after ${item?.instantRefund ? "pickup" : "the seller's quality check"}`;
+        : `${payment.timing} after ${item?.instantRefund ? "pickup" : "our quality check"}`;
 
   async function submit() {
     if (!item || !reason || !resolution || !slot) return;
@@ -219,7 +219,7 @@ export function ReturnWizard({
       qty: item.quantity,
       reasonCode: reason.code,
       reasonLabel: reason.label,
-      fault: reason.fault.toUpperCase() as "SELLER" | "LOGISTICS" | "CUSTOMER",
+      fault: reason.fault.toUpperCase() as "STORE" | "LOGISTICS" | "CUSTOMER",
       comments: comment.trim() || undefined,
       photoIds: photos.map((p) => p.id),
       resolution: resolution.toUpperCase() as "REFUND" | "REPLACEMENT" | "EXCHANGE",
@@ -246,9 +246,9 @@ export function ReturnWizard({
           {resolution === "refund" ? "Return requested" : resolution === "exchange" ? "Exchange requested" : "Replacement requested"}
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-ink-600">
-          {created?.status === "PENDING_SELLER_REVIEW" ? (
+          {created?.status === "PENDING_REVIEW" ? (
             <>
-              Request <span className="font-mono text-[13px] text-ink-900">{created.id}</span> is outside the return window, so the seller reviews it within 48 hours. We will let you know as soon as they decide.
+              Request <span className="font-mono text-[13px] text-ink-900">{created.id}</span> is outside the return window, so our team reviews it within 48 hours. We will let you know as soon as they decide.
             </>
           ) : (
             <>
@@ -487,7 +487,7 @@ export function ReturnWizard({
                       <Choice name="refund" selected={refundTo === "original"} onSelect={() => setRefundTo("original")}>
                         <p className="text-[13.5px] font-medium text-ink-900">Original payment method</p>
                         <p className="mt-0.5 text-xs text-ink-500">
-                          {payment.label}. {payment.timing} after {item.instantRefund ? "pickup" : "the seller's quality check"}
+                          {payment.label}. {payment.timing} after {item.instantRefund ? "pickup" : "our quality check"}
                         </p>
                       </Choice>
                     )}

@@ -37,7 +37,6 @@ export const PRIORITY_FOR: Record<string, TicketPriority> = {
   "Product quality": "HIGH",
   "Return and refund": "NORMAL",
   Account: "NORMAL",
-  "Seller dispute": "NORMAL",
   Other: "LOW",
 };
 

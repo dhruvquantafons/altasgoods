@@ -11,7 +11,8 @@ import { AREAS, crawl, signedIn, watchErrors } from "./support";
  */
 test.describe.configure({ mode: "parallel" });
 
-const API_PAGES = /^\/(checkout|order|cart)(\/|$)|^\/account\/orders|^\/seller\/orders|^\/seller\/register|^\/admin\/sellers\/approvals/;
+// pages whose buttons change real data through the API; the flow tests cover them
+const API_PAGES = /^\/(checkout|order|cart)(\/|$)|^\/account\/orders|^\/admin\/(orders|returns|catalog|categories|brands)(\/|$)/;
 const SKIP_NAMES = /sign ?out|log ?out/i;
 const MAX_BUTTONS = 40;
 

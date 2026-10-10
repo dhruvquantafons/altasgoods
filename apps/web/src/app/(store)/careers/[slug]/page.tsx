@@ -67,7 +67,7 @@ export default async function RolePage(props: PageProps<"/careers/[slug]">) {
           <section>
             <h2 className="text-lg font-semibold text-ink-900">About the role</h2>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-700">
-              {role.summary} You will work closely with a small, senior team, ship often and see the difference your work makes for customers and sellers across India.
+              {role.summary} You will work closely with a small, senior team, ship often and see the difference your work makes for customers across India.
             </p>
           </section>
           <List title="What you will do" items={role.responsibilities} />

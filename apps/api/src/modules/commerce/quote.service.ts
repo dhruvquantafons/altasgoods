@@ -3,7 +3,7 @@ import { eq, inArray } from "drizzle-orm";
 import type { Clock } from "../../common/infra.module.js";
 import { CLOCK } from "../../common/tokens.js";
 import type { Tx } from "../../db/client.js";
-import { categories, coupons, offers, products, sellers, type PaymentMethod } from "../../db/schema.js";
+import { coupons, offers, products, type PaymentMethod } from "../../db/schema.js";
 import { COD_LIMIT_PAISE, couponDiscount, deliveryFee, promiseDate } from "./pricing.js";
 
 export interface QuoteLineInput {
@@ -32,11 +32,9 @@ export class QuoteService {
     const now = this.clock.now();
     const ids = [...new Set(input.lines.map((l) => l.offerId))];
     const query = tx
-      .select({ offer: offers, product: products, seller: sellers, commissionBps: categories.commissionBps })
+      .select({ offer: offers, product: products })
       .from(offers)
       .innerJoin(products, eq(products.id, offers.productId))
-      .innerJoin(sellers, eq(sellers.id, offers.sellerId))
-      .innerJoin(categories, eq(categories.id, products.categoryId))
       .where(inArray(offers.id, ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]));
     const rows = input.lock ? await query.for("update", { of: offers }) : await query;
     const byId = new Map(rows.map((r) => [r.offer.id, r]));
@@ -47,7 +45,7 @@ export class QuoteService {
 
     const priced = input.lines.flatMap((l) => {
       const r = byId.get(l.offerId);
-      if (!r || r.offer.status !== "ACTIVE" || r.seller.status !== "ACTIVE" || r.product.listingStatus !== "LIVE") {
+      if (!r || r.offer.status !== "ACTIVE" || r.product.listingStatus !== "LIVE") {
         issues.push({ offerId: l.offerId, code: "UNAVAILABLE", message: "This item is no longer available" });
         return [];
       }
@@ -62,42 +60,27 @@ export class QuoteService {
       return [{ input: l, ...r }];
     });
 
-    const bySeller = new Map<string, typeof priced>();
-    for (const p of priced) bySeller.set(p.seller.id, [...(bySeller.get(p.seller.id) ?? []), p]);
-
-    const shipments = [...bySeller.values()].map((group) => {
-      const seller = group[0]!.seller;
-      const subtotal = group.reduce((a, p) => a + p.offer.pricePaise * p.input.qty, 0);
-      const promised = group.reduce((latest, p) => {
-        const d = promiseDate(now, p.offer.deliveryDays);
-        return d > latest ? d : latest;
-      }, new Date(0));
-      return {
-        seller: { id: seller.id, slug: seller.slug, displayName: seller.displayName },
-        fulfilledBy: group.every((p) => p.offer.fulfilledBy === "BLUBUY") ? ("BLUBUY" as const) : ("SELLER" as const),
-        lines: group.map((p) => ({
-          offerId: p.offer.id,
-          productId: p.product.id,
-          slug: p.product.slug,
-          title: p.product.title,
-          image: p.product.images[0] ?? "",
-          variant: p.input.variant,
-          qty: p.input.qty,
-          unitPricePaise: p.offer.pricePaise,
-          mrpPaise: p.offer.mrpPaise,
-          lineTotalPaise: p.offer.pricePaise * p.input.qty,
-        })),
-        subtotalPaise: subtotal,
-        deliveryFeePaise: deliveryFee(subtotal, input.isPlus),
-        promisedBy: promised.toISOString(),
-        // internal fields used by order placement
-        _rows: group,
-      };
-    });
+    // everything ships together from the store, promised by the slowest line
+    const promised = priced.reduce((latest, p) => {
+      const d = promiseDate(now, p.offer.deliveryDays);
+      return d > latest ? d : latest;
+    }, promiseDate(now, 0));
+    const lines = priced.map((p) => ({
+      offerId: p.offer.id,
+      productId: p.product.id,
+      slug: p.product.slug,
+      title: p.product.title,
+      image: p.product.images[0] ?? "",
+      variant: p.input.variant,
+      qty: p.input.qty,
+      unitPricePaise: p.offer.pricePaise,
+      mrpPaise: p.offer.mrpPaise,
+      lineTotalPaise: p.offer.pricePaise * p.input.qty,
+    }));
 
     const mrpTotal = priced.reduce((a, p) => a + p.offer.mrpPaise * p.input.qty, 0);
-    const subtotal = shipments.reduce((a, s) => a + s.subtotalPaise, 0);
-    const delivery = shipments.reduce((a, s) => a + s.deliveryFeePaise, 0);
+    const subtotal = lines.reduce((a, l) => a + l.lineTotalPaise, 0);
+    const delivery = lines.length ? deliveryFee(subtotal, input.isPlus) : 0;
 
     let coupon: { code: string; applied: boolean; message: string } | null = null;
     let couponDiscountPaise = 0;
@@ -121,7 +104,8 @@ export class QuoteService {
     if (input.paymentMethod === "COD" && !cod.available) issues.push({ offerId: priced[0]?.offer.id ?? ids[0] ?? "", code: "COD_UNAVAILABLE", message: cod.reason! });
 
     return {
-      shipments,
+      lines,
+      promisedBy: promised.toISOString(),
       mrpTotalPaise: mrpTotal,
       subtotalPaise: subtotal,
       couponDiscountPaise,
@@ -136,7 +120,5 @@ export class QuoteService {
   }
 }
 
-/** Strips internal fields before a quote leaves the API. */
-export function publicQuote(q: Quote) {
-  return { ...q, shipments: q.shipments.map(({ _rows: _unused, ...s }) => s) };
-}
+/** The quote as it leaves the API. */
+export const publicQuote = (q: Quote) => q;

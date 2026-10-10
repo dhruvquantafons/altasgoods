@@ -6,18 +6,18 @@ import { createDb } from "../src/db/client.js";
 import { offers } from "../src/db/schema.js";
 import { PaymentsService } from "../src/modules/commerce/payments/payments.service.js";
 import { signSandbox } from "../src/modules/commerce/payments/sandbox.provider.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_SELLER, signIn, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 let shopper: Record<string, string>;
-let seller: Record<string, string>;
+let staff: Record<string, string>;
 let addressId: string;
 const { db, pool } = createDb(env().TEST_DATABASE_URL);
 
 beforeAll(async () => {
   t = await createTestApp();
   shopper = (await signIn(t.http, DEMO_CUSTOMER)).auth;
-  seller = (await signIn(t.http, DEMO_SELLER)).auth;
+  staff = (await signIn(t.http, DEMO_STAFF)).auth;
   const addresses = await t.http.get("/v1/me/addresses").set(shopper).expect(200);
   addressId = addresses.body.find((a: { isDefault: boolean }) => a.isDefault).id;
 });
@@ -27,10 +27,10 @@ afterAll(async () => {
 });
 beforeEach(() => t.clock.reset());
 
-/** The featured (buy box) offer of a product. */
+/** The store's offer for a product. */
 async function offerOf(slug: string) {
   const p = await t.http.get(`/v1/products/${slug}`).expect(200);
-  return p.body.offers.find((o: { isFeatured: boolean }) => o.isFeatured) as { id: string; pricePaise: number; seller: { id: string } };
+  return { id: p.body.offerId as string, pricePaise: p.body.pricePaise as number };
 }
 const stockOf = async (offerId: string) => (await db.select({ stock: offers.stock }).from(offers).where(eq(offers.id, offerId)))[0]!.stock;
 const place = (body: object, key = randomUUID()) => t.http.post("/v1/orders").set(shopper).set("Idempotency-Key", key).send({ addressId, ...body });
@@ -77,8 +77,8 @@ describe("prepaid checkout", () => {
     expect(await stockOf(o.id)).toBe(stockBefore - 1);
     // the ordered line leaves the cart
     expect((await t.http.get("/v1/cart").set(shopper)).body.lines).toHaveLength(0);
-    // sellers do not see unpaid orders
-    const before = await t.http.get("/v1/seller/order-items").set(seller).expect(200);
+    // unpaid orders are not ready to fulfil
+    const before = await t.http.get("/v1/admin/order-items").set(staff).expect(200);
     expect(before.body.items.find((i: { orderId: string }) => i.orderId === order.id)).toBeUndefined();
 
     // retrying the same request returns the same order
@@ -92,12 +92,11 @@ describe("prepaid checkout", () => {
     expect(detail.body.paymentStatus).toBe("CAPTURED");
     expect(detail.body.items[0]).toMatchObject({ status: "NEW", canCancel: true });
 
-    const sellerView = await t.http.get(`/v1/seller/orders/${order.id}`).set(seller).expect(200);
-    const item = sellerView.body.items[0];
+    const storeView = await t.http.get(`/v1/admin/orders/${order.id}`).set(staff).expect(200);
+    const item = storeView.body.items[0];
     expect(item.allowedActions).toEqual(["ACCEPTED", "CANCELLED"]);
-    expect(item.fees.map((f: { code: string }) => f.code)).toEqual(["COMMISSION", "FIXED_FEE", "SHIPPING_FEE", "GST_ON_FEES", "TCS", "TDS"]);
-    expect(item.netSettlementPaise).toBe(o.pricePaise + item.fees.reduce((a: number, f: { amountPaise: number }) => a + f.amountPaise, 0));
-    expect(sellerView.body.shipTo.name).toBe("Ananya S.");
+    expect(item).not.toHaveProperty("fees");
+    expect(storeView.body.shipTo.name).toBe("Ananya Sharma");
   });
 
   it("lets a failed payment be retried, then confirms", async () => {
@@ -163,31 +162,30 @@ describe("inventory", () => {
   });
 });
 
-describe("seller fulfilment and delivery (cash on delivery)", () => {
+describe("store fulfilment and delivery (cash on delivery)", () => {
   it("moves an order from placed to delivered and collects cash", async () => {
     const o = await offerOf("airfryer-crisp");
-    expect(o.seller.id).toBe("s-apex");
     const placed = await place({ paymentMethod: "COD", lines: [{ offerId: o.id, qty: 1, variant: "" }] }).expect(201);
     const orderId = placed.body.order.id;
     expect(placed.body.order).toMatchObject({ status: "CONFIRMED", paymentStatus: "COD_PENDING" });
     expect(placed.body.payment.nextAction).toBeNull();
 
-    const list = await t.http.get("/v1/seller/order-items?status=NEW").set(seller).expect(200);
+    const list = await t.http.get("/v1/admin/order-items?status=NEW").set(staff).expect(200);
     const line = list.body.items.find((i: { orderId: string }) => i.orderId === orderId);
     expect(line).toBeDefined();
     expect(list.body.counts.NEW).toBeGreaterThanOrEqual(1);
 
     // a step cannot be skipped
-    const skip = await t.http.post("/v1/seller/order-items/transition").set(seller).send({ ids: [line.id], to: "PACKED" }).expect(200);
+    const skip = await t.http.post("/v1/admin/order-items/transition").set(staff).send({ ids: [line.id], to: "PACKED" }).expect(200);
     expect(skip.body.results[0]).toMatchObject({ ok: false });
-    // sellers cannot mark items shipped; only logistics scans can
-    await t.http.post("/v1/seller/order-items/transition").set(seller).send({ ids: [line.id], to: "SHIPPED" }).expect(422);
+    // staff cannot mark items shipped; only courier scans can
+    await t.http.post("/v1/admin/order-items/transition").set(staff).send({ ids: [line.id], to: "SHIPPED" }).expect(422);
 
     for (const to of ["ACCEPTED", "PACKED", "READY_TO_SHIP"]) {
-      const r = await t.http.post("/v1/seller/order-items/transition").set(seller).send({ ids: [line.id], to }).expect(200);
+      const r = await t.http.post("/v1/admin/order-items/transition").set(staff).send({ ids: [line.id], to }).expect(200);
       expect(r.body.results[0]).toMatchObject({ ok: true, status: to });
     }
-    const rts = await t.http.get(`/v1/seller/orders/${orderId}`).set(seller).expect(200);
+    const rts = await t.http.get(`/v1/admin/orders/${orderId}`).set(staff).expect(200);
     expect(rts.body.items[0].awb).toMatch(/^BBL\d{10}$/);
     expect(rts.body.status).toBe("IN_PROGRESS");
 
@@ -199,12 +197,9 @@ describe("seller fulfilment and delivery (cash on delivery)", () => {
     );
   });
 
-  it("keeps sellers out of other sellers' orders", async () => {
-    const o = await offerOf("tee-classic"); // sold by Loom House, not Apex
-    const placed = await place({ paymentMethod: "COD", lines: [{ offerId: o.id, qty: 1, variant: "M" }] }).expect(201);
-    await t.http.get(`/v1/seller/orders/${placed.body.order.id}`).set(seller).expect(404);
-    await t.http.get("/v1/seller/order-items").set(seller).set("X-Seller-Id", "s-loomhouse").expect(403);
-    await t.http.get("/v1/seller/order-items").set(shopper).expect(403);
+  it("keeps the fulfilment queue to store staff", async () => {
+    await t.http.get("/v1/admin/order-items").set(shopper).expect(403);
+    await t.http.get("/v1/seller/order-items").set(staff).expect(404);
   });
 });
 
@@ -237,11 +232,10 @@ describe("cancellation and refunds", () => {
     expect(refused.body.code).toBe("COD_UNAVAILABLE");
 
     const o = await offerOf("cookware-pan");
-    expect(o.seller.id).toBe("s-apex");
     const placed = await place({ paymentMethod: "COD", lines: [{ offerId: o.id, qty: 1, variant: "" }] }).expect(201);
     const item = placed.body.order.items[0];
     for (const to of ["ACCEPTED", "PACKED", "READY_TO_SHIP"]) {
-      const r = await t.http.post("/v1/seller/order-items/transition").set(seller).send({ ids: [item.id], to }).expect(200);
+      const r = await t.http.post("/v1/admin/order-items/transition").set(staff).send({ ids: [item.id], to }).expect(200);
       expect(r.body.results[0].ok).toBe(true);
     }
     await t.http.post("/v1/dev/logistics/advance").set(shopper).send({ orderItemId: item.id, to: "SHIPPED" }).expect(200);

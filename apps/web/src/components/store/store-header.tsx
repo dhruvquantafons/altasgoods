@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Crown, HelpCircle, Package, Smartphone, Store } from "lucide-react";
+import { Crown, HelpCircle, Package, Smartphone } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { AccountMenu, CartButton, DeliverTo, MobileNav, SearchBox, SearchBoxFallback, WishlistLink } from "./header-client";
 import { MegaMenu } from "./mega-menu";
@@ -33,7 +33,6 @@ export function StoreHeader({
           <nav aria-label="Utility" className="flex items-center gap-1 text-[13px] text-ink-600">
             {[
               { href: "/plus", label: "AltasGoods Plus", icon: Crown },
-              { href: "/sell", label: "Sell on AltasGoods", icon: Store },
               { href: "/help", label: "Help", icon: HelpCircle },
               { href: "#app-download", label: "Download app", icon: Smartphone },
             ].map((l) => (
