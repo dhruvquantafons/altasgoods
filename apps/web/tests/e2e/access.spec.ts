@@ -39,3 +39,17 @@ test("the marketplace seller pages are gone", async ({ page, browser }) => {
   }
   await ctx.close();
 });
+
+test("the Plus, AltasCoins and ads pages are gone", async ({ page, browser }) => {
+  for (const path of ["/plus", "/account/plus", "/account/rewards"]) {
+    const r = await page.goto(path);
+    expect(r?.status(), path).toBe(404);
+  }
+  const ctx = await signedIn(browser, PHONES.staff);
+  const staff = await ctx.newPage();
+  for (const path of ["/admin/ads", "/admin/ads/campaigns", "/admin/ads/reports"]) {
+    const r = await staff.goto(path);
+    expect(r?.status(), path).toBe(404);
+  }
+  await ctx.close();
+});

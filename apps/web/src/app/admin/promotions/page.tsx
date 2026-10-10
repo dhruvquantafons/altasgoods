@@ -56,7 +56,7 @@ export default function PromotionsPage() {
       />
 
       <Card className="mb-6">
-        <CardHeader title="Sale events" description="July to December 2026. Plus members get 24 hour early access to AltasGoods Big Days and Plus Day." />
+        <CardHeader title="Sale events" description="July to December 2026. Every deal is approved per category before it goes live." />
         {/* Timeline (md and up) */}
         <div className="hidden px-5 pt-4 pb-5 md:block">
           <div className="grid grid-cols-[220px_1fr] gap-x-4">

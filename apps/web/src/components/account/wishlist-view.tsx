@@ -45,7 +45,7 @@ export function WishlistView({ initial }: { initial: WishList[] }) {
   const drops = list.items.filter((i) => i.price < i.priceWhenAdded);
 
   const updateItems = (fn: (items: WishItem[]) => WishItem[]) => setLists((ls) => ls.map((l) => (l.id === list.id ? { ...l, items: fn(l.items) } : l)));
-  const shareUrl = `https://blubuy.in/lists/${list.id.replace("wl-", "")}-ananya`;
+  const shareUrl = `https://altasgoods.in/lists/${list.id.replace("wl-", "")}-ananya`;
 
   return (
     <>

@@ -39,49 +39,6 @@ export const ACCOUNT_PROFILE = {
   twoStepEnabled: true,
 };
 
-/* ------------------------------ AltasGoods Plus ---------------------------- */
-/** GET /v1/me/plus */
-
-export const PLUS_PLANS = [
-  { id: "monthly", name: "Monthly", price: 149, period: "month", note: "Billed every month, cancel any time" },
-  { id: "annual", name: "Annual", price: 999, period: "year", note: "Save ₹789 a year compared with monthly" },
-] as const;
-
-const plusSavings = [
-  { key: "delivery", label: "Free delivery", value: 1640, detail: "41 shipments delivered free" },
-  { key: "deals", label: "Plus-only prices and deals", value: 6380, detail: "Across 12 orders" },
-  { key: "coins", label: "Extra AltasCoins (2x)", value: 1204, detail: "1,204 bonus coins, 1 coin = ₹1" },
-  { key: "early", label: "Early access to AltasGoods Big Days", value: 2150, detail: "Deals claimed 24 hours early" },
-];
-
-export const PLUS_MEMBERSHIP = {
-  status: "active" as const,
-  planId: "annual" as "annual" | "monthly",
-  price: 999,
-  memberSince: ist("2022-11-12"),
-  periodStart: ist("2025-11-12"),
-  renewsOn: ist("2026-11-12"),
-  autoRenew: true,
-  renewalMethod: "Kaveri Bank credit card ending 4821",
-  savings: plusSavings,
-  totalSaved: plusSavings.reduce((a, s) => a + s.value, 0),
-  /** completed months of the current membership year; sums to totalSaved */
-  monthlySavings: [
-    { label: "Nov", value: 1420 },
-    { label: "Dec", value: 690 },
-    { label: "Jan", value: 1840 },
-    { label: "Feb", value: 520 },
-    { label: "Mar", value: 760 },
-    { label: "Apr", value: 610 },
-    { label: "May", value: 830 },
-    { label: "Jun", value: 940 },
-    { label: "Jul", value: 1210 },
-    { label: "Aug", value: 700 },
-    { label: "Sep", value: 1854 },
-  ],
-  ordersThisYear: 31,
-};
-
 /* ----------------------------- AltasGoods Credits -------------------------- */
 /** GET /v1/me/credits and /v1/me/credits/ledger */
 
@@ -137,63 +94,6 @@ export const GIFT_CARD_DESIGNS = [
   { id: "birthday", name: "Birthday", tone: "brand" as const },
   { id: "thanks", name: "Thank you", tone: "success" as const },
   { id: "wedding", name: "Wedding", tone: "danger" as const },
-];
-
-/* -------------------------------- AltasCoins ----------------------------- */
-/** GET /v1/me/blucoins */
-
-export interface CoinTxn {
-  id: string;
-  at: string;
-  title: string;
-  detail: string;
-  kind: "earned" | "bonus" | "redeemed" | "expired";
-  coins: number;
-  balance: number;
-  orderId?: string;
-}
-
-const coinSeed: Omit<CoinTxn, "balance">[] = [
-  { id: "BC-4410", at: ist("2026-04-30", "09:00"), title: "Earned on an order", detail: "Order BB-260418-55120", kind: "earned", coins: 120 },
-  { id: "BC-4532", at: ist("2026-05-22", "09:00"), title: "Earned on an order", detail: "Order BB-260509-21934", kind: "earned", coins: 85 },
-  { id: "BC-4719", at: ist("2026-06-14", "09:00"), title: "Earned on an order", detail: "Order BB-260601-77412", kind: "earned", coins: 100 },
-  { id: "BC-4851", at: ist("2026-07-16", "12:00"), title: "AltasGoods Plus Day bonus", detail: "Members-only bonus coins", kind: "bonus", coins: 50 },
-  { id: "BC-4907", at: ist("2026-07-30", "17:40"), title: "Review bonus", detail: "4 reviews published in July", kind: "bonus", coins: 40 },
-  { id: "BC-5012", at: ist("2026-08-12", "09:00"), title: "Earned on an order", detail: "Order BB-260728-60413", kind: "earned", coins: 100 },
-  { id: "BC-5093", at: ist("2026-08-20", "21:05"), title: "Redeemed for a partner reward", detail: "Cinemood movie voucher", kind: "redeemed", coins: -200 },
-  { id: "BC-5130", at: ist("2026-09-01", "00:05"), title: "Coins expired", detail: "Credited in March 2026", kind: "expired", coins: -45 },
-  { id: "BC-5288", at: ist("2026-09-15", "09:00"), title: "Earned on an order", detail: "Order BB-260905-70152", kind: "earned", coins: 100, orderId: "BB-260905-70152" },
-  { id: "BC-5302", at: ist("2026-09-16", "09:00"), title: "Earned on an order", detail: "Order BB-260906-92983", kind: "earned", coins: 70, orderId: "BB-260906-92983" },
-  { id: "BC-5376", at: ist("2026-09-27", "11:48"), title: "Used on an order", detail: "Order BB-260927-81647", kind: "redeemed", coins: -150, orderId: "BB-260927-81647" },
-  { id: "BC-5401", at: ist("2026-09-28", "15:50"), title: "Earned on an order", detail: "Order BB-260916-32493", kind: "earned", coins: 100, orderId: "BB-260916-32493" },
-  { id: "BC-5402", at: ist("2026-09-28", "15:50"), title: "AltasGoods Big Days bonus", detail: "Extra 20 coins on festive orders", kind: "bonus", coins: 20 },
-];
-
-const coinOpening = CURRENT_CUSTOMER.bluCoins - coinSeed.reduce((a, c) => a + c.coins, 0);
-let coinRunning = coinOpening;
-export const coinTransactions: CoinTxn[] = coinSeed
-  .map((c) => {
-    coinRunning += c.coins;
-    return { ...c, balance: coinRunning };
-  })
-  .reverse();
-
-export const BLUCOINS = {
-  balance: CURRENT_CUSTOMER.bluCoins,
-  /** Plus members earn 2 coins per ₹100, capped at 100 per order */
-  earnRate: 2,
-  cap: 100,
-  expiring: [
-    { coins: 120, expiresOn: ist("2026-10-31", "23:59"), from: "Credited in April 2026" },
-    { coins: 85, expiresOn: ist("2026-11-30", "23:59"), from: "Credited in May 2026" },
-  ],
-};
-
-export const partnerRewards = [
-  { id: "pr-1", partner: "Cinemood", title: "₹200 off two movie tickets", coins: 200, category: "Entertainment", validity: "Valid 30 days" },
-  { id: "pr-2", partner: "Tiffin Trails", title: "₹150 off food orders above ₹499", coins: 120, category: "Food", validity: "Valid 15 days" },
-  { id: "pr-3", partner: "Skyline Air", title: "₹750 off domestic flights", coins: 600, category: "Travel", validity: "Valid 60 days" },
-  { id: "pr-4", partner: "Wanderstay", title: "15% off hotel stays, up to ₹1,000", coins: 400, category: "Travel", validity: "Valid 90 days" },
 ];
 
 /* ------------------------------ Payments ------------------------------- */
@@ -512,7 +412,7 @@ const returnSeeds: ReturnSeed[] = [
     replacementEta: ist("2026-10-02", "19:00"),
     events: [
       { label: "Replacement requested", at: ist("2026-09-27", "19:30"), done: true },
-      { label: "Approved", at: ist("2026-09-27", "19:31"), note: "Plus members get replacements shipped before pickup", done: true },
+      { label: "Approved", at: ist("2026-09-27", "19:31"), note: "Replacement ships before the pickup", done: true },
       { label: "Replacement shipped", at: ist("2026-09-28", "15:10"), note: "Arriving by Fri, 2 Oct", done: true },
       { label: "Original item picked up", at: ist("2026-09-29", "10:40"), done: true },
       { label: "Replacement delivered", done: false },
@@ -825,7 +725,6 @@ const extraNotifications: Notification[] = [
   { id: "c-5", kind: "alert", title: "Price drop on your wishlist", body: "Meridian Heritage Automatic Analog Watch is now ₹1,000 lower than when you saved it.", at: hoursAgo(6), read: false, href: "/account/wishlist" },
   { id: "c-6", kind: "order", title: "Return pickup on Fri, 2 Oct", body: "Keep the Novatek Slate 11 Tablet ready with its box and charger. Pickup between 9 AM and 12 PM.", at: hoursAgo(19), read: false, href: "/account/returns" },
   { id: "c-7", kind: "account", title: "New sign-in to your account", body: "A new sign-in from an Android phone in Bengaluru. If this was not you, sign out of all devices.", at: hoursAgo(52), read: true, href: "/account/profile" },
-  { id: "c-8", kind: "system", title: "Your AltasGoods Plus renews on 12 Nov", body: "₹999 will be charged to your Kaveri Bank credit card ending 4821. You can manage auto-renew any time.", at: hoursAgo(98), read: true, href: "/account/plus" },
   { id: "c-9", kind: "order", title: "Replacement shipped", body: "Your replacement Orbit Watch S3 is on its way and will arrive by Fri, 2 Oct.", at: hoursAgo(67), read: true, href: "/account/returns" },
 ];
 
@@ -843,7 +742,6 @@ export const NOTIFICATION_PREFS: { key: string; label: string; description: stri
   { key: "offers", label: "Offers and sale events", description: "AltasGoods Big Days, bank offers and coupons", transactional: false, channels: { push: true, sms: false, email: true, whatsapp: false } },
   { key: "price", label: "Price drops and back in stock", description: "For items in your wishlists", transactional: false, channels: { push: true, sms: false, email: false, whatsapp: true } },
   { key: "reminders", label: "Cart and wishlist reminders", description: "Items you left behind", transactional: false, channels: { push: false, sms: false, email: false, whatsapp: false } },
-  { key: "rewards", label: "AltasGoods Plus and AltasCoins", description: "Renewals, coin credits and expiry reminders", transactional: false, channels: { push: true, sms: false, email: true, whatsapp: false } },
 ];
 
 /* ------------------------- Security and privacy ------------------------ */

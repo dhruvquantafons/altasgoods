@@ -1,4 +1,4 @@
-import { BadgePercent, ChevronDown, Coins, CreditCard, Landmark, Smartphone, Wallet } from "lucide-react";
+import { BadgePercent, ChevronDown, CreditCard, Landmark, Smartphone, Wallet } from "lucide-react";
 import type { BankOffer } from "./types";
 import { CouponClip } from "./pdp-client";
 import { formatINR } from "@/lib/utils";
@@ -28,18 +28,16 @@ function OfferRow({ o }: { o: BankOffer }) {
 }
 
 /**
- * Offers block: bank, UPI, EMI and partner offers with their conditions, an
- * opt-in coupon, and AltasCoins you will earn. Never folded into the headline price.
+ * Offers block: bank, UPI, EMI and partner offers with their conditions and an
+ * opt-in coupon. Never folded into the headline price.
  */
 export function OffersList({
   offers,
   coupon,
-  coins,
   emiFrom,
 }: {
   offers: BankOffer[];
   coupon?: { code: string; description: string };
-  coins: number;
   emiFrom?: number;
 }) {
   const first = offers.slice(0, 3);
@@ -75,22 +73,16 @@ export function OffersList({
       </div>
       <div className="flex flex-col gap-3 border-t border-line p-4">
         {coupon && <CouponClip code={coupon.code} description={coupon.description} />}
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-ink-700">
-          <span className="flex items-center gap-2">
-            <Coins size={15} className="text-accent-700" aria-hidden="true" />
-            <span>
-              Earn <span className="font-semibold text-ink-900">{coins} AltasCoins</span> on this order
-            </span>
-          </span>
-          {emiFrom && (
+        {emiFrom && (
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-ink-700">
             <span className="flex items-center gap-2">
               <CreditCard size={15} className="text-ink-500" aria-hidden="true" />
               <span>
                 No cost EMI from <span className="font-semibold text-ink-900">{formatINR(emiFrom)} a month</span>
               </span>
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

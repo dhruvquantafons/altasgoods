@@ -15,7 +15,6 @@ import { ReviewsSection } from "@/components/store/reviews";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { Stars } from "@/components/ui/misc";
 import { reviewsFor } from "@/lib/mock";
-import { currentUser } from "@/lib/api/server";
 import { getStoreCatalog } from "@/lib/store-catalog";
 import {
   aspectRatings,
@@ -70,7 +69,7 @@ function buildVariants(p: Product, price: number): PdpVariant[] {
 
 export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const { slug } = await props.params;
-  const [catalog, user] = await Promise.all([getStoreCatalog(), currentUser()]);
+  const catalog = await getStoreCatalog();
   const p = catalog.product(slug);
   if (!p) notFound();
 
@@ -87,8 +86,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const qa = questionsFor(p);
   const fbt = [p, ...frequentlyBoughtWith(catalog.products, p)];
   const similar = similarProducts(catalog.products, p);
-  const plus = !!user?.isPlus;
-  const coins = Math.min(100, Math.floor(offer.price / 100) * (plus ? 2 : 1));
   const coupon = storefrontCoupons().find((c) => c.code === "BIGDAYS10" && offer.price >= c.minOrder);
   const badge = cardBadge(p, !!deal);
 
@@ -99,7 +96,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
     brand: brand.name,
     variants: buildVariants(p, offer.price),
     offer: snapshot.offer,
-    plus,
     large: snapshot.large,
     policyShort: policy.short,
     warranty,
@@ -163,7 +159,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               <OffersList
                 offers={bankOffersFor(offer.price)}
                 coupon={coupon ? { code: coupon.code, description: coupon.description } : undefined}
-                coins={coins}
                 emiFrom={offer.price >= 3000 ? Math.ceil(offer.price / 6) : undefined}
               />
             </div>

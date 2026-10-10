@@ -140,7 +140,7 @@ export default async function FulfilmentPage(props: PageProps<"/logistics/fulfil
         </Card>
 
         <Card className="min-w-0 xl:col-span-2">
-          <CardHeader title="Pick lists" description="Waves ordered by carrier cut-off, Plus one-day first" />
+          <CardHeader title="Pick lists" description="Waves ordered by carrier cut-off and delivery promise" />
           <TableContainer className="mt-3">
             <Table>
               <THead>

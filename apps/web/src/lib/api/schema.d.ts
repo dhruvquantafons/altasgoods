@@ -1202,7 +1202,6 @@ export interface operations {
                             name: string | null;
                             email: string | null;
                             emailVerified: boolean;
-                            isPlus: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
                         };
@@ -1285,7 +1284,6 @@ export interface operations {
                         name: string | null;
                         email: string | null;
                         emailVerified: boolean;
-                        isPlus: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
                     };
@@ -1322,7 +1320,6 @@ export interface operations {
                         name: string | null;
                         email: string | null;
                         emailVerified: boolean;
-                        isPlus: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
                     };
@@ -1391,7 +1388,6 @@ export interface operations {
                         name: string | null;
                         email: string | null;
                         emailVerified: boolean;
-                        isPlus: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
                     };

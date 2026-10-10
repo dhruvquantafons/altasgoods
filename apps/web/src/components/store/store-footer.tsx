@@ -15,7 +15,6 @@ const columns = [
       { label: "About AltasGoods", href: "/about" },
       { label: "Careers", href: "/careers" },
       { label: "Press", href: "/press" },
-      { label: "AltasGoods Plus", href: "/plus" },
       { label: "Big Days sale", href: "/deals" },
     ],
   },

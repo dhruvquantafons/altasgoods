@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Crown, Lock, Timer, Truck, Undo2, Wallet } from "lucide-react";
+import { ArrowRight, BadgeCheck, Lock, Timer, Undo2, Wallet } from "lucide-react";
 import { DealCard } from "@/components/store/deal-card";
 import { HeroCarousel } from "@/components/store/hero-carousel";
 import { ProductCard } from "@/components/store/product-card";
@@ -16,13 +16,11 @@ import {
   DEALS_OF_THE_DAY,
   HERO_SLIDES,
   isBrowsable,
-  PLUS_PLANS,
   PROMO_TILES,
   recommendedForYou,
-  SPONSORED_PRODUCT_IDS,
 } from "@/lib/mock/store-extra";
 import { getStoreCatalog } from "@/lib/store-catalog";
-import { cn, formatINR } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export const metadata = {
   title: { absolute: "AltasGoods: Shop smarter, live better" },
@@ -37,7 +35,6 @@ export default async function HomePage() {
   const categories = catalog.categories.filter((c) => c.image);
   const spotlights = BRAND_SPOTLIGHTS.filter((b) => catalog.brand(b.slug));
   const dealEnds = DEALS_OF_THE_DAY[0]!.endsAt;
-  const annual = PLUS_PLANS.find((p) => p.id === "annual")!;
 
   return (
     <div className="pb-16 lg:pb-24">
@@ -157,7 +154,7 @@ export default async function HomePage() {
         <SectionTitle id="home-rec" title="Recommended for you" description="Picked from what you have browsed and bought, Ananya" />
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-6 lg:gap-x-6">
           {recommended.map((p) => (
-            <ProductCard key={p.id} product={p} sponsored={SPONSORED_PRODUCT_IDS.slice(0, 1).includes(p.id)} sizes="(min-width: 1024px) 16vw, (min-width: 640px) 30vw, 45vw" />
+            <ProductCard key={p.id} product={p} sizes="(min-width: 1024px) 16vw, (min-width: 640px) 30vw, 45vw" />
           ))}
         </div>
       </Section>
@@ -206,41 +203,6 @@ export default async function HomePage() {
             </li>
           ))}
         </ul>
-      </Section>
-
-      {/* Plus banner */}
-      <Section className="mt-12 lg:mt-16">
-        <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-brand-50 via-white to-accent-50/60 px-6 py-8 lg:px-12 lg:py-10">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-4">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-raised">
-                <Crown size={22} strokeWidth={1.8} aria-hidden="true" />
-              </span>
-              <div>
-                <p className="font-display text-2xl font-semibold tracking-tight text-ink-900">AltasGoods Plus</p>
-                <p className="mt-1 max-w-xl text-[15px] text-ink-600">
-                  Free delivery on every order, one-day delivery in top cities, 24 hour early access to sales and 2x AltasCoins. {formatINR(annual.price)} a year, cancel any
-                  time in one step.
-                </p>
-                <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-ink-700">
-                  {[
-                    { icon: Truck, label: "Free delivery, no minimum" },
-                    { icon: Timer, label: "Early sale access" },
-                    { icon: BadgeCheck, label: "Plus-only deals" },
-                  ].map((b) => (
-                    <li key={b.label} className="flex items-center gap-1.5">
-                      <b.icon size={15} className="text-brand-600" aria-hidden="true" />
-                      {b.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <Link href="/plus" className="inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 lg:self-auto">
-              You are a member, see benefits <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          </div>
-        </div>
       </Section>
     </div>
   );

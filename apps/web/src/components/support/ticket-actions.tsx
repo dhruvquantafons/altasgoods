@@ -336,7 +336,7 @@ export function TicketActions({
             open={open === "replacement"}
             onClose={close}
             title="Create replacement"
-            description="Ships after doorstep QC passes, or right away for AltasGoods Plus members with a low risk score."
+            description="Ships after doorstep QC passes. On eligible low-risk items it can ship before the original is picked up."
             footer={
               <>
                 <Button variant="ghost" onClick={close}>

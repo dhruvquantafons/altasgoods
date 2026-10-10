@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Truck } from "lucide-react";
 import type { Product } from "@/lib/types";
-import { CURRENT_CUSTOMER } from "@/lib/mock";
 import { dealFor } from "@/lib/mock/store-extra";
 import { cn } from "@/lib/utils";
 import { AddToCartButton, WishlistButton } from "./cart-buttons";
@@ -28,7 +27,7 @@ export function cardBadge(p: Product, deal?: boolean): { label: string; classNam
 export function deliveryLine(p: Product) {
   const offer = featuredOffer(p);
   const days = promiseDays(offer.deliveryDays, defaultPin);
-  const free = CURRENT_CUSTOMER.plusMember || offer.price >= FREE_DELIVERY_THRESHOLD;
+  const free = offer.price >= FREE_DELIVERY_THRESHOLD;
   const when = promiseLabel(days);
   return { free, when, days, text: `${free ? "Free delivery" : "Delivery"} ${days <= 1 ? when : `by ${when}`}` };
 }
@@ -45,14 +44,12 @@ function variantSummary(p: Product) {
 
 export function ProductCard({
   product: p,
-  sponsored = false,
   showAdd = false,
   priority = false,
   className,
   sizes = "(min-width: 1280px) 20vw, (min-width: 768px) 30vw, 50vw",
 }: {
   product: Product;
-  sponsored?: boolean;
   showAdd?: boolean;
   priority?: boolean;
   className?: string;
@@ -88,7 +85,6 @@ export function ProductCard({
       </div>
 
       <div className="mt-3 flex flex-1 flex-col px-0.5">
-        {sponsored && <p className="mb-0.5 text-[11px] font-medium text-ink-500">Sponsored</p>}
         <p className="truncate text-[13px] font-semibold text-ink-900">{brand}</p>
         <h3 className="mt-0.5 text-sm leading-5 font-normal text-ink-700">
           <Link href={`/p/${p.slug}`} title={p.title} className="line-clamp-2 after:absolute after:inset-0 after:z-[1] after:rounded-xl hover:text-ink-900">

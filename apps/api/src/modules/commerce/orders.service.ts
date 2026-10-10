@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../config/env.js";
 import type { Db, Tx } from "../../db/client.js";
-import { coupons, offers, orderEvents, orderItems, orders, payments, refunds, users, type OrderStatus } from "../../db/schema.js";
+import { coupons, offers, orderEvents, orderItems, orders, payments, refunds, type OrderStatus } from "../../db/schema.js";
 import { HOUSE_SELLER_ID } from "../../common/house.js";
 import { ApiError, conflict, notFound, unprocessable } from "../../common/errors.js";
 import type { Clock } from "../../common/infra.module.js";
@@ -37,15 +37,10 @@ export class OrdersService {
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
   ) {}
 
-  private async isPlus(userId: string) {
-    const [u] = await this.db.select({ isPlus: users.isPlus }).from(users).where(eq(users.id, userId));
-    return !!u?.isPlus;
-  }
-
   async quote(userId: string, body: z.infer<typeof quoteBody>) {
     await this.addresses.get(userId, body.addressId);
     const lines = body.lines ?? (await this.cart.checkoutLines(userId));
-    const q = await this.quotes.build(this.db, { lines, isPlus: await this.isPlus(userId), couponCode: body.couponCode, paymentMethod: body.paymentMethod });
+    const q = await this.quotes.build(this.db, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod });
     return publicQuote(q);
   }
 
@@ -63,11 +58,10 @@ export class OrdersService {
     const fromCart = !body.lines;
     const lines = body.lines ?? (await this.cart.checkoutLines(userId));
     if (!lines.length) throw unprocessable("CART_EMPTY", "Your cart is empty");
-    const isPlus = await this.isPlus(userId);
     const now = this.clock.now();
 
     const orderId = await this.db.transaction(async (tx) => {
-      const q = await this.quotes.build(tx, { lines, isPlus, couponCode: body.couponCode, paymentMethod: body.paymentMethod, lock: true });
+      const q = await this.quotes.build(tx, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod, lock: true });
       if (!q.canPlaceOrder) throw new ApiError(409, q.issues[0]?.code ?? "CANNOT_PLACE_ORDER", q.issues.map((i) => i.message).join(". ") || "This order cannot be placed");
 
       for (const l of q.lines) {

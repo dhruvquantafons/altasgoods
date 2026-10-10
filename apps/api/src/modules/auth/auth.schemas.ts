@@ -21,7 +21,6 @@ export const userSchema = z.object({
   name: z.string().nullable(),
   email: z.string().nullable(),
   emailVerified: z.boolean(),
-  isPlus: z.boolean(),
   staffRoles: z.array(z.string()).describe("AltasGoods Control roles; empty for shoppers"),
 });
 

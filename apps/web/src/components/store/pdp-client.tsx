@@ -41,7 +41,6 @@ export interface PdpData {
   brand: string;
   variants: PdpVariant[];
   offer: CartOffer;
-  plus: boolean;
   large: boolean;
   policyShort: string;
   warranty: string;
@@ -197,8 +196,7 @@ function DeliveryModule() {
   const info = lookupPincode(pincode);
   const o = data.offer;
   const days = promiseDays(o.deliveryDays, info, now);
-  const free = data.plus || price * qty >= FREE_DELIVERY_THRESHOLD;
-  const oneDay = data.plus && info?.zone === "metro" && days > 1;
+  const free = price * qty >= FREE_DELIVERY_THRESHOLD;
   const codReason = !o.codAvailable
     ? "Pay on delivery is not offered for this item"
     : !(info?.codAvailable ?? false)
@@ -276,18 +274,9 @@ function DeliveryModule() {
                 {free ? "Free delivery" : `${formatINR(DELIVERY_FEE)} delivery`} {days <= 1 ? promiseLabel(days) : `by ${formatPromise(new Date(now + days * 86400_000))}`}
               </span>{" "}
               <CutoffNote />
-              {free && data.plus && <span className="ml-1 rounded bg-brand-50 px-1.5 py-px text-[11px] font-semibold text-brand-700">Plus</span>}
               {info && info.zone === "special" && <span className="block text-ink-500">Remote area, allow a little extra time</span>}
             </span>
           </li>
-          {oneDay && (
-            <li className="flex gap-2.5">
-              <PackageCheck size={16} className="mt-px shrink-0 text-ink-600" aria-hidden="true" />
-              <span className="text-ink-700">
-                Fastest: <span className="font-semibold text-ink-900">tomorrow</span> with Plus one-day delivery
-              </span>
-            </li>
-          )}
           <li className="flex gap-2.5">
             <Banknote size={16} className="mt-px shrink-0 text-ink-600" aria-hidden="true" />
             <span className="text-ink-700">{cod ? "Pay on delivery available, cash or UPI at the door" : codReason}</span>

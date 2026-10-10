@@ -19,7 +19,7 @@ export function InviteMember({ roles }: { roles: { id: string; name: string; sco
   const { show, node } = useToast();
   const role = roles.find((r) => r.id === roleId)!;
   const money = MONEY_ROLES.includes(role.name);
-  const emailError = email && !/^[a-z0-9._-]+@blubuy\.in$/i.test(email) ? "Use a blubuy.in work email" : undefined;
+  const emailError = email && !/^[a-z0-9._-]+@altasgoods\.in$/i.test(email) ? "Use an altasgoods.in work email" : undefined;
   const valid = name.trim().length > 1 && email && !emailError;
 
   return (

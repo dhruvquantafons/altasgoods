@@ -124,7 +124,6 @@ export const POLICIES: Policy[] = [
             type: "table",
             head: ["Order", "Delivery charge"],
             rows: [
-              ["AltasGoods Plus members", "Free on every order"],
               ["Each seller shipment of ₹499 or more", "Free"],
               ["Each seller shipment under ₹499", "₹40"],
               ["Cash on delivery", "No extra charge"],
@@ -137,7 +136,7 @@ export const POLICIES: Policy[] = [
         id: "speeds",
         heading: "Delivery speeds",
         blocks: [
-          { type: "list", items: ["Standard delivery to 19,000+ pincodes across India", "One-day delivery for AltasGoods Plus members on eligible items in 60+ cities", "Same-day delivery in select pincodes of Bengaluru, Mumbai, Delhi NCR, Hyderabad and Pune"] },
+          { type: "list", items: ["Standard delivery to 19,000+ pincodes across India", "One-day delivery on eligible items in 60+ cities", "Same-day delivery in select pincodes of Bengaluru, Mumbai, Delhi NCR, Hyderabad and Pune"] },
         ],
       },
       {
@@ -167,7 +166,7 @@ export const POLICIES: Policy[] = [
       {
         id: "before",
         heading: "Before your item ships",
-        blocks: [{ type: "p", text: "Open Your orders and select Cancel on any item that has not shipped yet. You get a full refund and there is no cancellation fee. Coupons, AltasCoins and AltasGoods Credits used on the item are restored immediately." }],
+        blocks: [{ type: "p", text: "Open Your orders and select Cancel on any item that has not shipped yet. You get a full refund and there is no cancellation fee. Coupons and AltasGoods Credits used on the item are restored immediately." }],
       },
       {
         id: "after",
@@ -218,8 +217,8 @@ export const POLICIES: Policy[] = [
   },
   {
     slug: "credits",
-    title: "AltasGoods Credits, gift cards and AltasCoins",
-    nav: "Credits, gift cards and AltasCoins",
+    title: "AltasGoods Credits and gift cards",
+    nav: "Credits and gift cards",
     summary: "How stored value works: what expires, what can go back to your bank and how to use it.",
     updated: "2026-07-30",
     related: ["payments", "returns", "terms"],
@@ -233,11 +232,6 @@ export const POLICIES: Policy[] = [
         id: "gift-cards",
         heading: "AltasGoods Gift Cards",
         blocks: [{ type: "p", text: "Gift cards are valid for 1 year from activation. Once added to your account the balance becomes AltasGoods Credits. Gift cards cannot be reloaded, resold or exchanged for cash." }],
-      },
-      {
-        id: "blucoins",
-        heading: "AltasCoins",
-        blocks: [{ type: "list", items: ["Earn 1 AltasCoin per ₹100 spent, or 2 per ₹100 with AltasGoods Plus", "Coins are credited once the return window for the item closes", "Use coins for up to 10% of an order, 1 coin equals ₹1", "Coins expire 6 months after they are credited, and we remind you 15 days before"] }],
       },
     ],
   },
@@ -477,7 +471,7 @@ export const ROLES: Role[] = [
     experience: "5+ years",
     posted: "2026-09-15",
     summary: "Grow the electronics category with the right brands, sellers and selection at honest prices.",
-    responsibilities: ["Own selection, pricing health and growth for electronics", "Bring on brands and sellers and plan sale events", "Work with marketing and ads on category campaigns"],
+    responsibilities: ["Own selection, pricing health and growth for electronics", "Bring on brands and sellers and plan sale events", "Work with marketing on category campaigns"],
     requirements: ["Category or brand management experience in e-commerce or retail", "Strong commercial and analytical skills"],
     niceToHave: ["Relationships with electronics brands in India"],
   },
@@ -553,7 +547,6 @@ export const PRESS_RELEASES: PressRelease[] = [
   { slug: "big-days-2026-first-five-days", date: "2026-09-30", category: "Customers", title: "AltasGoods Big Days crosses ₹300 crore in sales in its first five days", summary: "More than 11 lakh orders were placed in the first week of the festive sale, with UPI used for nearly half of all payments." },
   { slug: "zero-commission-under-1000", date: "2026-09-02", category: "Sellers", title: "AltasGoods introduces zero commission on items priced up to ₹999", summary: "Sellers keep more on everyday products, with a simpler rate card and payouts three times a week." },
   { slug: "bengaluru-delivery-hubs", date: "2026-08-12", category: "Logistics", title: "AltasGoods Logistics opens Whitefield and HSR Layout delivery hubs", summary: "The two hubs bring same-day and next-day delivery to more than 40 pincodes across east and south Bengaluru." },
-  { slug: "altasgoods-plus-launch", date: "2026-07-15", category: "Customers", title: "AltasGoods Plus launches at ₹999 a year", summary: "Members get free delivery on every order, one-day delivery in 60+ cities and double AltasCoins." },
   { slug: "marketplace-opens-to-sellers", date: "2026-06-10", category: "Company", title: "AltasGoods opens its marketplace to sellers across India", summary: "Sellers can register in minutes with GSTIN or PAN, list products and start receiving orders the same week." },
 ];
 
@@ -576,7 +569,6 @@ export const ABOUT_PRINCIPLES = [
 export const ABOUT_MILESTONES = [
   { date: "Jan 2025", title: "Founded in Bengaluru", body: "A small team of engineers, designers and operators set out to build a calmer marketplace for India." },
   { date: "Jun 2026", title: "Marketplace opens", body: "Sellers across India can register, list and sell on AltasGoods." },
-  { date: "Jul 2026", title: "AltasGoods Plus", body: "Free delivery on every order and one-day delivery in 60+ cities." },
   { date: "Aug 2026", title: "AltasGoods Logistics", body: "Our first delivery hubs open in Bengaluru, with Secure Delivery on high value orders." },
   { date: "Sep 2026", title: "AltasGoods Big Days", body: "Our first festive sale, and zero commission on items up to ₹999 for sellers." },
 ];

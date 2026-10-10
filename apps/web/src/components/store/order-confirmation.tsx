@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
-import { ArrowRight, Check, CircleCheck, Coins, Copy, MapPin, Package, ShieldCheck, Truck, Undo2 } from "lucide-react";
+import { ArrowRight, Check, CircleCheck, Copy, MapPin, Package, ShieldCheck, Truck, Undo2 } from "lucide-react";
 import { Timeline } from "@/components/ui/misc";
 import { cn, formatINR } from "@/lib/utils";
 import { LAST_ORDER_KEY } from "./pricing";
@@ -118,13 +118,6 @@ export function OrderConfirmation({ fallback, requestedId, firstName, phone }: {
             <p className="mt-1 font-display text-3xl font-semibold tracking-tight text-ink-900 tabular-nums">{formatINR(order.payable)}</p>
             <p className="mt-1 text-[13px] text-ink-600">{order.paymentLabel}</p>
             {order.savings > 0 && <p className="mt-3 rounded-lg bg-success-50 px-3 py-2 text-[13px] font-semibold text-success-700">You saved {formatINR(order.savings)} on this order</p>}
-          </section>
-
-          <section aria-label="AltasCoins" className="rounded-2xl border border-accent-100 bg-accent-50/60 p-5">
-            <p className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-              <Coins size={17} className="text-accent-700" aria-hidden="true" /> {order.coinsEarned} AltasCoins on the way
-            </p>
-            <p className="mt-1 text-[13px] text-ink-600">Credited to your account once the return window closes. 1 coin = ₹1 on your next order.</p>
           </section>
 
           <section aria-label="Delivery address" className="rounded-2xl border border-line bg-white p-5 text-[13px]">

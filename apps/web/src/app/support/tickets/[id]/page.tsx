@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Crown, ShieldAlert } from "lucide-react";
+import { ArrowRight, ShieldAlert } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
 import { durationLabel, formatDay, formatDayTime, KeyRow, maskPhone, Mono } from "@/components/logistics/ops-ui";
 import { CHANNEL, SlaBadge, slaTitle } from "@/components/support/meta";
@@ -210,11 +210,6 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-semibold text-ink-900">{t.customerName}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {customer?.plusMember && (
-                      <Badge tone="brand" size="sm" icon={Crown}>
-                        AltasGoods Plus
-                      </Badge>
-                    )}
                     {customer && customer.status !== "active" && (
                       <Badge tone="danger" size="sm" icon={ShieldAlert}>
                         {customer.status === "flagged" ? "Risk flagged" : "Blocked"}
@@ -257,7 +252,6 @@ export default async function TicketWorkspace(props: PageProps<"/support/tickets
                     <KeyRow label="City">
                       {customer.city}, {customer.state}
                     </KeyRow>
-                    <KeyRow label="AltasCoins">{formatNumber(customer.bluCoins)}</KeyRow>
                   </dl>
                   <Link href={`/support/customers/${customer.id}`} className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
                     Open customer profile <ArrowRight size={14} aria-hidden="true" />

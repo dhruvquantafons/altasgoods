@@ -22,7 +22,6 @@ export default function ProfilePage() {
     openOrders ? { label: `${openOrders} orders on the way`, detail: "Wait for delivery or cancel them" } : null,
     openRefunds ? { label: `${openRefunds} refund in progress`, detail: "We will finish it before closing the account" } : null,
     CREDITS.balance ? { label: `${formatINR(CREDITS.balance)} in AltasGoods Credits`, detail: `Move ${formatINR(CREDITS.refund.amount)} of refund credits to your bank. Gift card and goodwill credits cannot be paid out` } : null,
-    { label: "AltasGoods Plus", detail: "Your membership will be cancelled without a refund for the current year" },
   ].filter((b): b is { label: string; detail: string } => Boolean(b));
 
   return (

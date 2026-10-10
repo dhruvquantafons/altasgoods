@@ -572,7 +572,7 @@ export const sellerViolations: SellerViolation[] = [
   { id: "VIO-7650", sellerId: "s-desihandloom", policy: "Review manipulation", severity: "critical", points: 200, at: ago(19 * D), status: "open", detail: "31 reviews from accounts linked to the seller's devices and addresses." },
   { id: "VIO-7644", sellerId: "s-urbankart", policy: "Restricted product listed", severity: "low", points: 20, at: ago(24 * D), status: "resolved", detail: "Laser pointer above 1 mW listed in Electronics. Listing removed by seller." },
   { id: "VIO-7602", sellerId: "s-glow", policy: "Off-platform contact in package insert", severity: "medium", points: 50, at: ago(41 * D), status: "resolved", detail: "WhatsApp number printed on thank you card. Warning acknowledged." },
-  { id: "VIO-7588", sellerId: "s-ganesh", policy: "Price gouging during sale event", severity: "medium", points: 50, at: ago(52 * D), status: "resolved", detail: "Mixer grinder price raised 30% in the week before Plus Day." },
+  { id: "VIO-7588", sellerId: "s-ganesh", policy: "Price gouging during sale event", severity: "medium", points: 50, at: ago(52 * D), status: "resolved", detail: "Mixer grinder price raised 30% in the week before the Big Days sale." },
   { id: "VIO-7561", sellerId: "s-apex", policy: "Late dispatch above target", severity: "low", points: 30, at: ago(70 * D), status: "resolved", detail: "LDR 4.6% for one weekly evaluation." },
 ];
 
@@ -665,9 +665,6 @@ export function customerProfile(customerId: string) {
     linkedAccounts: high ? between(r, 2, 4) : 0,
     devices: between(r, 1, high ? 6 : 3),
     creditsBalance: between(r, 0, 4) * 250 + between(r, 0, 99),
-    coinsExpiring: Math.min(c.bluCoins, between(r, 0, 300)),
-    plusSince: c.plusMember ? ago(between(r, 60, 900) * D) : undefined,
-    plusPlan: r() > 0.5 ? "Annual, ₹999" : "Monthly, ₹149",
     lastLogin: ago(between(r, 5, 4 * D)),
     codEnabled: !(high || c.status === "blocked"),
   };
@@ -1140,67 +1137,6 @@ export const codRemittance = hubs
     return { hubId: h.id, hubCode: h.code, hubName: h.name, city: h.city, expected, collected, deposited, banked, reconciled, short, status: status as "short" | "reconciled" | "banked" | "deposited", lastDepositAt: ago(between(r, 40, 16 * H)) };
   });
 
-/* --------------------------------- Ads -------------------------------- */
-
-/** 30 completed days of AltasGoods Ads platform revenue and delivery. */
-export const adsDaily = platformDaily.slice(-31, -1).map((d, i) => {
-  const r = seeded(6000 + i);
-  const impressions = Math.round(d.visitors * (11.5 + r() * 1.5));
-  const ctr = 0.42 + r() * 0.08;
-  const clicks = Math.round((impressions * ctr) / 100);
-  const cpc = 6.8 + r() * 1.6;
-  return { date: d.date, impressions, clicks, revenue: Math.round(clicks * cpc), attributedSales: Math.round(clicks * cpc * (7.2 + r() * 1.8)) };
-});
-
-export const adPlacements = [
-  { name: "Search results, top slots", page: "Search", format: "Sponsored Products", limit: "4 per 20 organic results", share: 0.38, ctr: 0.71, fill: 94, floor: 2 },
-  { name: "Search results, in-grid", page: "Search", format: "Sponsored Products", limit: "Positions 9 and 15", share: 0.21, ctr: 0.44, fill: 88, floor: 1 },
-  { name: "Product page, sponsored carousel", page: "Product page", format: "Sponsored Products", limit: "Up to 12 cards", share: 0.19, ctr: 0.36, fill: 91, floor: 1 },
-  { name: "Search header banner", page: "Search", format: "Sponsored Brands", limit: "1 per query", share: 0.11, ctr: 0.52, fill: 63, floor: 4 },
-  { name: "Homepage, sponsored rail", page: "Homepage", format: "Sponsored Products", limit: "1 rail, 10 cards", share: 0.07, ctr: 0.29, fill: 100, floor: 3 },
-  { name: "Category page, display banner", page: "Category page", format: "Sponsored Display", limit: "1 per page", share: 0.04, ctr: 0.18, fill: 57, floor: 2 },
-];
-
-export const advertisers = sellers
-  .filter((s) => s.status === "active" || s.status === "on_hold")
-  .map((s, i) => {
-    const r = seeded(6100 + i);
-    const spend = Math.round(s.gmv30d * (0.018 + r() * 0.03));
-    const roas = Math.round((4.2 + r() * 6.5) * 10) / 10;
-    const wallet = s.status === "on_hold" ? 1840 : between(r, 8, 260) * 1000;
-    return {
-      sellerId: s.id,
-      name: s.displayName,
-      campaigns: between(r, 2, 18),
-      spend30d: spend,
-      attributedSales: Math.round(spend * roas),
-      roas,
-      acos: Math.round((100 / roas) * 10) / 10,
-      wallet,
-      status: (s.status === "on_hold" ? "paused" : wallet < 20000 ? "low_balance" : "active") as "active" | "low_balance" | "paused",
-    };
-  })
-  .sort((x, y) => y.spend30d - x.spend30d);
-
-export interface AdCreative {
-  id: string;
-  sellerId: string;
-  format: "Sponsored Brands" | "Sponsored Display";
-  headline: string;
-  image: string;
-  landing: string;
-  submittedAt: string;
-  flags: string[];
-}
-
-export const adReviewQueue: AdCreative[] = [
-  { id: "CRV-5521", sellerId: "s-apex", format: "Sponsored Brands", headline: "Big Days on Auralis: studio sound, festival prices", image: productByKey("headphones-studio").image, landing: "Brand store: Auralis", submittedAt: ago(3 * H), flags: [] },
-  { id: "CRV-5524", sellerId: "s-glow", format: "Sponsored Display", headline: "Guaranteed glow in 3 days or your money back", image: productByKey("serum-glow").image, landing: "Product page", submittedAt: ago(2 * H + 20), flags: ["Unsubstantiated claim: \"guaranteed\" results", "Refund promise outside AltasGoods policy"] },
-  { id: "CRV-5527", sellerId: "s-terra", format: "Sponsored Brands", headline: "Living rooms that feel like home", image: productByKey("sofa-oslo").image, landing: "Collection: Oaken living room", submittedAt: ago(95), flags: [] },
-  { id: "CRV-5530", sellerId: "s-urbankart", format: "Sponsored Display", headline: "Cheapest smartwatch in India, only today!", image: productByKey("watch-smart").image, landing: "Product page", submittedAt: ago(70), flags: ["Superlative claim without evidence: \"cheapest\"", "False urgency: offer is not time-limited"] },
-  { id: "CRV-5533", sellerId: "s-loomhouse", format: "Sponsored Brands", headline: "Handcrafted kurtas for the festive season", image: productByKey("kurta-ethnic").image, landing: "Brand store: Rangrez", submittedAt: ago(40), flags: [] },
-];
-
 /* ----------------------------- Promotions ----------------------------- */
 
 export interface SaleEvent {
@@ -1219,9 +1155,8 @@ export interface SaleEvent {
 }
 
 export const saleEvents: SaleEvent[] = [
-  { id: "ev-plus", name: "AltasGoods Plus Day", code: "EVENT_PLUS_DAY", startsAt: "2026-07-15T00:00:00+05:30", endsAt: "2026-07-16T23:59:00+05:30", status: "ended", dealsApproved: 9240, dealsPending: 0, gmv: 1_412_000_000, targetGmv: 1_300_000_000, earlyAccess: "Members only" },
-  { id: "ev-bigdays", name: SALE_EVENT.name, code: "EVENT_BIG_DAYS", startsAt: SALE_EVENT.startsAt, endsAt: SALE_EVENT.endsAt, status: "live", dealsApproved: 18640, dealsPending: 312, gmv: Math.round(platformDaily.filter((d) => new Date(d.date) >= new Date(SALE_EVENT.startsAt)).reduce((acc, d) => acc + d.gmv, 0)), targetGmv: 6_000_000_000, earlyAccess: "25 Sep for Plus members", submissionsClose: "2026-09-12T23:59:00+05:30" },
-  { id: "ev-diwali", name: "Diwali Dhamaka", code: "EVENT_DIWALI", startsAt: "2026-10-28T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", status: "submissions_open", dealsApproved: 2140, dealsPending: 1186, targetGmv: 4_500_000_000, earlyAccess: "27 Oct for Plus members", submissionsClose: "2026-10-12T23:59:00+05:30" },
+  { id: "ev-bigdays", name: SALE_EVENT.name, code: "EVENT_BIG_DAYS", startsAt: SALE_EVENT.startsAt, endsAt: SALE_EVENT.endsAt, status: "live", dealsApproved: 18640, dealsPending: 312, gmv: Math.round(platformDaily.filter((d) => new Date(d.date) >= new Date(SALE_EVENT.startsAt)).reduce((acc, d) => acc + d.gmv, 0)), targetGmv: 6_000_000_000, earlyAccess: "25 Sep for everyone", submissionsClose: "2026-09-12T23:59:00+05:30" },
+  { id: "ev-diwali", name: "Diwali Dhamaka", code: "EVENT_DIWALI", startsAt: "2026-10-28T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", status: "submissions_open", dealsApproved: 2140, dealsPending: 1186, targetGmv: 4_500_000_000, earlyAccess: "27 Oct for everyone", submissionsClose: "2026-10-12T23:59:00+05:30" },
   { id: "ev-yearend", name: "Year End Sale", code: "EVENT_YEAR_END", startsAt: "2026-12-20T00:00:00+05:30", endsAt: "2026-12-31T23:59:00+05:30", status: "planning", dealsApproved: 0, dealsPending: 0, targetGmv: 2_200_000_000 },
 ];
 
@@ -1290,11 +1225,11 @@ export interface HeroBanner {
 }
 
 export const heroBanners: HeroBanner[] = [
-  { id: "hero-bigdays-day6", title: "AltasGoods Big Days: day 6", subtitle: "Up to 60% off festive home, fashion and electronics. Plus members save an extra 10%.", cta: "Shop the sale", href: "/deals", image: "/images/banners/hero-festive.jpg", startsAt: "2026-10-01T00:00:00+05:30", endsAt: "2026-10-01T23:59:00+05:30", status: "live", audience: "Everyone", impressions: 4_820_000, ctr: 3.4 },
+  { id: "hero-bigdays-day6", title: "AltasGoods Big Days: day 6", subtitle: "Up to 60% off festive home, fashion and electronics.", cta: "Shop the sale", href: "/deals", image: "/images/banners/hero-festive.jpg", startsAt: "2026-10-01T00:00:00+05:30", endsAt: "2026-10-01T23:59:00+05:30", status: "live", audience: "Everyone", impressions: 4_820_000, ctr: 3.4 },
   { id: "hero-electronics", title: "Laptops and audio, festival prices", subtitle: "No cost EMI up to 12 months on Kestrel, Auralis and Lumora.", cta: "Explore electronics", href: "/c/electronics", image: "/images/banners/hero-electronics.jpg", startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "live", audience: "Everyone", impressions: 3_160_000, ctr: 2.7 },
   { id: "hero-fashion", title: "The festive edit", subtitle: "Handcrafted kurtas, sarees and juttis from independent labels.", cta: "Shop fashion", href: "/c/fashion", image: "/images/banners/hero-fashion.jpg", startsAt: "2026-09-26T00:00:00+05:30", endsAt: "2026-10-05T23:59:00+05:30", status: "live", audience: "Women, metro cities", impressions: 2_410_000, ctr: 3.1 },
   { id: "hero-home", title: "Make room for Diwali", subtitle: "Furniture, lighting and decor with free installation in 40 cities.", cta: "Shop home", href: "/c/home", image: "/images/banners/hero-home.jpg", startsAt: "2026-10-06T00:00:00+05:30", endsAt: "2026-10-27T23:59:00+05:30", status: "scheduled", audience: "Everyone", impressions: 0, ctr: 0 },
-  { id: "promo-beauty", title: "Beauty Fest", subtitle: "Buy 2, get 1 free on skincare from Veda Naturals and Dermalab.", cta: "Shop beauty", href: "/c/beauty", image: "/images/banners/promo-beauty.jpg", startsAt: "2026-10-10T00:00:00+05:30", endsAt: "2026-10-14T23:59:00+05:30", status: "draft", audience: "Plus members", impressions: 0, ctr: 0 },
+  { id: "promo-beauty", title: "Beauty Fest", subtitle: "Buy 2, get 1 free on skincare from Veda Naturals and Dermalab.", cta: "Shop beauty", href: "/c/beauty", image: "/images/banners/promo-beauty.jpg", startsAt: "2026-10-10T00:00:00+05:30", endsAt: "2026-10-14T23:59:00+05:30", status: "draft", audience: "Everyone", impressions: 0, ctr: 0 },
   { id: "promo-sports", title: "Monsoon fitness", subtitle: "Yoga mats, dumbbells and cycles from ₹499.", cta: "Shop sports", href: "/c/sports", image: "/images/banners/promo-sports.jpg", startsAt: "2026-07-01T00:00:00+05:30", endsAt: "2026-08-31T23:59:00+05:30", status: "ended", audience: "Everyone", impressions: 6_940_000, ctr: 1.9 },
 ];
 
@@ -1318,8 +1253,8 @@ export const homeSlots: HomeSlot[] = [
   { id: "slot-rail-reco", type: "product_rail", name: "Recommended for you", status: "live", audience: "Signed-in customers", source: "Model: personalised ranking v4", productIds: ["p-laptop-air", "p-monitor-ultra", "p-keyboard-mech", "p-camera-mirrorless", "p-speaker-boom", "p-tablet-slate"] },
   { id: "slot-banners", type: "banner_pair", name: "Fashion and beauty banners", status: "live", audience: "Everyone", source: "Manual", startsAt: SALE_EVENT.startsAt, endsAt: SALE_EVENT.endsAt },
   { id: "slot-rail-home", type: "product_rail", name: "Festive home picks", status: "scheduled", audience: "Everyone", source: "Collection: Diwali home", startsAt: "2026-10-06T00:00:00+05:30", endsAt: "2026-11-09T23:59:00+05:30", productIds: ["p-sofa-oslo", "p-chair-lounge", "p-lamp-arc", "p-vase-ceramic", "p-cushions-linen", "p-mugs-stone"] },
-  { id: "slot-brand", type: "brand_spotlight", name: "Brand spotlight: Kestrel", status: "draft", audience: "Electronics shoppers", source: "Sponsored Brands placement" },
-  { id: "slot-rail-plus", type: "product_rail", name: "Plus member exclusives", status: "live", audience: "Plus members", source: "Rule: products tagged Plus", productIds: ["p-phone-aurora", "p-laptop-air", "p-bag-leather", "p-perfume-noir"] },
+  { id: "slot-brand", type: "brand_spotlight", name: "Brand spotlight: Kestrel", status: "draft", audience: "Electronics shoppers", source: "Manual, Kestrel brand store" },
+  { id: "slot-rail-exclusive", type: "product_rail", name: "Exclusive picks", status: "live", audience: "Everyone", source: "Rule: handpicked products", productIds: ["p-phone-aurora", "p-laptop-air", "p-bag-leather", "p-perfume-noir"] },
 ];
 
 /* ------------------------------- Reports ------------------------------ */
@@ -1341,13 +1276,12 @@ export const reportLibrary: ReportDef[] = [
   { id: "rpt-feeinv", name: "Seller fee invoices", group: "Tax and compliance", description: "Monthly GST invoices and credit notes for commission, fixed fee and shipping per seller.", formats: ["PDF bundle", "CSV"], cadence: "Monthly", owner: "Finance", lastRunAt: ago(1 * D) },
   { id: "rpt-settle", name: "Seller settlements", group: "Finance", description: "Settlement lines per seller with sale, fees, TCS, TDS, refunds, holds and payout UTRs.", formats: ["XLSX", "CSV"], cadence: "Each payout run", owner: "Finance", lastRunAt: ago(2 * D) },
   { id: "rpt-recon", name: "Gateway and COD reconciliation", group: "Finance", description: "Captured payments against gateway settlement files, and delivered COD against hub deposits and bank credits.", formats: ["XLSX"], cadence: "Daily", owner: "Finance", lastRunAt: ago(9 * H) },
-  { id: "rpt-liability", name: "AltasCoins and Credits liability", group: "Finance", description: "Outstanding AltasCoins, AltasGoods Credits and gift card balances with expiry ageing.", formats: ["XLSX"], cadence: "Monthly", owner: "Finance", lastRunAt: ago(30 * D) },
+  { id: "rpt-liability", name: "Credits liability", group: "Finance", description: "Outstanding AltasGoods Credits and gift card balances with expiry ageing.", formats: ["XLSX"], cadence: "Monthly", owner: "Finance", lastRunAt: ago(30 * D) },
   { id: "rpt-sales", name: "Sales and GMV by category", group: "Sales", description: "GMV, orders, units, AOV and conversion by category, brand and region.", formats: ["XLSX", "CSV"], cadence: "Daily", owner: "Growth", lastRunAt: ago(6 * H) },
   { id: "rpt-orders", name: "Orders and cancellations", group: "Sales", description: "Order items by status with cancellation reasons and actor (customer, seller, system, admin).", formats: ["CSV"], cadence: "On demand", owner: "Operations", lastRunAt: ago(3 * D) },
   { id: "rpt-returns", name: "Returns and refunds", group: "Operations", description: "Returns by reason and fault, QC outcomes, refund destination and time to refund.", formats: ["XLSX", "CSV"], cadence: "Weekly", owner: "Operations", lastRunAt: ago(4 * D) },
   { id: "rpt-logistics", name: "Logistics SLA and NDR", group: "Operations", description: "On-time pickup and delivery, NDR reasons, RTO rate by hub, lane and pincode.", formats: ["XLSX"], cadence: "Daily", owner: "Operations", lastRunAt: ago(10 * H) },
   { id: "rpt-sellerperf", name: "Seller performance and health", group: "Sellers", description: "Seller Health scores, metric breaches, violations and tier evaluation results.", formats: ["XLSX"], cadence: "Weekly", owner: "Trust and Safety", lastRunAt: ago(2 * D) },
-  { id: "rpt-plus", name: "AltasGoods Plus membership", group: "Customers", description: "Members by plan, renewals, cancellations, grace period and benefit usage.", formats: ["XLSX"], cadence: "Monthly", owner: "Growth", lastRunAt: ago(30 * D) },
 ];
 
 export const scheduledExports = [
@@ -1389,8 +1323,7 @@ export const adminRoles: AdminRole[] = [
   { id: "category_mgr", code: "A5", name: "Category Manager", description: "Category tree, attributes, category approvals and deal approvals for own categories", members: 8, scope: "Assigned categories" },
   { id: "brand_ip", code: "A6", name: "Brand and IP Manager", description: "Brand creation, Brand Registry, authorisation letters and IP complaints", members: 3, scope: "Global" },
   { id: "merch", code: "A7", name: "Merchandiser", description: "Homepage, banners, collections and search merchandising", members: 5, scope: "Global" },
-  { id: "marketing", code: "A8", name: "Marketing and Promotions Manager", description: "Platform coupons, bank offers, sale events, AltasCoins rules", members: 4, limit: "Coupon budget up to ₹50 lakh", scope: "Global" },
-  { id: "ads_ops", code: "A9", name: "Ads Operations", description: "Ad policies, creative review, CPC floors and billing issues", members: 4, scope: "Global" },
+  { id: "marketing", code: "A8", name: "Marketing and Promotions Manager", description: "Platform coupons, bank offers and sale events", members: 4, limit: "Coupon budget up to ₹50 lakh", scope: "Global" },
   { id: "finance_mgr", code: "A10", name: "Finance Manager", description: "Approves payouts and high-value refunds, publishes rate cards, signs off reconciliation", members: 3, makerChecker: "Checker", scope: "Global" },
   { id: "finance_exec", code: "A11", name: "Finance Executive", description: "Prepares payout runs, reconciles gateway and COD files, handles refund failures", members: 7, makerChecker: "Maker", limit: "Refund reroute up to ₹1 lakh", scope: "Global" },
   { id: "risk", code: "A12", name: "Risk and Fraud Analyst", description: "Risk cases, block and unblock entities, COD controls, claims investigation", members: 6, scope: "Global" },
@@ -1502,8 +1435,6 @@ export const platformSettings = {
   returnWindows: categoryMeta.map((m) => ({ categoryId: m.categoryId, days: m.returnDays, resolution: m.resolution })),
   cod: { maxOrderValue: 50000, maxUndelivered: 3, pincodeRtoThreshold: 25, refusalsToDisable: 2 },
   delivery: { freeAbove: 499, fee: 40, platformFee: 0 },
-  plus: { monthly: 149, annual: 999, trialDays: 0, members: 4_812_300 },
-  coins: { earnPer100: 1, plusEarnPer100: 2, capPerOrder: 100, redeemPercent: 10, expiryMonths: 6 },
   grievance: { name: "Meenakshi Raghavan", designation: "Grievance Officer", email: "grievance@altasgoods.in", phone: "+91 80 4718 2200", address: "AltasGoods Technologies Private Limited, 7th Floor, Orion Tech Park, Outer Ring Road, Bengaluru 560103" },
   maintenance: { enabled: false, message: "Scheduled maintenance on 4 Oct from 2:00 am to 4:00 am. Payments may be slower than usual.", audience: "Everyone" },
 };

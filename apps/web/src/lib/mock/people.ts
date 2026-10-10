@@ -119,8 +119,6 @@ export const customers: Customer[] = Array.from({ length: 60 }, (_, i) => {
     joinedAt: addDays(NOW, -between(rand, 10, 1900)).toISOString(),
     orders,
     lifetimeValue: orders * between(rand, 900, 6400),
-    plusMember: i === 0 || rand() > 0.62,
-    bluCoins: between(rand, 0, 2400),
     status: risk > 80 ? "flagged" : i % 29 === 13 ? "blocked" : "active",
     riskScore: risk,
     // the demo shopper: a long-time member whose phone matches her saved addresses

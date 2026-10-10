@@ -27,7 +27,7 @@ interface MockProduct {
   highlights: string[]; specs: unknown[]; variants: unknown[]; rating: number; ratingCount: number; reviewCount: number; tags: string[];
   assured: boolean; featuredSellerId: string; listingStatus: string; soldLast30d: number; createdAt: string; offers: MockOffer[];
 }
-interface MockCustomer { name: string; email: string; phone: string; plusMember: boolean; joinedAt: string; status: string }
+interface MockCustomer { name: string; email: string; phone: string; joinedAt: string; status: string }
 interface MockAddress { name: string; phone: string; line1: string; line2?: string; landmark?: string; city: string; state: string; pincode: string; type: string; isDefault?: boolean }
 interface MockCoupon { code: string; description: string; type: "percent" | "flat"; value: number; maxDiscount?: number; minOrder: number; usage: number; limit: number; startsAt: string; endsAt: string; status: string; fundedBy: string }
 
@@ -92,8 +92,6 @@ export async function seed(db: Db) {
     phone: i === 0 ? DEMO_CUSTOMER_PHONE : normalizePhone(c.phone)!,
     name: c.name,
     email: c.email,
-    isPlus: c.plusMember,
-    plusRenewsAt: c.plusMember ? new Date("2026-11-12T00:00:00+05:30") : null,
     status: (c.status === "blocked" ? "BLOCKED" : "ACTIVE") as "ACTIVE" | "BLOCKED",
     createdAt: new Date(c.joinedAt),
   }));

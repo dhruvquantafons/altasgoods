@@ -12,14 +12,14 @@ import { computeTotals, couponBlocker, couponValue, priceLines, type PricedLine 
 import { percentOff } from "./price";
 import type { CartCatalog, CouponLite } from "./types";
 
-export function CartView({ catalog, coupons: all, plus, children }: { catalog: CartCatalog; coupons: CouponLite[]; plus: boolean; children?: ReactNode }) {
+export function CartView({ catalog, coupons: all, children }: { catalog: CartCatalog; coupons: CouponLite[]; children?: ReactNode }) {
   const cart = useCart();
   const { pincode } = usePincode();
   const info = lookupPincode(pincode);
   // The cart cannot see order history, so a first-order coupon (BLUFIRST) was always blocked here, even on a first order.
   // Like UPI-only coupons, it can be applied in the cart; the checkout quote from the API decides and says so if it does not apply.
   const coupons = all.map((c) => (c.firstOrderOnly ? { ...c, firstOrderOnly: undefined, description: `${c.description}. Checked against your orders at checkout.` } : c));
-  const totals = computeTotals(cart.active, catalog, { couponCode: cart.coupon, coupons, plus });
+  const totals = computeTotals(cart.active, catalog, { couponCode: cart.coupon, coupons });
   const saved = priceLines(cart.saved, catalog);
   const empty = totals.lines.length === 0;
 
@@ -35,11 +35,6 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
             </p>
           )}
         </div>
-        {!empty && plus && (
-          <p className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-[13px] font-medium text-brand-700">
-            <Truck size={15} aria-hidden="true" /> Free delivery on every order with AltasGoods Plus
-          </p>
-        )}
       </div>
 
       {empty ? (
@@ -81,9 +76,9 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
                       </span>
                     </p>
                   </header>
-                  {!plus && short > 0 && (
+                  {short > 0 && (
                     <p className="border-b border-line bg-brand-50/50 px-5 py-2 text-xs text-brand-800">
-                      Add {formatINR(short)} more for free delivery, or join AltasGoods Plus.
+                      Add {formatINR(short)} more for free delivery.
                     </p>
                   )}
                   <ul className="divide-y divide-line">
@@ -97,10 +92,9 @@ export function CartView({ catalog, coupons: all, plus, children }: { catalog: C
           </div>
 
           <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
-            <CouponBox coupons={coupons} lines={totals.lines} plus={plus} />
+            <CouponBox coupons={coupons} lines={totals.lines} />
             <PriceDetails
               totals={totals}
-              plus={plus}
               footer={
                 <>
                   <Link
@@ -236,7 +230,7 @@ function CartLineRow({ l }: { l: PricedLine }) {
   );
 }
 
-function CouponBox({ coupons, lines, plus }: { coupons: CouponLite[]; lines: PricedLine[]; plus: boolean }) {
+function CouponBox({ coupons, lines }: { coupons: CouponLite[]; lines: PricedLine[] }) {
   const cart = useCart();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -245,7 +239,7 @@ function CouponBox({ coupons, lines, plus }: { coupons: CouponLite[]; lines: Pri
   const apply = (raw: string) => {
     const c = coupons.find((x) => x.code === raw.trim().toUpperCase());
     if (!c) return setError("This code is not valid or has expired");
-    const blocker = couponBlocker(c, lines, { plus });
+    const blocker = couponBlocker(c, lines);
     if (blocker && !c.upiOnly) return setError(blocker);
     cart.applyCoupon(c.code);
     setError(null);
@@ -301,7 +295,7 @@ function CouponBox({ coupons, lines, plus }: { coupons: CouponLite[]; lines: Pri
         {coupons
           .filter((c) => c.code !== cart.coupon)
           .map((c) => {
-            const blocker = couponBlocker(c, lines, { plus });
+    const blocker = couponBlocker(c, lines);
             const value = couponValue(c, lines);
             return (
               <li key={c.code} className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-line-strong px-3.5 py-2.5">

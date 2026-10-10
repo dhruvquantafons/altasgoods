@@ -54,7 +54,7 @@ interface Result {
   reverse: boolean;
   heavy: boolean;
   hub: string;
-  plus: boolean;
+  oneDay: boolean;
   known: boolean;
 }
 
@@ -93,7 +93,7 @@ function evaluate(p: string, o: OriginOption, directory: PincodeEntry[], hubName
     reverse: serviceable && (entry ? entry.reverse : !special),
     heavy: serviceable && (entry ? entry.heavy : !special && zone !== "National"),
     hub: entry?.hubId ? (hubNames[entry.hubId] ?? "AltasGoods hub") : serviceable ? "Partner delivery hub" : "Not mapped",
-    plus: zone === "Local",
+    oneDay: zone === "Local",
     known: Boolean(entry),
   };
 }
@@ -195,7 +195,7 @@ export function PincodeChecker({ directory, origins, hubNames }: { directory: Pi
                 <p className="mt-0.5 text-lg font-semibold text-ink-900">{promise}</p>
                 <p className="text-xs text-ink-500">
                   {res.zone}, {res.days[0] === res.days[1] ? `${res.days[0]} day` : `${res.days[0]} to ${res.days[1]} days`} transit. Before the 2:00 pm cut-off.
-                  {res.plus && " Plus one-day eligible for AltasGoods Fulfilled items."}
+                  {res.oneDay && " One-day eligible for AltasGoods Fulfilled items."}
                 </p>
               </div>
               <ul className="mt-3 flex flex-col gap-2 text-[13px]">

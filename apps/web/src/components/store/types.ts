@@ -53,7 +53,6 @@ export interface CouponLite {
   minOrder: number;
   endsAt: string;
   fundedBy: "store" | "bank";
-  plusOnly?: boolean;
   upiOnly?: boolean;
   firstOrderOnly?: boolean;
 }
@@ -61,9 +60,7 @@ export interface CouponLite {
 export interface WalletLite {
   credits: number;
   giftCard: number;
-  bluCoins: number;
   payLaterLimit: number;
-  plusMember: boolean;
 }
 
 export interface AddressLite {
@@ -123,6 +120,5 @@ export interface PlacedOrder {
   paymentLabel: string;
   payable: number;
   savings: number;
-  coinsEarned: number;
   cod: boolean;
 }

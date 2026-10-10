@@ -1,19 +1,16 @@
 import { loadAccountOrders } from "@/lib/api/account-orders";
 import Link from "next/link";
-import { ArrowRight, Coins, Crown, Heart, Package, ShieldCheck, Undo2, Wallet } from "lucide-react";
-import { dateLabel, greeting, isActive, itemState, shortDate, trackIndex } from "@/components/account/lib";
+import { ArrowRight, Heart, Package, ShieldCheck, Undo2, Wallet } from "lucide-react";
+import { dateLabel, greeting, isActive, itemState, trackIndex } from "@/components/account/lib";
 import { MoreLink, Panel, ProductRail, ProductTile, TrackMeter } from "@/components/account/ui";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { IconTile } from "@/components/ui/misc";
-import { CURRENT_CUSTOMER } from "@/lib/mock";
 import {
   ACCOUNT_PROFILE,
   accountReturns,
-  BLUCOINS,
   CREDITS,
-  PLUS_MEMBERSHIP,
   productBySlug,
   recentlyViewed,
   recommendations,
@@ -22,7 +19,7 @@ import {
   wishlists,
 } from "@/lib/mock/account-extra";
 import type { Tone } from "@/lib/status";
-import { formatINR, formatNumber, productSlug } from "@/lib/utils";
+import { formatINR, productSlug } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
@@ -33,15 +30,12 @@ export default async function AccountOverviewPage() {
   const recent = accountOrders.filter((o) => !isActive(o.status)).slice(0, 4);
   const openReturns = accountReturns.filter((r) => !["completed", "rejected", "cancelled"].includes(r.status));
   const priceDrops = wishlists.flatMap((l) => l.items).filter((i) => (productBySlug(i.slug)?.price ?? Infinity) < i.priceWhenAdded).length;
-  const expiring = BLUCOINS.expiring[0]!;
 
   const tiles: { label: string; value: string; hint: string; href: string; icon: typeof Package; tone: Tone }[] = [
     { label: "Orders", value: `${active.length} on the way`, hint: `${accountOrders.length} orders in 3 months`, href: "/account/orders", icon: Package, tone: "brand" },
     { label: "Returns", value: `${openReturns.length} open`, hint: "Pickups and refunds", href: "/account/returns", icon: Undo2, tone: "info" },
     { label: "Wishlist", value: `${wishlistCount} items`, hint: `${priceDrops} price drops`, href: "/account/wishlist", icon: Heart, tone: "danger" },
     { label: "AltasGoods Credits", value: formatINR(CREDITS.balance), hint: "Use on any order", href: "/account/wallet", icon: Wallet, tone: "success" },
-    { label: "AltasCoins", value: formatNumber(BLUCOINS.balance), hint: `${expiring.coins} expire ${shortDate(expiring.expiresOn)}`, href: "/account/rewards", icon: Coins, tone: "accent" },
-    { label: "AltasGoods Plus", value: "Active", hint: `Renews ${shortDate(PLUS_MEMBERSHIP.renewsOn)}`, href: "/account/plus", icon: Crown, tone: "neutral" },
   ];
 
   return (
@@ -51,19 +45,8 @@ export default async function AccountOverviewPage() {
           <h1 className="text-[22px] leading-tight font-semibold text-ink-900 sm:text-[26px]">
             {greeting()}, {ACCOUNT_PROFILE.firstName}
           </h1>
-          <p className="mt-1 text-sm text-ink-500">Your orders, money and membership, all in one place.</p>
+          <p className="mt-1 text-sm text-ink-500">Your orders, money and account, all in one place.</p>
         </div>
-        {CURRENT_CUSTOMER.plusMember && (
-          <Link
-            href="/account/plus"
-            className="inline-flex items-center gap-2 self-start rounded-full border border-line bg-surface py-1.5 pr-3.5 pl-1.5 text-[13px] text-ink-700 shadow-card hover:border-line-strong sm:self-auto"
-          >
-            <span className="flex size-6 items-center justify-center rounded-full bg-brand-950 text-accent-300">
-              <Crown size={13} strokeWidth={2.2} aria-hidden="true" />
-            </span>
-            You have saved <span className="font-semibold text-ink-900">{formatINR(PLUS_MEMBERSHIP.totalSaved)}</span> with Plus this year
-          </Link>
-        )}
       </div>
 
       <section aria-label="Account at a glance" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
@@ -162,30 +145,6 @@ export default async function AccountOverviewPage() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-brand-950 p-5 text-white sm:p-6">
-            <div className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full bg-brand-600/40 blur-3xl" aria-hidden="true" />
-            <div className="relative">
-              <p className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-200">
-                <Crown size={14} className="text-accent-300" aria-hidden="true" />
-                AltasGoods Plus, annual
-              </p>
-              <p className="mt-3 text-[30px] leading-none font-semibold tracking-tight">{formatINR(PLUS_MEMBERSHIP.totalSaved)}</p>
-              <p className="mt-1.5 text-sm text-brand-100">saved since {dateLabel(PLUS_MEMBERSHIP.periodStart)}, on a {formatINR(PLUS_MEMBERSHIP.price)} plan</p>
-              <ul className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-4 text-[13px]">
-                {PLUS_MEMBERSHIP.savings.slice(0, 3).map((s) => (
-                  <li key={s.key} className="flex justify-between gap-3">
-                    <span className="text-brand-100">{s.label}</span>
-                    <span className="font-medium tabular-nums">{formatINR(s.value)}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/account/plus" className="mt-5 inline-flex items-center gap-1 text-[13px] font-semibold text-white hover:underline">
-                Manage membership
-                <ArrowRight size={14} aria-hidden="true" />
-              </Link>
-            </div>
-          </section>
-
           <Panel title="Returns and refunds" action={<MoreLink href="/account/returns">View</MoreLink>}>
             <ul className="flex flex-col gap-4">
               {openReturns.slice(0, 3).map((r) => (

@@ -43,6 +43,13 @@
       "when": 1791526025016,
       "tag": "0005_product_media",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791616807827,
+      "tag": "0006_strip_plus",
+      "breakpoints": true
     }
   ]
 }

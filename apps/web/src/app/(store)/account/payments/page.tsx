@@ -190,7 +190,7 @@ export default function PaymentsPage() {
               </li>
               <li className="flex items-start gap-2.5">
                 <CreditCard size={16} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
-                AltasGoods Credits and AltasCoins can be combined with any method
+                AltasGoods Credits and gift cards can be combined with any method
               </li>
             </ul>
           </Panel>

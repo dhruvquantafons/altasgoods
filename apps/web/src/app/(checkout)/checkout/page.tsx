@@ -23,10 +23,10 @@ export default async function CheckoutPage(props: PageProps<"/checkout">) {
     <CheckoutFlow
       catalog={cartCatalog(catalog.products)}
       coupons={storefrontCoupons()}
-      // bank offers, Credits, gift cards and AltasCoins are not priced by the API yet, so they are off
+      // bank offers, Credits and gift cards are not priced by the API yet, so they are off
       bankOffers={[]}
       banks={NET_BANKING_BANKS}
-      wallet={{ ...CUSTOMER_WALLET, credits: 0, giftCard: 0, bluCoins: 0, plusMember: !!user?.isPlus }}
+      wallet={{ credits: 0, giftCard: 0, payLaterLimit: CUSTOMER_WALLET.payLaterLimit }}
       customer={{ name: user?.name ?? "", phone: user?.phone.replace(/^\+91/, "") ?? "" }}
       addresses={addresses}
       buyNow={buyNow}

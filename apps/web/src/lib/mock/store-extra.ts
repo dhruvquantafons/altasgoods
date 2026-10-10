@@ -7,7 +7,6 @@
 import type { Brand, Category, Product, Seller } from "../types";
 import { addDays, NOW, seeded, slugify } from "../utils";
 import { coupons } from "./engagement";
-import { CURRENT_CUSTOMER } from "./people";
 import type { BankOffer, CartProduct, CouponLite, NavCategory, Suggestion, WalletLite } from "@/components/store/types";
 
 /* ------------------------------ Company ------------------------------- */
@@ -184,7 +183,7 @@ export const BANK_OFFERS: BankOffer[] = [
   { id: "bo-upi", kind: "UPI offer", title: "Flat ₹150 off on UPI payments", detail: "On orders of ₹1,999 and above. Applied automatically when you pay by UPI.", minOrder: 1999, flat: 150, method: "upi" },
   { id: "bo-emi", kind: "No cost EMI", title: "No cost EMI for 3 and 6 months", detail: "On orders of ₹3,000 and above with Kaveri Bank and Coral Bank credit cards. Interest is given as an upfront discount.", minOrder: 3000, method: "emi" },
   { id: "bo-paylater", kind: "Cashback", title: "₹100 back as AltasGoods Credits on your first Pay Later order", detail: "Credited within 48 hours of delivery. Minimum order ₹999.", minOrder: 999, flat: 100, method: "paylater" },
-  { id: "bo-coral", kind: "Partner offer", bank: "Coral Bank", title: "5% back as AltasCoins with the AltasGoods Coral credit card", detail: "Unlimited for Plus members, up to 500 AltasCoins a month for others.", minOrder: 0, percent: 5 },
+  { id: "bo-coral", kind: "Partner offer", bank: "Coral Bank", title: "5% back as AltasGoods Credits with the AltasGoods Coral credit card", detail: "On card spends, up to ₹500 back a month.", minOrder: 0, percent: 5 },
 ];
 
 export function bankOffersFor(price: number) {
@@ -215,7 +214,6 @@ export function storefrontCoupons(): CouponLite[] {
       minOrder: c.minOrder,
       endsAt: c.endsAt,
       fundedBy: c.fundedBy === "bank" ? ("bank" as const) : ("store" as const),
-      plusOnly: c.code.startsWith("PLUS") || undefined,
       upiOnly: c.code.startsWith("UPI") || undefined,
       firstOrderOnly: c.code === "BLUFIRST" || undefined,
     }));
@@ -226,25 +224,7 @@ export function storefrontCoupons(): CouponLite[] {
 export const CUSTOMER_WALLET: WalletLite = {
   credits: 1299,
   giftCard: 500,
-  bluCoins: CURRENT_CUSTOMER.bluCoins,
   payLaterLimit: 20000,
-  plusMember: CURRENT_CUSTOMER.plusMember,
-};
-
-/* ----------------------------- AltasGoods Plus ---------------------------- */
-
-export const PLUS_PLANS = [
-  { id: "monthly", name: "Monthly", price: 149, period: "month", note: "Cancel any time", perMonth: 149 },
-  { id: "annual", name: "Annual", price: 999, period: "year", note: "Save ₹789 over monthly", perMonth: 83, best: true },
-];
-
-export const PLUS_MEMBERSHIP = {
-  since: "2025-03-14T00:00:00+05:30",
-  renewsOn: "2027-03-14T00:00:00+05:30",
-  plan: "Annual",
-  savedThisYear: 4280,
-  freeDeliveries: 23,
-  coinsEarned: 1460,
 };
 
 /* ------------------------------ Search ------------------------------- */
@@ -274,9 +254,6 @@ export const DELIVERY_OPTIONS = [
   { key: "2", label: "Get it in 2 days", days: 2 },
   { key: "3", label: "Get it in 3 days", days: 3 },
 ];
-
-/** Paid placements, always labelled "Sponsored" (max 4 per 20 results). */
-export const SPONSORED_PRODUCT_IDS = ["p-monitor-ultra", "p-perfume-noir", "p-chair-lounge", "p-shoes-running", "p-tablet-slate"];
 
 /* --------------------------- Merchandising --------------------------- */
 
@@ -560,7 +537,6 @@ export const HELP_TOPICS = [
   { icon: "XCircle", title: "Cancellations", body: "Cancel before dispatch for a full refund, no fees", href: "/policies/cancellation" },
   { icon: "CreditCard", title: "Payments and EMI", body: "UPI, cards, EMI, Pay Later and failed payments", href: "/policies/payments" },
   { icon: "Wallet", title: "AltasGoods Credits and gift cards", body: "Balance, expiry and using credits at checkout", href: "/policies/credits" },
-  { icon: "Crown", title: "AltasGoods Plus", body: "Benefits, renewals and cancelling in one step", href: "/plus" },
   { icon: "ShieldCheck", title: "AltasGoods Guarantee", body: "Item not received or not as described", href: "/policies/guarantee" },
   { icon: "UserRound", title: "Account and privacy", body: "Login, mobile number, data and consent", href: "/policies/account-security" },
 ];

@@ -239,7 +239,7 @@ export function DeleteAccountButton({ blockers }: { blockers: { label: string; d
             </Field>
             <label className={cn("flex cursor-pointer items-start gap-2.5 text-[13px] text-ink-700")}>
               <input type="checkbox" className="mt-0.5 size-4 accent-brand-600" checked={ack} onChange={(e) => setAck(e.target.checked)} />
-              I understand that my order history, reviews, AltasCoins and saved lists will be permanently deleted.
+              I understand that my order history, reviews, AltasGoods Credits and saved lists will be permanently deleted.
             </label>
           </div>
         )}

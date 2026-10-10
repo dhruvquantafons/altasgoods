@@ -173,8 +173,6 @@ export const users = pgTable(
     name: text("name"),
     email: text("email"),
     emailVerifiedAt: ts("email_verified_at"),
-    isPlus: boolean("is_plus").notNull().default(false),
-    plusRenewsAt: ts("plus_renews_at"),
     status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED">(),
     /** AltasGoods Control access; empty for shoppers */
     staffRoles: text("staff_roles").array().notNull().$type<StaffRole[]>().default(sql`'{}'::text[]`),

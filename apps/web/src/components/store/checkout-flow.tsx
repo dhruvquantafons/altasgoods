@@ -14,7 +14,6 @@ import {
   CalendarClock,
   Check,
   CircleAlert,
-  Coins,
   CreditCard,
   Gift,
   Landmark,
@@ -32,7 +31,7 @@ import {
 } from "lucide-react";
 import { Checkbox, Field, Input, Select } from "@/components/ui/input";
 import { Stepper } from "@/components/ui/misc";
-import { cn, formatINR, formatNumber } from "@/lib/utils";
+import { cn, formatINR } from "@/lib/utils";
 import { useCart } from "./cart-context";
 import { COD_LIMIT, daysFromNow, formatPromise, isValidPincode, lookupPincode, promiseDays } from "./delivery";
 import { PriceDetails } from "./price-details";
@@ -41,7 +40,7 @@ import { QrArt } from "./qr-art";
 import type { AddressLite, BankOffer, CartCatalog, CartLine, CouponLite, WalletLite } from "./types";
 
 type PayMethod = "upi" | "card" | "netbanking" | "emi" | "paylater" | "cod";
-type Choice = "standard" | "oneday" | "slot1" | "slot2";
+type Choice = "standard" | "slot1" | "slot2";
 
 const STEPS = [
   { label: "Sign in" },
@@ -101,7 +100,6 @@ export function CheckoutFlow({
   const [emiMonths, setEmiMonths] = useState(6);
   const [useCredits, setUseCredits] = useState(false);
   const [useGift, setUseGift] = useState(false);
-  const [useCoins, setUseCoins] = useState(false);
   const [giftBalance, setGiftBalance] = useState(wallet.giftCard);
   const [giftCode, setGiftCode] = useState("");
   const [giftMsg, setGiftMsg] = useState<string | null>(null);
@@ -113,7 +111,7 @@ export function CheckoutFlow({
 
   const address = addresses.find((a) => a.id === addressId) ?? addresses[0];
   const info = lookupPincode(address?.pincode ?? "");
-  const localTotals = computeTotals(lines, catalog, { couponCode: cart.coupon, coupons, plus: wallet.plusMember, method });
+  const localTotals = computeTotals(lines, catalog, { couponCode: cart.coupon, coupons, method });
 
   // The API prices the order; its quote is the authority for every amount shown.
   const request = useMemo(
@@ -160,9 +158,6 @@ export function CheckoutFlow({
       : bestBankOffer(bankOffers, totals.total, method === "netbanking" || method === "cod" || method === "paylater" ? "none" : method, bankKey);
   const bankValue = bankDeal?.value ?? 0;
   let remaining = Math.max(0, totals.total - bankValue);
-  const coinsCap = Math.min(wallet.bluCoins, Math.floor(totals.priceTotal * 0.1));
-  const coinsUsed = useCoins ? Math.min(coinsCap, remaining) : 0;
-  remaining -= coinsUsed;
   const creditsUsed = useCredits ? Math.min(wallet.credits, remaining) : 0;
   remaining -= creditsUsed;
   const giftUsed = useGift ? Math.min(giftBalance, remaining) : 0;
@@ -170,11 +165,9 @@ export function CheckoutFlow({
   const payable = remaining;
   const extra = [
     ...(bankDeal ? [{ label: bankDeal.offer.kind === "UPI offer" ? "UPI offer" : "Bank offer", value: bankValue, note: bankDeal.offer.title }] : []),
-    ...(coinsUsed ? [{ label: "AltasCoins", value: coinsUsed, note: `${formatNumber(coinsUsed)} coins redeemed` }] : []),
     ...(creditsUsed ? [{ label: "AltasGoods Credits", value: creditsUsed }] : []),
     ...(giftUsed ? [{ label: "Gift card balance", value: giftUsed }] : []),
   ];
-  const coinsEarned = Math.min(100, Math.floor((totals.priceTotal - totals.couponDiscount) / 100) * (wallet.plusMember ? 2 : 1));
   const codBlock =
     quote && !quote.cod.available
       ? quote.cod.reason
@@ -191,15 +184,14 @@ export function CheckoutFlow({
   const deliveryInfo = () => {
     const days = promiseDays(totals.deliveryDays, info);
     const large = totals.lines.some((l) => l.product.large);
-    const oneDay = wallet.plusMember && info?.zone === "metro" && days > 1 && !large;
     const picked: Choice = choice ?? (large ? "slot1" : "standard");
     const slots = [
       { key: "slot1" as const, label: `${formatPromise(daysFromNow(days))}, 9 am to 1 pm` },
       { key: "slot2" as const, label: `${formatPromise(daysFromNow(days + 1))}, 2 pm to 6 pm` },
     ];
-    const date = picked === "oneday" ? daysFromNow(1) : picked === "slot2" ? daysFromNow(days + 1) : daysFromNow(days);
-    const optionLabel = picked === "oneday" ? "Plus one-day" : large ? `Scheduled, ${slots.find((s) => s.key === picked)?.label}` : "Standard";
-    return { days, large, oneDay, choice: picked, slots, date, optionLabel };
+    const date = picked === "slot2" ? daysFromNow(days + 1) : daysFromNow(days);
+    const optionLabel = large ? `Scheduled, ${slots.find((s) => s.key === picked)?.label}` : "Standard";
+    return { days, large, choice: picked, slots, date, optionLabel };
   };
 
   if (!lines.length || !totals.lines.length)
@@ -380,7 +372,6 @@ export function CheckoutFlow({
                   ? d.slots.map((s) => ({ key: s.key, title: s.label, sub: "Scheduled delivery, our team calls 1 hour before", price: fee }))
                   : [
                       { key: "standard", title: `Delivery by ${formatPromise(daysFromNow(d.days))}`, sub: "Standard delivery", price: fee },
-                      ...(d.oneDay ? [{ key: "oneday" as const, title: `Tomorrow, ${formatPromise(daysFromNow(1))}`, sub: "Plus one-day delivery", price: "Free with Plus" }] : []),
                     ];
                 return (
                   <div className="rounded-xl border border-line">
@@ -472,11 +463,10 @@ export function CheckoutFlow({
           {/* 5. Payment */}
           <StepCard n={5} title="Payment" icon={Lock} active={step === 4}>
             {/* Balances (hidden until stored value is priced by the API) */}
-            {(wallet.bluCoins > 0 || wallet.credits > 0 || wallet.giftCard > 0) && (
+            {(wallet.credits > 0 || wallet.giftCard > 0) && (
             <div className="rounded-xl border border-line">
               <p className="border-b border-line px-4 py-3 text-sm font-semibold text-ink-900">Use your AltasGoods balance</p>
               <div className="flex flex-col divide-y divide-line">
-                <BalanceRow icon={Coins} label={`AltasCoins: ${formatNumber(wallet.bluCoins)} available`} hint={`Use up to ${formatNumber(coinsCap)} coins (10% of order value). 1 coin = ₹1.`} checked={useCoins} disabled={!coinsCap} onChange={setUseCoins} value={coinsUsed} />
                 <BalanceRow icon={Wallet} label={`AltasGoods Credits: ${formatINR(wallet.credits)}`} hint="Refund credits, never expire" checked={useCredits} disabled={!wallet.credits} onChange={setUseCredits} value={creditsUsed} />
                 <BalanceRow icon={Gift} label={`Gift card balance: ${formatINR(giftBalance)}`} hint="Valid for 1 year from activation" checked={useGift} disabled={!giftBalance} onChange={setUseGift} value={giftUsed} />
               </div>
@@ -711,13 +701,9 @@ export function CheckoutFlow({
         </div>
 
         <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
-          <PriceDetails totals={totals} extra={extra} plus={wallet.plusMember} totalLabel={step === 4 ? "Amount payable" : "Order total"} />
+          <PriceDetails totals={totals} extra={extra} totalLabel={step === 4 ? "Amount payable" : "Order total"} />
           <div className="rounded-2xl border border-line bg-white p-4 text-[13px] text-ink-600">
             <p className="flex items-center gap-2 font-semibold text-ink-900">
-              <Coins size={15} className="text-accent-700" aria-hidden="true" /> You will earn {coinsEarned} AltasCoins
-            </p>
-            <p className="mt-1">Credited after the return window closes{wallet.plusMember ? ", at 2x with Plus" : ""}.</p>
-            <p className="mt-3 flex items-center gap-2 font-semibold text-ink-900">
               <ShieldCheck size={15} className="text-success-600" aria-hidden="true" /> AltasGoods Guarantee
             </p>
             <p className="mt-1">Get the item you ordered or your money back.</p>
@@ -811,7 +797,7 @@ function BalanceRow({
   onChange,
   value,
 }: {
-  icon: typeof Coins;
+  icon: typeof Gift;
   label: string;
   hint: string;
   checked: boolean;
@@ -845,7 +831,7 @@ function PayOption({
   children,
 }: {
   id: PayMethod;
-  icon: typeof Coins;
+  icon: typeof Gift;
   title: string;
   sub: string;
   method: PayMethod;

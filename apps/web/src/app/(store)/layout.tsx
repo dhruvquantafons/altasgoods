@@ -24,9 +24,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           customer={{
             signedIn: !!user,
             firstName: user?.name?.split(" ")[0] ?? (user ? "there" : ""),
-            plus: user?.isPlus ?? false,
-            // stored value is not in the API yet; shown from the demo wallet
-            bluCoins: CUSTOMER_WALLET.bluCoins,
             credits: CUSTOMER_WALLET.credits,
           }}
         />

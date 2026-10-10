@@ -6,9 +6,9 @@ import { CUSTOMER_STATUS, riskTone } from "@/components/admin/admin-status";
 import { ScoreMeter, SummaryRow } from "@/components/admin/bits";
 import { KpiStrip } from "@/components/admin/kpi-strip";
 import { MaskedValue } from "@/components/admin/masked-value";
-import { Badge, StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Avatar, EmptyState, Progress } from "@/components/ui/misc";
+import { Avatar, EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { tickets } from "@/lib/api/support";
@@ -59,7 +59,6 @@ export default async function CustomerDetail(props: PageProps<"/admin/customers/
         meta={
           <>
             <StatusBadge meta={CUSTOMER_STATUS[c.status]} />
-            {c.plusMember && <Badge tone="brand">AltasGoods Plus</Badge>}
             <span className="font-mono text-[13px] text-ink-500">{c.id}</span>
             <span className="text-[13px] text-ink-500">
               {c.city}, {c.state}. Customer since {formatDate(c.joinedAt)}
@@ -109,7 +108,6 @@ export default async function CustomerDetail(props: PageProps<"/admin/customers/
           { label: "Orders", value: formatNumber(orderCount) },
           { label: "Average order value", value: formatINR(aov) },
           { label: "Return rate", value: `${p.returnRate}%`, hint: "90 days" },
-          { label: "AltasCoins", value: formatNumber(c.bluCoins), hint: p.coinsExpiring ? `${p.coinsExpiring} expire this month` : "none expiring" },
           { label: "AltasGoods Credits", value: formatINR(p.creditsBalance), hint: "refund-origin, never expire" },
         ]}
       />
@@ -255,29 +253,6 @@ export default async function CustomerDetail(props: PageProps<"/admin/customers/
                   </li>
                 ))}
               </ul>
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader title="Membership and rewards" />
-            <div className="px-5 pt-3 pb-5">
-              {c.plusMember ? (
-                <dl className="flex flex-col gap-2.5">
-                  <SummaryRow label="Plan" value={p.plusPlan} />
-                  <SummaryRow label="Member since" value={p.plusSince ? formatDate(p.plusSince) : "Not a member"} />
-                  <SummaryRow label="Earn rate" value="2 AltasCoins per ₹100" />
-                </dl>
-              ) : (
-                <p className="text-[13px] text-ink-600">Not an AltasGoods Plus member. Earns 1 AltasCoin per ₹100.</p>
-              )}
-              <div className="mt-4 border-t border-line pt-4">
-                <div className="mb-1.5 flex justify-between text-[13px]">
-                  <span className="text-ink-600">AltasCoins balance</span>
-                  <span className="font-semibold tabular-nums">{formatNumber(c.bluCoins)}</span>
-                </div>
-                <Progress value={c.bluCoins} max={2400} size="sm" label="AltasCoins balance" />
-                <p className="mt-1.5 text-xs text-ink-500">1 coin = ₹1, redeem up to 10% of an order. Coins expire 6 months after credit.</p>
-              </div>
             </div>
           </Card>
         </div>

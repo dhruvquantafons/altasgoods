@@ -14,7 +14,6 @@ export interface QuoteLineInput {
 
 export interface QuoteInput {
   lines: QuoteLineInput[];
-  isPlus: boolean;
   couponCode?: string;
   paymentMethod?: PaymentMethod;
   /** lock offer rows for update (order placement) */
@@ -80,7 +79,7 @@ export class QuoteService {
 
     const mrpTotal = priced.reduce((a, p) => a + p.offer.mrpPaise * p.input.qty, 0);
     const subtotal = lines.reduce((a, l) => a + l.lineTotalPaise, 0);
-    const delivery = lines.length ? deliveryFee(subtotal, input.isPlus) : 0;
+    const delivery = lines.length ? deliveryFee(subtotal) : 0;
 
     let coupon: { code: string; applied: boolean; message: string } | null = null;
     let couponDiscountPaise = 0;

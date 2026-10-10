@@ -103,7 +103,6 @@ export function CreateCoupon() {
             <Select id={`${id}-aud`} defaultValue="all">
               <option value="all">Everyone</option>
               <option value="new">New customers, first order</option>
-              <option value="plus">AltasGoods Plus members</option>
               <option value="lapsed">Lapsed, no order in 90 days</option>
             </Select>
           </Field>
@@ -114,7 +113,7 @@ export function CreateCoupon() {
             <Input id={`${id}-end`} type="date" value={end} onChange={(e) => setEnd(e.target.value)} aria-invalid={Boolean(errors.dates)} />
           </Field>
           <p className="rounded-xl border border-line bg-ink-50/60 px-4 py-3 text-xs text-ink-600 sm:col-span-2">
-            Stacking at checkout: deal price, then one coupon per item, then one bank offer per order, then AltasCoins, then AltasGoods Credits. Coupon codes are never pre-applied for customers who did not choose them.
+            Stacking at checkout: deal price, then one coupon per item, then one bank offer per order, then AltasGoods Credits. Coupon codes are never pre-applied for customers who did not choose them.
           </p>
         </div>
       </Modal>

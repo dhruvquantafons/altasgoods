@@ -843,7 +843,7 @@ export interface FcPickList {
   wave: string;
   cutoff: string;
   lane: string;
-  priority: "Plus one-day" | "Standard" | "Secure Delivery";
+  priority: "One-day" | "Standard" | "Secure Delivery";
   orders: number;
   units: number;
   picked: number;
@@ -928,7 +928,7 @@ function fcSnapshot(hubId: string, seed: number, scale: number, lanes: [string, 
       wave: `W${String(i < 4 ? 7 + Math.floor(i / 2) : 9 + Math.floor((i - 4) / 2)).padStart(2, "0")}`,
       cutoff: cutoffs[Math.min(cutoffs.length - 1, Math.floor(i / 2))]!,
       lane,
-      priority: i === 0 || i === 2 ? "Plus one-day" : i === 5 ? "Secure Delivery" : "Standard",
+      priority: i === 0 || i === 2 ? "One-day" : i === 5 ? "Secure Delivery" : "Standard",
       orders: Math.round(units / (1.2 + r() * 0.5)),
       units,
       picked,
@@ -1114,7 +1114,7 @@ const agentSeeds: [string, string, AgentLevel, string, AgentPresence][] = [
   ["Joseph Mathew", "Joseph Mathew", "L1", "Payments", "busy"],
   ["Ayesha Siddiqui", "Ayesha Siddiqui", "L1", "Returns and refunds", "away"],
   ["Nitin Bhatt", "Nitin Bhatt", "L1", "Orders and delivery", "online"],
-  ["Sana Mirza", "Sana Mirza", "L1", "Account and Plus", "online"],
+  ["Sana Mirza", "Sana Mirza", "L1", "Account", "online"],
   ["Rohan Pinto", "Rohan Pinto", "L2", "Escalations", "busy"],
   ["Divya Raman", "Divya Raman", "L1", "Payments", "offline"],
 ];
@@ -1318,7 +1318,7 @@ export interface ArticleSection {
 export interface Article {
   slug: string;
   title: string;
-  category: "Returns" | "Refunds" | "Orders" | "Payments" | "Delivery" | "Membership" | "Claims";
+  category: "Returns" | "Refunds" | "Orders" | "Payments" | "Delivery" | "Claims";
   summary: string;
   updatedAt: string;
   owner: string;
@@ -1370,7 +1370,6 @@ export const articles: Article[] = [
             ["Net banking", "Source account or AltasGoods Credits", "3 to 5 business days"],
             ["EMI", "Source card (issuer reverses EMI)", "3 to 5 business days"],
             ["Cash on delivery", "AltasGoods Credits, or bank or UPI after penny drop", "Credits under 2 hours, bank 1 to 2 business days"],
-            ["AltasCoins", "Restored to AltasCoins", "Instant"],
           ],
         },
       },
@@ -1385,7 +1384,7 @@ export const articles: Article[] = [
     updatedAt: "2026-08-21",
     owner: "Order operations",
     sections: [
-      { bullets: ["Free cancellation until the item is shipped", "After dispatch, the customer can refuse at the door or return within the window", "Seller cancellations trigger an automatic full refund and count against seller metrics", "Plus members get the same cancellation rules with faster refunds to AltasGoods Credits"] },
+      { bullets: ["Free cancellation until the item is shipped", "After dispatch, the customer can refuse at the door or return within the window", "Seller cancellations trigger an automatic full refund and count against seller metrics", "Refunds go back to the original payment method or to AltasGoods Credits"] },
     ],
   },
   {
@@ -1396,7 +1395,7 @@ export const articles: Article[] = [
     updatedAt: "2026-09-12",
     owner: "Payments risk",
     sections: [
-      { bullets: ["Maximum order value ₹50,000", "Up to 3 undelivered COD shipments per customer at a time", "Not available for gift cards, memberships, gold or silver coins", "Disabled per pincode when the 30-day COD RTO rate exceeds 25%", "Disabled for customers with 2 or more COD refusals in 90 days, re-enabled after 3 prepaid deliveries"] },
+      { bullets: ["Maximum order value ₹50,000", "Up to 3 undelivered COD shipments per customer at a time", "Not available for gift cards or gold and silver coins", "Disabled per pincode when the 30-day COD RTO rate exceeds 25%", "Disabled for customers with 2 or more COD refusals in 90 days, re-enabled after 3 prepaid deliveries"] },
       { heading: "At the door", body: "Customers can pay cash or scan a dynamic UPI QR on the associate's app. No COD surcharge is ever charged." },
     ],
   },
@@ -1410,18 +1409,6 @@ export const articles: Article[] = [
     sections: [
       { bullets: ["Up to 3 attempts within 5 calendar days of the first attempt", "Customer is notified within 30 minutes with options: re-attempt date, address details, alternate phone, pay online, or cancel", "No response in 24 hours: automatic re-attempt the next working day", "Refused, out of delivery area or cancelled shipments return to origin immediately"] },
       { heading: "Fake attempt reports", body: "If a customer says they were available, the case is marked disputed, gets a priority re-attempt and the associate's attempt is reviewed." },
-    ],
-  },
-  {
-    slug: "altasgoods-plus",
-    title: "AltasGoods Plus benefits and billing",
-    category: "Membership",
-    summary: "Membership benefits, renewal, refunds on cancellation and how to check a member's status.",
-    updatedAt: "2026-09-01",
-    owner: "Membership team",
-    sections: [
-      { bullets: ["Free one-day delivery on eligible AltasGoods Fulfilled items in top cities", "Early access to AltasGoods Big Days and AltasGoods Plus Day", "Extra AltasCoins on every order", "Priority support queue with faster first response"] },
-      { heading: "Cancellation", body: "Members can cancel within 14 days for a full refund if no Plus benefit was used. After that, the membership runs until the end of the paid term." },
     ],
   },
   {

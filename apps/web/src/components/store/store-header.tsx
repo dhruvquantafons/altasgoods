@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Crown, HelpCircle, Package, Smartphone } from "lucide-react";
+import { HelpCircle, Package, Smartphone } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { AccountMenu, CartButton, DeliverTo, MobileNav, SearchBox, SearchBoxFallback, WishlistLink } from "./header-client";
 import { MegaMenu } from "./mega-menu";
@@ -17,7 +17,7 @@ export function StoreHeader({
   categories: NavCategory[];
   suggestions: Suggestion[];
   addresses: AddressLite[];
-  customer: { signedIn: boolean; firstName: string; plus: boolean; bluCoins: number; credits: number };
+  customer: { signedIn: boolean; firstName: string; credits: number };
 }) {
   const cats = categories.map((c) => ({ slug: c.slug, name: c.name }));
   return (
@@ -32,7 +32,6 @@ export function StoreHeader({
           <DeliverTo addresses={addresses} name={customer.firstName} />
           <nav aria-label="Utility" className="flex items-center gap-1 text-[13px] text-ink-600">
             {[
-              { href: "/plus", label: "AltasGoods Plus", icon: Crown },
               { href: "/help", label: "Help", icon: HelpCircle },
               { href: "#app-download", label: "Download app", icon: Smartphone },
             ].map((l) => (

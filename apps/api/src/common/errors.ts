@@ -72,6 +72,6 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     res
       .status(status)
       .type("application/problem+json")
-      .json({ type: `https://docs.blubuy.in/errors/${code.toLowerCase()}`, title: titles[status] ?? "Error", status, code, detail, ...(errors ? { errors } : {}) });
+      .json({ type: `https://docs.altasgoods.in/errors/${code.toLowerCase()}`, title: titles[status] ?? "Error", status, code, detail, ...(errors ? { errors } : {}) });
   }
 }

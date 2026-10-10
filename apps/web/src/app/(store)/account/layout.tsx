@@ -23,7 +23,6 @@ export default async function AccountLayout({ children }: LayoutProps<"/account"
         <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-8">
           <AccountSidebar
             name={CURRENT_CUSTOMER.name}
-            plus={CURRENT_CUSTOMER.plusMember}
             memberSince={new Date(ACCOUNT_PROFILE.memberSince).getFullYear().toString()}
             counts={counts}
           />

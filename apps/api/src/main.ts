@@ -6,4 +6,4 @@ import { createApp, openApiDocument } from "./app.js";
 const app = await createApp();
 SwaggerModule.setup("docs", app, () => openApiDocument(app));
 await app.listen(env().PORT);
-Logger.log(`BluBuy API on http://localhost:${env().PORT} (docs at /docs)`, "Bootstrap");
+Logger.log(`AltasGoods API on http://localhost:${env().PORT} (docs at /docs)`, "Bootstrap");

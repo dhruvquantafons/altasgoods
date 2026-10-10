@@ -3,7 +3,7 @@ import Form from "next/form";
 import type { ReactNode } from "react";
 import { Check, ChevronLeft, ChevronRight, SearchX, Star, X } from "lucide-react";
 import type { Product } from "@/lib/types";
-import { DELIVERY_OPTIONS, DISCOUNT_BANDS, inStock, isBrowsable, PRICE_BANDS, RATING_OPTIONS, SORT_OPTIONS, SPONSORED_PRODUCT_IDS } from "@/lib/mock/store-extra";
+import { DELIVERY_OPTIONS, DISCOUNT_BANDS, inStock, isBrowsable, PRICE_BANDS, RATING_OPTIONS, SORT_OPTIONS } from "@/lib/mock/store-extra";
 import { cn, formatINR, formatNumber } from "@/lib/utils";
 import { Breadcrumbs, type Crumb } from "@/components/ui/page-header";
 import { DEFAULT_PINCODE, lookupPincode, promiseDays } from "./delivery";
@@ -417,12 +417,9 @@ export function ListingView({
   emptyHint?: ReactNode;
 }) {
   const results = sortProducts(applyFilters(base, f), f.sort, f.q, ranked);
-  const sponsored = f.sort === "relevance" ? results.filter((p) => SPONSORED_PRODUCT_IDS.includes(p.id) && inStock(p)).slice(0, 2) : [];
-  const organic = results.filter((p) => !sponsored.includes(p));
-  const ordered = [...sponsored, ...organic];
-  const pages = Math.max(1, Math.ceil(ordered.length / PAGE_SIZE));
+  const pages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
   const page = Math.min(f.page, pages);
-  const pageItems = ordered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageItems = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const href = (patch: Partial<Filters>) => `${basePath}${toQuery(f, patch)}`;
 
   const chips: { label: string; href: string }[] = [];
@@ -441,8 +438,8 @@ export function ListingView({
 
   const clearHref = `${basePath}${toQuery(f, { cat: "", sub: "", brands: [], price: "", min: "", max: "", rating: "", discount: "", assured: false, delivery: "", cod: false, avail: false })}`;
   const sortOptions = SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label, href: href({ sort: o.key }) }));
-  const from = ordered.length ? (page - 1) * PAGE_SIZE + 1 : 0;
-  const to = Math.min(page * PAGE_SIZE, ordered.length);
+  const from = results.length ? (page - 1) * PAGE_SIZE + 1 : 0;
+  const to = Math.min(page * PAGE_SIZE, results.length);
   const panel = <FilterPanel base={base} f={f} basePath={basePath} mode={mode} />;
 
   return (
@@ -453,10 +450,9 @@ export function ListingView({
         <div className="min-w-0">
           <h1 className="text-[22px] leading-tight font-semibold tracking-tight text-ink-900 lg:text-[28px]">{heading}</h1>
           <p className="mt-1 text-sm text-ink-500" aria-live="polite">
-            {ordered.length ? (
+            {results.length ? (
               <>
-                Showing {from} to {to} of {formatNumber(ordered.length)} result{ordered.length === 1 ? "" : "s"}
-                {sponsored.length > 0 && <span className="text-ink-400">, including {sponsored.length} sponsored</span>}
+                Showing {from} to {to} of {formatNumber(results.length)} result{results.length === 1 ? "" : "s"}
               </>
             ) : (
               "No matching products"
@@ -464,7 +460,7 @@ export function ListingView({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <FilterSheet activeCount={chips.length} resultCount={ordered.length} stateKey={toQuery(f)} clearHref={clearHref}>
+          <FilterSheet activeCount={chips.length} resultCount={results.length} stateKey={toQuery(f)} clearHref={clearHref}>
             {panel}
           </FilterSheet>
           <SortSelect options={sortOptions} value={f.sort} className="ml-auto sm:ml-0" />
@@ -513,7 +509,6 @@ export function ListingView({
                 <li key={p.id} className="flex">
                   <ProductCard
                     product={p}
-                    sponsored={sponsored.includes(p)}
                     showAdd
                     priority={i < 4}
                     className="w-full"

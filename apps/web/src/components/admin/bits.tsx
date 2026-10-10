@@ -72,7 +72,7 @@ export function Mono({ children, className }: { children: ReactNode; className?:
   return <span className={cn("font-mono text-[13px] text-ink-800", className)}>{children}</span>;
 }
 
-/** Quiet inline label ("Sponsored", "Maker", tier names) as a bordered chip. */
+/** Quiet inline label (maker, checker, tier names) as a bordered chip. */
 export function Chip({ children, className }: { children: ReactNode; className?: string }) {
   return <span className={cn("inline-flex items-center rounded-md border border-line bg-ink-50 px-1.5 py-px text-[11px] font-medium text-ink-600", className)}>{children}</span>;
 }

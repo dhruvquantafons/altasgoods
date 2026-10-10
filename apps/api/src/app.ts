@@ -22,8 +22,8 @@ export async function createApp(options: { logger?: false } = {}) {
 
 export function openApiDocument(app: INestApplication) {
   const config = new DocumentBuilder()
-    .setTitle("BluBuy API")
-    .setDescription("Marketplace API for the BluBuy web and mobile apps. Money is in paise (1 rupee = 100 paise).")
+    .setTitle("AltasGoods API")
+    .setDescription("Marketplace API for the AltasGoods web and mobile apps. Money is in paise (1 rupee = 100 paise).")
     .setVersion("0.1.0")
     .addBearerAuth()
     .build();

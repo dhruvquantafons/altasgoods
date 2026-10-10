@@ -80,7 +80,7 @@ export class AuthService {
     let [user] = await this.db.select().from(users).where(eq(users.phone, challenge.phone));
     const isNewUser = !user;
     if (!user) [user] = await this.db.insert(users).values({ phone: challenge.phone, name: input.name ?? null }).returning();
-    if (user!.status === "BLOCKED") throw new ApiError(403, "ACCOUNT_BLOCKED", "This account is blocked. Contact BluBuy support.");
+    if (user!.status === "BLOCKED") throw new ApiError(403, "ACCOUNT_BLOCKED", "This account is blocked. Contact AltasGoods support.");
 
     const pair = await this.tokens.issue(user!.id, await this.grants(user!.id), meta);
     return { ...pair, user: await this.me(user!.id), isNewUser };
@@ -110,7 +110,6 @@ export class AuthService {
       name: user.name,
       email: user.email,
       emailVerified: !!user.emailVerifiedAt,
-      isPlus: user.isPlus,
       staffRoles: user.staffRoles,
     };
   }

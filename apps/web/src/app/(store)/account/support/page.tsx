@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, CreditCard, Crown, Mail, Package, PhoneCall, ShieldCheck, Undo2, UserRound } from "lucide-react";
+import { ChevronRight, CreditCard, Mail, Package, PhoneCall, ShieldCheck, Undo2, UserRound } from "lucide-react";
 import { CUSTOMER_TICKET_STATUS, dateLabel, isActive, itemState, shortTitle } from "@/components/account/lib";
 import { CallBackButton, ChatButton, GuaranteeClaimButton, RaiseTicketButton, TicketReplyButton } from "@/components/account/support-forms";
 import { Notice, Panel } from "@/components/account/ui";
@@ -21,7 +21,6 @@ const TOPICS = [
   { key: "return", label: "Returns and refunds", body: "Pickups, replacements, refund status", icon: Undo2 },
   { key: "payment", label: "Payments", body: "Charges, EMI, UPI and Pay Later", icon: CreditCard },
   { key: "account", label: "Account and security", body: "Sign-in, OTP, profile and privacy", icon: UserRound },
-  { key: "plus", label: "AltasGoods Plus", body: "Benefits, renewal and cancellation", icon: Crown },
 ];
 
 const TOPIC_CATEGORY: Record<string, string> = {
@@ -30,7 +29,6 @@ const TOPIC_CATEGORY: Record<string, string> = {
   cancel: "Delivery",
   payment: "Payment",
   account: "Account",
-  plus: "Other",
 };
 
 function issuesFor(status: OrderStatus) {
@@ -186,7 +184,7 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
             <div className="relative">
               <p className="text-[13px] font-medium text-brand-200">AltasGoods Care</p>
               <p className="mt-1 font-display text-lg font-semibold">Talk to a person, 24 x 7</p>
-              <p className="mt-1.5 text-sm text-brand-100">Plus members get priority. Average wait right now is under a minute.</p>
+              <p className="mt-1.5 text-sm text-brand-100">Average wait right now is under a minute.</p>
               <div className="mt-4 flex flex-col gap-2">
                 <ChatButton orderLabel={focus?.id} firstName={firstName} conversation={chat} variant="secondary" className="w-full" />
                 {user && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}

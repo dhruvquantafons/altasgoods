@@ -4,7 +4,7 @@
  */
 import { istAt, istParts } from "../../common/time.js";
 
-/** Customer delivery fee: free for Plus members and orders of ₹499 or more. */
+/** Customer delivery fee: free for orders of ₹499 or more. */
 export const FREE_DELIVERY_FROM_PAISE = 49_900;
 export const DELIVERY_FEE_PAISE = 4_000;
 export const COD_LIMIT_PAISE = 5_000_000;
@@ -34,8 +34,8 @@ export function couponDiscount(c: CouponRule, subtotalPaise: number, now: Date):
   return { discountPaise: Math.min(capped, subtotalPaise), message: "Coupon applied" };
 }
 
-export function deliveryFee(subtotalPaise: number, isPlus: boolean) {
-  return isPlus || subtotalPaise >= FREE_DELIVERY_FROM_PAISE ? 0 : DELIVERY_FEE_PAISE;
+export function deliveryFee(subtotalPaise: number) {
+  return subtotalPaise >= FREE_DELIVERY_FROM_PAISE ? 0 : DELIVERY_FEE_PAISE;
 }
 
 /** Orders confirmed before 2 pm IST count from today. */

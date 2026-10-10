@@ -273,7 +273,7 @@ export function ReturnWizard({
             {resolution === "refund" ? <Wallet size={18} className="text-brand-600" aria-hidden="true" /> : <RefreshCcw size={18} className="text-brand-600" aria-hidden="true" />}
             <p className="mt-2 text-[13px] font-semibold text-ink-900">{resolution === "refund" ? `${formatINR(item.amount)} refund` : resolution === "exchange" ? `Size ${size}` : "New unit"}</p>
             <p className="mt-0.5 text-xs text-ink-600">
-              {resolution === "refund" ? `To ${refundLabel}. ${refundWhen}.` : "Ships as soon as the pickup is done. Plus members may get it sooner."}
+              {resolution === "refund" ? `To ${refundLabel}. ${refundWhen}.` : "Ships as soon as the pickup is done."}
             </p>
           </div>
         </div>
@@ -521,7 +521,7 @@ export function ReturnWizard({
               {resolution === "replacement" && (
                 <p className="flex items-start gap-2 rounded-lg bg-brand-50 px-3.5 py-3 text-[13px] text-brand-800">
                   <Zap size={16} className="mt-px shrink-0" aria-hidden="true" />
-                  As an AltasGoods Plus member, your replacement can ship before we pick up the original, so you are never without it for long.
+                  On eligible items your replacement can ship before we pick up the original, so you are never without it for long.
                 </p>
               )}
             </div>

@@ -5,7 +5,6 @@
  */
 
 import type {
-  CampaignStatus,
   CouponStatus,
   ListingStatus,
   NdrReason,
@@ -95,7 +94,7 @@ export interface Product {
   /** seller id currently winning the featured offer (buy box) */
   featuredSellerId: ID;
   assured: boolean;
-  tags: ("bestseller" | "new" | "deal" | "limited" | "plus")[];
+  tags: ("bestseller" | "new" | "deal" | "limited")[];
   stock: number;
   soldLast30d: number;
   listingStatus: ListingStatus;
@@ -128,8 +127,6 @@ export interface Customer {
   joinedAt: string;
   orders: number;
   lifetimeValue: number;
-  plusMember: boolean;
-  bluCoins: number;
   status: "active" | "blocked" | "flagged";
   riskScore: number; // 0-100, higher is riskier (COD and return abuse signals)
 }
@@ -294,19 +291,6 @@ export interface Coupon {
   fundedBy: "blubuy" | "seller" | "bank";
 }
 
-export interface Campaign {
-  id: ID;
-  name: string;
-  type: "sponsored_products" | "sponsored_brands" | "display";
-  status: CampaignStatus;
-  dailyBudget: number;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  orders: number;
-  sales: number;
-  startedAt: string;
-}
 
 /* --------------------------- Engagement ---------------------------- */
 

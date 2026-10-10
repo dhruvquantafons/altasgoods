@@ -17,7 +17,7 @@ export default async function OrderConfirmedPage(props: PageProps<"/order/confir
   }
   return (
     <OrderConfirmation
-      fallback={toPlacedOrder(order, !!user?.isPlus)}
+      fallback={toPlacedOrder(order)}
       requestedId={order.id}
       firstName={user?.name?.split(" ")[0] ?? "there"}
       phone={order.address.phone.replace(/^\+91/, "")}

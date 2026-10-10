@@ -31,7 +31,7 @@ export default async function KnowledgePage(props: PageProps<"/support/knowledge
 
   return (
     <>
-      <PageHeader title="Macros and policies" description="Canned replies and the policies behind them: return windows, refund timelines, cancellation, COD, Plus and claims." />
+      <PageHeader title="Macros and policies" description="Canned replies and the policies behind them: return windows, refund timelines, cancellation, COD and claims." />
 
       <Card className="mb-6">
         <AutoSubmitForm action="/support/knowledge" className="flex flex-wrap items-center gap-2 p-4">
@@ -49,7 +49,7 @@ export default async function KnowledgePage(props: PageProps<"/support/knowledge
 
       {foundArticles.length === 0 && foundMacros.length === 0 ? (
         <Card>
-          <EmptyState icon={Search} title="Nothing found" description={`No policy or macro mentions "${raw}". Try a shorter term such as refund, COD or Plus.`} action={<Link href="/support/knowledge" className="text-[13px] font-medium text-brand-700">Clear search</Link>} />
+          <EmptyState icon={Search} title="Nothing found" description={`No policy or macro mentions "${raw}". Try a shorter term such as refund or COD.`} action={<Link href="/support/knowledge" className="text-[13px] font-medium text-brand-700">Clear search</Link>} />
         </Card>
       ) : (
         <>

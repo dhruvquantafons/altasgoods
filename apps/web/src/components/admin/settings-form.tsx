@@ -12,8 +12,6 @@ export interface SettingsData {
   returnWindows: { categoryId: string; name: string; days: number; resolution: string }[];
   cod: { maxOrderValue: number; maxUndelivered: number; pincodeRtoThreshold: number; refusalsToDisable: number };
   delivery: { freeAbove: number; fee: number; platformFee: number };
-  plus: { monthly: number; annual: number };
-  coins: { earnPer100: number; plusEarnPer100: number; capPerOrder: number; redeemPercent: number; expiryMonths: number };
   grievance: { name: string; designation: string; email: string; phone: string; address: string };
   maintenance: { enabled: boolean; message: string; audience: string };
 }
@@ -22,8 +20,6 @@ const SECTIONS = [
   { id: "returns", label: "Return windows" },
   { id: "payments", label: "Payments and COD" },
   { id: "delivery", label: "Delivery and fees" },
-  { id: "plus", label: "AltasGoods Plus" },
-  { id: "coins", label: "AltasCoins" },
   { id: "grievance", label: "Grievance officer" },
   { id: "maintenance", label: "Maintenance banner" },
 ];
@@ -139,7 +135,7 @@ export function SettingsForm({ data }: { data: SettingsData }) {
           "Any customer fee must be shown on the product page and cart from the first price display; no drip pricing.",
           true,
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Free delivery above" hint="Per seller shipment, non-Plus">
+              <Field label="Free delivery above" hint="Per seller shipment">
               <Rupee defaultValue={data.delivery.freeAbove} />
             </Field>
             <Field label="Delivery fee below" hint="Per shipment">
@@ -147,51 +143,6 @@ export function SettingsForm({ data }: { data: SettingsData }) {
             </Field>
             <Field label="Platform fee per order" hint="Currently not charged">
               <Rupee defaultValue={data.delivery.platformFee} />
-            </Field>
-          </div>,
-        )}
-
-        {section(
-          "plus",
-          "AltasGoods Plus pricing",
-          "A price change creates a new plan version; existing members keep their price until renewal. Cancelling must stay a one-step flow.",
-          true,
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Monthly plan">
-              <Rupee defaultValue={data.plus.monthly} />
-            </Field>
-            <Field label="Annual plan" hint={`${Math.round((1 - data.plus.annual / (data.plus.monthly * 12)) * 100)}% less than 12 monthly payments`}>
-              <Rupee defaultValue={data.plus.annual} />
-            </Field>
-          </div>,
-        )}
-
-        {section(
-          "coins",
-          "AltasCoins",
-          "Coins are credited after the return window closes. 1 coin is worth ₹1 at redemption.",
-          true,
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Earn per ₹100" hint="Standard customers">
-              <Input type="number" min={0} defaultValue={data.coins.earnPer100} />
-            </Field>
-            <Field label="Earn per ₹100, Plus" hint="Plus members">
-              <Input type="number" min={0} defaultValue={data.coins.plusEarnPer100} />
-            </Field>
-            <Field label="Cap per order">
-              <Input type="number" min={0} defaultValue={data.coins.capPerOrder} suffix="coins" />
-            </Field>
-            <Field label="Redeem up to" hint="Of order value">
-              <Input type="number" min={0} max={100} defaultValue={data.coins.redeemPercent} suffix="%" />
-            </Field>
-            <Field label="Expiry" hint="After the month of credit">
-              <Select defaultValue={String(data.coins.expiryMonths)}>
-                {[3, 6, 9, 12].map((m) => (
-                  <option key={m} value={m}>
-                    {m} months
-                  </option>
-                ))}
-              </Select>
             </Field>
           </div>,
         )}

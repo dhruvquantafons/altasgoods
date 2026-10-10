@@ -31,8 +31,7 @@ const METHOD_KEYS = { UPI: "upi", CARD: "card", NETBANKING: "netbanking", EMI: "
 export const methodLabel = (m: Order["paymentMethod"]) => PAYMENT_METHOD[METHOD_KEYS[m]];
 
 /** A placed order in the shape the confirmation screen renders. */
-export function toPlacedOrder(order: Order, isPlus: boolean): PlacedOrder {
-  const spent = (order.subtotalPaise - order.couponDiscountPaise) / 100;
+export function toPlacedOrder(order: Order): PlacedOrder {
   return {
     id: order.id,
     placedAt: new Date(order.placedAt).getTime(),
@@ -52,7 +51,6 @@ export function toPlacedOrder(order: Order, isPlus: boolean): PlacedOrder {
     paymentLabel: methodLabel(order.paymentMethod),
     payable: order.totalPaise / 100,
     savings: (order.mrpTotalPaise - order.subtotalPaise + order.couponDiscountPaise) / 100,
-    coinsEarned: Math.min(100, Math.floor(spent / 100) * (isPlus ? 2 : 1)),
     cod: order.paymentMethod === "COD",
   };
 }

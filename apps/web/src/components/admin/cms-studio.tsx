@@ -32,12 +32,10 @@ const SLOT_LABEL: Record<HomeSlot["type"], string> = {
 };
 const PERSONAS = [
   { key: "everyone", label: "Guest or any customer" },
-  { key: "plus", label: "AltasGoods Plus member" },
   { key: "new", label: "New customer" },
 ];
 
 function visibleFor(slot: HomeSlot, persona: string) {
-  if (slot.audience === "Plus members") return persona === "plus";
   if (slot.audience === "Signed-in customers") return persona !== "everyone";
   return true;
 }
@@ -78,11 +76,10 @@ export function CmsStudio({ slots, banners, products, categories }: { slots: Hom
   const preview = ordered.filter((s) => (drafts || s.status === "live") && visibleFor(s, persona));
   const mobile = device === "mobile";
 
-  const rail = (s: HomeSlot, sponsored = false) => (
+  const rail = (s: HomeSlot) => (
     <section key={s.id}>
       <div className="mb-2 flex items-baseline justify-between">
         <p className={cn("font-display font-semibold text-ink-900", mobile ? "text-[12px]" : "text-[13px]")}>{s.name}</p>
-        {sponsored && <span className="text-[10px] font-medium text-ink-500">Sponsored</span>}
       </div>
       <div className={cn("grid gap-2", mobile ? "grid-flow-col auto-cols-[42%] overflow-hidden" : "grid-cols-6")}>
         {(s.productIds ?? []).map((pid) => products[pid]).filter(Boolean).map((p) => (
@@ -171,7 +168,7 @@ export function CmsStudio({ slots, banners, products, categories }: { slots: Hom
             </div>
             <Field label="Audience" htmlFor={`${id}-a`} className="sm:col-span-2">
               <Select id={`${id}-a`} value={banner.audience} onChange={(e) => set({ audience: e.target.value })}>
-                {["Everyone", "Plus members", "New customers", "Women, metro cities", "Electronics shoppers"].map((o) => (
+                {["Everyone", "New customers", "Women, metro cities", "Electronics shoppers"].map((o) => (
                   <option key={o}>{o}</option>
                 ))}
               </Select>
@@ -295,14 +292,13 @@ export function CmsStudio({ slots, banners, products, categories }: { slots: Hom
                 return (
                   <section key={s.id} className="flex items-center justify-between rounded-lg border border-dashed border-line-strong bg-white px-3 py-3">
                     <span className="text-[11px] font-semibold text-ink-800">{s.name}</span>
-                    <span className="text-[10px] font-medium text-ink-500">Sponsored</span>
                   </section>
                 );
               })}
             </div>
           </div>
           <p className="mt-3 text-center text-xs text-ink-500">
-            {preview.length} of {slots.length} slots shown for this persona. Sponsored placements always carry a visible label.
+            {preview.length} of {slots.length} slots shown for this persona.
           </p>
         </div>
       </Card>

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgePercent, Crown, Info, Landmark, Timer, Zap } from "lucide-react";
+import { BadgePercent, Info, Landmark, Timer, Zap } from "lucide-react";
 import { SaleCountdown } from "@/components/store/countdown";
 import { CouponCard } from "@/components/store/coupon-card";
 import { DealCard } from "@/components/store/deal-card";
@@ -72,7 +72,6 @@ export default async function DealsPage(props: PageProps<"/deals">) {
                 {[
                   { icon: Landmark, label: "10% off with Kaveri Bank cards" },
                   { icon: BadgePercent, label: "Extra 10% with BIGDAYS10" },
-                  { icon: Crown, label: "Plus members got 24 hour early access" },
                 ].map((b) => (
                   <li key={b.label} className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-3 py-1.5 text-white/90 ring-1 ring-white/10">
                     <b.icon size={14} className="text-accent-300" aria-hidden="true" /> {b.label}

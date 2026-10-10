@@ -8,8 +8,6 @@ import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronRight,
-  Coins,
-  Crown,
   Heart,
   HelpCircle,
   LogOut,
@@ -313,8 +311,6 @@ export function WishlistLink() {
 interface Customer {
   signedIn: boolean;
   firstName: string;
-  plus: boolean;
-  bluCoins: number;
   credits: number;
 }
 
@@ -355,8 +351,6 @@ export function AccountMenu({ customer }: { customer: Customer }) {
     { href: "/account", label: "Your account", icon: UserRound },
     { href: "/account/orders", label: "Orders and returns", icon: Package },
     { href: "/account/wishlist", label: "Wishlist", icon: Heart },
-    { href: "/plus", label: "AltasGoods Plus", icon: Crown, note: customer.plus ? "Member" : undefined },
-    { href: "/account/rewards", label: "AltasCoins", icon: Coins, note: customer.signedIn ? formatNumber(customer.bluCoins) : undefined },
     { href: "/account/wallet", label: "AltasGoods Credits", icon: Wallet, note: customer.signedIn ? `₹${formatNumber(customer.credits)}` : undefined },
     { href: "/help", label: "Help centre", icon: HelpCircle },
   ];
@@ -400,15 +394,6 @@ export function AccountMenu({ customer }: { customer: Customer }) {
             </span>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-ink-900">Hello, {customer.firstName}</p>
-              {customer.plus ? (
-                <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-brand-700">
-                  <Crown size={12} aria-hidden="true" /> AltasGoods Plus member
-                </p>
-              ) : (
-                <Link href="/plus" className="text-xs font-medium text-brand-700 hover:underline">
-                  Join AltasGoods Plus
-                </Link>
-              )}
             </div>
           </div>
           )}
@@ -588,7 +573,7 @@ export function MobileNav({ categories, customer }: { categories: NavCategory[];
                 <span className="flex size-10 items-center justify-center rounded-full bg-white/10 font-display font-semibold">{customer.signedIn ? customer.firstName[0] : <UserRound size={18} aria-hidden="true" />}</span>
                 <span className="flex-1">
                   <span className="block text-sm font-semibold">{customer.signedIn ? `Hello, ${customer.firstName}` : "Sign in"}</span>
-                  <span className="block text-xs text-brand-200">{customer.signedIn ? (customer.plus ? "AltasGoods Plus member" : "Your account") : "Orders, wishlist and faster checkout"}</span>
+                  <span className="block text-xs text-brand-200">{customer.signedIn ? "Your account" : "Orders, wishlist and faster checkout"}</span>
                 </span>
                 <ChevronRight size={18} className="text-brand-200" aria-hidden="true" />
               </Link>
@@ -625,7 +610,6 @@ export function MobileNav({ categories, customer }: { categories: NavCategory[];
                   { href: "/deals", label: "Big Days deals", icon: Tag },
                   { href: "/account/orders", label: "Orders and returns", icon: Package },
                   { href: "/account/wishlist", label: "Wishlist", icon: Heart },
-                  { href: "/plus", label: "AltasGoods Plus", icon: Crown },
                   { href: "/help", label: "Help centre", icon: HelpCircle },
                 ].map((l) => (
                   <Link key={l.href} href={l.href} className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium text-ink-800 hover:bg-ink-50">

@@ -304,12 +304,4 @@ export const COUPON_STATUS: StatusMap<CouponStatus> = {
   expired: { label: "Expired", tone: "neutral" },
 };
 
-export type CampaignStatus = "draft" | "scheduled" | "active" | "paused" | "ended";
 
-export const CAMPAIGN_STATUS: StatusMap<CampaignStatus> = {
-  draft: { label: "Draft", tone: "neutral" },
-  scheduled: { label: "Scheduled", tone: "info" },
-  active: { label: "Active", tone: "success" },
-  paused: { label: "Paused", tone: "warning" },
-  ended: { label: "Ended", tone: "neutral" },
-};

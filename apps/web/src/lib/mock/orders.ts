@@ -127,7 +127,7 @@ function makeOrder(i: number): Order {
   const subtotal = items.reduce((a, it) => a + it.price * it.quantity, 0);
   const useCoupon = rand() < 0.22;
   const discount = useCoupon ? Math.min(Math.round(subtotal * 0.1), 1500) : 0;
-  const shippingFee = subtotal < 499 && !customer.plusMember ? 40 : 0;
+  const shippingFee = subtotal < 499 ? 40 : 0;
   // No customer platform fee and no COD surcharge (see spec section 10.8).
   const platformFee = 0;
   const method = pickMethod();
@@ -157,7 +157,7 @@ function makeOrder(i: number): Order {
     address,
     subtotal,
     discount,
-    couponCode: useCoupon ? pick(rand, ["BIGDAYS10", "BLUFIRST", "UPI150", "PLUS200"]) : undefined,
+    couponCode: useCoupon ? pick(rand, ["BIGDAYS10", "BLUFIRST", "UPI150"]) : undefined,
     shippingFee,
     platformFee,
     total: subtotal - discount + shippingFee + platformFee,

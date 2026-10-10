@@ -6,14 +6,14 @@ import { FilterBar } from "@/components/admin/filter-bar";
 import { hrefWith, paginate, pctChange, sp } from "@/components/admin/helpers";
 import { KpiStrip } from "@/components/admin/kpi-strip";
 import { Pager } from "@/components/admin/pager";
-import { Badge, StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabLinks } from "@/components/ui/tabs";
 import { customers, platformDaily } from "@/lib/mock";
-import { maskEmail, platformSettings } from "@/lib/mock/admin-extra";
+import { maskEmail } from "@/lib/mock/admin-extra";
 import type { Customer } from "@/lib/types";
 import { formatCompact, formatDate, formatINR, formatNumber, NOW } from "@/lib/utils";
 
@@ -21,7 +21,6 @@ export const metadata = { title: "Customers" };
 
 const SEGMENTS: { key: string; label: string; match: (c: Customer) => boolean }[] = [
   { key: "all", label: "All", match: () => true },
-  { key: "plus", label: "Plus members", match: (c) => c.plusMember },
   { key: "new", label: "New, 90 days", match: (c) => NOW.getTime() - new Date(c.joinedAt).getTime() < 90 * 86_400_000 },
   { key: "risk", label: "High risk", match: (c) => c.riskScore >= 70 },
   { key: "flagged", label: "Flagged", match: (c) => c.status === "flagged" },
@@ -60,7 +59,6 @@ export default async function CustomersPage(props: PageProps<"/admin/customers">
       <KpiStrip
         className="mb-6"
         items={[
-          { label: "AltasGoods Plus members", value: formatCompact(platformSettings.plus.members), hint: "active and in grace period" },
           { label: "New customers, 7 days", value: formatCompact(new7), delta: pctChange(new7, newPrev), deltaLabel: "vs prior 7 days" },
           { label: "High risk accounts", value: customers.filter((c) => c.riskScore >= 70).length, hint: "risk score 70 or above", href: "/admin/customers?segment=risk" },
           { label: "Blocked accounts", value: customers.filter((c) => c.status === "blocked").length, hint: "cannot place orders", href: "/admin/customers?segment=blocked" },
@@ -100,10 +98,6 @@ export default async function CustomersPage(props: PageProps<"/admin/customers">
                     Orders
                   </TH>
                   <TH align="right">Lifetime value</TH>
-                  <TH className="hidden sm:table-cell">Membership</TH>
-                  <TH align="right" className="hidden xl:table-cell">
-                    AltasCoins
-                  </TH>
                   <TH className="hidden md:table-cell">Risk score</TH>
                   <TH className="hidden sm:table-cell">Status</TH>
                 </TR>
@@ -132,10 +126,6 @@ export default async function CustomersPage(props: PageProps<"/admin/customers">
                     </TD>
                     <TD align="right" className="font-medium text-ink-900">
                       {formatINR(c.lifetimeValue)}
-                    </TD>
-                    <TD className="hidden sm:table-cell">{c.plusMember ? <Badge tone="brand" size="sm">Plus</Badge> : <span className="text-[13px] text-ink-400">None</span>}</TD>
-                    <TD align="right" className="hidden xl:table-cell">
-                      {formatNumber(c.bluCoins)}
                     </TD>
                     <TD className="hidden md:table-cell">
                       <ScoreMeter value={c.riskScore} tone={riskTone(c.riskScore)} label="Customer risk score" />

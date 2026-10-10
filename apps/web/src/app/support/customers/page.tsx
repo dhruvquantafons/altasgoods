@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Crown, Search, UserSearch } from "lucide-react";
+import { ChevronRight, Search, UserSearch } from "lucide-react";
 import { AutoSubmitForm } from "@/components/logistics/ops-client";
 import { maskPhone, Mono, one, Pager, qs } from "@/components/logistics/ops-ui";
 import { RiskPill } from "@/components/support/meta";
@@ -31,17 +31,16 @@ function matches(c: Customer, q: string) {
 export default async function CustomersPage(props: PageProps<"/support/customers">) {
   const sp = await props.searchParams;
   const q = (one(sp.q) ?? "").trim().toLowerCase();
-  const plus = one(sp.plus) ?? "";
   const risk = one(sp.risk) ?? "";
   const page = Math.max(1, Number(one(sp.page)) || 1);
 
   const rows = customers
-    .filter((c) => (!q || matches(c, q)) && (!plus || (plus === "yes" ? c.plusMember : !c.plusMember)) && (!risk || (risk === "high" ? c.riskScore >= 70 : c.status !== "active")))
+    .filter((c) => (!q || matches(c, q)) && (!risk || (risk === "high" ? c.riskScore >= 70 : c.status !== "active")))
     .sort((a, b) => b.lifetimeValue - a.lifetimeValue);
   const paged = rows.slice((page - 1) * PAGE, page * PAGE);
   const { tickets: active } = await tickets({ view: "open" });
   const openTickets = (name: string) => active.filter((t) => t.customerName === name).length;
-  const params = { q: q || undefined, plus: plus || undefined, risk: risk || undefined };
+  const params = { q: q || undefined, risk: risk || undefined };
 
   return (
     <>
@@ -49,11 +48,6 @@ export default async function CustomersPage(props: PageProps<"/support/customers
       <Card className="overflow-hidden">
         <AutoSubmitForm action="/support/customers" className="flex flex-wrap items-center gap-2 px-5 py-4">
           <Input name="q" defaultValue={q} icon={Search} inputSize="sm" placeholder="Name, email, last 4 digits of phone or c-001" aria-label="Search customers" className="w-full sm:w-80" />
-          <Select name="plus" defaultValue={plus} selectSize="sm" aria-label="Membership" className="w-[calc(50%-4px)] sm:w-40">
-            <option value="">All members</option>
-            <option value="yes">AltasGoods Plus</option>
-            <option value="no">Not Plus</option>
-          </Select>
           <Select name="risk" defaultValue={risk} selectSize="sm" aria-label="Risk" className="w-[calc(50%-4px)] sm:w-44">
             <option value="">Any risk</option>
             <option value="high">High risk score</option>
@@ -62,7 +56,7 @@ export default async function CustomersPage(props: PageProps<"/support/customers
           <button type="submit" className={buttonClasses({ variant: "secondary", size: "sm" })}>
             Search
           </button>
-          {(q || plus || risk) && (
+          {(q || risk) && (
             <Link href="/support/customers" className="px-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
               Clear
             </Link>
@@ -100,7 +94,6 @@ export default async function CustomersPage(props: PageProps<"/support/customers
                             <span>
                               <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-900 group-hover:text-brand-700">
                                 {c.name}
-                                {c.plusMember && <Crown size={13} className="text-brand-600" aria-label="AltasGoods Plus" />}
                               </span>
                               <span className="font-mono text-[11px] text-ink-500">{c.id}</span>
                             </span>

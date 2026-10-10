@@ -13,14 +13,12 @@ export function PriceDetails({
   totalLabel = "Total amount",
   footer,
   className,
-  plus,
 }: {
   totals: Totals;
   extra?: { label: string; value: number; note?: string }[];
   totalLabel?: string;
   footer?: ReactNode;
   className?: string;
-  plus?: boolean;
 }) {
   const extraOff = extra.reduce((a, e) => a + e.value, 0);
   const payable = Math.max(0, totals.total - extraOff);
@@ -43,7 +41,7 @@ export function PriceDetails({
           label="Delivery charges"
           value={totals.delivery === 0 ? "Free" : formatINR(totals.delivery)}
           green={totals.delivery === 0}
-          hint={totals.delivery === 0 ? (plus ? "AltasGoods Plus benefit" : undefined) : `₹40 on orders under ₹499`}
+          hint={totals.delivery === 0 ? undefined : `₹40 on orders under ₹499`}
         />
         {extra.map((e) => (
           <Row key={e.label} label={e.label} value={`-${formatINR(e.value)}`} green hint={e.note} />

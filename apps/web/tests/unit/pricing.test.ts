@@ -45,35 +45,33 @@ describe("cart totals", () => {
     expect(lineKey("pods")).toBe(lineKey("pods", undefined));
   });
 
-  it("ships the order together: one delivery fee below the threshold, none for Plus", () => {
+  it("ships the order together: one delivery fee below the threshold, none above it", () => {
     const lines = [line("pods"), line("cable")];
-    const t = computeTotals(lines, catalog, { couponCode: null, coupons: [], plus: false });
+    const t = computeTotals(lines, catalog, { couponCode: null, coupons: [] });
     expect(t.delivery).toBe(0);
     expect(t.deliveryDays).toBe(4);
     expect(t.total).toBe(4999 + 299);
     expect(t.savings).toBe(8999 + 499 - 4999 - 299);
 
-    const small = computeTotals([line("cable")], catalog, { couponCode: null, coupons: [], plus: false });
+    const small = computeTotals([line("cable")], catalog, { couponCode: null, coupons: [] });
     expect(299).toBeLessThan(FREE_DELIVERY_THRESHOLD);
     expect(small.delivery).toBe(DELIVERY_FEE);
     expect(small.total).toBe(299 + DELIVERY_FEE);
-    expect(computeTotals([line("cable")], catalog, { couponCode: null, coupons: [], plus: true }).delivery).toBe(0);
   });
 
   it("applies a coupon only when it is eligible, capped at its maximum", () => {
     const lines = [line("pods")];
-    const capped = computeTotals(lines, catalog, { couponCode: "SAVE", coupons: [coupon({ maxDiscount: 300 })], plus: false });
+    const capped = computeTotals(lines, catalog, { couponCode: "SAVE", coupons: [coupon({ maxDiscount: 300 })] });
     expect(capped.couponDiscount).toBe(300);
-    const blocked = computeTotals(lines, catalog, { couponCode: "SAVE", coupons: [coupon({ minOrder: 10000 })], plus: false });
+    const blocked = computeTotals(lines, catalog, { couponCode: "SAVE", coupons: [coupon({ minOrder: 10000 })] });
     expect(blocked.couponDiscount).toBe(0);
     expect(blocked.couponNote).toMatch(/Add items worth/);
   });
 
   it("explains why a coupon cannot apply", () => {
     const priced = priceLines([line("pods")], catalog);
-    expect(couponBlocker(coupon({ plusOnly: true }), priced, { plus: false })).toMatch(/Plus/);
-    expect(couponBlocker(coupon({ upiOnly: true }), priced, { plus: false, method: "card" })).toMatch(/UPI/);
-    expect(couponBlocker(coupon({}), priced, { plus: false })).toBeNull();
+    expect(couponBlocker(coupon({ upiOnly: true }), priced, { method: "card" })).toMatch(/UPI/);
+    expect(couponBlocker(coupon({}), priced)).toBeNull();
   });
 
   it("picks the single best instant bank offer for the method", () => {

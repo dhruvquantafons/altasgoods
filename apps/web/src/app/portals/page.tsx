@@ -18,7 +18,6 @@ const keyPages: Record<string, { label: string; href: string }[]> = {
     { label: "Overview", href: "/account" },
     { label: "Orders and tracking", href: "/account/orders" },
     { label: "Returns and refunds", href: "/account/returns" },
-    { label: "AltasCoins and Plus", href: "/account/rewards" },
   ],
   admin: [
     { label: "Overview", href: "/admin" },

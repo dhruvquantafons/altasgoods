@@ -4,7 +4,6 @@ import {
   Banknote,
   ChevronRight,
   CircleAlert,
-  Coins,
   CreditCard,
   Headset,
   LifeBuoy,
@@ -15,7 +14,7 @@ import {
   Truck,
   Undo2,
 } from "lucide-react";
-import { CANCELLED_STATUSES, cancelMode, dateLabel, dayLabel, deliveredAt, itemCountLabel, itemState, needsSecureDelivery, paymentLabel, returnInfo, shortDate } from "@/components/account/lib";
+import { CANCELLED_STATUSES, cancelMode, dateLabel, dayLabel, itemCountLabel, itemState, needsSecureDelivery, paymentLabel, returnInfo } from "@/components/account/lib";
 import { cancelProps, invoiceAvailable } from "@/components/account/order-card";
 import { BuyAgainButton, CancelOrderButton, InvoiceButton } from "@/components/account/order-actions";
 import { AssociateRow, SecureDeliveryBanner, TrackingHistory, TrackingStepper } from "@/components/account/tracking";
@@ -25,11 +24,11 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { getProduct } from "@/lib/mock";
-import { addressExtras, BLUCOINS, DELIVERY_ASSOCIATES, myReviews, returnPolicyFor, SECURE_DELIVERY } from "@/lib/mock/account-extra";
+import { addressExtras, DELIVERY_ASSOCIATES, myReviews, SECURE_DELIVERY } from "@/lib/mock/account-extra";
 import { loadAccountOrder } from "@/lib/api/account-orders";
 import { PAYMENT_STATUS } from "@/lib/status";
 import type { Order, OrderItem } from "@/lib/types";
-import { formatINR, NOW, productSlug } from "@/lib/utils";
+import { formatINR, productSlug } from "@/lib/utils";
 
 export async function generateMetadata(props: PageProps<"/account/orders/[id]">) {
   const { id } = await props.params;
@@ -57,10 +56,6 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
   const mrpTotal = order.items.reduce((a, it) => a + it.mrp * it.quantity, 0);
   const mrpSaving = mrpTotal - order.subtotal;
   const saved = mrpSaving + order.discount;
-  const coins = Math.min(BLUCOINS.cap, Math.floor(order.total / 100) * BLUCOINS.earnRate);
-  const delivered = deliveredAt(order);
-  const windowDays = Math.max(...order.items.map((it) => Math.max(7, returnPolicyFor(getProduct(it.productId)).days)));
-  const coinsOn = delivered ? new Date(new Date(delivered).getTime() + windowDays * 86400_000) : undefined;
   const extras = addressExtras[order.address.id];
 
   return (
@@ -211,7 +206,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
               <KeyValue label={`Items (${order.items.reduce((a, it) => a + it.quantity, 0)}), M.R.P.`} value={formatINR(mrpTotal)} />
               {mrpSaving > 0 && <KeyValue label="Discount on M.R.P." value={`-${formatINR(mrpSaving)}`} tone="success" />}
               {order.discount > 0 && <KeyValue label={`Coupon ${order.couponCode ?? ""}`.trim()} value={`-${formatINR(order.discount)}`} tone="success" />}
-              <KeyValue label="Delivery" value={order.shippingFee ? formatINR(order.shippingFee) : <span className="text-success-700">Free with Plus</span>} />
+              <KeyValue label="Delivery" value={order.shippingFee ? formatINR(order.shippingFee) : <span className="text-success-700">Free</span>} />
               <KeyValue label="Platform fee" value={formatINR(order.platformFee)} />
               <div className="my-1 h-px bg-line" />
               <KeyValue label="Order total" value={formatINR(order.total)} strong />
@@ -220,18 +215,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
             {saved > 0 && !cancelled && (
               <p className="mt-4 rounded-lg bg-success-50 px-3 py-2 text-[13px] font-medium text-success-700">You saved {formatINR(saved)} on this order</p>
             )}
-            {!cancelled && (
-              <p className="mt-3 flex items-start gap-2 text-xs text-ink-500">
-                <Coins size={14} className="mt-px shrink-0 text-accent-600" aria-hidden="true" />
-                {coinsOn && coinsOn.getTime() < NOW.getTime()
-                  ? `${coins} AltasCoins earned on this order.`
-                  : `${coins} AltasCoins will be added ${coinsOn ? `on ${shortDate(coinsOn)}` : "after delivery"}, once the return window closes.`}
-              </p>
-            )}
           </Panel>
-
-
-
         </aside>
 
         <Panel title="Need help with this order?" description="Most questions are answered in under a minute." className="min-w-0 self-start xl:col-start-1 xl:row-start-2">

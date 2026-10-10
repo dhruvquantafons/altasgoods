@@ -13,10 +13,9 @@ describe("customer pricing", () => {
     expect(couponDiscount(coupon, 500_000, new Date("2026-10-06T00:00:00+05:30")).message).toMatch(/expired/);
   });
 
-  it("charges ₹40 delivery only on small shipments for non Plus members", () => {
-    expect(deliveryFee(30_000, false)).toBe(4_000);
-    expect(deliveryFee(49_900, false)).toBe(0);
-    expect(deliveryFee(30_000, true)).toBe(0);
+  it("charges ₹40 delivery only on small shipments", () => {
+    expect(deliveryFee(30_000)).toBe(4_000);
+    expect(deliveryFee(49_900)).toBe(0);
   });
 
   it("counts orders before 2 pm IST from today", () => {

@@ -77,10 +77,10 @@ type Seed = {
 };
 
 const seeds: Seed[] = [
-  { key: "phone-aurora", title: "Novatek Aurora 5G (Graphite, 256 GB) 12 GB RAM", brand: "Novatek", cat: "mobiles", sub: "Smartphones", price: 54999, mrp: 64999, rating: 4.5, count: 18234, tags: ["bestseller", "plus"], sellers: ["s-novatek", "s-apex", "s-urbankart"] },
+  { key: "phone-aurora", title: "Novatek Aurora 5G (Graphite, 256 GB) 12 GB RAM", brand: "Novatek", cat: "mobiles", sub: "Smartphones", price: 54999, mrp: 64999, rating: 4.5, count: 18234, tags: ["bestseller"], sellers: ["s-novatek", "s-apex", "s-urbankart"] },
   { key: "phone-nova", title: "Novatek Nova Lite 5G (Rose Pink, 128 GB) 8 GB RAM", brand: "Novatek", cat: "mobiles", sub: "Smartphones", price: 17999, mrp: 21999, rating: 4.3, count: 42310, tags: ["deal"], sellers: ["s-novatek", "s-urbankart"] },
   { key: "tablet-slate", title: "Novatek Slate 11 Tablet, 11 inch 2.5K Display, Wi-Fi, 128 GB", brand: "Novatek", cat: "mobiles", sub: "Tablets", price: 24999, mrp: 32999, rating: 4.4, count: 6120, sellers: ["s-novatek", "s-apex"] },
-  { key: "laptop-air", title: "Kestrel Air 14 Thin and Light Laptop (Core Ultra 7, 16 GB, 1 TB SSD)", brand: "Kestrel", cat: "electronics", sub: "Laptops", price: 84990, mrp: 104990, rating: 4.6, count: 3210, tags: ["new", "plus"], sellers: ["s-apex", "s-urbankart"] },
+  { key: "laptop-air", title: "Kestrel Air 14 Thin and Light Laptop (Core Ultra 7, 16 GB, 1 TB SSD)", brand: "Kestrel", cat: "electronics", sub: "Laptops", price: 84990, mrp: 104990, rating: 4.6, count: 3210, tags: ["new"], sellers: ["s-apex", "s-urbankart"] },
   { key: "laptop-pro", title: "Kestrel Pro 16 Creator Laptop (Ryzen 9, 32 GB, RTX 5060)", brand: "Kestrel", cat: "electronics", sub: "Laptops", price: 149990, mrp: 179990, rating: 4.5, count: 1290, sellers: ["s-apex"] },
   { key: "headphones-studio", title: "Auralis Studio ANC Wireless Over-Ear Headphones", brand: "Auralis", cat: "electronics", sub: "Headphones", price: 12999, mrp: 19990, rating: 4.5, count: 22100, tags: ["bestseller", "deal"], sellers: ["s-apex", "s-urbankart", "s-ganesh"] },
   { key: "earbuds-pods", title: "Auralis Pods Pro True Wireless Earbuds with ANC", brand: "Auralis", cat: "electronics", sub: "Headphones", price: 4999, mrp: 8999, rating: 4.2, count: 58700, tags: ["deal"], sellers: ["s-apex", "s-urbankart"] },
@@ -96,7 +96,7 @@ const seeds: Seed[] = [
   { key: "kurta-ethnic", title: "Rangrez Women's Block Print Cotton Kurta, Crimson", brand: "Rangrez", cat: "fashion", sub: "Ethnic Wear", price: 1599, mrp: 2999, rating: 4.3, count: 7800, tags: ["deal"], sellers: ["s-loomhouse"] },
   { key: "sneakers-white", title: "Stride Court Classic Leather Sneakers", brand: "Stride", cat: "fashion", sub: "Footwear", price: 2999, mrp: 4999, rating: 4.4, count: 9800, tags: ["bestseller"], sellers: ["s-loomhouse", "s-profit"] },
   { key: "shoes-running", title: "Stride Velocity Cushioned Running Shoes", brand: "Stride", cat: "fashion", sub: "Footwear", price: 3999, mrp: 6499, rating: 4.5, count: 6400, sellers: ["s-profit"] },
-  { key: "bag-leather", title: "Maison Vara Full Grain Leather Tote Bag", brand: "Maison Vara", cat: "fashion", sub: "Bags", price: 4499, mrp: 7999, rating: 4.6, count: 1980, tags: ["plus"], sellers: ["s-loomhouse"] },
+  { key: "bag-leather", title: "Maison Vara Full Grain Leather Tote Bag", brand: "Maison Vara", cat: "fashion", sub: "Bags", price: 4499, mrp: 7999, rating: 4.6, count: 1980, tags: [], sellers: ["s-loomhouse"] },
   { key: "watch-analog", title: "Meridian Heritage Automatic Analog Watch, 40 mm", brand: "Meridian", cat: "fashion", sub: "Watches", price: 8999, mrp: 14999, rating: 4.5, count: 2650, sellers: ["s-urbankart"] },
   { key: "sunglasses-aviator", title: "Solace Polarised Aviator Sunglasses with UV400", brand: "Solace", cat: "fashion", sub: "Eyewear", price: 1899, mrp: 3499, rating: 4.2, count: 5100, sellers: ["s-urbankart"] },
   { key: "backpack-urban", title: "Northbound Urban 25 L Laptop Backpack, Water Resistant", brand: "Northbound", cat: "fashion", sub: "Bags", price: 1799, mrp: 3299, rating: 4.4, count: 11200, tags: ["deal"], sellers: ["s-urbankart", "s-apex"] },
@@ -114,7 +114,7 @@ const seeds: Seed[] = [
   { key: "blender-pro", title: "Voltix ProBlend 1000 W Mixer Grinder with 3 Jars", brand: "Voltix", cat: "appliances", sub: "Kitchen Appliances", price: 3499, mrp: 5999, rating: 4.3, count: 18700, sellers: ["s-ganesh", "s-apex"] },
 
   { key: "serum-glow", title: "Veda Naturals 10% Niacinamide Glow Serum, 30 ml", brand: "Veda Naturals", cat: "beauty", sub: "Skincare", price: 549, mrp: 799, rating: 4.3, count: 25400, tags: ["bestseller"], sellers: ["s-glow"] },
-  { key: "perfume-noir", title: "Noir Atelier Oud Intense Eau de Parfum, 100 ml", brand: "Noir Atelier", cat: "beauty", sub: "Fragrance", price: 2799, mrp: 4500, rating: 4.4, count: 3200, tags: ["plus"], sellers: ["s-glow"] },
+  { key: "perfume-noir", title: "Noir Atelier Oud Intense Eau de Parfum, 100 ml", brand: "Noir Atelier", cat: "beauty", sub: "Fragrance", price: 2799, mrp: 4500, rating: 4.4, count: 3200, tags: [], sellers: ["s-glow"] },
   { key: "lipstick-velvet", title: "Rouge Studio Velvet Matte Lipstick, Rosewood", brand: "Rouge Studio", cat: "beauty", sub: "Makeup", price: 499, mrp: 899, rating: 4.2, count: 9800, sellers: ["s-glow"] },
   { key: "cream-hydra", title: "Dermalab Hydra Ceramide Daily Moisturiser, 50 g", brand: "Dermalab", cat: "beauty", sub: "Skincare", price: 649, mrp: 899, rating: 4.5, count: 14300, sellers: ["s-glow", "s-greenleaf"] },
 

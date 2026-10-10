@@ -10,7 +10,7 @@ export const NOW_MS = NOW.getTime();
 
 /** Orders confirmed before 14:00 local time count as day 0 (spec 10.3). */
 export const ORDER_CUTOFF_HOUR = 14;
-/** Delivery is free on orders above this for non-Plus customers (spec 10.15). */
+/** Delivery is free on orders at or above this value (spec 10.15). */
 export const FREE_DELIVERY_THRESHOLD = 499;
 export const DELIVERY_FEE = 40;
 /** Pay on delivery is not offered above this order value (spec 10.8). */
