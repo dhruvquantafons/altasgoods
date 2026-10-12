@@ -86,6 +86,14 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     throw conflict("PAYMENT_IN_PROGRESS", "Razorpay has not finished processing this payment yet");
   }
 
+  async lookup(providerRef: string): Promise<ProviderEvent | null> {
+    const { items } = await this.call<{ items: RazorpayPayment[] }>("GET", `/orders/${encodeURIComponent(providerRef)}/payments`);
+    let paid = items.find((p) => p.status === "captured" || p.status === "refunded" || p.status === "authorized");
+    if (!paid) return null;
+    if (paid.status === "authorized") paid = await this.call<RazorpayPayment>("POST", `/payments/${encodeURIComponent(paid.id)}/capture`, { amount: paid.amount, currency: "INR" });
+    return { id: `${paid.id}:payment.captured`, type: "payment.captured", providerRef };
+  }
+
   parseWebhook(rawBody: Buffer, headers: Record<string, string | string[] | undefined>): ProviderEvent | null {
     const given = String(headers[RAZORPAY_SIGNATURE_HEADER] ?? "");
     if (!sameHex(given, hmac(this.config.webhookSecret, rawBody))) {

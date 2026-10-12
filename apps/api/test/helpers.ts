@@ -33,7 +33,7 @@ export interface TestContext {
 }
 
 /** Fresh schema, seeded demo data, and a running app on the test database. */
-export async function createTestApp(): Promise<TestContext> {
+export async function createTestApp(overrides: { provide: symbol; useValue: unknown }[] = []): Promise<TestContext> {
   await resetDatabase(env().TEST_DATABASE_URL);
   const { db, pool } = createDb(env().TEST_DATABASE_URL);
   await seed(db);
@@ -45,7 +45,10 @@ export async function createTestApp(): Promise<TestContext> {
   await redis.quit();
 
   const clock = new TestClock();
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).overrideProvider(CLOCK).useValue(clock).compile();
+  let builder = Test.createTestingModule({ imports: [AppModule] }).overrideProvider(CLOCK).useValue(clock);
+  // stand-ins for outside services (a fake courier, for example)
+  for (const o of overrides) builder = builder.overrideProvider(o.provide).useValue(o.useValue);
+  const moduleRef = await builder.compile();
   const app = configureApp(moduleRef.createNestApplication({ rawBody: true, logger: false }));
   await app.init();
   return { app, http: request(app.getHttpServer()), clock, close: () => app.close() };

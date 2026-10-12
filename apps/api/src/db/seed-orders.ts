@@ -10,6 +10,7 @@ import { AppModule } from "../app.module.js";
 import type { Db } from "./client.js";
 import { addresses, orderEvents, orderItems, orders, payments, users, type OrderItemStatus } from "./schema.js";
 import { DB } from "../common/tokens.js";
+import { useDemoProviders } from "../config/env.js";
 import { OrdersService } from "../modules/commerce/orders.service.js";
 import { PaymentsService } from "../modules/commerce/payments/payments.service.js";
 import { SandboxPaymentProvider } from "../modules/commerce/payments/sandbox.provider.js";
@@ -32,6 +33,7 @@ interface Plan {
 const STEPS: OrderItemStatus[] = ["ACCEPTED", "PACKED", "READY_TO_SHIP", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED"];
 
 export async function seedOrders() {
+  useDemoProviders();
   const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
   const db = app.get<Db>(DB);
   const ordersSvc = app.get(OrdersService);

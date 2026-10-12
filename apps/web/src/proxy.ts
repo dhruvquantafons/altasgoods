@@ -13,7 +13,7 @@ const REFRESH = "bb_rt";
 const PROTECTED = [/^\/account(\/|$)/, /^\/checkout(\/|$)/, /^\/order\//, /^\/admin(\/|$)/, /^\/support(\/|$)/];
 const STAFF_AREAS = /^\/(admin|support)(\/|$)/;
 
-const apiUrl = () => process.env.BLUBUY_API_URL ?? "http://localhost:4000";
+const apiUrl = () => process.env.ALTASGOODS_API_URL ?? process.env.BLUBUY_API_URL ?? "http://localhost:4000";
 const cookieBase = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: process.env.NODE_ENV === "production" };
 
 function claims(token?: string): { exp: number; staff: string[] } | null {

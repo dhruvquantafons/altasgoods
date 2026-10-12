@@ -14,6 +14,7 @@ import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
+import { ShippingService } from "./shipping/shipping.service.js";
 
 const uuidParam = { schema: z.uuid() };
 
@@ -185,7 +186,10 @@ export class PaymentsController {
 @StaffOnly("OPS_ADMIN")
 @Controller("v1/admin")
 export class AdminOrdersController {
-  constructor(@Inject(FulfilmentService) private readonly svc: FulfilmentService) {}
+  constructor(
+    @Inject(FulfilmentService) private readonly svc: FulfilmentService,
+    @Inject(ShippingService) private readonly shipping: ShippingService,
+  ) {}
 
   @Get("order-items")
   @ApiResponse({ status: 200, standardSchema: s.fulfilmentItemList })
@@ -204,6 +208,33 @@ export class AdminOrdersController {
   @ApiResponse({ status: 200, standardSchema: s.transitionResult })
   transition(@CurrentUser() u: AuthUser, @Body({ schema: s.transitionBody }) body: z.infer<typeof s.transitionBody>) {
     return this.svc.transition(u.id, body);
+  }
+
+  /** Asks the courier for the line's latest scan now, instead of waiting for the next poll. */
+  @Post("order-items/:id/tracking/refresh")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.trackingRefreshResult })
+  refreshTracking(@Param("id", uuidParam) id: string) {
+    return this.shipping.refresh(id);
+  }
+}
+
+@ApiTags("Logistics")
+@Controller("v1/logistics")
+export class LogisticsController {
+  constructor(@Inject(ShippingService) private readonly shipping: ShippingService) {}
+
+  /**
+   * Courier tracking webhook, authenticated by the token set on it in the
+   * courier's panel. Optional: tracking is also polled every 10 minutes.
+   * (Shiprocket refuses webhook URLs containing "shiprocket", "sr" or "kr".)
+   */
+  @Public()
+  @Post("webhooks/tracking")
+  @HttpCode(200)
+  async webhook(@Body() body: unknown, @Headers() headers: Record<string, string | string[] | undefined>) {
+    await this.shipping.receiveWebhook(body, headers);
+    return { received: true };
   }
 }
 

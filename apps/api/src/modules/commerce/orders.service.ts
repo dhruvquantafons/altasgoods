@@ -17,6 +17,7 @@ import { PAYMENT_WINDOW_MS } from "./pricing.js";
 import { publicQuote, QuoteService } from "./quote.service.js";
 import { CUSTOMER_CANCELLABLE } from "./state.js";
 import { OrderWorkflow } from "./workflow.service.js";
+import { ShippingService } from "./shipping/shipping.service.js";
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 const STATUS_GROUPS: Record<string, OrderStatus[]> = {
@@ -35,6 +36,7 @@ export class OrdersService {
     @Inject(AddressesService) private readonly addresses: AddressesService,
     @Inject(PaymentsService) private readonly payments: PaymentsService,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
+    @Inject(ShippingService) private readonly shipping: ShippingService,
   ) {}
 
   async quote(userId: string, body: z.infer<typeof quoteBody>) {
@@ -211,6 +213,8 @@ export class OrdersService {
         cancelledAt: iso(item.cancelledAt),
         cancelReason: item.cancelReason,
         awb: item.awb,
+        courier: item.courier,
+        trackingUrl: this.shipping.trackingUrl(item.awb, item.shippingProvider),
         canCancel: CUSTOMER_CANCELLABLE.includes(item.status) || (unpaid && item.status === "PENDING"),
       })),
       payments: pays.map((p) => ({ id: p.id, method: p.method, status: p.status, amountPaise: p.amountPaise })),

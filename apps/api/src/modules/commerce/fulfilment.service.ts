@@ -7,6 +7,7 @@ import { ApiError, notFound } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import { fulfilmentItemsQuery, transitionBody } from "./commerce.schemas.js";
 import { ITEM_TRANSITIONS } from "./state.js";
+import { ShippingService } from "./shipping/shipping.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -22,6 +23,7 @@ export class FulfilmentService {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
+    @Inject(ShippingService) private readonly shipping: ShippingService,
   ) {}
 
   async list(query: z.infer<typeof fulfilmentItemsQuery>) {
@@ -64,6 +66,12 @@ export class FulfilmentService {
         dispatchBy: iso(item.dispatchBy),
         promisedBy: item.promisedBy.toISOString(),
         awb: item.awb,
+        courier: item.courier,
+        labelUrl: item.labelUrl,
+        trackingStatus: item.trackingStatus,
+        trackedAt: iso(item.trackedAt),
+        trackingUrl: this.shipping.trackingUrl(item.awb, item.shippingProvider),
+        simulated: this.shipping.simulated(item),
       })),
       page: query.page,
       pageSize: query.pageSize,
@@ -99,6 +107,12 @@ export class FulfilmentService {
         dispatchBy: iso(i.dispatchBy),
         promisedBy: i.promisedBy.toISOString(),
         awb: i.awb,
+        courier: i.courier,
+        labelUrl: i.labelUrl,
+        trackingStatus: i.trackingStatus,
+        trackedAt: iso(i.trackedAt),
+        trackingUrl: this.shipping.trackingUrl(i.awb, i.shippingProvider),
+        simulated: this.shipping.simulated(i),
         allowedActions: allowedActions(i.status),
       })),
       events: events.map((e) => ({ orderItemId: e.orderItemId, fromStatus: e.fromStatus, toStatus: e.toStatus, actor: e.actor, note: e.note, at: e.createdAt.toISOString() })),
@@ -119,6 +133,8 @@ export class FulfilmentService {
         continue;
       }
       try {
+        // the parcel is booked with the courier (AWB, pickup, label) before the line is marked ready
+        if (body.to === "READY_TO_SHIP") await this.shipping.book(id);
         const [row] = await this.db.transaction((tx) =>
           this.workflow.transition(tx, { orderId, itemIds: [id], to: body.to, actor: "STAFF", actorId: userId, note: body.reason }),
         );

@@ -1,12 +1,12 @@
-import { randomInt } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Clock } from "../../common/infra.module.js";
 import { notFound } from "../../common/errors.js";
-import { CLOCK, PAYMENT_PROVIDER } from "../../common/tokens.js";
+import { CLOCK, LOGISTICS_PROVIDER, PAYMENT_PROVIDER } from "../../common/tokens.js";
 import type { Tx } from "../../db/client.js";
 import { offers, orderEvents, orderItems, orders, payments, refunds, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
 import type { PaymentProvider } from "./payments/provider.js";
+import type { LogisticsProvider } from "./shipping/provider.js";
 import { dispatchByDate } from "./pricing.js";
 import { assertTransition, deriveOrderStatus } from "./state.js";
 
@@ -25,6 +25,7 @@ export class OrderWorkflow {
   constructor(
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
+    @Inject(LOGISTICS_PROVIDER) private readonly courier: LogisticsProvider,
   ) {}
 
   async lockOrder(tx: Tx, orderId: string) {
@@ -50,12 +51,13 @@ export class OrderWorkflow {
       assertTransition(item.status, args.to, args.actor);
       const patch: Partial<OrderItemRow> = { status: args.to };
       if (args.to === "CANCELLED") {
+        // a parcel booked but not yet collected: call the courier off first, so a cancelled item is never picked up
+        if (item.carrierOrderRef && item.shippingProvider === this.courier.name) await this.courier.cancel({ carrierOrderRef: item.carrierOrderRef, awb: item.awb });
         patch.cancelledAt = now;
         patch.cancelReason = args.note ?? null;
         await tx.update(offers).set({ stock: sql`${offers.stock} + ${item.qty}` }).where(eq(offers.id, item.offerId));
       }
       if (args.to === "NEW") patch.dispatchBy = dispatchByDate(now, handling.get(item.id) ?? 1);
-      if (args.to === "READY_TO_SHIP" && !item.awb) patch.awb = `BBL${randomInt(1_000_000_000, 9_999_999_999)}`;
       if (args.to === "SHIPPED" && !item.shippedAt) patch.shippedAt = now;
       // a line back from a withdrawn return keeps its original delivery date
       if (args.to === "DELIVERED" && !item.deliveredAt) patch.deliveredAt = now;

@@ -43,8 +43,9 @@ export function formatDayMonthYear(d: Date | string | number) {
   return dayMonthYearFmt.format(new Date(d));
 }
 
+/** A delivery date from today. Uses the real clock, since orders placed today are promised against it (unlike the sample data's fixed NOW). */
 export function daysFromNow(days: number) {
-  return new Date(NOW_MS + days * 86400_000);
+  return new Date(Date.now() + days * 86400_000);
 }
 
 /** Relative label used in promise lines: "Tomorrow", "Sat, 3 Oct". */

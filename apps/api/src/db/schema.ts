@@ -466,6 +466,16 @@ export const orderItems = pgTable(
     cancelledAt: ts("cancelled_at"),
     cancelReason: text("cancel_reason"),
     awb: text("awb"),
+    /** who carries the parcel; null for lines shipped before couriers were connected (simulated) */
+    shippingProvider: text("shipping_provider").$type<"SIMULATED" | "SHIPROCKET">(),
+    courier: text("courier"),
+    /** the courier aggregator's order and shipment ids (Shiprocket order_id and shipment_id) */
+    carrierOrderRef: text("carrier_order_ref"),
+    shipmentRef: text("shipment_ref"),
+    labelUrl: text("label_url"),
+    /** the courier's latest status, word for word */
+    trackingStatus: text("tracking_status"),
+    trackedAt: ts("tracked_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

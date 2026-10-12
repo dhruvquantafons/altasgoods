@@ -50,6 +50,13 @@
       "when": 1791616807827,
       "tag": "0006_strip_plus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791790365816,
+      "tag": "0007_shipping",
+      "breakpoints": true
     }
   ]
 }

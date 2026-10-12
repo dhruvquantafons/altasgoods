@@ -8,4 +8,5 @@ export const EMAIL_PROVIDER = Symbol("EMAIL_PROVIDER");
 export const KYC_PROVIDER = Symbol("KYC_PROVIDER");
 export const FILE_STORE = Symbol("FILE_STORE");
 export const PAYMENT_PROVIDER = Symbol("PAYMENT_PROVIDER");
+export const LOGISTICS_PROVIDER = Symbol("LOGISTICS_PROVIDER");
 export const CLOCK = Symbol("CLOCK");

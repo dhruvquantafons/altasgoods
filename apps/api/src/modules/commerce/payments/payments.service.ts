@@ -181,6 +181,31 @@ export class PaymentsService {
     return row.payment;
   }
 
+  /**
+   * Asks the gateway about every open attempt, so a customer who paid and then
+   * closed the tab is confirmed even when webhooks are not set up. Returns how
+   * many payments it confirmed.
+   */
+  async reconcileOpen() {
+    if (!this.provider.lookup) return 0;
+    const open = await this.db
+      .select({ providerRef: payments.providerRef })
+      .from(payments)
+      .innerJoin(orders, eq(orders.id, payments.orderId))
+      .where(and(eq(payments.provider, this.provider.name), inArray(payments.status, ["CREATED", "PENDING", "FAILED", "CANCELLED"]), inArray(orders.status, ["PAYMENT_PENDING", "PAYMENT_FAILED"])));
+    let confirmed = 0;
+    for (const { providerRef } of open) {
+      if (!providerRef) continue;
+      try {
+        const event = await this.provider.lookup(providerRef);
+        if (event && !(await this.process(event)).duplicate) confirmed++;
+      } catch (e) {
+        this.logger.error(`Could not reconcile ${providerRef}: ${(e as Error).message}`);
+      }
+    }
+    return confirmed;
+  }
+
   /** Abandons orders left unpaid past the window: items cancelled, stock and coupon released. */
   async expireStale() {
     const now = this.clock.now();

@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Ban, Check, ClipboardList, PackageCheck, Truck } from "lucide-react";
-import { simulateCourierScan, transitionOrderItems } from "@/app/actions/admin";
+import { Ban, Check, ClipboardList, PackageCheck, RefreshCw, Truck } from "lucide-react";
+import { refreshTracking, simulateCourierScan, transitionOrderItems } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Field, Select, Textarea } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
@@ -15,7 +15,7 @@ type Step = "ACCEPTED" | "PACKED" | "READY_TO_SHIP";
 export const NEXT_STEP: Partial<Record<ApiOrderItemStatus, { to: Step; label: string; done: string; icon: typeof Check }>> = {
   NEW: { to: "ACCEPTED", label: "Accept", done: "Accepted. Pack it before the dispatch by time.", icon: Check },
   ACCEPTED: { to: "PACKED", label: "Mark packed", done: "Packed. Mark it ready once the label is on.", icon: PackageCheck },
-  PACKED: { to: "READY_TO_SHIP", label: "Ready to ship", done: "Ready to ship. The courier collects it on the next pickup.", icon: ClipboardList },
+  PACKED: { to: "READY_TO_SHIP", label: "Ready to ship", done: "Booked with the courier. Print the label; the courier collects it on the next pickup.", icon: ClipboardList },
 };
 
 const CANCEL_REASONS = ["Out of stock", "Pricing error on the product page", "Damaged in the warehouse", "Cannot deliver to this pincode", "Other"];
@@ -120,6 +120,34 @@ export function CourierSimulator({ orderId, itemId, status }: { orderId: string;
         }}
       >
         Simulate: {scan.label}
+      </Button>
+      {toast.node}
+    </>
+  );
+}
+
+/** Asks the courier for the latest scan of a line it carries; tracking also updates on its own every 10 minutes. */
+export function TrackingRefresh({ orderId, itemId }: { orderId: string; itemId: string }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <Button
+        size="xs"
+        variant="soft"
+        icon={RefreshCw}
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          const r = await refreshTracking(itemId, orderId);
+          setBusy(false);
+          if (!r.ok) return toast.show(r.error);
+          toast.show(r.data.trackingStatus ? `Courier: ${r.data.trackingStatus}` : "No scans from the courier yet");
+          router.refresh();
+        }}
+      >
+        Refresh tracking
       </Button>
       {toast.node}
     </>

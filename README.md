@@ -1,111 +1,152 @@
-# BluBuy
+# AltasGoods
 
-BluBuy is a multi-vendor marketplace for India, modelled on how Amazon.in and Flipkart work end to end: shoppers, sellers, BluBuy staff, logistics teams and support agents each get their own workspace. Phase 1 built every dashboard and storefront screen against realistic mock data. Phase 2 adds the core backend (`apps/api`) and moves the buying journey, seller registration and KYC, seller order processing, returns and the Care Desk onto it. The research and specification for everything, including the Flutter apps that come next, live in `docs/`.
-
-## Run it
-
-Sign in, search, cart, checkout and payment, My Account orders, returns and support, seller registration, seller application review in BluBuy Control, Seller Hub orders and returns, and the Care Desk use the API, which needs PostgreSQL 16 and Redis. Other screens still render the shared sample data, which uses the same ids and prices as the seeded database.
-
-```bash
-# 1. API (see apps/api/README.md for details)
-cd apps/api && npm install && cp .env.example .env
-createdb blubuy_dev && createdb blubuy_test
-npm run db:migrate && npm run db:seed
-npm run dev                      # http://localhost:4000, docs at /docs
-
-# 2. Web, in a second terminal
-cd apps/web && npm install
-echo "BLUBUY_API_URL=http://localhost:4000" > .env.local
-npm run dev                      # http://localhost:3000
-```
-
-Demo accounts (outside production the one-time code is shown on the sign in page, so no SMS is needed):
-
-| Who | Mobile | Try |
-|---|---|---|
-| Shopper (Ananya Sharma) | 98450 12345 | Shop, check out, track and cancel orders, return items, chat with BluBuy Care |
-| Seller (Rohan Mehta, Apex Retail) | 98200 11223 | Process orders and returns in Seller Hub |
-| BluBuy staff (Kavya Iyer) | 98110 12345 | Review seller applications at `/admin/sellers/approvals`; BluBuy Control needs a staff account |
-| Applicant (Lakshmi Nair) | 97000 11004 | Fix the change a verifier requested and resubmit |
-| Care agent (Revathi Subramanian, L2) | 98110 20001 | Work tickets at `/support`; the supervisor (98110 20099) approves refunds above an agent's limit |
-| Anyone new | any other number | Register as a seller at `/seller/register` |
-
-Open `http://localhost:3000/portals` to reach every workspace. The KYC checks run against a sandbox; its test values are listed in `apps/api/README.md`.
+AltasGoods is an online store for India: one business selling its own catalog, with a storefront for shoppers and separate workspaces for the store's staff, support agents and logistics team. Payments run on Razorpay and shipping on Shiprocket, each behind a switch so development can use a local sandbox instead.
 
 | Workspace | Start here | For |
 |---|---|---|
 | Storefront | `/` | Shoppers: home, search, category, product page, cart, checkout |
-| My Account | `/account` | Shoppers: orders and tracking, returns, wallet, BluCoins, Plus |
-| Seller Hub | `/seller` | Sellers: orders, listings, inventory, pricing, ads, payments, health |
-| Seller registration | `/seller/register` | New sellers: KYC and onboarding |
-| BluBuy Control | `/admin` | BluBuy staff: operations, catalog, sellers, finance, risk |
-| Hub Console | `/logistics` | Logistics: hub, shipments, runs, NDR, COD, Rider app preview |
-| Care Desk | `/support` | Support agents: tickets with full order context |
+| My Account | `/account` | Shoppers: orders and tracking, returns, support |
+| AltasGoods Control | `/admin` | Store staff: orders, returns, products, categories, brands |
+| Care Desk | `/support` | Support agents: tickets with full order context, refunds |
+| Hub Console | `/logistics` | Logistics team (design preview, see below) |
 
-## What is built
+Open `http://localhost:3000/portals` to reach every workspace.
 
-### Phase 2: core backend
+## Run it
 
-| Area | What works end to end |
-|---|---|
-| Identity | OTP sign in for shoppers and sellers (development code shown outside production), httpOnly session cookies, silent token refresh, refresh token rotation with reuse detection, protected areas |
-| Catalog and search | Categories, brands, products, offers and the buy box from PostgreSQL; typo tolerant search ranked by the API |
-| Cart and checkout | Cart kept in the browser and synced to the account across devices, saved addresses, a server priced quote (coupons, delivery fees, Plus, COD limits) |
-| Orders and payments | Idempotent order placement with stock reservation, a sandbox payment gateway with signed webhooks, retry after a failed payment, a 30 minute payment window with automatic release, refunds on cancellation |
-| My Account | Order list and detail from the API, live tracking states and AWB, cancel whole orders or single items; a return wizard with photo upload, refund or replacement and a pickup slot, then cancel or reschedule the pickup; returns and refunds history; conversations with BluBuy Care, tickets, Guarantee claims and call back requests |
-| Seller registration and KYC | An 11 step wizard that saves every step: mobile sign in, email verification, GSTIN lookup with check digit validation, PAN name match, ₹1 penny drop with name match, documents by business type, a drawn or uploaded signature, categories, Brand Registry, agreement and submission. Automatic checks and duplicate screening run on submission; a status page tracks the review |
-| BluBuy Control | Staff only sign in; the seller application queue with live SLAs, check results and risk flags; a review panel with every check, documents and history; approve (creates the seller account), request changes on specific items, reject with a reason, reopen after the cool-off |
-| Seller Hub | Live order queue, dashboard counts and sidebar badge; accept, pack and ready to ship one by one or in bulk; AWB assignment; the real fee and settlement breakdown per line; a development only courier simulator for pickup, out for delivery and delivered; a getting started home for newly approved sellers. Returns: approve or reject late requests within 48 hours, see the customer's photos, record the quality check (a pass releases the refund, a fail goes to BluBuy), with a development only pickup simulator |
-| Care Desk | Staff only; the ticket inbox with reply SLAs and bulk assignment; a ticket workspace where status, priority, assignee, replies, internal notes and attachments are saved and logged; refunds to the original payment within the agent's limit, with supervisor approval above it; open a ticket from the order lookup |
+You need Node 22.12 or newer, PostgreSQL 16 (with `pg_trgm`) and Redis.
 
-Tests: 58 API tests (unit and integration, including the rate card's worked example and the onboarding, support and returns lifecycles), 28 web unit tests for the API adapters, and Playwright browser tests (`npm run test:e2e` in `apps/web`) for checkout and payment, cancellation, returns from request to quality check, seller order processing, application approval, Care Desk changes, access control, plus crawlers that open every page and press every button in every workspace. See `apps/api/README.md` for the design.
+```bash
+# 1. API (details in apps/api/README.md)
+cd apps/api && npm install && cp .env.example .env    # then set JWT_SECRET and PAYMENTS_WEBHOOK_SECRET
+createdb altasgoods_dev && createdb altasgoods_test    # or point DATABASE_URL and TEST_DATABASE_URL at your own
+npm run db:migrate && npm run db:seed
+npm run dev                      # http://localhost:4000, API docs at /docs
 
-### Phase 1: every workspace
+# 2. Web, in a second terminal
+cd apps/web && npm install
+echo "ALTASGOODS_API_URL=http://localhost:4000" > .env.local
+npm run dev                      # http://localhost:3000
+```
 
-98 routes (668 pages once product, order, seller, customer, shipment and ticket detail pages are generated), all rendering from the shared mock data layer:
+Out of the box payments use the local sandbox and shipping uses the simulated courier, so nothing real is charged or booked. See [Payments](#payments-razorpay) and [Shipping](#shipping-shiprocket) to switch them on.
 
-| Area | Routes | Highlights |
+### Demo accounts
+
+Sign in with a mobile number and a one-time code. Outside production the code is shown on the sign in page and printed in the API terminal, so no SMS is needed.
+
+| Who | Mobile | Try |
 |---|---|---|
-| Storefront, checkout, sign in | 14 | Home with hero and live sale countdown, URL-driven search filters, product page with buy box, other sellers, offers, reviews and Q&A, persistent cart, five-step checkout (UPI, cards, EMI, Pay Later, COD), OTP login, Sell on BluBuy, BluBuy Plus |
-| My Account | 15 | Order tracking with Secure Delivery OTP, cancel and return wizards, refunds, wishlist, addresses, Credits, BluCoins, Plus, privacy controls |
-| Seller Hub | 23 | Order processing with bulk actions and dispatch SLAs, listings and add-product wizard, inventory and inbound, pricing rules, ads, promotions, analytics, payouts with fee, GST, TCS and TDS statements, Seller Health, 10-step registration and KYC |
-| BluBuy Control | 25 | Marketplace overview, orders, returns, customers, seller KYC approvals, catalog moderation, categories, brands, payments, payouts, rate card and fee calculator, coupons and sale events, storefront CMS, ads, reviews, risk, disputes, reports, RBAC, audit log, settings |
-| Hub Console | 12 | Hub overview, shipments with scan history, inbound and sorting, runsheets, associates, NDR, reverse and RTO, COD remittance, fulfilment centres, network and serviceability, BluBuy Rider app preview |
-| Care Desk | 8 | Queue with spec SLAs, three-pane ticket workspace with macros, refunds within agent limits and Guarantee claims, customer and order lookup, knowledge base, team performance |
+| Shopper (Ananya Sharma) | 98450 12345 | Shop, check out, track and cancel orders, return items, chat with AltasGoods Care |
+| Store staff (Kavya Iyer, Super Admin) | 98110 12345 | Process orders and returns, manage products, categories and brands in `/admin` |
+| Care agent (Revathi Subramanian, L2) | 98110 20001 | Work tickets at `/support`; refunds up to ₹10,000 |
+| Care supervisor (Arvind Menon) | 98110 20099 | Approves refunds above an agent's limit |
+| Anyone new | any other number | Signs up as a new shopper |
 
-Quality gates passing: TypeScript strict with zero errors in both apps, ESLint clean, both production builds clean, API tests green, no em dashes or emojis anywhere.
+## What is real and what is sample data
+
+The buying journey and store operations run on the API and database. Some screens still render built-in sample data: they look finished, but nothing done there is saved. Present those as design previews.
+
+| Area | Real (API and database) | Sample data |
+|---|---|---|
+| Storefront | Catalog, category and product listings, search, cart, checkout, payment, order confirmation | Product reviews and Q&A, the homepage sale banner, the Deals page |
+| My Account | Orders, order detail and tracking, cancellation, returns, support conversations | Addresses page (addresses saved at checkout are real but do not appear here yet), wishlist, wallet, saved payments, profile, notifications, my reviews |
+| AltasGoods Control | Orders, returns and refunds, products, categories, brands, the order queue counts on Overview | Overview charts and KPIs, customers, payments, coupons and sales page, storefront CMS, reviews, reports, team and roles, audit log, settings |
+| Care Desk | Ticket inbox and ticket workspace, replies, notes, refunds | Knowledge base, performance, order lookup, parts of customer pages |
+| Hub Console | | All of it |
+| Sign in | OTP sign in, sessions, new shopper sign up | |
+
+Sample data lives in `apps/web/src/lib/mock` and is anchored to 1 Oct 2026, so dates on those screens (such as the sale banner) do not follow today's date.
+
+## Payments (Razorpay)
+
+Set in `apps/api/.env`. `PAYMENTS_PROVIDER=sandbox` (the default) uses a local stand-in page with "pay" and "fail" buttons.
+
+```
+PAYMENTS_PROVIDER=razorpay
+RAZORPAY_KEY_ID=rzp_test_...       # Razorpay Dashboard > Account & Settings > API Keys
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...        # any long random string; must match the webhook if you add one
+```
+
+- The customer pays in Razorpay Checkout on `/checkout/pay/{id}`. The API verifies the result (signature, then the payment itself with Razorpay) before confirming the order.
+- No webhook is required: every minute the API asks Razorpay about open payments, so a customer who pays and closes the tab is still confirmed. To add one anyway, point it at `/v1/payments/webhooks/razorpay` with events `payment.captured`, `payment.failed` and `order.paid`.
+- Keep automatic capture on (Account & Settings > Payment Capture).
+- Test payments: UPI `success@razorpay` or `failure@razorpay`, or Razorpay's test cards.
+- A payment that arrives after its order expired, or a second payment for an order already paid, is refunded automatically.
+
+## Shipping (Shiprocket)
+
+Set in `apps/api/.env`. `LOGISTICS_PROVIDER=simulated` (the default) hands out a dummy AWB, and in development the admin order page has "Simulate" buttons for courier scans.
+
+```
+LOGISTICS_PROVIDER=shiprocket
+SHIPROCKET_EMAIL=...               # a Shiprocket API user (Settings > API > Create an API User), not the account login
+SHIPROCKET_PASSWORD=...
+SHIPROCKET_PICKUP_LOCATION=Primary # nickname of the verified pickup address in Shiprocket
+SHIPPING_BOX_CM=20x15x10           # parcel size in cm; weight comes from each product
+SHIPROCKET_WEBHOOK_TOKEN=          # optional
+```
+
+- When staff mark a packed line **Ready to ship**, the API books it with Shiprocket: order, AWB and courier, pickup request and label. The admin order page then shows the courier, a **Print label** link and tracking. If booking fails (for example an empty wallet) the line stays packed and the reason is shown.
+- One order line ships as one parcel. For cash on delivery, the amount to collect is the line less its coupon share, plus the delivery fee on the order's first parcel.
+- Cancelling a booked line cancels it in Shiprocket.
+- Tracking updates every 10 minutes, on demand with **Refresh tracking**, and optionally by webhook at `/v1/logistics/webhooks/tracking` (header `x-api-key`). Shiprocket rejects webhook URLs that contain "shiprocket", "sr" or "kr", including in the domain.
+- Shiprocket has no test mode: every booking is a real shipment charged to the wallet. Cancel test bookings before pickup.
+- Before switching on, the Shiprocket account needs KYC, a bank account, a verified pickup address and a wallet balance, and products need their real packed weight (`weight_grams` on each offer, 800 g by default).
+- Returns (reverse pickups) are still simulated.
+
+`npm run db:seed` always uses the payment sandbox and the simulated courier, whatever `.env` says, so seeding never charges or ships anything.
+
+## Before going live
+
+- [ ] Razorpay account in the business's name with KYC done; live keys in `.env`
+- [ ] Shiprocket account ready (KYC, bank, pickup address, wallet); `LOGISTICS_PROVIDER=shiprocket`
+- [ ] Real product weights
+- [ ] An SMS provider for sign in codes, with the template registered on DLT. With `NODE_ENV=production` the code is no longer shown on screen and nothing sends it yet, so nobody can sign in until this is done
+- [ ] An email provider (verification codes are only logged today)
+- [ ] A way to add staff accounts (the Team page is sample data; staff roles are set in the database today)
+- [ ] `NODE_ENV=production`, strong `JWT_SECRET` and `PAYMENTS_WEBHOOK_SECRET`, `WEB_ORIGIN` set to the real site
+
+## Tests
+
+| Where | Command | Covers |
+|---|---|---|
+| `apps/api` | `npm test` | 85 unit and integration tests against `altasgoods_test`: orders, payments (sandbox and Razorpay), shipping (Shiprocket provider and a fake courier end to end), returns, support, auth, catalog admin |
+| `apps/web` | `npm test` | Unit tests for the API adapters, pricing and formatting |
+| `apps/web` | `npm run test:e2e` | Playwright journeys (checkout, cancellation, returns, Care Desk, access control) plus crawlers that open every page and press every button. Run with the sandbox and simulated courier |
+
+Both apps typecheck in strict mode and lint clean (`npm run typecheck` in the API, `npx tsc --noEmit` and `npm run lint` in web).
 
 ## Repository
 
 ```
-apps/api/                 NestJS 12 API on PostgreSQL and Redis (phase 2)
-  src/modules/            auth, catalog, commerce (cart, checkout, orders, payments, returns), sellers (onboarding, KYC, review), support, files
-  src/db/                 Drizzle schema, SQL migrations, demo seed
+apps/api/                 NestJS 12 API on PostgreSQL (Drizzle ORM) and Redis
+  src/modules/            auth, catalog, commerce (cart, checkout, orders, payments, shipping, returns), support, files, health
+  src/db/                 schema, SQL migrations, demo seed
   test/                   unit and integration tests
-packages/openapi/         the API contract the web and Flutter clients are generated from
-apps/web/                 Next.js 16 web app with every workspace
+packages/openapi/         the API contract the web app's types are generated from
+apps/web/                 Next.js 16 app with every workspace
   src/app/                routes, one folder or route group per workspace
   src/components/         design system (ui, charts, shell) and area components
-  src/lib/                domain types, state machines, formatting, mock data
-  public/images/          product and banner photography (Unsplash, see CREDITS.md)
-  tests/unit/             Vitest tests for the API adapters, with fixtures captured from the API
-  tests/e2e/              Playwright journeys and the page and button crawlers
+  src/lib/                API client and adapters, state machines, formatting, sample data
+  tests/                  Vitest unit tests and Playwright end to end tests
 docs/
-  research/01-marketplace-workflows.md   how Amazon.in and Flipkart work, and the BluBuy spec
-  research/02-ui-design-system.md        UI research and the design system rationale
-  architecture/system-architecture.md    backend, API and Flutter plan, roadmap
-  architecture/frontend-conventions.md   rules for building screens in apps/web
-  architecture/design-tokens.md          implemented tokens and the Flutter theme mapping
+  research/               marketplace workflows and UI design system research
+  architecture/           system architecture, frontend conventions, design tokens
 ```
+
+After changing an API route or schema, run `npm run openapi` in `apps/api`, then `npm run api:types` in `apps/web`.
 
 ## Principles
 
 - One design system for every surface: Inter and Plus Jakarta Sans, a cobalt brand blue, marigold only for genuine deals and Buy now, hairline borders, generous whitespace.
 - No em dashes and no emojis anywhere in the product. Icons come from lucide.
-- Indian commerce conventions throughout: rupee formatting with lakh and crore grouping, UPI and cash on delivery, GST, TCS and TDS on seller payouts, pincode based delivery promises.
-- Every status in every workspace comes from one set of state machines (`apps/web/src/lib/status.ts`), mapped to the canonical backend enums in the spec.
-- The mock data layer (`apps/web/src/lib/mock`) mirrors the planned API so the backend can be swapped in screen by screen.
+- Indian commerce conventions throughout: rupee formatting with lakh and crore grouping, UPI and cash on delivery, GST, pincode based delivery promises.
+- Money is stored and sent as integer paise.
+- Every order status in every workspace comes from one set of state machines (`apps/api/src/modules/commerce/state.ts` on the server, `apps/web/src/lib/status.ts` for display).
+- Outside services (payments, couriers, SMS, email) sit behind one interface each, with a local stand-in for development.
 
 ## Next steps
 
-See `docs/architecture/system-architecture.md` for the phased roadmap. Still open from phase 2: moving the category and product pages onto the API, and real KYC, SMS, email and payment providers in place of the sandboxes. Still on sample data: Seller Hub listings, inventory, pricing, ads, promotions, analytics and payments, SafeClaims, most of BluBuy Control apart from seller applications, and the Hub Console. Then phase 3: listings for new sellers, logistics integration, settlements and payouts, followed by the Flutter customer app.
+Moving the remaining sample data screens onto the API (My Account addresses, admin customers, team and staff invites, coupons, reviews), an SMS and an email provider, Shiprocket return pickups, pincode serviceability at checkout from Shiprocket, then the Flutter customer app described in `docs/architecture/system-architecture.md`.

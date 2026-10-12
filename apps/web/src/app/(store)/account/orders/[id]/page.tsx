@@ -41,7 +41,8 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
   const { id } = await props.params;
   const { raw: apiOrder, order } = await loadAccountOrder(id);
   // the real AWB once the store hands the parcel to the courier
-  const awb = apiOrder.items.find((i) => i.awb)?.awb ?? null;
+  const shipped = apiOrder.items.find((i) => i.awb);
+  const awb = shipped?.awb ?? null;
   const cancellable = new Set(apiOrder.items.filter((i) => i.canCancel).map((i) => i.id));
   const unpaid = apiOrder.status === "PAYMENT_PENDING" || apiOrder.status === "PAYMENT_FAILED";
   const openPayment = apiOrder.payments.find((p) => p.status === "CREATED" || p.status === "PENDING" || p.status === "FAILED");
@@ -152,6 +153,14 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
 
                 <div className="mt-2">
                   <TrackingHistory order={order} awb={awb ?? "Assigned at pickup"} />
+                  {shipped?.trackingUrl && (
+                    <p className="mt-2 text-xs text-ink-500">
+                      Shipped with {shipped.courier ?? "our courier partner"}.{" "}
+                      <a href={shipped.trackingUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-700 hover:underline">
+                        Track on the courier&apos;s site
+                      </a>
+                    </p>
+                  )}
                 </div>
               </Panel>
             );

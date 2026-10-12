@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import type { Db } from "../../db/client.js";
 import { orderItems, orders, type OrderItemStatus } from "../../db/schema.js";
-import { notFound } from "../../common/errors.js";
+import { conflict, notFound } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import type { AuthUser } from "../auth/auth.guard.js";
 import { OrderWorkflow } from "./workflow.service.js";
@@ -17,13 +17,15 @@ export class DevLogisticsService {
 
   async advance(user: AuthUser, orderItemId: string, to: OrderItemStatus, deliveredDaysAgo?: number) {
     const [row] = await this.db
-      .select({ orderId: orderItems.orderId, customerId: orders.userId })
+      .select({ orderId: orderItems.orderId, customerId: orders.userId, shippingProvider: orderItems.shippingProvider })
       .from(orderItems)
       .innerJoin(orders, eq(orders.id, orderItems.orderId))
       .where(eq(orderItems.id, orderItemId));
     // the item's customer or store operations staff may drive the simulation
     const ops = user.staff.some((r) => r === "SUPER_ADMIN" || r === "OPS_ADMIN");
     if (!row || (row.customerId !== user.id && !ops)) throw notFound("Order item");
+    // a real courier's scans come from the courier, never from here
+    if (row.shippingProvider === "SHIPROCKET") throw conflict("REAL_COURIER", "Shiprocket carries this item, so its tracking comes from Shiprocket");
     const [item] = await this.db.transaction(async (tx) => {
       const moved = await this.workflow.transition(tx, { orderId: row.orderId, itemIds: [orderItemId], to, actor: "LOGISTICS", note: "Simulated courier scan" });
       if (to === "DELIVERED" && deliveredDaysAgo) await tx.update(orderItems).set({ deliveredAt: new Date(Date.now() - deliveredDaysAgo * 86_400_000) }).where(eq(orderItems.id, orderItemId));

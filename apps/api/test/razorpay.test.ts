@@ -52,6 +52,14 @@ describe("Razorpay provider", () => {
     expect(parse("refund.processed", entity)).toBeNull();
   });
 
+  it("finds a payment Razorpay took without telling us, capturing it if only authorised", async () => {
+    const f = fakeFetch({ items: [] }, { items: [{ id: "pay_0", status: "failed" }, { id: "pay_1", status: "authorized", amount: 500 }] }, { id: "pay_1", status: "captured", amount: 500 });
+    const p = new RazorpayPaymentProvider({ ...config, fetch: f });
+    expect(await p.lookup("order_abc")).toBeNull();
+    expect(await p.lookup("order_abc")).toEqual({ id: "pay_1:payment.captured", type: "payment.captured", providerRef: "order_abc" });
+    expect((f.mock.calls[2] as unknown as [string])[0]).toBe("https://api.razorpay.com/v1/payments/pay_1/capture");
+  });
+
   it("refunds the captured payment of an order", async () => {
     const f = fakeFetch({ items: [{ id: "pay_0", status: "failed" }, { id: "pay_1", status: "captured" }] }, { id: "rfnd_1", status: "processed" });
     const p = new RazorpayPaymentProvider({ ...config, fetch: f });

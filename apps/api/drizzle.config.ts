@@ -4,6 +4,6 @@ export default defineConfig({
   dialect: "postgresql",
   schema: "./src/db/schema.ts",
   out: "./src/db/migrations",
-  dbCredentials: { url: process.env.DATABASE_URL ?? "postgres://localhost:5432/blubuy_dev" },
+  dbCredentials: { url: process.env.DATABASE_URL ?? "postgres://localhost:5432/altasgoods_dev" },
   strict: true,
 });

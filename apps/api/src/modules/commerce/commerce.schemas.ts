@@ -126,6 +126,9 @@ export const orderItemSchema = z.object({
   cancelledAt: z.iso.datetime().nullable(),
   cancelReason: z.string().nullable(),
   awb: z.string().nullable(),
+  courier: z.string().nullable(),
+  /** the courier's tracking page, when a real courier carries the parcel */
+  trackingUrl: z.string().nullable(),
   canCancel: z.boolean(),
 });
 
@@ -221,6 +224,15 @@ export const fulfilmentItemSchema = z.object({
   dispatchBy: z.iso.datetime().nullable(),
   promisedBy: z.iso.datetime(),
   awb: z.string().nullable(),
+  courier: z.string().nullable(),
+  /** the courier's shipping label to print and stick on the parcel */
+  labelUrl: z.string().nullable(),
+  /** the courier's latest status, word for word */
+  trackingStatus: z.string().nullable(),
+  trackedAt: z.iso.datetime().nullable(),
+  trackingUrl: z.string().nullable(),
+  /** true while scans are driven by hand (development); false once a real courier carries it */
+  simulated: z.boolean(),
 });
 export const fulfilmentItemList = paginated(fulfilmentItemSchema).extend({ counts: z.record(z.string(), z.number().int()) });
 
@@ -248,6 +260,8 @@ export const transitionBody = z.object({
   reason: z.string().trim().min(3).max(200).optional(),
 });
 export const transitionResult = z.object({ results: z.array(z.object({ id: z.uuid(), ok: z.boolean(), status: z.enum(ORDER_ITEM_STATUSES).nullable(), error: z.string().nullable() })) });
+
+export const trackingRefreshResult = z.object({ id: z.uuid(), status: z.enum(ORDER_ITEM_STATUSES), trackingStatus: z.string().nullable() });
 
 export const devAdvanceBody = z.object({
   orderItemId: z.uuid(),

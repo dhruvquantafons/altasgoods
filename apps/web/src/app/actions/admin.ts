@@ -38,6 +38,18 @@ export async function transitionOrderItems(ids: string[], to: To, reason?: strin
   }
 }
 
+/** Asks the courier for a line's latest scan now, instead of waiting for the next poll. */
+export async function refreshTracking(orderItemId: string, orderId?: string): Promise<Result<{ status: string; trackingStatus: string | null }>> {
+  try {
+    const r = await (await api()).POST("/v1/admin/order-items/{id}/tracking/refresh", { params: { path: { id: orderItemId } } });
+    if (!r.data) return problem(r.error, "Could not reach the courier");
+    refreshOrders(orderId);
+    return { ok: true, data: { status: r.data.status, trackingStatus: r.data.trackingStatus } };
+  } catch {
+    return offline;
+  }
+}
+
 /** Development only: simulates courier scans for a line that has been handed over. */
 export async function simulateCourierScan(orderItemId: string, to: "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED", orderId?: string): Promise<Result<{ status: string }>> {
   const blocked = devOnly();

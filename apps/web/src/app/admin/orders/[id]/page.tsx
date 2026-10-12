@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CourierSimulator, LineActions } from "@/components/admin/fulfilment/line-actions";
+import { CourierSimulator, LineActions, TrackingRefresh } from "@/components/admin/fulfilment/line-actions";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -66,13 +66,25 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-500">
                       <StatusBadge meta={ORDER_STATUS[uiItemStatus(i.status)]} size="sm" />
                       {i.awb && <span className="font-mono">AWB {i.awb}</span>}
+                      {i.courier && <span>{i.courier}</span>}
+                      {i.trackingStatus && <span>Courier: {i.trackingStatus}</span>}
+                      {i.labelUrl && (
+                        <a href={i.labelUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-700 hover:underline">
+                          Print label
+                        </a>
+                      )}
+                      {i.trackingUrl && (
+                        <a href={i.trackingUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-700 hover:underline">
+                          Track
+                        </a>
+                      )}
                       {i.dispatchBy && i.allowedActions.length > 0 && <span>Dispatch by {formatDateShort(i.dispatchBy)}</span>}
                       <span>Promised {formatDateShort(i.promisedBy)}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-start gap-2 sm:items-end">
                     <LineActions orderId={order.id} itemIds={[i.id]} status={i.status} allowed={i.allowedActions} />
-                    <CourierSimulator orderId={order.id} itemId={i.id} status={i.status} />
+                    {i.simulated ? <CourierSimulator orderId={order.id} itemId={i.id} status={i.status} /> : i.awb && <TrackingRefresh orderId={order.id} itemId={i.id} />}
                   </div>
                 </li>
               ))}

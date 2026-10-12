@@ -6033,6 +6033,14 @@
                                 "nullable": true,
                                 "type": "string"
                               },
+                              "courier": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "trackingUrl": {
+                                "nullable": true,
+                                "type": "string"
+                              },
                               "canCancel": {
                                 "type": "boolean"
                               }
@@ -6053,6 +6061,8 @@
                               "cancelledAt",
                               "cancelReason",
                               "awb",
+                              "courier",
+                              "trackingUrl",
                               "canCancel"
                             ],
                             "additionalProperties": false
@@ -6767,6 +6777,14 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "courier": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackingUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "canCancel": {
                             "type": "boolean"
                           }
@@ -6787,6 +6805,8 @@
                           "cancelledAt",
                           "cancelReason",
                           "awb",
+                          "courier",
+                          "trackingUrl",
                           "canCancel"
                         ],
                         "additionalProperties": false
@@ -7230,6 +7250,14 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "courier": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackingUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "canCancel": {
                             "type": "boolean"
                           }
@@ -7250,6 +7278,8 @@
                           "cancelledAt",
                           "cancelReason",
                           "awb",
+                          "courier",
+                          "trackingUrl",
                           "canCancel"
                         ],
                         "additionalProperties": false
@@ -8204,6 +8234,31 @@
                           "awb": {
                             "nullable": true,
                             "type": "string"
+                          },
+                          "courier": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "labelUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackingStatus": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "trackingUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "simulated": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -8221,7 +8276,13 @@
                           "shipTo",
                           "dispatchBy",
                           "promisedBy",
-                          "awb"
+                          "awb",
+                          "courier",
+                          "labelUrl",
+                          "trackingStatus",
+                          "trackedAt",
+                          "trackingUrl",
+                          "simulated"
                         ],
                         "additionalProperties": false
                       }
@@ -8486,6 +8547,31 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "courier": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "labelUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackingStatus": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "trackingUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "simulated": {
+                            "type": "boolean"
+                          },
                           "allowedActions": {
                             "type": "array",
                             "items": {
@@ -8525,6 +8611,12 @@
                           "dispatchBy",
                           "promisedBy",
                           "awb",
+                          "courier",
+                          "labelUrl",
+                          "trackingStatus",
+                          "trackedAt",
+                          "trackingUrl",
+                          "simulated",
                           "allowedActions"
                         ],
                         "additionalProperties": false
@@ -8721,6 +8813,97 @@
         ],
         "tags": [
           "Admin orders"
+        ]
+      }
+    },
+    "/v1/admin/order-items/{id}/tracking/refresh": {
+      "post": {
+        "operationId": "AdminOrdersController_refreshTracking",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "NEW",
+                        "ACCEPTED",
+                        "PACKED",
+                        "READY_TO_SHIP",
+                        "SHIPPED",
+                        "OUT_FOR_DELIVERY",
+                        "DELIVERED",
+                        "CANCELLATION_REQUESTED",
+                        "CANCELLED",
+                        "RTO_IN_TRANSIT",
+                        "RTO_RECEIVED",
+                        "LOST",
+                        "RETURN_REQUESTED",
+                        "RETURN_IN_PROGRESS",
+                        "RETURNED",
+                        "REPLACED",
+                        "CLOSED"
+                      ]
+                    },
+                    "trackingStatus": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "trackingStatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin orders"
+        ]
+      }
+    },
+    "/v1/logistics/webhooks/tracking": {
+      "post": {
+        "operationId": "LogisticsController_webhook",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Logistics"
         ]
       }
     },

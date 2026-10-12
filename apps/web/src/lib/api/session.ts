@@ -6,7 +6,7 @@ export const REFRESH_COOKIE = "bb_rt";
 const ACCESS_MAX_AGE = 15 * 60;
 const REFRESH_MAX_AGE = 30 * 24 * 3600;
 
-export const apiUrl = () => process.env.BLUBUY_API_URL ?? "http://localhost:4000";
+export const apiUrl = () => process.env.ALTASGOODS_API_URL ?? process.env.BLUBUY_API_URL ?? "http://localhost:4000";
 
 const base = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: process.env.NODE_ENV === "production" };
 export const accessCookie = (value: string) => ({ name: ACCESS_COOKIE, value, ...base, maxAge: ACCESS_MAX_AGE });

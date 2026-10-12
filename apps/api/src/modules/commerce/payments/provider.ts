@@ -30,4 +30,6 @@ export interface PaymentProvider {
   checkout?(providerRef: string): CheckoutDetails;
   /** Gateways with a client side checkout: verifies what the browser reports back after paying. */
   confirm?(providerRef: string, payload: unknown): Promise<ProviderEvent>;
+  /** Asks the gateway whether a session was paid, for when its webhook may not arrive. Null while unpaid. */
+  lookup?(providerRef: string): Promise<ProviderEvent | null>;
 }

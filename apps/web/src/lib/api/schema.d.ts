@@ -644,6 +644,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/order-items/{id}/tracking/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminOrdersController_refreshTracking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/logistics/webhooks/tracking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["LogisticsController_webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/dev/rate-limits/reset": {
         parameters: {
             query?: never;
@@ -3006,6 +3038,8 @@ export interface operations {
                                 cancelledAt: string | null;
                                 cancelReason: string | null;
                                 awb: string | null;
+                                courier: string | null;
+                                trackingUrl: string | null;
                                 canCancel: boolean;
                             }[];
                             payments: {
@@ -3175,6 +3209,8 @@ export interface operations {
                             cancelledAt: string | null;
                             cancelReason: string | null;
                             awb: string | null;
+                            courier: string | null;
+                            trackingUrl: string | null;
                             canCancel: boolean;
                         }[];
                         payments: {
@@ -3285,6 +3321,8 @@ export interface operations {
                             cancelledAt: string | null;
                             cancelReason: string | null;
                             awb: string | null;
+                            courier: string | null;
+                            trackingUrl: string | null;
                             canCancel: boolean;
                         }[];
                         payments: {
@@ -3578,6 +3616,13 @@ export interface operations {
                             /** Format: date-time */
                             promisedBy: string;
                             awb: string | null;
+                            courier: string | null;
+                            labelUrl: string | null;
+                            trackingStatus: string | null;
+                            /** Format: date-time */
+                            trackedAt: string | null;
+                            trackingUrl: string | null;
+                            simulated: boolean;
                         }[];
                         page: number;
                         pageSize: number;
@@ -3649,6 +3694,13 @@ export interface operations {
                             /** Format: date-time */
                             promisedBy: string;
                             awb: string | null;
+                            courier: string | null;
+                            labelUrl: string | null;
+                            trackingStatus: string | null;
+                            /** Format: date-time */
+                            trackedAt: string | null;
+                            trackingUrl: string | null;
+                            simulated: boolean;
                             allowedActions: ("PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED")[];
                         }[];
                         events: {
@@ -3700,6 +3752,50 @@ export interface operations {
                         }[];
                     };
                 };
+            };
+        };
+    };
+    AdminOrdersController_refreshTracking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {string} */
+                        status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
+                        trackingStatus: string | null;
+                    };
+                };
+            };
+        };
+    };
+    LogisticsController_webhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
