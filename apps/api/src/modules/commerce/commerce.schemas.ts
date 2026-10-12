@@ -185,7 +185,14 @@ export const cancelBody = z.object({ itemIds: z.array(z.uuid()).optional().descr
 /* -------------------------------- Payments ------------------------------- */
 
 export const sandboxCompleteBody = z.object({ outcome: z.enum(["SUCCESS", "FAILURE"]) });
-export const paymentDetailSchema = paymentSummary.extend({ orderId: z.string(), provider: z.string(), failureReason: z.string().nullable(), orderStatus: z.enum(ORDER_STATUSES) });
+export const paymentDetailSchema = paymentSummary.extend({
+  orderId: z.string(),
+  provider: z.string(),
+  failureReason: z.string().nullable(),
+  orderStatus: z.enum(ORDER_STATUSES),
+  checkout: z.object({ gateway: z.literal("RAZORPAY"), keyId: z.string(), orderRef: z.string(), currency: z.literal("INR") }).nullable().describe("Set when the customer pays in the gateway's own checkout"),
+});
+export { razorpayConfirmBody as confirmPaymentBody } from "./payments/razorpay.provider.js";
 
 /* ------------------------------- Fulfilment ------------------------------- */
 

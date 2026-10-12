@@ -109,6 +109,15 @@ const STATE_BY_FIRST_DIGIT: Record<string, string> = {
 
 const EXTRA_DAYS: Record<Zone, number> = { metro: 0, regional: 1, national: 2, special: 5 };
 
+/** States and union territories, for addresses the pincode lookup cannot place. */
+export const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir",
+  "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+  "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal",
+];
+
 export const DEFAULT_PINCODE = "560087";
 
 export function isValidPincode(pin: string) {

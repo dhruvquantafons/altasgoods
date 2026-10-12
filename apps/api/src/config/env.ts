@@ -9,6 +9,16 @@ const schema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   PAYMENTS_WEBHOOK_SECRET: z.string().min(16),
   WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
+  /** Which payment gateway takes online payments: the local sandbox or Razorpay. */
+  PAYMENTS_PROVIDER: z.enum(["sandbox", "razorpay"]).default("sandbox"),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+}).superRefine((v, ctx) => {
+  if (v.PAYMENTS_PROVIDER !== "razorpay") return;
+  for (const key of ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"] as const) {
+    if (!v[key]) ctx.addIssue({ code: "custom", path: [key], message: "Required when PAYMENTS_PROVIDER is razorpay" });
+  }
 });
 
 export type Env = z.infer<typeof schema>;
@@ -25,6 +35,8 @@ export function env(): Env {
       ? {
           JWT_SECRET: process.env.JWT_SECRET ?? "test-secret-test-secret-test-secret-1234",
           PAYMENTS_WEBHOOK_SECRET: process.env.PAYMENTS_WEBHOOK_SECRET ?? "test-webhook-secret-1234",
+          // tests drive payments through the sandbox, never a live gateway
+          PAYMENTS_PROVIDER: "sandbox",
         }
       : {}),
   });

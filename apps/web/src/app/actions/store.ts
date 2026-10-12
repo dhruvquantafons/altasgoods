@@ -144,6 +144,21 @@ export async function completeSandboxPayment(paymentId: string, outcome: "SUCCES
   }
 }
 
+/** Razorpay Checkout reports a successful payment; the API verifies it before confirming the order. */
+export async function confirmPayment(
+  paymentId: string,
+  body: { razorpayPaymentId: string; razorpayOrderId: string; razorpaySignature: string },
+): Promise<Result<PaymentDetail>> {
+  try {
+    const r = await (await api()).POST("/v1/payments/{id}/confirm", { params: { path: { id: paymentId } }, body });
+    if (!r.data) return fail(r.error, "We could not confirm your payment");
+    revalidatePath("/account/orders");
+    return { ok: true, data: r.data };
+  } catch {
+    return offline;
+  }
+}
+
 export async function retryPayment(orderId: string): Promise<Result<{ paymentId: string }>> {
   try {
     const r = await (await api()).POST("/v1/me/orders/{id}/payments", { params: { path: { id: orderId } } });

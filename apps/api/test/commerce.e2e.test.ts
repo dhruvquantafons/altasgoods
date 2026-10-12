@@ -141,6 +141,40 @@ describe("webhooks", () => {
     expect((await send().expect(200)).body).toEqual({ received: true, duplicate: false });
     expect((await send().expect(200)).body).toEqual({ received: true, duplicate: true });
   });
+
+  it("refunds a second payment for an order that an earlier attempt already paid", async () => {
+    const o = await offerOf("mugs-stone");
+    const placed = await place({ paymentMethod: "UPI", lines: [{ offerId: o.id, qty: 1, variant: "" }] }).expect(201);
+    await t.http.post(`/v1/payments/${placed.body.payment.id}/sandbox/complete`).set(shopper).send({ outcome: "FAILURE" }).expect(200);
+    const retry = await t.http.post(`/v1/me/orders/${placed.body.order.id}/payments`).set(shopper).expect(201);
+    await t.http.post(`/v1/payments/${retry.body.id}/sandbox/complete`).set(shopper).send({ outcome: "SUCCESS" }).expect(200);
+
+    // the abandoned first attempt goes through late at the gateway
+    const [first] = (await db.query.payments.findMany({ where: (p, { eq: e }) => e(p.id, placed.body.payment.id) })) as { providerRef: string }[];
+    const body = JSON.stringify({ id: `evt_${randomUUID()}`, type: "payment.captured", providerRef: first!.providerRef });
+    await t.http.post("/v1/payments/webhooks/sandbox").set("x-sandbox-signature", signSandbox(body)).set("content-type", "application/json").send(body).expect(200);
+
+    const detail = await t.http.get(`/v1/me/orders/${placed.body.order.id}`).set(shopper).expect(200);
+    expect(detail.body.paymentStatus).toBe("CAPTURED");
+    expect(detail.body.refunds).toEqual([expect.objectContaining({ amountPaise: detail.body.totalPaise, reason: "Duplicate payment for an order that was already paid" })]);
+  });
+
+  it("ignores webhooks for payments that are not ours", async () => {
+    const body = JSON.stringify({ id: `evt_${randomUUID()}`, type: "payment.captured", providerRef: "sbx_somebody_else" });
+    await t.http.post("/v1/payments/webhooks/sandbox").set("x-sandbox-signature", signSandbox(body)).set("content-type", "application/json").send(body).expect(200);
+  });
+
+  it("does not confirm sandbox payments through the gateway checkout route", async () => {
+    const o = await offerOf("mugs-stone");
+    const placed = await place({ paymentMethod: "UPI", lines: [{ offerId: o.id, qty: 1, variant: "" }] }).expect(201);
+    const detail = await t.http.get(`/v1/payments/${placed.body.payment.id}`).set(shopper).expect(200);
+    expect(detail.body.checkout).toBeNull();
+    await t.http
+      .post(`/v1/payments/${placed.body.payment.id}/confirm`)
+      .set(shopper)
+      .send({ razorpayPaymentId: "pay_x", razorpayOrderId: "order_x", razorpaySignature: "x" })
+      .expect(409);
+  });
 });
 
 describe("inventory", () => {

@@ -161,9 +161,18 @@ export class PaymentsController {
     return this.payments.sandboxComplete(u.id, id, body.outcome);
   }
 
-  /** Provider webhook. Authenticated by its HMAC signature, not a user token. */
+  /** Razorpay Checkout success: verified against its signature and Razorpay before the order is confirmed. */
+  @ApiBearerAuth()
+  @Post(":id/confirm")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.paymentDetailSchema })
+  confirm(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.confirmPaymentBody }) body: z.infer<typeof s.confirmPaymentBody>) {
+    return this.payments.confirm(u.id, id, body);
+  }
+
+  /** Provider webhooks. Authenticated by their HMAC signature, not a user token. */
   @Public()
-  @Post("webhooks/sandbox")
+  @Post(["webhooks/sandbox", "webhooks/razorpay"])
   @HttpCode(200)
   async webhook(@Req() req: Request & { rawBody?: Buffer }) {
     const result = await this.payments.receiveWebhook(req.rawBody ?? Buffer.from(""), req.headers);

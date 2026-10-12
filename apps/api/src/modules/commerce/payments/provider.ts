@@ -8,14 +8,26 @@ export interface ProviderEvent {
   failureReason?: string;
 }
 
+/** What the browser needs to open the gateway's own checkout for a session. */
+export interface CheckoutDetails {
+  gateway: "RAZORPAY";
+  keyId: string;
+  orderRef: string;
+  currency: "INR";
+}
+
 /**
- * Payment aggregator boundary. The sandbox implements it today; a real
- * RBI licensed aggregator (spec decision D5) plugs in behind the same shape.
+ * Payment aggregator boundary. The sandbox and Razorpay implement it; the
+ * rest of the API never talks to a gateway directly.
  */
 export interface PaymentProvider {
-  readonly name: "SANDBOX";
+  readonly name: "SANDBOX" | "RAZORPAY";
   createSession(input: { paymentId: string; orderId: string; amountPaise: number; method: PaymentMethod }): Promise<{ providerRef: string; redirectUrl: string }>;
-  /** Verifies the signature and parses a webhook. Throws on a bad signature. */
-  parseWebhook(rawBody: Buffer, headers: Record<string, string | string[] | undefined>): ProviderEvent;
+  /** Verifies the signature and parses a webhook. Throws on a bad signature; null for events we do not act on. */
+  parseWebhook(rawBody: Buffer, headers: Record<string, string | string[] | undefined>): ProviderEvent | null;
   refund(input: { providerRef: string; amountPaise: number }): Promise<{ status: "COMPLETED" | "PROCESSING" }>;
+  /** Gateways with a client side checkout: the details the browser opens it with. */
+  checkout?(providerRef: string): CheckoutDetails;
+  /** Gateways with a client side checkout: verifies what the browser reports back after paying. */
+  confirm?(providerRef: string, payload: unknown): Promise<ProviderEvent>;
 }

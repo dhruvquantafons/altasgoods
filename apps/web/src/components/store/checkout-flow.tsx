@@ -33,7 +33,7 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/input";
 import { Stepper } from "@/components/ui/misc";
 import { cn, formatINR } from "@/lib/utils";
 import { useCart } from "./cart-context";
-import { COD_LIMIT, daysFromNow, formatPromise, isValidPincode, lookupPincode, promiseDays } from "./delivery";
+import { COD_LIMIT, daysFromNow, formatPromise, INDIAN_STATES, isValidPincode, lookupPincode, promiseDays } from "./delivery";
 import { PriceDetails } from "./price-details";
 import { bestBankOffer, computeTotals } from "./pricing";
 import { QrArt } from "./qr-art";
@@ -330,14 +330,12 @@ export function CheckoutFlow({
                     pincode: a.pincode,
                     type: a.type.toUpperCase() as "HOME" | "WORK" | "OTHER",
                   });
-                  if (!saved.ok) {
-                    setError(saved.error);
-                    return;
-                  }
+                  if (!saved.ok) return saved.error;
                   a = toAddressLite(saved.data);
                   setAddresses((list) => [...list, a]);
                   setAddressId(a.id);
                   setAdding(false);
+                  return null;
                 }}
                 name={customer.name}
                 phone={customer.phone}
@@ -860,18 +858,36 @@ function PayOption({
   );
 }
 
-function AddressForm({ onSave, onCancel, name, phone }: { onSave: (a: AddressLite) => void; onCancel: () => void; name: string; phone: string }) {
-  const [f, setF] = useState({ pincode: "", name, phone, line1: "", line2: "", landmark: "", type: "home" as AddressLite["type"] });
+/** Saves the address; resolves to an error message, or null once saved. */
+function AddressForm({ onSave, onCancel, name, phone }: { onSave: (a: AddressLite) => Promise<string | null>; onCancel: () => void; name: string; phone: string }) {
+  const [f, setF] = useState({ pincode: "", name, phone, line1: "", line2: "", landmark: "", city: "", state: "", type: "home" as AddressLite["type"] });
   const [err, setErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const info = isValidPincode(f.pincode) ? lookupPincode(f.pincode) : null;
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF((x) => ({ ...x, [k]: k === "pincode" ? e.target.value.replace(/\D/g, "").slice(0, 6) : e.target.value }));
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const setPincode = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
+    const hit = isValidPincode(pin) ? lookupPincode(pin) : null;
+    // only a pincode the lookup knows fills in the city and state; otherwise the customer types them
+    setF((x) => ({ ...x, pincode: pin, ...(hit?.state ? { city: hit.city, state: hit.state } : {}) }));
+  };
+  const save = async () => {
+    if (!info) return setErr("Enter a valid 6 digit pincode");
+    if (!f.name.trim() || !f.line1.trim() || f.phone.replace(/\D/g, "").length < 10) return setErr("Fill in your name, a 10 digit mobile number and the house or building");
+    if (f.city.trim().length < 2 || !f.state) return setErr("Fill in the city and choose the state");
+    setErr(null);
+    setSaving(true);
+    const error = await onSave({ id: `addr-new-${f.pincode}-${f.line1.length}`, name: f.name, phone: f.phone, line1: f.line1, line2: f.line2 || undefined, landmark: f.landmark || undefined, city: f.city.trim(), state: f.state, pincode: f.pincode, type: f.type });
+    setSaving(false);
+    if (error) setErr(error);
+  };
   return (
     <div className="mt-4 rounded-xl border border-line bg-ink-25 p-4">
       <p className="text-sm font-semibold text-ink-900">Add a new address</p>
       <p className="mt-0.5 text-xs text-ink-500">Fields marked * are required. We use your phone number only to coordinate delivery.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <Field label="Pincode" required htmlFor="na-pin" hint={info ? `${info.city}${info.state ? `, ${info.state}` : ""}${info.serviceable ? "" : ", not serviceable yet"}` : "City and state fill in automatically"}>
-          <Input id="na-pin" inputMode="numeric" autoComplete="postal-code" value={f.pincode} onChange={set("pincode")} />
+        <Field label="Pincode" required htmlFor="na-pin" hint={info ? (info.serviceable ? undefined : "Not serviceable yet") : "City and state fill in automatically where we can"}>
+          <Input id="na-pin" inputMode="numeric" autoComplete="postal-code" value={f.pincode} onChange={setPincode} />
         </Field>
         <Field label="Address type" htmlFor="na-type">
           <div className="flex gap-2" id="na-type">
@@ -897,18 +913,27 @@ function AddressForm({ onSave, onCancel, name, phone }: { onSave: (a: AddressLit
         <Field label="Landmark (optional)" htmlFor="na-lm">
           <Input id="na-lm" value={f.landmark} onChange={set("landmark")} />
         </Field>
+        <Field label="City" required htmlFor="na-city">
+          <Input id="na-city" autoComplete="address-level2" value={f.city} onChange={set("city")} />
+        </Field>
+        <Field label="State" required htmlFor="na-state">
+          <Select id="na-state" autoComplete="address-level1" value={f.state} onChange={set("state")}>
+            <option value="">Choose a state</option>
+            {INDIAN_STATES.map((st) => (
+              <option key={st}>{st}</option>
+            ))}
+          </Select>
+        </Field>
       </div>
       {err && <p className="mt-3 text-xs text-danger-600">{err}</p>}
       <div className="mt-4 flex gap-2">
         <button
           type="button"
-          onClick={() => {
-            if (!info) return setErr("Enter a valid 6 digit pincode");
-            if (!f.name.trim() || !f.line1.trim() || f.phone.replace(/\D/g, "").length < 10) return setErr("Fill in your name, a 10 digit mobile number and the house or building");
-            onSave({ id: `addr-new-${f.pincode}-${f.line1.length}`, name: f.name, phone: f.phone, line1: f.line1, line2: f.line2 || undefined, landmark: f.landmark || undefined, city: info.city, state: info.state, pincode: f.pincode, type: f.type });
-          }}
-          className="h-10 rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
+          onClick={save}
+          disabled={saving}
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:bg-brand-300"
         >
+          {saving && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
           Save and use this address
         </button>
         <button type="button" onClick={onCancel} className="h-10 rounded-lg px-4 text-sm font-medium text-ink-700 hover:bg-ink-100">

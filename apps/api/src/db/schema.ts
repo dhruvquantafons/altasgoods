@@ -504,7 +504,7 @@ export const payments = pgTable(
     orderId: text("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    provider: text("provider").notNull().$type<"SANDBOX" | "COD">(),
+    provider: text("provider").notNull().$type<"SANDBOX" | "RAZORPAY" | "COD">(),
     method: text("method").notNull().$type<PaymentMethod>(),
     amountPaise: paise("amount_paise").notNull(),
     status: text("status").notNull().$type<PaymentStatus>(),

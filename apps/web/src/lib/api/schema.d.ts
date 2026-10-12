@@ -548,6 +548,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payments/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PaymentsController_confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payments/webhooks/sandbox": {
         parameters: {
             query?: never;
@@ -557,7 +573,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["PaymentsController_webhook"];
+        post: operations["PaymentsController_webhook[0]"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payments/webhooks/razorpay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PaymentsController_webhook[1]"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3351,6 +3383,15 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description Set when the customer pays in the gateway's own checkout */
+                        checkout: {
+                            /** @enum {string} */
+                            gateway: "RAZORPAY";
+                            keyId: string;
+                            orderRef: string;
+                            /** @enum {string} */
+                            currency: "INR";
+                        } | null;
                     };
                 };
             };
@@ -3392,12 +3433,89 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description Set when the customer pays in the gateway's own checkout */
+                        checkout: {
+                            /** @enum {string} */
+                            gateway: "RAZORPAY";
+                            keyId: string;
+                            orderRef: string;
+                            /** @enum {string} */
+                            currency: "INR";
+                        } | null;
                     };
                 };
             };
         };
     };
-    PaymentsController_webhook: {
+    PaymentsController_confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    razorpayPaymentId: string;
+                    razorpayOrderId: string;
+                    razorpaySignature: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {string} */
+                        method: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                        /** @enum {string} */
+                        status: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                        amountPaise: number;
+                        orderId: string;
+                        provider: string;
+                        failureReason: string | null;
+                        /** @enum {string} */
+                        orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description Set when the customer pays in the gateway's own checkout */
+                        checkout: {
+                            /** @enum {string} */
+                            gateway: "RAZORPAY";
+                            keyId: string;
+                            orderRef: string;
+                            /** @enum {string} */
+                            currency: "INR";
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    "PaymentsController_webhook[0]": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "PaymentsController_webhook[1]": {
         parameters: {
             query?: never;
             header?: never;

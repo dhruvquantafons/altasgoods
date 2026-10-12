@@ -58,8 +58,25 @@ export class PaymentsService {
   }
 
   /** Entry point for provider webhooks. Verifies the signature, then processes. */
-  receiveWebhook(rawBody: Buffer, headers: Record<string, string | string[] | undefined>) {
-    return this.process(this.provider.parseWebhook(rawBody, headers));
+  async receiveWebhook(rawBody: Buffer, headers: Record<string, string | string[] | undefined>) {
+    const event = this.provider.parseWebhook(rawBody, headers);
+    if (!event) return { duplicate: false };
+    // the gateway account may also take payments that are not ours (payment links, other apps)
+    const [known] = await this.db.select({ id: payments.id }).from(payments).where(eq(payments.providerRef, event.providerRef));
+    if (!known) {
+      this.logger.warn(`Ignored webhook for unknown payment ${event.providerRef}`);
+      return { duplicate: false };
+    }
+    return this.process(event);
+  }
+
+  /** Gateways with a client side checkout: the browser reports the payment, the provider verifies it. */
+  async confirm(userId: string, paymentId: string, payload: unknown) {
+    if (!this.provider.confirm) throw conflict("CONFIRM_NOT_SUPPORTED", "This payment is confirmed by the gateway directly");
+    const payment = await this.ownPayment(userId, paymentId);
+    if (!payment.providerRef || payment.provider !== this.provider.name) throw conflict("PAYMENT_NOT_STARTED", "This payment has not started");
+    await this.process(await this.provider.confirm(payment.providerRef, payload));
+    return this.get(userId, paymentId);
   }
 
   /** Idempotent: an event id that was already processed is acknowledged and ignored. */
@@ -77,13 +94,16 @@ export class PaymentsService {
         if (payment.status === "CAPTURED" || payment.status === "REFUNDED" || payment.status === "PARTIALLY_REFUNDED") return { duplicate: false, status: payment.status };
         await tx.update(payments).set({ status: "CAPTURED", capturedAt: now, failureReason: null }).where(eq(payments.id, payment.id));
 
-        if (order.status === "ABANDONED" || order.status === "CANCELLED") {
-          // money arrived after the order expired: give it straight back
+        // an earlier attempt (one the customer retried away from) already paid for this order
+        const alreadyPaid = order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED" || order.paymentStatus === "REFUNDED";
+        if (order.status === "ABANDONED" || order.status === "CANCELLED" || alreadyPaid) {
+          // money arrived after the order expired, or twice: give it straight back
           const result = await this.provider.refund({ providerRef: payment.providerRef ?? "", amountPaise: payment.amountPaise });
-          await tx.insert(refunds).values({ paymentId: payment.id, orderId: order.id, amountPaise: payment.amountPaise, status: result.status, reason: "Payment received after the order expired", completedAt: result.status === "COMPLETED" ? now : null });
+          const reason = alreadyPaid ? "Duplicate payment for an order that was already paid" : "Payment received after the order expired";
+          await tx.insert(refunds).values({ paymentId: payment.id, orderId: order.id, amountPaise: payment.amountPaise, status: result.status, reason, completedAt: result.status === "COMPLETED" ? now : null });
           await tx.update(payments).set({ status: "REFUNDED" }).where(eq(payments.id, payment.id));
-          await tx.update(orders).set({ paymentStatus: "REFUNDED" }).where(eq(orders.id, order.id));
-          this.logger.warn(`Late capture on ${order.id} refunded`);
+          if (!alreadyPaid) await tx.update(orders).set({ paymentStatus: "REFUNDED" }).where(eq(orders.id, order.id));
+          this.logger.warn(`${alreadyPaid ? "Duplicate" : "Late"} capture on ${order.id} refunded`);
           return { duplicate: false, status: "REFUNDED" as const };
         }
 
@@ -106,6 +126,7 @@ export class PaymentsService {
   /** Sandbox only: simulates the customer finishing payment on the hosted page. */
   async sandboxComplete(userId: string, paymentId: string, outcome: "SUCCESS" | "FAILURE") {
     if (isProduction()) throw forbidden("The payment sandbox is disabled in production");
+    if (this.provider.name !== "SANDBOX") throw forbidden("The payment sandbox is not the active payment gateway");
     const payment = await this.ownPayment(userId, paymentId);
     if (!payment.providerRef) throw conflict("PAYMENT_NOT_STARTED", "This payment has not started");
     const body = JSON.stringify(SandboxPaymentProvider.event(payment.providerRef, outcome));
@@ -142,6 +163,11 @@ export class PaymentsService {
       amountPaise: payment.amountPaise,
       failureReason: payment.failureReason,
       orderStatus: order!.status,
+      // only an attempt that is still open can be paid in the gateway's checkout
+      checkout:
+        this.provider.checkout && payment.provider === this.provider.name && payment.providerRef && (payment.status === "CREATED" || payment.status === "PENDING" || payment.status === "FAILED")
+          ? this.provider.checkout(payment.providerRef)
+          : null,
     };
   }
 

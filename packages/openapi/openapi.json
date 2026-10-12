@@ -7609,6 +7609,38 @@
                         "CANCELLED",
                         "CLOSED"
                       ]
+                    },
+                    "checkout": {
+                      "nullable": true,
+                      "description": "Set when the customer pays in the gateway's own checkout",
+                      "type": "object",
+                      "properties": {
+                        "gateway": {
+                          "type": "string",
+                          "enum": [
+                            "RAZORPAY"
+                          ]
+                        },
+                        "keyId": {
+                          "type": "string"
+                        },
+                        "orderRef": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "INR"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "gateway",
+                        "keyId",
+                        "orderRef",
+                        "currency"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -7619,7 +7651,8 @@
                     "orderId",
                     "provider",
                     "failureReason",
-                    "orderStatus"
+                    "orderStatus",
+                    "checkout"
                   ],
                   "additionalProperties": false
                 }
@@ -7744,6 +7777,38 @@
                         "CANCELLED",
                         "CLOSED"
                       ]
+                    },
+                    "checkout": {
+                      "nullable": true,
+                      "description": "Set when the customer pays in the gateway's own checkout",
+                      "type": "object",
+                      "properties": {
+                        "gateway": {
+                          "type": "string",
+                          "enum": [
+                            "RAZORPAY"
+                          ]
+                        },
+                        "keyId": {
+                          "type": "string"
+                        },
+                        "orderRef": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "INR"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "gateway",
+                        "keyId",
+                        "orderRef",
+                        "currency"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -7754,7 +7819,186 @@
                     "orderId",
                     "provider",
                     "failureReason",
-                    "orderStatus"
+                    "orderStatus",
+                    "checkout"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/v1/payments/{id}/confirm": {
+      "post": {
+        "operationId": "PaymentsController_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "razorpayPaymentId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "razorpayOrderId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "razorpaySignature": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "razorpayPaymentId",
+                  "razorpayOrderId",
+                  "razorpaySignature"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "UPI",
+                        "CARD",
+                        "NETBANKING",
+                        "EMI",
+                        "PAY_LATER",
+                        "COD"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "CREATED",
+                        "PENDING",
+                        "AUTHORIZED",
+                        "CAPTURED",
+                        "FAILED",
+                        "EXPIRED",
+                        "CANCELLED",
+                        "PARTIALLY_REFUNDED",
+                        "REFUNDED",
+                        "COD_PENDING",
+                        "COD_COLLECTED"
+                      ]
+                    },
+                    "amountPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "orderId": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "failureReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "orderStatus": {
+                      "type": "string",
+                      "enum": [
+                        "PAYMENT_PENDING",
+                        "PAYMENT_FAILED",
+                        "ABANDONED",
+                        "CONFIRMED",
+                        "IN_PROGRESS",
+                        "PARTIALLY_SHIPPED",
+                        "SHIPPED",
+                        "PARTIALLY_DELIVERED",
+                        "DELIVERED",
+                        "CANCELLED",
+                        "CLOSED"
+                      ]
+                    },
+                    "checkout": {
+                      "nullable": true,
+                      "description": "Set when the customer pays in the gateway's own checkout",
+                      "type": "object",
+                      "properties": {
+                        "gateway": {
+                          "type": "string",
+                          "enum": [
+                            "RAZORPAY"
+                          ]
+                        },
+                        "keyId": {
+                          "type": "string"
+                        },
+                        "orderRef": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "INR"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "gateway",
+                        "keyId",
+                        "orderRef",
+                        "currency"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "method",
+                    "status",
+                    "amountPaise",
+                    "orderId",
+                    "provider",
+                    "failureReason",
+                    "orderStatus",
+                    "checkout"
                   ],
                   "additionalProperties": false
                 }
@@ -7774,7 +8018,21 @@
     },
     "/v1/payments/webhooks/sandbox": {
       "post": {
-        "operationId": "PaymentsController_webhook",
+        "operationId": "PaymentsController_webhook[0]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/v1/payments/webhooks/razorpay": {
+      "post": {
+        "operationId": "PaymentsController_webhook[1]",
         "parameters": [],
         "responses": {
           "200": {

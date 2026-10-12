@@ -1,11 +1,13 @@
 import { Module } from "@nestjs/common";
 import { PAYMENT_PROVIDER } from "../../common/tokens.js";
+import { env } from "../../config/env.js";
 import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
 import { AddressesController, AdminOrdersController, CartController, DevController, OrdersController, PaymentsController } from "./commerce.controllers.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
 import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
+import { RazorpayPaymentProvider } from "./payments/razorpay.provider.js";
 import { SandboxPaymentProvider } from "./payments/sandbox.provider.js";
 import { PaymentSweeper } from "./payments/sweeper.js";
 import { QuoteService } from "./quote.service.js";
@@ -27,7 +29,15 @@ import { OrderWorkflow } from "./workflow.service.js";
     DevLogisticsService,
     ReturnsService,
     PaymentSweeper,
-    { provide: PAYMENT_PROVIDER, useClass: SandboxPaymentProvider },
+    {
+      provide: PAYMENT_PROVIDER,
+      useFactory: () => {
+        const e = env();
+        return e.PAYMENTS_PROVIDER === "razorpay"
+          ? new RazorpayPaymentProvider({ keyId: e.RAZORPAY_KEY_ID!, keySecret: e.RAZORPAY_KEY_SECRET!, webhookSecret: e.RAZORPAY_WEBHOOK_SECRET!, webOrigin: e.WEB_ORIGIN })
+          : new SandboxPaymentProvider();
+      },
+    },
   ],
   exports: [ReturnsService, OrdersService, PaymentsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
 })
