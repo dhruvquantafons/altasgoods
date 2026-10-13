@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/otp": {
+    "/v1/auth/signup": {
         parameters: {
             query?: never;
             header?: never;
@@ -29,14 +29,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["AuthController_requestOtp"];
+        post: operations["AuthController_signup"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/otp/verify": {
+    "/v1/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -45,7 +45,39 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["AuthController_verify"];
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_resetPassword"];
         delete?: never;
         options?: never;
         head?: never;
@@ -98,6 +130,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["AuthController_updateMe"];
+        trace?: never;
+    };
+    "/v1/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/sessions/sign-out-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_signOutOthers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/me/email/otp": {
@@ -1194,7 +1258,7 @@ export interface operations {
             };
         };
     };
-    AuthController_requestOtp: {
+    AuthController_signup: {
         parameters: {
             query?: never;
             header?: never;
@@ -1204,33 +1268,46 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description Indian mobile number, any common format */
-                    phone: string;
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    password: string;
                 };
             };
         };
         responses: {
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /** Format: uuid */
-                        challengeId: string;
-                        /** @description Masked number the code was sent to */
-                        phone: string;
-                        /** Format: date-time */
-                        expiresAt: string;
-                        resendAfterSeconds: number;
-                        /** @description Only outside production, so you can sign in without SMS */
-                        devCode?: string;
+                        accessToken: string;
+                        refreshToken: string;
+                        /** @description Access token lifetime in seconds */
+                        expiresIn: number;
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            name: string | null;
+                            phone: string | null;
+                            emailVerified: boolean;
+                            /** @description AltasGoods Control roles; empty for shoppers */
+                            staffRoles: string[];
+                            /**
+                             * Format: date-time
+                             * @description When the account was created
+                             */
+                            createdAt: string;
+                        };
+                        isNewUser: boolean;
                     };
                 };
             };
         };
     };
-    AuthController_verify: {
+    AuthController_login: {
         parameters: {
             query?: never;
             header?: never;
@@ -1240,11 +1317,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** Format: uuid */
-                    challengeId: string;
-                    code: string;
-                    /** @description Used when the account is created */
-                    name?: string;
+                    /** Format: email */
+                    email: string;
+                    password: string;
                 };
             };
         };
@@ -1262,12 +1337,100 @@ export interface operations {
                         user: {
                             /** Format: uuid */
                             id: string;
-                            phone: string;
+                            email: string;
                             name: string | null;
-                            email: string | null;
+                            phone: string | null;
                             emailVerified: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
+                            /**
+                             * Format: date-time
+                             * @description When the account was created
+                             */
+                            createdAt: string;
+                        };
+                        isNewUser: boolean;
+                    };
+                };
+            };
+        };
+    };
+    AuthController_forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Masked address; the same answer is given whether or not an account exists */
+                        email: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        resendAfterSeconds: number;
+                        /** @description Only outside production, and only when the account exists */
+                        devCode?: string;
+                    };
+                };
+            };
+        };
+    };
+    AuthController_resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                    code: string;
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accessToken: string;
+                        refreshToken: string;
+                        /** @description Access token lifetime in seconds */
+                        expiresIn: number;
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            name: string | null;
+                            phone: string | null;
+                            emailVerified: boolean;
+                            /** @description AltasGoods Control roles; empty for shoppers */
+                            staffRoles: string[];
+                            /**
+                             * Format: date-time
+                             * @description When the account was created
+                             */
+                            createdAt: string;
                         };
                         isNewUser: boolean;
                     };
@@ -1344,12 +1507,17 @@ export interface operations {
                     "application/json": {
                         /** Format: uuid */
                         id: string;
-                        phone: string;
+                        email: string;
                         name: string | null;
-                        email: string | null;
+                        phone: string | null;
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /**
+                         * Format: date-time
+                         * @description When the account was created
+                         */
+                        createdAt: string;
                     };
                 };
             };
@@ -1366,8 +1534,8 @@ export interface operations {
             content: {
                 "application/json": {
                     name?: string;
-                    /** Format: email */
-                    email?: string;
+                    /** @description Optional contact number; send null or an empty string to remove it */
+                    phone?: string | null;
                 };
             };
         };
@@ -1380,14 +1548,60 @@ export interface operations {
                     "application/json": {
                         /** Format: uuid */
                         id: string;
-                        phone: string;
+                        email: string;
                         name: string | null;
-                        email: string | null;
+                        phone: string | null;
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /**
+                         * Format: date-time
+                         * @description When the account was created
+                         */
+                        createdAt: string;
                     };
                 };
+            };
+        };
+    };
+    AuthController_changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    currentPassword: string;
+                    newPassword: string;
+                };
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_signOutOthers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1448,12 +1662,17 @@ export interface operations {
                     "application/json": {
                         /** Format: uuid */
                         id: string;
-                        phone: string;
+                        email: string;
                         name: string | null;
-                        email: string | null;
+                        phone: string | null;
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /**
+                         * Format: date-time
+                         * @description When the account was created
+                         */
+                        createdAt: string;
                     };
                 };
             };

@@ -46,19 +46,19 @@ export class SupportService {
   /* ------------------------------ People ------------------------------ */
 
   async staff(userId: string): Promise<Staff> {
-    const [u] = await this.db.select({ id: users.id, name: users.name, phone: users.phone, roles: users.staffRoles }).from(users).where(eq(users.id, userId));
+    const [u] = await this.db.select({ id: users.id, name: users.name, email: users.email, roles: users.staffRoles }).from(users).where(eq(users.id, userId));
     if (!u) throw notFound("User");
-    return { id: u.id, name: u.name ?? u.phone, roles: u.roles };
+    return { id: u.id, name: u.name ?? u.email, roles: u.roles };
   }
 
   /** Everyone who can be assigned tickets. */
   async agents() {
     const rows = await this.db
-      .select({ id: users.id, name: users.name, phone: users.phone, roles: users.staffRoles })
+      .select({ id: users.id, name: users.name, email: users.email, roles: users.staffRoles })
       .from(users)
       .where(sql`${users.staffRoles} && ${sql.raw(`array[${[...SUPPORT_ROLES, "SUPER_ADMIN"].map((r) => `'${r}'`).join(",")}]::text[]`)}`)
       .orderBy(asc(users.name));
-    return rows.map((r) => ({ id: r.id, name: r.name ?? r.phone, level: agentLevel(r.roles).level }));
+    return rows.map((r) => ({ id: r.id, name: r.name ?? r.email, level: agentLevel(r.roles).level }));
   }
 
   /* ------------------------------- Queue ------------------------------- */
@@ -99,7 +99,7 @@ export class SupportService {
 
     const assignee = alias(users, "assignee");
     const rows = await this.db
-      .select({ t: supportTickets, assigneeName: sql<string | null>`coalesce(${assignee.name}, ${assignee.phone})` })
+      .select({ t: supportTickets, assigneeName: sql<string | null>`coalesce(${assignee.name}, ${assignee.email})` })
       .from(supportTickets)
       .leftJoin(assignee, eq(assignee.id, supportTickets.assigneeId))
       .where(where)
@@ -168,13 +168,13 @@ export class SupportService {
       this.db.select().from(supportMessages).where(eq(supportMessages.ticketId, id)).orderBy(asc(supportMessages.at), asc(supportMessages.id)),
       this.db.select().from(supportEvents).where(eq(supportEvents.ticketId, id)).orderBy(asc(supportEvents.at), asc(supportEvents.id)),
       this.db.select().from(supportActions).where(eq(supportActions.ticketId, id)).orderBy(asc(supportActions.createdAt)),
-      t.assigneeId ? this.db.select({ name: users.name, phone: users.phone }).from(users).where(eq(users.id, t.assigneeId)) : Promise.resolve([]),
+      t.assigneeId ? this.db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, t.assigneeId)) : Promise.resolve([]),
     ]);
     const lastPublic = [...messages].reverse().find((m) => m.kind === "CUSTOMER" || m.kind === "AGENT");
     const { level, limitPaise } = agentLevel(me.roles);
     const approver = me.roles.some((r) => (APPROVER_ROLES as string[]).includes(r));
     return {
-      ...this.summary(t, assignee ? (assignee.name ?? assignee.phone) : null),
+      ...this.summary(t, assignee ? (assignee.name ?? assignee.email) : null),
       lastMessage: lastPublic ? { kind: lastPublic.kind, author: lastPublic.author, body: lastPublic.body, at: lastPublic.at.toISOString() } : null,
       orderSnapshot: t.orderSnapshot ?? null,
       messages: messages.map((m) => ({ id: m.id, kind: m.kind, author: m.author, body: m.body, attachments: m.attachments, at: m.at.toISOString() })),
@@ -266,9 +266,9 @@ export class SupportService {
   }
 
   private async assigneeName(tx: Tx, userId: string) {
-    const [u] = await tx.select({ name: users.name, phone: users.phone, roles: users.staffRoles }).from(users).where(eq(users.id, userId));
+    const [u] = await tx.select({ name: users.name, email: users.email, roles: users.staffRoles }).from(users).where(eq(users.id, userId));
     if (!u || !u.roles.some((r) => (SUPPORT_ROLES as string[]).includes(r) || r === "SUPER_ADMIN")) throw unprocessable("NOT_AN_AGENT", "Tickets can only be assigned to Care Desk agents");
-    return u.name ?? u.phone;
+    return u.name ?? u.email;
   }
 
   async bulkAssign(me: Staff, ids: string[], assigneeId: string | null) {
@@ -452,12 +452,12 @@ export class SupportService {
 
   async createForCustomer(userId: string, input: z.infer<typeof createTicketBody>) {
     const id = await this.db.transaction(async (tx) => {
-      const [u] = await tx.select({ name: users.name, phone: users.phone }).from(users).where(eq(users.id, userId));
+      const [u] = await tx.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, userId));
       const snapshot = input.orderId ? await this.snapshotFor(tx, input.orderId, userId) : null;
       const [{ n }] = (await tx.execute<{ n: number }>(sql`select nextval('support_ticket_seq')::int as n`)).rows as [{ n: number }];
       const id = `TK-${n}`;
       const now = this.clock.now();
-      const name = u?.name ?? u?.phone ?? "Customer";
+      const name = u?.name ?? u?.email ?? "Customer";
       await tx.insert(supportTickets).values({
         id,
         subject: input.subject,

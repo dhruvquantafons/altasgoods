@@ -73,7 +73,7 @@ const button = (page: Page, name: string, within?: string) => (within ? page.loc
 for (const area of AREAS) {
   test(`every button responds: ${area.name}`, async ({ browser }) => {
     test.setTimeout(45 * 60_000);
-    const ctx = area.phone ? await signedIn(browser, area.phone) : await browser.newContext();
+    const ctx = area.account ? await signedIn(browser, area.account) : await browser.newContext();
     await ctx.addInitScript(SIGNALS);
     const page = await ctx.newPage();
     const errors = watchErrors(page);
@@ -90,9 +90,9 @@ for (const area of AREAS) {
     };
 
     /** Clicks one button and judges whether anything happened. */
-    const tryButton = async (target: string, name: string, within?: string, prepare?: () => Promise<void>) => {
+    const tryButton = async (target: string, name: string, within?: string, prepare?: () => Promise<void | false>) => {
       await open(target);
-      if (prepare) await prepare();
+      if (prepare && (await prepare()) === false) return null;
       const b = button(page, name, within);
       if (!(await b.isVisible().catch(() => false)) || !(await b.isEnabled().catch(() => false))) return null;
       // an option that is already chosen, or a search re-run with the same query, rightly changes nothing
@@ -139,7 +139,10 @@ for (const area of AREAS) {
           const inner = (await buttonNames(page, '[role="dialog"],[role="alertdialog"]')).filter((n) => n !== name && !/^close/i.test(n));
           for (const innerName of inner) {
             await tryButton(target, innerName, '[role="dialog"],[role="alertdialog"]', async () => {
-              await button(page, name).click({ timeout: 4000 });
+              // a button inside may have changed the page for real (removing a phone number turns "Change" into "Add")
+              const opener = button(page, name);
+              if (!(await opener.isVisible().catch(() => false))) return false;
+              await opener.click({ timeout: 4000 });
               await page.waitForTimeout(300);
             });
           }

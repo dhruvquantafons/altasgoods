@@ -27,7 +27,7 @@ export default async function CheckoutPage(props: PageProps<"/checkout">) {
       bankOffers={[]}
       banks={NET_BANKING_BANKS}
       wallet={{ credits: 0, giftCard: 0, payLaterLimit: CUSTOMER_WALLET.payLaterLimit }}
-      customer={{ name: user?.name ?? "", phone: user?.phone.replace(/^\+91/, "") ?? "" }}
+      customer={{ name: user?.name ?? "", phone: user?.phone?.replace(/^\+91/, "") ?? "" }}
       addresses={addresses}
       buyNow={buyNow}
     />

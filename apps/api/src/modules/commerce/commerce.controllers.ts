@@ -248,8 +248,8 @@ export class DevController {
   ) {}
 
   /**
-   * Clears sign in code and verification rate limits, so automated browser
-   * tests can sign the demo accounts in repeatedly. Disabled in production.
+   * Clears sign in, password reset and verification rate limits, so automated
+   * browser tests can sign their accounts in repeatedly. Disabled in production.
    */
   @Public()
   @Post("rate-limits/reset")
@@ -259,7 +259,7 @@ export class DevController {
     if (isProduction()) throw forbidden("Development endpoints are disabled in production");
     const prefix = this.redis.options.keyPrefix ?? "";
     let cleared = 0;
-    for (const pattern of ["otp:req:*", "email-otp:req:*", "kyc:*"]) {
+    for (const pattern of ["login:fail:*", "pwreset:req:*", "email-otp:req:*", "kyc:*"]) {
       const keys: string[] = [];
       const stream = this.redis.scanStream({ match: `${prefix}${pattern}`, count: 200 });
       for await (const batch of stream) keys.push(...(batch as string[]));

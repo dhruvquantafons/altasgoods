@@ -187,7 +187,7 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
               <p className="mt-1.5 text-sm text-brand-100">Average wait right now is under a minute.</p>
               <div className="mt-4 flex flex-col gap-2">
                 <ChatButton orderLabel={focus?.id} firstName={firstName} conversation={chat} variant="secondary" className="w-full" />
-                {user && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}
+                {user?.phone && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}
               </div>
             </div>
           </section>

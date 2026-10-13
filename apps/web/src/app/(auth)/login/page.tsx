@@ -12,5 +12,5 @@ export default async function LoginPage(props: PageProps<"/login">) {
   const user = await currentUser();
   // someone already signed in who lacks access here can switch to another number
   const lacksAccess = !!user && audience === "staff" && !user.staffRoles.length;
-  return <LoginForm next={next} audience={audience} denied={sp.denied === "1"} signedInAs={lacksAccess ? (user!.name ?? user!.phone) : undefined} />;
+  return <LoginForm next={next} audience={audience} denied={sp.denied === "1"} signedInAs={lacksAccess ? (user!.name ?? user!.email) : undefined} />;
 }

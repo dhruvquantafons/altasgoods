@@ -5,46 +5,36 @@ import { expect, type Browser, type BrowserContext, type Page } from "@playwrigh
 export const WEB = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 export const API = process.env.E2E_API_URL ?? "http://localhost:4000";
 
-export const PHONES = { shopper: "9845012345", staff: "9811012345" } as const;
-
-/** A fresh, unused mobile number for tests that need a new account. */
-export const newPhone = () => `7${String(Math.floor(Math.random() * 1e9)).padStart(9, "0")}`;
+/** Accounts global-setup.ts creates through sign up and `npm run admin:create`; nothing is seeded. */
+export const E2E_PASSWORD = "e2e-password-1234";
+export const ACCOUNTS = {
+  shopper: "e2e.shopper@altasgoods.test",
+  staff: "e2e.admin@altasgoods.test",
+  /** Care agents, named so the Care Desk shows them as in the support specs */
+  revathi: "e2e.revathi@altasgoods.test",
+  megha: "e2e.megha@altasgoods.test",
+} as const;
 
 type Json = Record<string, unknown>;
 
 type Session = { accessToken: string; refreshToken: string; user: { id: string } };
 const sessionCache = new Map<string, { at: number; session: Promise<Session> }>();
 
-/**
- * Signs in through the API with the development code. Sessions are reused
- * for a few minutes per phone, since sign in codes are rate limited.
- */
-export function apiSession(phone: string, name?: string): Promise<Session> {
-  const hit = sessionCache.get(phone);
+/** Signs in through the API with email and password. Sessions are reused for a few minutes per account. */
+export function apiSession(email: string, password = E2E_PASSWORD): Promise<Session> {
+  const hit = sessionCache.get(email);
   if (hit && Date.now() - hit.at < 5 * 60_000) return hit.session;
-  const session = signInByApi(phone, name);
-  sessionCache.set(phone, { at: Date.now(), session });
-  session.catch(() => sessionCache.delete(phone));
+  const session = signInByApi(email, password);
+  sessionCache.set(email, { at: Date.now(), session });
+  session.catch(() => sessionCache.delete(email));
   return session;
 }
 
-async function signInByApi(phone: string, name?: string, retry = true): Promise<Session> {
-  const post = async (p: string, body: Json) => {
-    const r = await fetch(`${API}${p}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    const json = (await r.json()) as Json;
-    if (!r.ok) throw Object.assign(new Error(`${p} ${r.status}: ${JSON.stringify(json)}`), { status: r.status });
-    return json;
-  };
-  try {
-    const otp = await post("/v1/auth/otp", { phone });
-    const s = await post("/v1/auth/otp/verify", { challengeId: otp.challengeId, code: otp.devCode, name });
-    return { accessToken: s.accessToken as string, refreshToken: s.refreshToken as string, user: s.user as { id: string } };
-  } catch (e) {
-    // other test files sign the same demo accounts in; clear the development rate limit once
-    if (!retry || (e as { status?: number }).status !== 429) throw e;
-    await fetch(`${API}/v1/dev/rate-limits/reset`, { method: "POST" });
-    return signInByApi(phone, name, false);
-  }
+async function signInByApi(email: string, password: string): Promise<Session> {
+  const r = await fetch(`${API}/v1/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
+  const s = (await r.json()) as Json;
+  if (!r.ok) throw new Error(`/v1/auth/login ${email} ${r.status}: ${JSON.stringify(s)}`);
+  return { accessToken: s.accessToken as string, refreshToken: s.refreshToken as string, user: s.user as { id: string } };
 }
 
 /** Calls the API as a session. Throws with the problem details on failure. */
@@ -101,9 +91,9 @@ export const returnRequest = (itemId: string, extra: Json = {}) => ({
   ...extra,
 });
 
-/** A browser context already signed in as this phone (httpOnly session cookies, like a real sign in). */
-export async function signedIn(browser: Browser, phone: string, name?: string): Promise<BrowserContext> {
-  const s = await apiSession(phone, name);
+/** A browser context already signed in as this account (httpOnly session cookies, like a real sign in). */
+export async function signedIn(browser: Browser, email: string): Promise<BrowserContext> {
+  const s = await apiSession(email);
   const ctx = await browser.newContext();
   const host = new URL(WEB).hostname;
   await ctx.addCookies([
@@ -113,12 +103,11 @@ export async function signedIn(browser: Browser, phone: string, name?: string): 
   return ctx;
 }
 
-/** Signs in through the real sign in form with the development code. */
-export async function signInWithForm(page: Page, phone: string) {
-  await page.fill("#mobile", phone);
-  await page.getByRole("button", { name: "Send code" }).click();
-  await page.getByRole("button", { name: "Fill it in" }).click();
-  await page.getByRole("button", { name: "Verify and sign in" }).click();
+/** Signs in through the real sign in form. */
+export async function signInWithForm(page: Page, email: string, password = E2E_PASSWORD) {
+  await page.fill("#login-email", email);
+  await page.fill("#login-password", password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
 /**
@@ -176,7 +165,7 @@ export function routeOf(pathname: string, routes = appRoutes()) {
 
 export interface Area {
   name: string;
-  phone: string | null;
+  account: string | null;
   roots: string[];
   include: RegExp;
   exclude?: RegExp;
@@ -186,15 +175,15 @@ export interface Area {
 export const AREAS: Area[] = [
   {
     name: "storefront and public pages",
-    phone: null,
-    roots: ["/", "/portals", "/careers", "/login", "/signup", "/s?q=laptop"],
+    account: null,
+    roots: ["/", "/portals", "/careers", "/login", "/signup", "/forgot-password", "/s?q=laptop"],
     include: /^\//,
     exclude: /^\/(account|checkout|order|admin|logistics|support)(\/|$)/,
   },
-  { name: "My Account and checkout", phone: PHONES.shopper, roots: ["/account", "/cart", "/checkout"], include: /^\/(account|cart|checkout)(\/|$)/ },
-  { name: "AltasGoods Control", phone: PHONES.staff, roots: ["/admin"], include: /^\/admin(\/|$)/ },
-  { name: "Hub Console", phone: PHONES.staff, roots: ["/logistics"], include: /^\/logistics(\/|$)/ },
-  { name: "Care Desk", phone: PHONES.staff, roots: ["/support"], include: /^\/support(\/|$)/ },
+  { name: "My Account and checkout", account: ACCOUNTS.shopper, roots: ["/account", "/cart", "/checkout"], include: /^\/(account|cart|checkout)(\/|$)/ },
+  { name: "AltasGoods Control", account: ACCOUNTS.staff, roots: ["/admin"], include: /^\/admin(\/|$)/ },
+  { name: "Hub Console", account: ACCOUNTS.staff, roots: ["/logistics"], include: /^\/logistics(\/|$)/ },
+  { name: "Care Desk", account: ACCOUNTS.staff, roots: ["/support"], include: /^\/support(\/|$)/ },
 ];
 
 /**

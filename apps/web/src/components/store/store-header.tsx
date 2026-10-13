@@ -17,7 +17,7 @@ export function StoreHeader({
   categories: NavCategory[];
   suggestions: Suggestion[];
   addresses: AddressLite[];
-  customer: { signedIn: boolean; firstName: string; credits: number };
+  customer: { signedIn: boolean; firstName: string };
 }) {
   const cats = categories.map((c) => ({ slug: c.slug, name: c.name }));
   return (

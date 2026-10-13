@@ -11,8 +11,8 @@ type Json<P extends keyof paths, M extends keyof paths[P], S extends number = 20
   : never;
 
 export type User = Json<"/v1/me", "get">;
-export type Session = Json<"/v1/auth/otp/verify", "post">;
-export type OtpChallenge = Json<"/v1/auth/otp", "post">;
+export type Session = Json<"/v1/auth/login", "post">;
+export type PasswordResetChallenge = Json<"/v1/auth/password/forgot", "post">;
 export type CategoryNode = Json<"/v1/categories", "get">[number];
 export type ProductList = Json<"/v1/products", "get">;
 export type ProductSummary = ProductList["items"][number];

@@ -1,12 +1,13 @@
 import { createHash, randomBytes } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
+import type { Redis } from "ioredis";
 import { jwtVerify, SignJWT } from "jose";
 import { env } from "../../config/env.js";
 import type { Db } from "../../db/client.js";
 import { sessions } from "../../db/schema.js";
 import { ApiError } from "../../common/errors.js";
-import { CLOCK, DB } from "../../common/tokens.js";
+import { CLOCK, DB, REDIS } from "../../common/tokens.js";
 import type { Clock } from "../../common/infra.module.js";
 
 export const ACCESS_TTL_SECONDS = 15 * 60;
@@ -26,12 +27,14 @@ export interface Grants {
 
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 const secret = () => new TextEncoder().encode(env().JWT_SECRET);
+const revokedAll = (userId: string) => `revoked-all:${userId}`;
 
 @Injectable()
 export class TokensService {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
   async issue(userId: string, grants: Grants, meta: { userAgent?: string; ip?: string }) {
@@ -54,12 +57,18 @@ export class TokensService {
   }
 
   async verify(token: string): Promise<AccessClaims> {
+    let claims: AccessClaims;
     try {
       const { payload } = await jwtVerify(token, secret(), { issuer: "blubuy-api" });
-      return { sub: String(payload.sub), sid: String(payload.sid), staff: (payload.staff as string[]) ?? [] };
+      claims = { sub: String(payload.sub), sid: String(payload.sid), staff: (payload.staff as string[]) ?? [] };
     } catch {
       throw new ApiError(401, "TOKEN_INVALID", "Your session has expired. Please sign in again.");
     }
+    // access tokens are stateless; for a while after an "every device" sign out, their session is checked too
+    if ((await this.redis.exists(revokedAll(claims.sub))) && !(await this.isSessionActive(claims.sid))) {
+      throw new ApiError(401, "TOKEN_INVALID", "Your session has ended. Please sign in again.");
+    }
+    return claims;
   }
 
   /**
@@ -83,6 +92,19 @@ export class TokensService {
 
   async revoke(refreshToken: string) {
     await this.db.update(sessions).set({ revokedAt: this.clock.now() }).where(and(eq(sessions.refreshHash, sha256(refreshToken)), isNull(sessions.revokedAt)));
+  }
+
+  /** Ends every session of a user, access tokens already handed out included, for example after a password change. */
+  async revokeAll(userId: string) {
+    await this.db.update(sessions).set({ revokedAt: this.clock.now() }).where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)));
+    // lapses once every access token issued before now has expired
+    await this.redis.set(revokedAll(userId), "1", "EX", ACCESS_TTL_SECONDS);
+  }
+
+  /** Ends every session of a user except one (the device asking), access tokens included. */
+  async revokeOthers(userId: string, keepSessionId: string) {
+    await this.db.update(sessions).set({ revokedAt: this.clock.now() }).where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt), ne(sessions.id, keepSessionId)));
+    await this.redis.set(revokedAll(userId), "1", "EX", ACCESS_TTL_SECONDS);
   }
 
   async isSessionActive(sessionId: string) {

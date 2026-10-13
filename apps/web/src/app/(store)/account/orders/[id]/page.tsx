@@ -10,21 +10,18 @@ import {
   PackageX,
   RotateCcw,
   ShieldCheck,
-  Star,
   Truck,
   Undo2,
 } from "lucide-react";
-import { CANCELLED_STATUSES, cancelMode, dateLabel, dayLabel, itemCountLabel, itemState, needsSecureDelivery, paymentLabel, returnInfo } from "@/components/account/lib";
+import { CANCELLED_STATUSES, cancelMode, dateLabel, dayLabel, itemCountLabel, itemState, paymentLabel, returnInfo } from "@/components/account/lib";
 import { cancelProps, invoiceAvailable } from "@/components/account/order-card";
 import { BuyAgainButton, CancelOrderButton, InvoiceButton } from "@/components/account/order-actions";
-import { AssociateRow, SecureDeliveryBanner, TrackingHistory, TrackingStepper } from "@/components/account/tracking";
+import { TrackingHistory, TrackingStepper } from "@/components/account/tracking";
 import { KeyValue, Notice, Panel } from "@/components/account/ui";
 import { ProductImage } from "@/components/commerce/product-image";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { getProduct } from "@/lib/mock";
-import { addressExtras, DELIVERY_ASSOCIATES, myReviews, SECURE_DELIVERY } from "@/lib/mock/account-extra";
 import { loadAccountOrder } from "@/lib/api/account-orders";
 import { PAYMENT_STATUS } from "@/lib/status";
 import type { Order, OrderItem } from "@/lib/types";
@@ -34,8 +31,6 @@ export async function generateMetadata(props: PageProps<"/account/orders/[id]">)
   const { id } = await props.params;
   return { title: `Order ${id}` };
 }
-
-const reviewed = new Set(myReviews.map((r) => r.slug));
 
 export default async function OrderDetailPage(props: PageProps<"/account/orders/[id]">) {
   const { id } = await props.params;
@@ -51,13 +46,10 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
   const packages = [{ items: order.items }];
   const mode = cancellable.size ? cancelMode(order.status) ?? "cancel" : null;
   const cancelInput = { ...cancelProps(order), items: cancelProps(order).items.filter((it) => cancellable.has(it.id)) };
-  const secure = needsSecureDelivery(order);
-  const associate = DELIVERY_ASSOCIATES[order.id];
   const cancelled = CANCELLED_STATUSES.includes(order.status);
   const mrpTotal = order.items.reduce((a, it) => a + it.mrp * it.quantity, 0);
   const mrpSaving = mrpTotal - order.subtotal;
   const saved = mrpSaving + order.discount;
-  const extras = addressExtras[order.address.id];
 
   return (
     <>
@@ -97,7 +89,6 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
         </Notice>
       )}
 
-      {order.status === "out_for_delivery" && secure && <SecureDeliveryBanner otp={SECURE_DELIVERY.otp} promisedBy={order.promisedBy} className="mb-6" />}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-[auto_1fr]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -122,21 +113,15 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
                   </div>
                 )}
 
-                {order.status === "out_for_delivery" && associate && (
-                  <div className="mt-5">
-                    <AssociateRow {...associate} />
-                  </div>
-                )}
-
                 {order.status === "undelivered" && (
                   <Notice tone="warning" icon={CircleAlert} title="We could not deliver your package" className="mt-5">
-                    The associate could not reach you. We will try again tomorrow. You can pick a different date or add delivery instructions.
+                    The courier could not reach you and will try again. If the address or phone number needs a change, contact AltasGoods Care.
                   </Notice>
                 )}
                 {order.status === "shipped" || order.status === "in_transit" ? (
                   <p className="mt-4 flex items-center gap-2 text-[13px] text-ink-500">
                     <Truck size={15} aria-hidden="true" />
-                    With AltasGoods Logistics. You will get the delivery associate&apos;s details on the day of delivery.
+                    On its way with our courier partner.
                   </p>
                 ) : null}
                 {order.status === "cancelled" && (
@@ -192,7 +177,6 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
               <br />
               {order.address.phone}
             </address>
-            {extras?.instructions && <p className="mt-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-600">{extras.instructions}</p>}
           </Panel>
 
           <Panel title="Payment" action={<StatusBadge meta={PAYMENT_STATUS[order.payment.status]} size="sm" />}>
@@ -260,7 +244,6 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
 }
 
 function ItemRow({ order, item }: { order: Order; item: OrderItem }) {
-  const product = getProduct(item.productId);
   const ri = returnInfo(order, item);
   const st = itemState(order, item);
   const isDelivered = item.status === "delivered" || item.status === "return_requested";
@@ -306,11 +289,6 @@ function ItemRow({ order, item }: { order: Order; item: OrderItem }) {
           {ri.eligible && (
             <ButtonLink href={`/account/orders/${order.id}/return?item=${item.id}`} size="sm" variant="secondary" icon={RotateCcw} className="sm:w-full">
               Return or replace
-            </ButtonLink>
-          )}
-          {product && !reviewed.has(product.slug) && (
-            <ButtonLink href={`/account/reviews?write=${product.slug}`} size="sm" variant="secondary" icon={Star} className="sm:w-full">
-              Write a review
             </ButtonLink>
           )}
           <BuyAgainButton title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />

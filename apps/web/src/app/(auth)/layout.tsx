@@ -39,7 +39,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </ul>
         </div>
         <p className="relative flex items-center gap-2 text-xs text-brand-200">
-          <Lock size={13} aria-hidden="true" /> Your number is used only to sign you in and send order updates.
+          <Lock size={13} aria-hidden="true" /> Your email is used to sign you in and send order updates. Passwords are stored hashed, never in plain text.
         </p>
       </aside>
       <main id="main" className="flex flex-col px-5 py-8 sm:px-10 lg:px-16 lg:py-12">

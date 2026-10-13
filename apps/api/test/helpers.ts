@@ -9,7 +9,9 @@ import { env } from "../src/config/env.js";
 import { CLOCK } from "../src/common/tokens.js";
 import { createDb } from "../src/db/client.js";
 import { resetDatabase } from "../src/db/reset.js";
+import { DEMO_CUSTOMER_EMAIL, DEMO_PASSWORD, DEMO_STAFF_EMAIL, careAgentEmail } from "../src/db/demo.js";
 import { seed } from "../src/db/seed.js";
+import { seedDemoAccounts } from "../src/db/seed-demo.js";
 
 /** A clock tests can move forward. */
 export class TestClock {
@@ -32,11 +34,12 @@ export interface TestContext {
   close: () => Promise<void>;
 }
 
-/** Fresh schema, seeded demo data, and a running app on the test database. */
+/** Fresh schema, the seeded catalog and demo accounts, and a running app on the test database. */
 export async function createTestApp(overrides: { provide: symbol; useValue: unknown }[] = []): Promise<TestContext> {
   await resetDatabase(env().TEST_DATABASE_URL);
   const { db, pool } = createDb(env().TEST_DATABASE_URL);
   await seed(db);
+  await seedDemoAccounts(db);
   await pool.end();
 
   const redis = new Redis(env().REDIS_URL);
@@ -54,13 +57,18 @@ export async function createTestApp(overrides: { provide: symbol; useValue: unkn
   return { app, http: request(app.getHttpServer()), clock, close: () => app.close() };
 }
 
-/** Signs in with the development OTP and returns a bearer header. */
-export async function signIn(http: TestContext["http"], phone: string, name?: string) {
-  const otp = await http.post("/v1/auth/otp").send({ phone }).expect(200);
-  const session = await http.post("/v1/auth/otp/verify").send({ challengeId: otp.body.challengeId, code: otp.body.devCode, name }).expect(200);
+/** Signs in with email and password and returns a bearer header. */
+export async function signIn(http: TestContext["http"], email: string, password = DEMO_PASSWORD) {
+  const session = await http.post("/v1/auth/login").send({ email, password }).expect(200);
   return { auth: { Authorization: `Bearer ${session.body.accessToken}` }, session: session.body };
 }
 
-export const DEMO_CUSTOMER = "9845012345";
-export const DEMO_STAFF = "9811012345";
-export const DEMO_AGENT = "9811020001";
+/** Creates a fresh shopper account and returns a bearer header. */
+export async function signUp(http: TestContext["http"], email: string, name = "Test Shopper", password = "a-long-password") {
+  const session = await http.post("/v1/auth/signup").send({ email, name, password }).expect(201);
+  return { auth: { Authorization: `Bearer ${session.body.accessToken}` }, session: session.body };
+}
+
+export const DEMO_CUSTOMER = DEMO_CUSTOMER_EMAIL;
+export const DEMO_STAFF = DEMO_STAFF_EMAIL;
+export const DEMO_AGENT = careAgentEmail(0);

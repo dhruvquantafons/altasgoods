@@ -169,9 +169,13 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    phone: text("phone").notNull(),
+    /** The sign in identity, stored lower case */
+    email: text("email").notNull(),
+    /** scrypt hash (see modules/auth/password.ts); null until a password is set through a reset */
+    passwordHash: text("password_hash"),
     name: text("name"),
-    email: text("email"),
+    /** Optional contact number; deliveries use the phone on each address */
+    phone: text("phone"),
     emailVerifiedAt: ts("email_verified_at"),
     status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED">(),
     /** AltasGoods Control access; empty for shoppers */
@@ -179,21 +183,7 @@ export const users = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("users_phone_uq").on(t.phone)],
-);
-
-export const otpChallenges = pgTable(
-  "otp_challenges",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    phone: text("phone").notNull(),
-    codeHash: text("code_hash").notNull(),
-    attempts: integer("attempts").notNull().default(0),
-    expiresAt: ts("expires_at").notNull(),
-    consumedAt: ts("consumed_at"),
-    createdAt: createdAt(),
-  },
-  (t) => [index("otp_phone_idx").on(t.phone, t.createdAt)],
+  (t) => [uniqueIndex("users_email_uq").on(sql`lower(${t.email})`)],
 );
 
 export const sessions = pgTable(

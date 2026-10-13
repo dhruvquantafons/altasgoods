@@ -1,23 +1,19 @@
 /**
- * Seeds the database from the web app's demo data (apps/web/src/lib/mock), so
+ * Seeds the catalog from the web app's demo data (apps/web/src/lib/mock), so
  * the storefront, the API and the dashboards share one catalog. The products
  * are placeholders until the client's own catalogue is added in AltasGoods
- * Control. Destructive: clears every table first. Refuses to run in production.
+ * Control. No accounts are made: shoppers sign up, and staff are created with
+ * `npm run admin:create`. Destructive: clears every table first, accounts
+ * included. Refuses to run in production.
  */
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { sql } from "drizzle-orm";
 import { isProduction } from "../config/env.js";
-import { normalizePhone } from "../modules/auth/phone.js";
 import { HOUSE_SELLER_ID } from "../common/house.js";
 import { createDb, type Db } from "./client.js";
-import { seedSupport } from "./seed-support.js";
 import * as t from "./schema.js";
 
-const WEB_MOCK = new URL("../../../web/src/lib/mock/", import.meta.url);
-
-import { DEMO_CUSTOMER_PHONE, DEMO_STAFF_PHONE } from "./demo.js";
-
-export { DEMO_CUSTOMER_PHONE, DEMO_STAFF_PHONE };
+export const WEB_MOCK = new URL("../../../web/src/lib/mock/", import.meta.url);
 
 // Minimal shapes of the web mock modules (loaded dynamically, outside this project's type root)
 interface MockCategory { id: string; slug: string; name: string; icon: string; image?: string; children?: { id: string; slug: string; name: string }[] }
@@ -27,21 +23,16 @@ interface MockProduct {
   highlights: string[]; specs: unknown[]; variants: unknown[]; rating: number; ratingCount: number; reviewCount: number; tags: string[];
   assured: boolean; featuredSellerId: string; listingStatus: string; soldLast30d: number; createdAt: string; offers: MockOffer[];
 }
-interface MockCustomer { name: string; email: string; phone: string; joinedAt: string; status: string }
-interface MockAddress { name: string; phone: string; line1: string; line2?: string; landmark?: string; city: string; state: string; pincode: string; type: string; isDefault?: boolean }
 interface MockCoupon { code: string; description: string; type: "percent" | "flat"; value: number; maxDiscount?: number; minOrder: number; usage: number; limit: number; startsAt: string; endsAt: string; status: string; fundedBy: string }
 
 async function loadMock() {
   const load = (f: string) => import(pathToFileURL(fileURLToPath(new URL(f, WEB_MOCK))).href);
   const catalog = await load("catalog.ts");
-  const people = await load("people.ts");
   const engagement = await load("engagement.ts");
   return {
     categories: catalog.categories as MockCategory[],
     brands: catalog.brands as { id: string; slug: string; name: string; verified: boolean }[],
     products: catalog.products as MockProduct[],
-    customers: people.customers as MockCustomer[],
-    addresses: people.customerAddresses as MockAddress[],
     coupons: engagement.coupons as MockCoupon[],
   };
 }
@@ -61,7 +52,7 @@ export async function seed(db: Db) {
     return_events, returns, customer_uploads,
     support_attachments, support_actions, support_events, support_messages, support_tickets,
     media, files,
-    offers, products, seller_members, sellers, brands, categories, sessions, otp_challenges, users restart identity cascade`);
+    offers, products, seller_members, sellers, brands, categories, sessions, users restart identity cascade`);
   await db.execute(sql`alter sequence order_number_seq restart with 10001`);
   await db.execute(sql`alter sequence support_ticket_seq restart with 60001`);
   await db.execute(sql`alter sequence return_seq restart with 70001`);
@@ -86,18 +77,6 @@ export async function seed(db: Db) {
     state: "Karnataka",
     pincode: "560001",
   });
-
-  // users: the demo shopper, other shoppers and the store's staff
-  const shopperRows = m.customers.map((c, i) => ({
-    phone: i === 0 ? DEMO_CUSTOMER_PHONE : normalizePhone(c.phone)!,
-    name: c.name,
-    email: c.email,
-    status: (c.status === "blocked" ? "BLOCKED" : "ACTIVE") as "ACTIVE" | "BLOCKED",
-    createdAt: new Date(c.joinedAt),
-  }));
-  const uniqueShoppers = [...new Map(shopperRows.filter((r) => r.phone).map((r) => [r.phone, r])).values()];
-  const insertedShoppers = await db.insert(t.users).values(uniqueShoppers).returning({ id: t.users.id, phone: t.users.phone });
-  await db.insert(t.users).values({ phone: DEMO_STAFF_PHONE, name: "Kavya Iyer", email: "kavya.iyer@altasgoods.in", emailVerifiedAt: new Date("2025-04-01T10:00:00+05:30"), staffRoles: ["SUPER_ADMIN"] });
 
   const brandName = new Map(m.brands.map((b) => [b.id, b.name]));
   const categoryName = new Map(m.categories.map((c) => [c.id, c.name]));
@@ -145,23 +124,6 @@ export async function seed(db: Db) {
     }),
   );
 
-  const ananya = insertedShoppers.find((u) => u.phone === DEMO_CUSTOMER_PHONE)!;
-  await db.insert(t.addresses).values(
-    m.addresses.map((a) => ({
-      userId: ananya.id,
-      name: a.name,
-      phone: normalizePhone(a.phone) ?? a.phone,
-      line1: a.line1,
-      line2: a.line2 ?? null,
-      landmark: a.landmark ?? null,
-      city: a.city,
-      state: a.state,
-      pincode: a.pincode,
-      type: a.type.toUpperCase() as "HOME" | "WORK" | "OTHER",
-      isDefault: !!a.isDefault,
-    })),
-  );
-
   // coupons a seller funded in the demo data have no place in a single store
   await db.insert(t.coupons).values(
     m.coupons.filter((c) => c.fundedBy !== "seller").map((c) => ({
@@ -180,18 +142,12 @@ export async function seed(db: Db) {
     })),
   );
 
-  const support = await seedSupport(db, insertedShoppers);
-  return { products: m.products.length, users: insertedShoppers.length + 1 + support.agents, tickets: support.tickets };
+  return { products: m.products.length };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { db, pool } = createDb();
   const counts = await seed(db);
   await pool.end();
-  console.log(`Seeded ${counts.products} products, ${counts.users} users, ${counts.tickets} support tickets`);
-  if (!process.argv.includes("--no-orders")) {
-    const { seedOrders } = await import("./seed-orders.js");
-    console.log(`Created ${await seedOrders()} demo orders through the order services`);
-  }
-  console.log(`Demo shopper: ${DEMO_CUSTOMER_PHONE}   Demo staff (AltasGoods Control): ${DEMO_STAFF_PHONE}`);
+  console.log(`Seeded ${counts.products} products. No accounts exist yet: run npm run admin:create for a staff account, and sign up at /signup to shop.`);
 }

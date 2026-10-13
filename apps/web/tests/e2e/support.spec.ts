@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { apiAs, apiSession, PHONES, signedIn, watchErrors } from "./support";
+import { apiAs, apiSession, ACCOUNTS, signedIn, watchErrors } from "./support";
 
 /** Care Desk changes are saved: everything an agent does survives a reload. */
 
-const REVATHI = "9811020001";
+const REVATHI = ACCOUNTS.revathi;
 const S = "/v1/support";
 
 async function freshTicket() {
-  const customer = apiAs(await apiSession(PHONES.shopper));
+  const customer = apiAs(await apiSession(ACCOUNTS.shopper));
   const orders = await customer.get<{ items: { id: string; paymentStatus: string }[] }>("/v1/me/orders?pageSize=50");
   const paid = orders.items.find((o) => o.paymentStatus === "CAPTURED" || o.paymentStatus === "PARTIALLY_REFUNDED") ?? orders.items[0]!;
   const t = await customer.post<{ id: string }>("/v1/me/support/tickets", {

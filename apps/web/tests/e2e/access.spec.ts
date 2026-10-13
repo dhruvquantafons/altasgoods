@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PHONES, signedIn } from "./support";
+import { ACCOUNTS, signedIn } from "./support";
 
 /** Who can reach which workspace. */
 
@@ -16,7 +16,7 @@ test("signed-out visitors are sent to the right sign in", async ({ page }) => {
 });
 
 test("a shopper is kept out of AltasGoods Control and Care Desk", async ({ browser }) => {
-  const ctx = await signedIn(browser, PHONES.shopper);
+  const ctx = await signedIn(browser, ACCOUNTS.shopper);
   const page = await ctx.newPage();
   for (const path of ["/admin", "/support"]) {
     await page.goto(path);
@@ -31,7 +31,7 @@ test("the marketplace seller pages are gone", async ({ page, browser }) => {
     const r = await page.goto(path);
     expect(r?.status(), path).toBe(404);
   }
-  const ctx = await signedIn(browser, PHONES.staff);
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
   const staff = await ctx.newPage();
   for (const path of ["/admin/sellers", "/admin/sellers/approvals", "/admin/payouts", "/admin/fees", "/admin/ads"]) {
     const r = await staff.goto(path);
@@ -41,11 +41,16 @@ test("the marketplace seller pages are gone", async ({ page, browser }) => {
 });
 
 test("the Plus, AltasCoins and ads pages are gone", async ({ page, browser }) => {
-  for (const path of ["/plus", "/account/plus", "/account/rewards"]) {
-    const r = await page.goto(path);
+  expect((await page.goto("/plus"))?.status(), "/plus").toBe(404);
+  // My Account pages send signed-out visitors to sign in first, so check them signed in
+  const shopperCtx = await signedIn(browser, ACCOUNTS.shopper);
+  const shopper = await shopperCtx.newPage();
+  for (const path of ["/account/plus", "/account/rewards"]) {
+    const r = await shopper.goto(path);
     expect(r?.status(), path).toBe(404);
   }
-  const ctx = await signedIn(browser, PHONES.staff);
+  await shopperCtx.close();
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
   const staff = await ctx.newPage();
   for (const path of ["/admin/ads", "/admin/ads/campaigns", "/admin/ads/reports"]) {
     const r = await staff.goto(path);

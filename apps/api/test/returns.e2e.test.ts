@@ -5,7 +5,7 @@ import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
 import { sampleSignaturePng } from "../src/db/sample-files.js";
 import { orderItems, orders } from "../src/db/schema.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 let shopper: Record<string, string>;
@@ -150,7 +150,7 @@ describe("returns", () => {
 
   it("keeps returns private to their customer and the store", async () => {
     const mine = await t.http.get("/v1/me/returns").set(shopper).expect(200);
-    const other = (await signIn(t.http, "9700044001", "Someone Else")).auth;
+    const other = (await signUp(t.http, "someone.else@example.com", "Someone Else")).auth;
     await t.http.get(`/v1/me/returns/${mine.body[0].id}`).set(other).expect(404);
     await t.http.get("/v1/me/returns").expect(401);
     await t.http.get("/v1/admin/returns").set(shopper).expect(403);

@@ -57,6 +57,13 @@
       "when": 1791790365816,
       "tag": "0007_shipping",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791866475745,
+      "tag": "0008_email_password_auth",
+      "breakpoints": true
     }
   ]
 }

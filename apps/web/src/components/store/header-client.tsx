@@ -18,10 +18,9 @@ import {
   ShoppingCart,
   Tag,
   UserRound,
-  Wallet,
   X,
 } from "lucide-react";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/logo";
 import { useCart, usePincode, useWishlist } from "./cart-context";
 import { isValidPincode, lookupPincode } from "./delivery";
@@ -311,7 +310,6 @@ export function WishlistLink() {
 interface Customer {
   signedIn: boolean;
   firstName: string;
-  credits: number;
 }
 
 export function AccountMenu({ customer }: { customer: Customer }) {
@@ -351,7 +349,6 @@ export function AccountMenu({ customer }: { customer: Customer }) {
     { href: "/account", label: "Your account", icon: UserRound },
     { href: "/account/orders", label: "Orders and returns", icon: Package },
     { href: "/account/wishlist", label: "Wishlist", icon: Heart },
-    { href: "/account/wallet", label: "AltasGoods Credits", icon: Wallet, note: customer.signedIn ? `₹${formatNumber(customer.credits)}` : undefined },
     { href: "/help", label: "Help centre", icon: HelpCircle },
   ];
 
@@ -403,7 +400,6 @@ export function AccountMenu({ customer }: { customer: Customer }) {
                 <Link href={l.href} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 hover:text-ink-900">
                   <l.icon size={17} strokeWidth={1.8} className="text-ink-500" aria-hidden="true" />
                   <span className="flex-1">{l.label}</span>
-                  {l.note && <span className="text-xs font-medium text-ink-500 tabular-nums">{l.note}</span>}
                 </Link>
               </li>
             ))}

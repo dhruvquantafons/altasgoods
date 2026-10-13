@@ -2,5 +2,5 @@
   "extends": "./tsconfig.json",
   "compilerOptions": { "rootDir": "src", "outDir": "dist", "sourceMap": true },
   "include": ["src"],
-  "exclude": ["src/db/seed.ts", "src/db/reset.ts", "src/openapi.ts"]
+  "exclude": ["src/db/seed.ts", "src/db/seed-demo.ts", "src/db/seed-support.ts", "src/db/reset.ts", "src/openapi.ts"]
 }

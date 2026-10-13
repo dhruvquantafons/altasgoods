@@ -1,43 +1,16 @@
-import { shortDate } from "@/components/account/lib";
-import { WishlistView, type WishList } from "@/components/account/wishlist-view";
+import { SavedItems } from "@/components/account/saved-items";
 import { PageHeader } from "@/components/ui/page-header";
-import { wishlists } from "@/lib/mock/account-extra";
 import { getStoreCatalog } from "@/lib/store-catalog";
 
 export const metadata = { title: "Wishlist" };
 
 export default async function WishlistPage() {
   const catalog = await getStoreCatalog();
-  const lists: WishList[] = wishlists.map((l) => ({
-    id: l.id,
-    name: l.name,
-    isDefault: l.isDefault,
-    visibility: l.visibility,
-    sharedWith: l.sharedWith,
-    items: l.items.flatMap((i) => {
-      const p = catalog.product(i.slug);
-      if (!p) return [];
-      return [
-        {
-          slug: p.slug,
-          title: p.title,
-          image: p.image,
-          price: p.price,
-          mrp: p.mrp,
-          priceWhenAdded: i.priceWhenAdded,
-          inStock: p.stock > 0,
-          rating: p.rating,
-          addedLabel: shortDate(i.addedAt),
-          alert: i.alert,
-        },
-      ];
-    }),
-  }));
-
+  const products = catalog.products.map((p) => ({ id: p.id, slug: p.slug, title: p.title, image: p.image, price: p.price, mrp: p.mrp, inStock: p.stock > 0 }));
   return (
     <>
-      <PageHeader title="Wishlist" description="Save things for later, plan gifts in separate lists and get an alert when prices drop." />
-      <WishlistView initial={lists} />
+      <PageHeader title="Wishlist" description="Things you have saved for later." />
+      <SavedItems products={products} />
     </>
   );
 }

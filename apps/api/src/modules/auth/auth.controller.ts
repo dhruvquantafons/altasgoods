@@ -5,17 +5,20 @@ import { z } from "zod";
 import { AuthService } from "./auth.service.js";
 import { CurrentUser, Public, type AuthUser } from "./auth.guard.js";
 import {
+  changePasswordBody,
   emailOtpBody,
   emailOtpResponse,
   emailVerifyBody,
+  forgotPasswordBody,
+  forgotPasswordResponse,
+  loginBody,
   refreshBody,
-  requestOtpBody,
-  requestOtpResponse,
+  resetPasswordBody,
   sessionResponse,
+  signupBody,
   tokenPairResponse,
   updateMeBody,
   userSchema,
-  verifyOtpBody,
 } from "./auth.schemas.js";
 
 const meta = (req: Request) => ({ userAgent: req.headers["user-agent"], ip: req.ip });
@@ -26,19 +29,35 @@ export class AuthController {
   constructor(@Inject(AuthService) private readonly auth: AuthService) {}
 
   @Public()
-  @Post("auth/otp")
-  @HttpCode(200)
-  @ApiResponse({ status: 200, standardSchema: requestOtpResponse })
-  requestOtp(@Body({ schema: requestOtpBody }) body: z.infer<typeof requestOtpBody>) {
-    return this.auth.requestOtp(body.phone);
+  @Post("auth/signup")
+  @HttpCode(201)
+  @ApiResponse({ status: 201, standardSchema: sessionResponse })
+  signup(@Body({ schema: signupBody }) body: z.infer<typeof signupBody>, @Req() req: Request) {
+    return this.auth.signup(body, meta(req));
   }
 
   @Public()
-  @Post("auth/otp/verify")
+  @Post("auth/login")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: sessionResponse })
-  verify(@Body({ schema: verifyOtpBody }) body: z.infer<typeof verifyOtpBody>, @Req() req: Request) {
-    return this.auth.verifyOtp(body, meta(req));
+  login(@Body({ schema: loginBody }) body: z.infer<typeof loginBody>, @Req() req: Request) {
+    return this.auth.login(body, meta(req));
+  }
+
+  @Public()
+  @Post("auth/password/forgot")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: forgotPasswordResponse })
+  forgotPassword(@Body({ schema: forgotPasswordBody }) body: z.infer<typeof forgotPasswordBody>) {
+    return this.auth.requestPasswordReset(body.email);
+  }
+
+  @Public()
+  @Post("auth/password/reset")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: sessionResponse })
+  resetPassword(@Body({ schema: resetPasswordBody }) body: z.infer<typeof resetPasswordBody>, @Req() req: Request) {
+    return this.auth.resetPassword(body, meta(req));
   }
 
   @Public()
@@ -68,6 +87,20 @@ export class AuthController {
   @ApiResponse({ status: 200, standardSchema: userSchema })
   updateMe(@CurrentUser() user: AuthUser, @Body({ schema: updateMeBody }) body: z.infer<typeof updateMeBody>) {
     return this.auth.updateMe(user.id, body);
+  }
+
+  @ApiBearerAuth()
+  @Post("me/password")
+  @HttpCode(204)
+  async changePassword(@CurrentUser() user: AuthUser, @Body({ schema: changePasswordBody }) body: z.infer<typeof changePasswordBody>) {
+    await this.auth.changePassword(user.id, user.sessionId, body);
+  }
+
+  @ApiBearerAuth()
+  @Post("me/sessions/sign-out-others")
+  @HttpCode(204)
+  async signOutOthers(@CurrentUser() user: AuthUser) {
+    await this.auth.signOutOthers(user.id, user.sessionId);
   }
 
   @ApiBearerAuth()

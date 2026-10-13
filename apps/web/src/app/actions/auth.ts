@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { publicApi } from "@/lib/api/server";
 import { clearSession, REFRESH_COOKIE, setSession } from "@/lib/api/session";
-import type { OtpChallenge, User } from "@/lib/api/types";
+import type { PasswordResetChallenge, Session, User } from "@/lib/api/types";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string; code?: string };
 
@@ -13,28 +13,51 @@ const failure = (e: unknown, fallback: string): { ok: false; error: string; code
   return { ok: false, error: p.errors?.[0]?.message ?? p.detail ?? fallback, code: p.code };
 };
 
-/** Sends a sign in code. Outside production the code is returned for convenience. */
-export async function requestOtp(phone: string): Promise<Result<OtpChallenge>> {
+const unreachable = { ok: false as const, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
+
+/** Stores the new session in httpOnly cookies, ending the previous one on the server when switching accounts. */
+async function startSession(session: Session) {
+  const previous = (await cookies()).get(REFRESH_COOKIE)?.value;
+  if (previous) await publicApi().POST("/v1/auth/logout", { body: { refreshToken: previous } }).catch(() => undefined);
+  await setSession(session);
+  return { user: session.user, isNewUser: session.isNewUser };
+}
+
+export async function signUp(input: { name: string; email: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
   try {
-    const r = await publicApi().POST("/v1/auth/otp", { body: { phone } });
-    return r.data ? { ok: true, data: r.data } : failure(r.error, "Could not send the code");
+    const r = await publicApi().POST("/v1/auth/signup", { body: input });
+    return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not create your account");
   } catch {
-    return { ok: false, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
+    return unreachable;
   }
 }
 
-/** Verifies the code and starts a session (httpOnly cookies). */
-export async function verifyOtp(input: { challengeId: string; code: string; name?: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
+export async function signIn(input: { email: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
   try {
-    const r = await publicApi().POST("/v1/auth/otp/verify", { body: input });
-    if (!r.data) return failure(r.error, "Could not verify the code");
-    // switching accounts: end the previous session on the server too
-    const previous = (await cookies()).get(REFRESH_COOKIE)?.value;
-    if (previous) await publicApi().POST("/v1/auth/logout", { body: { refreshToken: previous } }).catch(() => undefined);
-    await setSession(r.data);
-    return { ok: true, data: { user: r.data.user, isNewUser: r.data.isNewUser } };
+    const r = await publicApi().POST("/v1/auth/login", { body: input });
+    return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not sign you in");
   } catch {
-    return { ok: false, error: "AltasGoods is unreachable right now. Please try again in a moment.", code: "API_UNAVAILABLE" };
+    return unreachable;
+  }
+}
+
+/** Emails a reset code. Outside production the code is returned for convenience. */
+export async function forgotPassword(email: string): Promise<Result<PasswordResetChallenge>> {
+  try {
+    const r = await publicApi().POST("/v1/auth/password/forgot", { body: { email } });
+    return r.data ? { ok: true, data: r.data } : failure(r.error, "Could not send the code");
+  } catch {
+    return unreachable;
+  }
+}
+
+/** Sets a new password with the emailed code, then signs in. */
+export async function resetPassword(input: { email: string; code: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
+  try {
+    const r = await publicApi().POST("/v1/auth/password/reset", { body: input });
+    return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not reset your password");
+  } catch {
+    return unreachable;
   }
 }
 

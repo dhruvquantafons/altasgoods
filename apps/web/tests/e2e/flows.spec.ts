@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { API, apiAs, apiSession, deliver, expectNoErrors, paidOrder, PHONES, signedIn, watchErrors } from "./support";
+import { API, apiAs, apiSession, deliver, expectNoErrors, paidOrder, ACCOUNTS, signedIn, watchErrors } from "./support";
 
 /** The main journeys end to end in the browser, against the live API. Setup that is not under test goes through the API. */
 
@@ -9,9 +9,9 @@ type Order = { id: string; items: { id: string; status: string }[] };
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 
 test("a shopper adds to cart, checks out with UPI and pays", async ({ browser }) => {
-  const shopper = apiAs(await apiSession(PHONES.shopper));
+  const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
   await shopper.put("/v1/cart", { lines: [] });
-  const ctx = await signedIn(browser, PHONES.shopper);
+  const ctx = await signedIn(browser, ACCOUNTS.shopper);
   const page = await ctx.newPage();
   const errors = watchErrors(page);
 
@@ -46,9 +46,9 @@ test("a shopper adds to cart, checks out with UPI and pays", async ({ browser })
 });
 
 test("a shopper cancels an order before it ships", async ({ browser }) => {
-  const shopper = apiAs(await apiSession(PHONES.shopper));
+  const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
   const { orderId } = await paidOrder(shopper, "speaker-boom");
-  const ctx = await signedIn(browser, PHONES.shopper);
+  const ctx = await signedIn(browser, ACCOUNTS.shopper);
   const page = await ctx.newPage();
   const errors = watchErrors(page);
 
@@ -72,12 +72,12 @@ test("a shopper cancels an order before it ships", async ({ browser }) => {
 });
 
 test("a shopper requests a return with a photo and the store sees it", async ({ browser }) => {
-  const shopper = apiAs(await apiSession(PHONES.shopper));
-  const staff = apiAs(await apiSession(PHONES.staff));
+  const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
+  const staff = apiAs(await apiSession(ACCOUNTS.staff));
   const { orderId, itemId } = await paidOrder(shopper, "cookware-pan");
   await deliver(staff, itemId);
 
-  const ctx = await signedIn(browser, PHONES.shopper);
+  const ctx = await signedIn(browser, ACCOUNTS.shopper);
   const page = await ctx.newPage();
   const errors = watchErrors(page);
   await page.goto(`/account/orders/${orderId}/return?item=${itemId}`);
@@ -110,7 +110,7 @@ test("a shopper requests a return with a photo and the store sees it", async ({ 
   await expectNoErrors(errors, "return wizard");
 
   // the store sees the request with the customer's photo
-  const sctx = await signedIn(browser, PHONES.staff);
+  const sctx = await signedIn(browser, ACCOUNTS.staff);
   const spage = await sctx.newPage();
   await spage.goto(`/admin/returns/${returnId}`);
   await expect(spage.getByText("The handle came off in the box.")).toBeVisible();
@@ -122,9 +122,9 @@ test("a shopper requests a return with a photo and the store sees it", async ({ 
 });
 
 test("store staff accept, pack and ship an order through to delivery", async ({ browser }) => {
-  const shopper = apiAs(await apiSession(PHONES.shopper));
+  const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
   const { orderId } = await paidOrder(shopper, "speaker-boom");
-  const ctx = await signedIn(browser, PHONES.staff);
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
   const page = await ctx.newPage();
   const errors = watchErrors(page);
 
@@ -152,8 +152,8 @@ test("store staff accept, pack and ship an order through to delivery", async ({ 
 });
 
 test("a signed in shopper's call back request reaches the Care Desk", async ({ browser }) => {
-  const shopper = apiAs(await apiSession(PHONES.shopper));
-  const ctx = await signedIn(browser, PHONES.shopper);
+  const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
+  const ctx = await signedIn(browser, ACCOUNTS.shopper);
   const page = await ctx.newPage();
   await page.goto("/contact");
   const section = page.locator("#call-back");
@@ -178,7 +178,7 @@ test("a signed in shopper's call back request reaches the Care Desk", async ({ b
 test("store staff add a product with a photo, then take it off sale", async ({ browser }) => {
   const tag = String(Date.now()).slice(-6);
   const title = `Test Brass Lamp ${tag}`;
-  const ctx = await signedIn(browser, PHONES.staff);
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
   const page = await ctx.newPage();
   const errors = watchErrors(page);
 

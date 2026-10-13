@@ -4,7 +4,7 @@ import { StoreFooter } from "@/components/store/store-footer";
 import { StoreHeader } from "@/components/store/store-header";
 import { api, currentUser } from "@/lib/api/server";
 import { toAddressLite } from "@/lib/api/store-adapters";
-import { COMPANY, CUSTOMER_WALLET, GRIEVANCE_OFFICER, navCategories, searchSuggestions } from "@/lib/mock/store-extra";
+import { COMPANY, GRIEVANCE_OFFICER, navCategories, searchSuggestions } from "@/lib/mock/store-extra";
 import { getStoreCatalog } from "@/lib/store-catalog";
 
 export const metadata: Metadata = {
@@ -24,7 +24,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           customer={{
             signedIn: !!user,
             firstName: user?.name?.split(" ")[0] ?? (user ? "there" : ""),
-            credits: CUSTOMER_WALLET.credits,
           }}
         />
         <main id="main" className="flex-1">

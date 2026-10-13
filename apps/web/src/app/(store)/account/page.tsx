@@ -1,41 +1,35 @@
 import { loadAccountOrders } from "@/lib/api/account-orders";
+import { loadMyReturns, toAccountReturn } from "@/lib/api/returns";
+import { currentUser } from "@/lib/api/server";
 import Link from "next/link";
-import { ArrowRight, Heart, Package, ShieldCheck, Undo2, Wallet } from "lucide-react";
+import { ArrowRight, Package, Undo2 } from "lucide-react";
 import { dateLabel, greeting, isActive, itemState, trackIndex } from "@/components/account/lib";
 import { MoreLink, Panel, ProductRail, ProductTile, TrackMeter } from "@/components/account/ui";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { IconTile } from "@/components/ui/misc";
-import {
-  ACCOUNT_PROFILE,
-  accountReturns,
-  CREDITS,
-  productBySlug,
-  recentlyViewed,
-  recommendations,
-  SECURE_DELIVERY,
-  wishlistCount,
-  wishlists,
-} from "@/lib/mock/account-extra";
+import { productBySlug, recommendations } from "@/lib/mock/account-extra";
 import type { Tone } from "@/lib/status";
 import { formatINR, productSlug } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
 export default async function AccountOverviewPage() {
-  const accountOrders = await loadAccountOrders();
+  const [user, accountOrders, accountReturns] = await Promise.all([
+    currentUser(),
+    loadAccountOrders(),
+    loadMyReturns().then((r) => r.returns.map((x) => toAccountReturn(x, "your original payment method")), () => []),
+  ]);
+  const firstName = user?.name?.trim().split(/\s+/)[0];
   const active = accountOrders.filter((o) => isActive(o.status));
   const arriving = [...active].sort((a, b) => trackIndex(b.status) - trackIndex(a.status) || +new Date(a.promisedBy) - +new Date(b.promisedBy)).slice(0, 4);
   const recent = accountOrders.filter((o) => !isActive(o.status)).slice(0, 4);
   const openReturns = accountReturns.filter((r) => !["completed", "rejected", "cancelled"].includes(r.status));
-  const priceDrops = wishlists.flatMap((l) => l.items).filter((i) => (productBySlug(i.slug)?.price ?? Infinity) < i.priceWhenAdded).length;
 
   const tiles: { label: string; value: string; hint: string; href: string; icon: typeof Package; tone: Tone }[] = [
-    { label: "Orders", value: `${active.length} on the way`, hint: `${accountOrders.length} orders in 3 months`, href: "/account/orders", icon: Package, tone: "brand" },
+    { label: "Orders", value: `${active.length} on the way`, hint: `${accountOrders.length} ${accountOrders.length === 1 ? "order" : "orders"} in all`, href: "/account/orders", icon: Package, tone: "brand" },
     { label: "Returns", value: `${openReturns.length} open`, hint: "Pickups and refunds", href: "/account/returns", icon: Undo2, tone: "info" },
-    { label: "Wishlist", value: `${wishlistCount} items`, hint: `${priceDrops} price drops`, href: "/account/wishlist", icon: Heart, tone: "danger" },
-    { label: "AltasGoods Credits", value: formatINR(CREDITS.balance), hint: "Use on any order", href: "/account/wallet", icon: Wallet, tone: "success" },
   ];
 
   return (
@@ -43,13 +37,13 @@ export default async function AccountOverviewPage() {
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-[22px] leading-tight font-semibold text-ink-900 sm:text-[26px]">
-            {greeting()}, {ACCOUNT_PROFILE.firstName}
+            {firstName ? `${greeting()}, ${firstName}` : greeting()}
           </h1>
           <p className="mt-1 text-sm text-ink-500">Your orders, money and account, all in one place.</p>
         </div>
       </div>
 
-      <section aria-label="Account at a glance" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      <section aria-label="Account at a glance" className="mb-6 grid grid-cols-2 gap-3">
         {tiles.map((t) => (
           <Link
             key={t.label}
@@ -70,11 +64,11 @@ export default async function AccountOverviewPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-6">
           <Panel title="Arriving soon" description={`${active.length} orders on the way`} action={<MoreLink href="/account/orders?status=active">All active orders</MoreLink>} bodyClassName="px-0 pb-1 sm:px-0">
+            {!arriving.length && <p className="px-5 py-6 text-sm text-ink-500 sm:px-6">Nothing on the way right now.</p>}
             <ul className="divide-y divide-line">
               {arriving.map((o) => {
                 const first = o.items[0]!;
                 const st = itemState(o, first);
-                const secure = o.status === "out_for_delivery";
                 return (
                   <li key={o.id}>
                     <Link href={`/account/orders/${o.id}`} className="group flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-ink-50/60 sm:flex-row sm:items-center sm:px-6">
@@ -93,12 +87,6 @@ export default async function AccountOverviewPage() {
                             <p className="text-[13.5px] font-semibold text-ink-900">{st.headline}</p>
                           </div>
                           <p className="mt-1 truncate text-[13px] text-ink-600 group-hover:text-ink-900">{first.title}</p>
-                          {secure && (
-                            <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent-700">
-                              <ShieldCheck size={13} aria-hidden="true" />
-                              Delivery OTP <span className="font-mono tracking-[0.15em]">{SECURE_DELIVERY.otp}</span>
-                            </p>
-                          )}
                         </div>
                       </div>
                       <TrackMeter current={trackIndex(o.status)} className="sm:w-48 sm:shrink-0" />
@@ -110,6 +98,14 @@ export default async function AccountOverviewPage() {
           </Panel>
 
           <Panel title="Recent orders" action={<MoreLink href="/account/orders">All orders</MoreLink>} bodyClassName="px-0 pb-1 sm:px-0">
+            {!recent.length && (
+              <p className="px-5 py-6 text-sm text-ink-500 sm:px-6">
+                No past orders yet.{" "}
+                <Link href="/s" className="font-medium text-brand-700 hover:underline">
+                  Start shopping
+                </Link>
+              </p>
+            )}
             <ul className="divide-y divide-line">
               {recent.map((o) => {
                 const first = o.items[0]!;
@@ -146,6 +142,7 @@ export default async function AccountOverviewPage() {
 
         <div className="flex min-w-0 flex-col gap-6">
           <Panel title="Returns and refunds" action={<MoreLink href="/account/returns">View</MoreLink>}>
+            {!openReturns.length && <p className="text-sm text-ink-500">No open returns.</p>}
             <ul className="flex flex-col gap-4">
               {openReturns.slice(0, 3).map((r) => (
                 <li key={r.id} className="flex items-center gap-3">
@@ -165,9 +162,7 @@ export default async function AccountOverviewPage() {
             <ul className="-mx-2 grid grid-cols-2 gap-1 text-[13px]">
               {[
                 { label: "Addresses", href: "/account/addresses" },
-                { label: "Payment methods", href: "/account/payments" },
-                { label: "Your reviews", href: "/account/reviews" },
-                { label: "Notifications", href: "/account/notifications" },
+                { label: "Wishlist", href: "/account/wishlist" },
                 { label: "Login and security", href: "/account/profile" },
                 { label: "Help and support", href: "/account/support" },
               ].map((l) => (
@@ -182,7 +177,7 @@ export default async function AccountOverviewPage() {
         </div>
       </div>
 
-      <Panel title="Recommended for you" description="Based on what you have bought and browsed" className="mt-6">
+      <Panel title="Popular right now" description="Picks from across the store" action={<MoreLink href="/s">Keep shopping</MoreLink>} className="mt-6">
         <ProductRail>
           {recommendations.slice(0, 6).map((r) => {
             const p = productBySlug(r.slug);
@@ -191,14 +186,6 @@ export default async function AccountOverviewPage() {
         </ProductRail>
       </Panel>
 
-      <Panel title="Recently viewed" action={<MoreLink href="/s">Keep shopping</MoreLink>} className="mt-6">
-        <ProductRail>
-          {recentlyViewed.slice(0, 6).map((slug) => {
-            const p = productBySlug(slug);
-            return p ? <ProductTile key={slug} product={p} /> : null;
-          })}
-        </ProductRail>
-      </Panel>
     </>
   );
 }

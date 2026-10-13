@@ -42,7 +42,7 @@ export default async function SupportLayout({ children }: { children: React.Reac
     <SupportShell
       notifications={notifications}
       counts={{ open: queue?.counts.open || undefined }}
-      user={user ? { name: user.name ?? user.phone, role: user.staffRoles.map((r) => ROLE[r]).filter(Boolean).join(", ") || "AltasGoods staff" } : undefined}
+      user={user ? { name: user.name ?? user.email, role: user.staffRoles.map((r) => ROLE[r]).filter(Boolean).join(", ") || "AltasGoods staff" } : undefined}
     >
       {children}
     </SupportShell>

@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { apiAs, apiSession, deliver, expectNoErrors, paidOrder, PHONES, returnRequest, signedIn, watchErrors } from "./support";
+import { apiAs, apiSession, deliver, expectNoErrors, paidOrder, ACCOUNTS, returnRequest, signedIn, watchErrors } from "./support";
 
 /** Returns in AltasGoods Control against the live API: pickup scans, the store's check, and out-of-policy decisions. */
 
 type Return = { id: string; status: string; refundStatus: string | null; qcNote: string | null; decisionNote: string | null };
 
 const sessions = async () => {
-  const shopper = apiAs(await apiSession(PHONES.shopper));
-  const staff = apiAs(await apiSession(PHONES.staff));
+  const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
+  const staff = apiAs(await apiSession(ACCOUNTS.staff));
   return { shopper, staff };
 };
 
@@ -19,7 +19,7 @@ test("store staff take a return from pickup to a passed check and the customer i
   const created = await shopper.post<Return>("/v1/me/returns", returnRequest(itemId, { comments: "Left ear cup is silent." }));
   expect(created.status).toBe("PICKUP_SCHEDULED");
 
-  const ctx = await signedIn(browser, PHONES.staff);
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
   const page = await ctx.newPage();
   const errors = watchErrors(page);
   await page.goto(`/admin/returns/${created.id}`);
@@ -38,7 +38,7 @@ test("store staff take a return from pickup to a passed check and the customer i
   expect(after.refundStatus).not.toBeNull();
 
   // the shopper sees it in My Account
-  const sctx = await signedIn(browser, PHONES.shopper);
+  const sctx = await signedIn(browser, ACCOUNTS.shopper);
   const spage = await sctx.newPage();
   await spage.goto("/account/returns");
   await expect(spage.getByText(created.id).first()).toBeVisible();
@@ -54,7 +54,7 @@ test("a failed check is recorded with the store's notes", async ({ browser }) =>
   const created = await shopper.post<Return>("/v1/me/returns", returnRequest(itemId));
   for (const to of ["OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"]) await staff.post(`/v1/dev/returns/${created.id}/advance`, { to });
 
-  const ctx = await signedIn(browser, PHONES.staff);
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
   const page = await ctx.newPage();
   await page.goto("/admin/returns");
   const row = page.getByRole("row").filter({ hasText: created.id });
@@ -86,7 +86,7 @@ test("store staff approve and reject requests made after the return window", asy
   };
   const [approve, reject] = [await late(), await late()];
 
-  const ctx = await signedIn(browser, PHONES.staff);
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
   const page = await ctx.newPage();
   const errors = watchErrors(page);
   await page.goto("/admin/returns");

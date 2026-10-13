@@ -98,7 +98,7 @@ const cartStore = createPersistedStore<CartState>("altasgoods.cart.v1", DEFAULT_
   };
 });
 
-const wishlistStore = createPersistedStore<string[]>("altasgoods.wishlist.v1", ["p-bag-leather", "p-camera-mirrorless", "p-chair-lounge"], (raw) =>
+const wishlistStore = createPersistedStore<string[]>("altasgoods.wishlist.v1", [], (raw) =>
   Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : null,
 );
 

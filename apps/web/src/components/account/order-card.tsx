@@ -1,15 +1,13 @@
 import Link from "next/link";
-import { MapPinned, RotateCcw, ShieldCheck, Star, Truck, Undo2 } from "lucide-react";
+import { MapPinned, RotateCcw, Truck, Undo2 } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { CANCEL_REASONS, myReviews, SECURE_DELIVERY } from "@/lib/mock/account-extra";
+import { CANCEL_REASONS } from "@/lib/mock/account-extra";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn, formatINR, productSlug } from "@/lib/utils";
 import { BuyAgainButton, CancelOrderButton, InvoiceButton, type RefundOption } from "./order-actions";
-import { cancelMode, dateLabel, isActive, itemState, needsSecureDelivery, paymentLabel, refundTiming, returnInfo, shortDate, trackIndex } from "./lib";
-
-const reviewed = new Set(myReviews.map((r) => r.slug));
+import { cancelMode, dateLabel, isActive, itemState, paymentLabel, refundTiming, returnInfo, shortDate, trackIndex } from "./lib";
 
 export function refundOptionsFor(order: Order): RefundOption[] {
   const m = order.payment.method;
@@ -46,7 +44,6 @@ function Meta({ label, children, className }: { label: string; children: React.R
 
 /** One order on the orders list: summary strip plus a row per item with state-specific actions. */
 export function OrderCard({ order }: { order: Order }) {
-  const secure = order.status === "out_for_delivery" && needsSecureDelivery(order);
   return (
     <article className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-card">
       <header className="flex flex-col gap-3 border-b border-line bg-ink-50/70 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -70,15 +67,6 @@ export function OrderCard({ order }: { order: Order }) {
         </div>
       </header>
 
-      {secure && (
-        <div className="flex items-start gap-2.5 border-b border-line bg-accent-50 px-5 py-2.5 text-[13px] text-ink-800 sm:items-center sm:px-6">
-          <ShieldCheck size={16} strokeWidth={1.9} className="mt-px shrink-0 text-accent-700 sm:mt-0" aria-hidden="true" />
-          <p>
-            Secure Delivery: share OTP <span className="font-mono font-semibold tracking-[0.2em] text-ink-900">{SECURE_DELIVERY.otp}</span> only once the package is in your
-            hands.
-          </p>
-        </div>
-      )}
 
       <ul className="divide-y divide-line">
         {order.items.map((item, idx) => (
@@ -141,11 +129,6 @@ function OrderItemRow({ order, item, first }: { order: Order; item: OrderItem; f
         {delivered && ri.eligible && (
           <ButtonLink href={`/account/orders/${order.id}/return?item=${item.id}`} size="sm" variant="secondary" icon={RotateCcw} className="sm:w-full">
             Return or replace
-          </ButtonLink>
-        )}
-        {delivered && slug && !reviewed.has(slug) && !st.ret && (
-          <ButtonLink href={`/account/reviews?write=${slug}`} size="sm" variant="secondary" icon={Star} className="sm:w-full">
-            Write a review
           </ButtonLink>
         )}
         {!active && <BuyAgainButton title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />}

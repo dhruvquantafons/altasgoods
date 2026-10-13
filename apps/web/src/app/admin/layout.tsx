@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminShell
       notifications={adminNotifications}
-      user={user ? { name: user.name ?? user.phone, role: user.staffRoles.map((r) => ROLE[r] ?? r).join(", ") || "AltasGoods Control" } : undefined}
+      user={user ? { name: user.name ?? user.email, role: user.staffRoles.map((r) => ROLE[r] ?? r).join(", ") || "AltasGoods Control" } : undefined}
       counts={counts}
     >
       {children}

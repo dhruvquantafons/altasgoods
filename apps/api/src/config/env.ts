@@ -24,11 +24,29 @@ const schema = z.object({
   SHIPROCKET_WEBHOOK_TOKEN: z.string().optional(),
   /** Box size in centimetres, length x breadth x height, used for every parcel */
   SHIPPING_BOX_CM: z.string().regex(/^\d+(\.\d+)?x\d+(\.\d+)?x\d+(\.\d+)?$/, "Use LxBxH in cm, for example 20x15x10").default("20x15x10"),
+  /** How email goes out: written to the log (development) or sent over SMTP. */
+  EMAIL_PROVIDER: z.enum(["console", "smtp"]).default("console"),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  /** true for implicit TLS (usually port 465); false upgrades with STARTTLS (587) */
+  SMTP_SECURE: z.enum(["true", "false", ""]).optional().transform((v) => (v ? v === "true" : undefined)),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  /** The sender shoppers see, for example: AltasGoods <no-reply@altasgoods.in> */
+  EMAIL_FROM: z.string().optional(),
 }).superRefine((v, ctx) => {
   if (v.PAYMENTS_PROVIDER === "razorpay") {
     for (const key of ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"] as const) {
       if (!v[key]) ctx.addIssue({ code: "custom", path: [key], message: "Required when PAYMENTS_PROVIDER is razorpay" });
     }
+  }
+  if (v.EMAIL_PROVIDER === "smtp") {
+    for (const key of ["SMTP_HOST", "EMAIL_FROM"] as const) {
+      if (!v[key]) ctx.addIssue({ code: "custom", path: [key], message: "Required when EMAIL_PROVIDER is smtp" });
+    }
+  } else if (v.NODE_ENV === "production") {
+    // the console provider would write password reset codes to the log
+    ctx.addIssue({ code: "custom", path: ["EMAIL_PROVIDER"], message: "Use smtp in production" });
   }
   if (v.LOGISTICS_PROVIDER === "shiprocket") {
     for (const key of ["SHIPROCKET_EMAIL", "SHIPROCKET_PASSWORD", "SHIPROCKET_PICKUP_LOCATION"] as const) {
@@ -55,6 +73,8 @@ export function env(): Env {
           PAYMENTS_PROVIDER: "sandbox",
           // and ship through the simulated courier, never a real one
           LOGISTICS_PROVIDER: "simulated",
+          // and never send real email
+          EMAIL_PROVIDER: "console",
         }
       : {}),
   });

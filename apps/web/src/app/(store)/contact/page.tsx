@@ -25,7 +25,7 @@ const teams = [
 export default async function ContactPage() {
   // signed-in shoppers get their number filled in for a call back
   const user = await currentUser();
-  const phone = user?.phone.replace(/\D/g, "").slice(-10) ?? "";
+  const phone = user?.phone?.replace(/\D/g, "").slice(-10) ?? "";
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero

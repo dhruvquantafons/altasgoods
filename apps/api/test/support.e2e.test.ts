@@ -5,6 +5,7 @@ import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
 import { samplePdf } from "../src/db/sample-files.js";
 import { orders, supportTickets, users } from "../src/db/schema.js";
+import { DEMO_SUPERVISOR_EMAIL, careAgentEmail } from "../src/db/demo.js";
 import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
 
 let t: TestContext;
@@ -36,9 +37,9 @@ beforeAll(async () => {
   t = await createTestApp();
   shopper = (await signIn(t.http, DEMO_CUSTOMER)).auth;
   staff = (await signIn(t.http, DEMO_STAFF)).auth;
-  revathi = (await signIn(t.http, "9811020001")).auth;
-  kabir = (await signIn(t.http, "9811020002")).auth;
-  arvind = (await signIn(t.http, "9811020099")).auth;
+  revathi = (await signIn(t.http, careAgentEmail(0))).auth;
+  kabir = (await signIn(t.http, careAgentEmail(1))).auth;
+  arvind = (await signIn(t.http, DEMO_SUPERVISOR_EMAIL)).auth;
   orderId = await paidOrder(1);
 });
 afterAll(async () => {
@@ -132,9 +133,9 @@ describe("a customer conversation, end to end", () => {
     await t.http.post(`${S}/actions/${pending.id}/approve`).set(kabir).send({}).expect(403);
 
     // even a supervisor cannot approve their own request
-    const [k] = await db.select({ id: users.id }).from(users).where(eq(users.phone, "+919811020002"));
+    const [k] = await db.select({ id: users.id }).from(users).where(eq(users.email, careAgentEmail(1)));
     await db.update(users).set({ staffRoles: ["SUPPORT_AGENT", "SUPPORT_SUPERVISOR"] }).where(eq(users.id, k!.id));
-    const kabirSupervisor = (await signIn(t.http, "9811020002")).auth;
+    const kabirSupervisor = (await signIn(t.http, careAgentEmail(1))).auth;
     const own = await t.http.post(`${S}/actions/${pending.id}/approve`).set(kabirSupervisor).send({}).expect(403);
     expect(own.body.detail).toMatch(/your own/);
 

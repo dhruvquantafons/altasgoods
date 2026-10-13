@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { AccountMobileNav, AccountSidebar } from "@/components/account/account-nav";
-import { accountNotifications, accountReturns, ACCOUNT_PROFILE, wishlistCount } from "@/lib/mock/account-extra";
 import { loadAccountOrders } from "@/lib/api/account-orders";
-import { CURRENT_CUSTOMER } from "@/lib/mock";
+import { loadMyReturns, toAccountReturn } from "@/lib/api/returns";
+import { currentUser } from "@/lib/api/server";
 import { isActive } from "@/components/account/lib";
 
 export const metadata: Metadata = {
@@ -10,20 +10,23 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountLayout({ children }: LayoutProps<"/account">) {
-  const orders = await loadAccountOrders().catch(() => []);
+  const [user, orders, returns] = await Promise.all([
+    currentUser(),
+    loadAccountOrders().catch(() => []),
+    loadMyReturns().then((r) => r.returns.map((x) => toAccountReturn(x, "your original payment method")), () => []),
+  ]);
+  // only counts the API knows; wishlist and notifications are not stored yet
   const counts = {
     orders: orders.filter((o) => isActive(o.status)).length,
-    returns: accountReturns.filter((r) => !["completed", "rejected", "cancelled"].includes(r.status)).length,
-    notifications: accountNotifications.filter((n) => !n.read).length,
-    wishlist: wishlistCount,
+    returns: returns.filter((r) => !["completed", "rejected", "cancelled"].includes(r.status)).length,
   };
   return (
     <div className="flex-1 bg-canvas">
       <div className="mx-auto w-full max-w-[1400px] px-4 pt-5 pb-16 sm:px-6 lg:px-8 lg:pt-10 lg:pb-20">
         <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-8">
           <AccountSidebar
-            name={CURRENT_CUSTOMER.name}
-            memberSince={new Date(ACCOUNT_PROFILE.memberSince).getFullYear().toString()}
+            name={user?.name ?? user?.email ?? "Your account"}
+            memberSince={user ? new Date(user.createdAt).getFullYear().toString() : undefined}
             counts={counts}
           />
           <div className="min-w-0">

@@ -1,11 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { deleteAddress, makeDefaultAddress, saveAddress } from "@/app/actions/account";
 import { Building2, Home, MapPin, MapPinned, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Checkbox, Field, Input, Select } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone } from "@/lib/utils";
 
 export interface BookAddress {
   id: string;
@@ -19,8 +21,6 @@ export interface BookAddress {
   pincode: string;
   type: "home" | "work" | "other";
   isDefault?: boolean;
-  instructions?: string;
-  weekendDelivery: boolean;
 }
 
 type Draft = Omit<BookAddress, "id" | "phone"> & { id?: string; mobile: string };
@@ -31,15 +31,11 @@ const TYPES: { key: BookAddress["type"]; label: string; icon: typeof Home }[] = 
   { key: "other", label: "Other", icon: MapPin },
 ];
 
-const empty: Draft = { name: "", mobile: "", line1: "", line2: "", landmark: "", city: "", state: "", pincode: "", type: "home", isDefault: false, instructions: "", weekendDelivery: true };
+const empty: Draft = { name: "", mobile: "", line1: "", line2: "", landmark: "", city: "", state: "", pincode: "", type: "home", isDefault: false };
 
 function toDraft(a: BookAddress): Draft {
   const { phone, ...rest } = a;
   return { ...rest, mobile: phone.replace(/^\+91/, "").replace(/\D/g, "") };
-}
-
-function formatMobile(digits: string) {
-  return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
 }
 
 export function AddressBook({
@@ -56,7 +52,10 @@ export function AddressBook({
   const [draft, setDraft] = useState<Draft>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({});
   const [removing, setRemoving] = useState<BookAddress | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState("");
   const toast = useToast();
+  const router = useRouter();
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
@@ -69,10 +68,11 @@ export function AddressBook({
   const edit = (a?: BookAddress) => {
     setDraft(a ? toDraft(a) : { ...empty, isDefault: items.length === 0 });
     setErrors({});
+    setFormError("");
     setOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     const e: typeof errors = {};
     if (draft.name.trim().length < 2) e.name = "Enter the full name of the person receiving the order.";
     if (!/^[6-9]\d{9}$/.test(draft.mobile)) e.mobile = "Enter a 10 digit mobile number.";
@@ -83,14 +83,50 @@ export function AddressBook({
     if (!draft.state) e.state = "Choose a state.";
     setErrors(e);
     if (Object.keys(e).length) return;
-    const { mobile, ...rest } = draft;
-    const saved: BookAddress = { ...rest, id: draft.id ?? `addr-${Date.now().toString(36)}`, phone: formatMobile(mobile) };
+    setBusy(true);
+    const r = await saveAddress(draft.id, {
+      name: draft.name.trim(),
+      phone: draft.mobile,
+      line1: draft.line1.trim(),
+      line2: draft.line2?.trim() || undefined,
+      landmark: draft.landmark?.trim() || undefined,
+      city: draft.city.trim(),
+      state: draft.state,
+      pincode: draft.pincode,
+      type: draft.type.toUpperCase() as "HOME" | "WORK" | "OTHER",
+      isDefault: Boolean(draft.isDefault),
+    });
+    setBusy(false);
+    if (!r.ok) return setFormError(r.error);
+    const a = r.data;
+    const saved: BookAddress = { ...a, line2: a.line2 ?? undefined, landmark: a.landmark ?? undefined, type: a.type.toLowerCase() as BookAddress["type"] };
     setItems((list) => {
-      const next = draft.id ? list.map((a) => (a.id === draft.id ? saved : a)) : [...list, saved];
-      return saved.isDefault ? next.map((a) => ({ ...a, isDefault: a.id === saved.id })) : next;
+      const next = draft.id ? list.map((x) => (x.id === saved.id ? saved : x)) : [...list, saved];
+      return saved.isDefault ? next.map((x) => ({ ...x, isDefault: x.id === saved.id })) : next;
     });
     setOpen(false);
     toast.show(draft.id ? "Address updated" : "Address added");
+    router.refresh();
+  };
+
+  const setDefault = async (a: BookAddress) => {
+    const r = await makeDefaultAddress(a.id);
+    if (!r.ok) return toast.show(r.error);
+    setItems((list) => list.map((x) => ({ ...x, isDefault: x.id === a.id })));
+    toast.show("Default address updated");
+  };
+
+  const remove = async () => {
+    if (!removing) return;
+    setBusy(true);
+    const r = await deleteAddress(removing.id);
+    setBusy(false);
+    if (!r.ok) return toast.show(r.error);
+    // the API moves the default to the most recent address left
+    setRemoving(null);
+    toast.show("Address removed");
+    router.refresh();
+    setItems((list) => list.filter((x) => x.id !== removing.id));
   };
 
   const sorted = [...items].sort((a, b) => Number(Boolean(b.isDefault)) - Number(Boolean(a.isDefault)));
@@ -143,10 +179,8 @@ export function AddressBook({
               </address>
               <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-ink-600">
                 <Phone size={13} className="text-ink-400" aria-hidden="true" />
-                {a.phone}
+                {formatPhone(a.phone)}
               </p>
-              {a.instructions && <p className="mt-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-600">{a.instructions}</p>}
-              <p className="mt-2 text-xs text-ink-500">{a.weekendDelivery ? "Weekend delivery available" : "No deliveries on Saturday and Sunday"}</p>
               <div className="flex-1" />
               <div className="mt-4 -mx-2 flex flex-wrap items-center gap-1 border-t border-line px-0 pt-3">
                 <Button size="sm" variant="ghost" icon={Pencil} onClick={() => edit(a)}>
@@ -161,10 +195,7 @@ export function AddressBook({
                     variant="ghost"
                     icon={MapPinned}
                     className="ml-auto text-brand-700"
-                    onClick={() => {
-                      setItems((list) => list.map((x) => ({ ...x, isDefault: x.id === a.id })));
-                      toast.show("Default address updated");
-                    }}
+                    onClick={() => setDefault(a)}
                   >
                     Set as default
                   </Button>
@@ -186,7 +217,9 @@ export function AddressBook({
             <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={save}>{draft.id ? "Save changes" : "Save address"}</Button>
+            <Button onClick={save} disabled={busy}>
+              {busy ? "Saving" : draft.id ? "Save changes" : "Save address"}
+            </Button>
           </>
         }
       >
@@ -251,18 +284,10 @@ export function AddressBook({
               ))}
             </div>
           </fieldset>
-          <Field label="Delivery instructions" htmlFor="ad-ins" hint="Optional. Shared with the delivery associate" className="sm:col-span-2">
-            <Textarea id="ad-ins" className="min-h-20" maxLength={200} value={draft.instructions ?? ""} onChange={(e) => set("instructions", e.target.value)} placeholder="For example, leave with the security desk" />
-          </Field>
           <div className="flex flex-col gap-3 sm:col-span-2">
-            <Checkbox
-              checked={draft.weekendDelivery}
-              onChange={(e) => set("weekendDelivery", e.target.checked)}
-              label="Deliver on weekends"
-              description={draft.type === "work" ? "Turn off if your office is closed on Saturday and Sunday" : "Saturday and Sunday deliveries where available"}
-            />
             <Checkbox checked={Boolean(draft.isDefault)} onChange={(e) => set("isDefault", e.target.checked)} label="Make this my default address" />
           </div>
+          {formError && <p className="text-sm text-danger-600 sm:col-span-2">{formError}</p>}
         </div>
       </Modal>
 
@@ -277,15 +302,8 @@ export function AddressBook({
             <Button variant="secondary" onClick={() => setRemoving(null)}>
               Keep it
             </Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                setItems((list) => list.filter((a) => a.id !== removing?.id));
-                setRemoving(null);
-                toast.show("Address removed");
-              }}
-            >
-              Remove
+            <Button variant="danger" onClick={remove} disabled={busy}>
+              {busy ? "Removing" : "Remove"}
             </Button>
           </>
         }

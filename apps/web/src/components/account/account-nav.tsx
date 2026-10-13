@@ -4,23 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import {
-  Bell,
-  CreditCard,
   Heart,
   LayoutGrid,
   LifeBuoy,
   MapPin,
   Package,
-  Star,
   Undo2,
   UserRound,
-  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
 
-type CountKey = "orders" | "returns" | "notifications" | "wishlist" | "reviews";
+type CountKey = "orders" | "returns";
 
 interface NavItem {
   href: string;
@@ -39,26 +35,12 @@ const groups: { title?: string; items: NavItem[] }[] = [
       { href: "/account/returns", label: "Returns and refunds", short: "Returns", icon: Undo2, count: "returns" },
     ],
   },
-  {
-    title: "Shopping",
-    items: [
-      { href: "/account/wishlist", label: "Wishlist", short: "Wishlist", icon: Heart, count: "wishlist" },
-      { href: "/account/reviews", label: "Reviews and Q&A", short: "Reviews", icon: Star, count: "reviews" },
-    ],
-  },
-  {
-    title: "Money and rewards",
-    items: [
-      { href: "/account/wallet", label: "AltasGoods Credits", short: "Credits", icon: Wallet },
-      { href: "/account/payments", label: "Payment methods", short: "Payments", icon: CreditCard },
-    ],
-  },
+  { title: "Shopping", items: [{ href: "/account/wishlist", label: "Wishlist", short: "Wishlist", icon: Heart }] },
   {
     title: "Settings",
     items: [
       { href: "/account/profile", label: "Profile and security", short: "Profile", icon: UserRound },
       { href: "/account/addresses", label: "Addresses", short: "Addresses", icon: MapPin },
-      { href: "/account/notifications", label: "Notifications", short: "Notifications", icon: Bell, count: "notifications" },
     ],
   },
   { title: "Help", items: [{ href: "/account/support", label: "Help and support", short: "Help", icon: LifeBuoy }] },
@@ -68,7 +50,7 @@ const flat = groups.flatMap((g) => g.items);
 
 export interface AccountNavProps {
   name: string;
-  memberSince: string;
+  memberSince?: string;
   counts: Partial<Record<CountKey, number>>;
 }
 
@@ -87,7 +69,7 @@ export function AccountSidebar({ name, memberSince, counts }: AccountNavProps) {
           <Avatar name={name} size="lg" />
           <div className="min-w-0">
             <p className="truncate font-display text-[15px] font-semibold text-ink-900">{name}</p>
-            <p className="mt-1 text-xs text-ink-500">Customer since {memberSince}</p>
+            {memberSince && <p className="mt-1 text-xs text-ink-500">Customer since {memberSince}</p>}
           </div>
         </div>
         <nav className="flex flex-col gap-4 px-3 py-4">

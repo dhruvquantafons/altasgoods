@@ -9,7 +9,7 @@ import { AREAS, crawl, signedIn, watchErrors } from "./support";
 for (const area of AREAS) {
   test(`every page works: ${area.name}`, async ({ browser }) => {
     test.setTimeout(20 * 60_000);
-    const ctx = area.phone ? await signedIn(browser, area.phone) : await browser.newContext();
+    const ctx = area.account ? await signedIn(browser, area.account) : await browser.newContext();
     const page = await ctx.newPage();
     const errors = watchErrors(page);
     const failures: string[] = [];
@@ -25,7 +25,7 @@ for (const area of AREAS) {
         const status = res?.status() ?? 0;
         if (status >= 400) failures.push(`${target}: HTTP ${status}`);
         for (const e of errors) failures.push(`${target}: ${e}`);
-        if (area.phone && new URL(page.url()).pathname.startsWith("/login")) failures.push(`${target}: sent to sign in`);
+        if (area.account && new URL(page.url()).pathname.startsWith("/login")) failures.push(`${target}: sent to sign in`);
       },
       (from, href) => failures.push(`${from}: links to ${href}, which does not exist`),
     );

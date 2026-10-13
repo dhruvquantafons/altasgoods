@@ -20,7 +20,8 @@ You need Node 22.12 or newer, PostgreSQL 16 (with `pg_trgm`) and Redis.
 # 1. API (details in apps/api/README.md)
 cd apps/api && npm install && cp .env.example .env    # then set JWT_SECRET and PAYMENTS_WEBHOOK_SECRET
 createdb altasgoods_dev && createdb altasgoods_test    # or point DATABASE_URL and TEST_DATABASE_URL at your own
-npm run db:migrate && npm run db:seed
+npm run db:migrate && npm run db:seed                  # catalog only, no accounts
+npm run admin:create -- --email you@example.com --name "Your Name"   # your AltasGoods Control account
 npm run dev                      # http://localhost:4000, API docs at /docs
 
 # 2. Web, in a second terminal
@@ -31,17 +32,13 @@ npm run dev                      # http://localhost:3000
 
 Out of the box payments use the local sandbox and shipping uses the simulated courier, so nothing real is charged or booked. See [Payments](#payments-razorpay) and [Shipping](#shipping-shiprocket) to switch them on.
 
-### Demo accounts
+### Accounts
 
-Sign in with a mobile number and a one-time code. Outside production the code is shown on the sign in page and printed in the API terminal, so no SMS is needed.
+Everyone signs in with an email and a password. There are no demo accounts:
 
-| Who | Mobile | Try |
-|---|---|---|
-| Shopper (Ananya Sharma) | 98450 12345 | Shop, check out, track and cancel orders, return items, chat with AltasGoods Care |
-| Store staff (Kavya Iyer, Super Admin) | 98110 12345 | Process orders and returns, manage products, categories and brands in `/admin` |
-| Care agent (Revathi Subramanian, L2) | 98110 20001 | Work tickets at `/support`; refunds up to ₹10,000 |
-| Care supervisor (Arvind Menon) | 98110 20099 | Approves refunds above an agent's limit |
-| Anyone new | any other number | Signs up as a new shopper |
+- **Shoppers** create an account at `/signup`.
+- **Staff** (AltasGoods Control and Care Desk) are created with `npm run admin:create` in `apps/api`, which asks for the password. Add `--role SUPPORT_AGENT`, `SUPPORT_SPECIALIST` or `SUPPORT_SUPERVISOR` for the Care Desk; the default is `SUPER_ADMIN`. Staff sign in at `/login?as=staff` (opening `/admin` takes you there).
+- **Forgot password** emails a 6 digit code. In development the email is printed in the API terminal and the code is shown on the page, so no mail server is needed. Production sends through SMTP (see `EMAIL_PROVIDER` in `apps/api/.env.example`) and refuses to start without it.
 
 ## What is real and what is sample data
 
@@ -50,11 +47,11 @@ The buying journey and store operations run on the API and database. Some screen
 | Area | Real (API and database) | Sample data |
 |---|---|---|
 | Storefront | Catalog, category and product listings, search, cart, checkout, payment, order confirmation | Product reviews and Q&A, the homepage sale banner, the Deals page |
-| My Account | Orders, order detail and tracking, cancellation, returns, support conversations | Addresses page (addresses saved at checkout are real but do not appear here yet), wishlist, wallet, saved payments, profile, notifications, my reviews |
+| My Account | Overview, orders, order detail and tracking, cancellation, returns, support conversations, profile (name, email, mobile, change password, sign out of other devices), addresses. The wishlist is real but kept in the browser, like the cart | None. Credits, saved payment methods, reviews and notifications were removed until there is a backend for them |
 | AltasGoods Control | Orders, returns and refunds, products, categories, brands, the order queue counts on Overview | Overview charts and KPIs, customers, payments, coupons and sales page, storefront CMS, reviews, reports, team and roles, audit log, settings |
 | Care Desk | Ticket inbox and ticket workspace, replies, notes, refunds | Knowledge base, performance, order lookup, parts of customer pages |
 | Hub Console | | All of it |
-| Sign in | OTP sign in, sessions, new shopper sign up | |
+| Sign in | Email and password sign up and sign in, password reset by emailed code, change password, sessions | |
 
 Sample data lives in `apps/web/src/lib/mock` and is anchored to 1 Oct 2026, so dates on those screens (such as the sale banner) do not follow today's date.
 
@@ -112,9 +109,9 @@ SHIPROCKET_WEBHOOK_TOKEN=          # optional
 
 | Where | Command | Covers |
 |---|---|---|
-| `apps/api` | `npm test` | 85 unit and integration tests against `altasgoods_test`: orders, payments (sandbox and Razorpay), shipping (Shiprocket provider and a fake courier end to end), returns, support, auth, catalog admin |
+| `apps/api` | `npm test` | 93 unit and integration tests against `altasgoods_test`: orders, payments (sandbox and Razorpay), shipping (Shiprocket provider and a fake courier end to end), returns, support, auth (sign up, sign in, password reset, SMTP email), catalog admin |
 | `apps/web` | `npm test` | Unit tests for the API adapters, pricing and formatting |
-| `apps/web` | `npm run test:e2e` | Playwright journeys (checkout, cancellation, returns, Care Desk, access control) plus crawlers that open every page and press every button. Run with the sandbox and simulated courier |
+| `apps/web` | `npm run test:e2e` | Playwright journeys (sign up, sign in and password reset, checkout, cancellation, returns, Care Desk, access control) plus crawlers that open every page and press every button. Run with the sandbox and simulated courier; the global setup creates its own accounts with sign up and `admin:create` |
 
 Both apps typecheck in strict mode and lint clean (`npm run typecheck` in the API, `npx tsc --noEmit` and `npm run lint` in web).
 

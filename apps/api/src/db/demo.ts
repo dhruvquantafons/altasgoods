@@ -1,8 +1,13 @@
-/** The demo shopper (Ananya Sharma). Sign in with this number to see her orders. */
-export const DEMO_CUSTOMER_PHONE = "+919845012345";
-/** AltasGoods staff (Kavya Iyer, Super Admin) for AltasGoods Control: orders, returns and the catalog. */
-export const DEMO_STAFF_PHONE = "+919811012345";
+/**
+ * Accounts made by the test fixtures (seed-demo.ts). They exist only in the
+ * test database: development and production start with no accounts.
+ */
+export const DEMO_PASSWORD = "demo-password-1234";
+/** The demo shopper (Ananya Sharma), who owns the seeded addresses and tickets. */
+export const DEMO_CUSTOMER_EMAIL = "ananya.sharma@example.com";
+/** AltasGoods staff (Kavya Iyer, Super Admin) for AltasGoods Control. */
+export const DEMO_STAFF_EMAIL = "kavya.iyer@altasgoods.in";
 /** Care Desk supervisor (Arvind Menon): approves refunds above an agent's limit. */
-export const DEMO_SUPERVISOR_PHONE = "+919811020099";
-/** Care agents sign in as +91 98110 20001 (Revathi Subramanian, L2) onwards. */
-export const careAgentPhone = (i: number) => `+9198110200${String(i + 1).padStart(2, "0")}`;
+export const DEMO_SUPERVISOR_EMAIL = "arvind.menon@altasgoods.in";
+/** Care agents: care1@altasgoods.in (Revathi Subramanian, L2) onwards. */
+export const careAgentEmail = (i: number) => `care${i + 1}@altasgoods.in`;

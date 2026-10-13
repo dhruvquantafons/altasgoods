@@ -5,7 +5,7 @@
  */
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Db } from "./client.js";
-import { DEMO_CUSTOMER_PHONE, DEMO_SUPERVISOR_PHONE, careAgentPhone } from "./demo.js";
+import { DEMO_CUSTOMER_EMAIL, DEMO_SUPERVISOR_EMAIL, careAgentEmail } from "./demo.js";
 import * as t from "./schema.js";
 
 const WEB_MOCK = new URL("../../../web/src/lib/mock/", import.meta.url);
@@ -36,7 +36,7 @@ const STATUS: Record<MockTicket["status"], t.TicketStatus> = {
   closed: "CLOSED",
 };
 
-export async function seedSupport(db: Db, owners: { phone: string; id: string }[]) {
+export async function seedSupport(db: Db, owners: { email: string; id: string }[], passwordHash: string) {
   const load = (base: URL, f: string) => import(pathToFileURL(fileURLToPath(new URL(f, base))).href);
   const [ops, engagement, orderMod, _logistics, people, status, utils] = await Promise.all([
     load(WEB_MOCK, "ops-extra.ts"),
@@ -64,19 +64,19 @@ export async function seedSupport(db: Db, owners: { phone: string; id: string }[
     .insert(t.users)
     .values([
       ...careAgents.map((a, i) => ({
-        phone: careAgentPhone(i),
+        email: careAgentEmail(i),
+        passwordHash,
         name: a.fullName,
-        email: `${a.fullName.toLowerCase().replace(/[^a-z]+/g, ".")}@altasgoods.in`,
         emailVerifiedAt: new Date(),
         staffRoles: [a.level === "L2" ? "SUPPORT_SPECIALIST" : "SUPPORT_AGENT"] as t.StaffRole[],
       })),
-      { phone: DEMO_SUPERVISOR_PHONE, name: supervisor.name, email: "arvind.menon@altasgoods.in", emailVerifiedAt: new Date(), staffRoles: ["SUPPORT_SUPERVISOR"] as t.StaffRole[] },
+      { email: DEMO_SUPERVISOR_EMAIL, passwordHash, name: supervisor.name, emailVerifiedAt: new Date(), staffRoles: ["SUPPORT_SUPERVISOR"] as t.StaffRole[] },
     ])
     .returning({ id: t.users.id, name: t.users.name });
   const agentId = new Map(careAgents.map((a, i) => [a.name, agentRows[i]!.id]));
 
   // the demo shopper's tickets belong to her account, so she sees them in My Account
-  const demoUser = owners.find((o) => o.phone === DEMO_CUSTOMER_PHONE);
+  const demoUser = owners.find((o) => o.email === DEMO_CUSTOMER_EMAIL);
   const demoName = customers[0]?.name;
 
   for (const mt of tickets) {
