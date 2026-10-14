@@ -43,7 +43,11 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
   const [keyboardHeld, setKeyboardHeld] = useState(false);
   const [round, setRound] = useState(0);
   const section = useRef<HTMLElement>(null);
-  const reduced = useSyncExternalStore(subscribeMotion, () => window.matchMedia(REDUCED_MOTION).matches, () => false);
+  const reduced = useSyncExternalStore(
+    subscribeMotion,
+    () => window.matchMedia(REDUCED_MOTION).matches,
+    () => false,
+  );
   const playing = mode === "playing" || (mode === "auto" && !reduced);
   const running = playing && !keyboardHeld && slides.length > 1;
 
@@ -122,7 +126,12 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
                   >
                     {s.eyebrow}
                   </p>
-                  <h2 className={cn("mt-4 text-[28px] leading-[1.1] font-semibold tracking-tight sm:text-4xl lg:text-[44px]", dark ? "text-white" : "text-ink-900")}>
+                  <h2
+                    className={cn(
+                      "mt-4 text-[28px] leading-[1.1] font-semibold tracking-tight sm:text-4xl lg:text-[44px]",
+                      dark ? "text-white" : "text-ink-900",
+                    )}
+                  >
                     {s.title}
                   </h2>
                   <p className={cn("mt-3 text-[15px] leading-relaxed sm:text-base", dark ? "text-white/80" : "text-ink-600")}>{s.body}</p>
@@ -144,47 +153,60 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
         })}
       </div>
 
-      <div className="absolute right-4 bottom-4 z-20 flex items-center gap-1 rounded-full bg-white/90 p-1 shadow-raised ring-1 ring-ink-900/5 backdrop-blur sm:right-6 sm:bottom-6">
-        <button
-          type="button"
-          onClick={() => setMode(playing ? "paused" : "playing")}
-          aria-label={playing ? "Pause slideshow" : "Play slideshow"}
-          className="flex size-8 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100"
-        >
-          {playing ? <Pause size={14} fill="currentColor" aria-hidden="true" /> : <Play size={14} fill="currentColor" aria-hidden="true" />}
-        </button>
-        <button type="button" onClick={() => goTo(index - 1)} aria-label="Previous slide" className="flex size-8 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100">
-          <ChevronLeft size={17} aria-hidden="true" />
-        </button>
-        <div className="flex items-center gap-1.5 px-1" role="group" aria-label="Choose slide">
-          {slides.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => goTo(i)}
-              aria-label={`Show slide ${i + 1}: ${s.title}`}
-              aria-current={i === index ? "true" : undefined}
-              className="flex h-6 items-center"
-            >
-              {i === index ? (
-                <span className="relative block h-1.5 w-6 overflow-hidden rounded-full bg-ink-300">
-                  {/* fills over the slide's time while the banner rotates */}
-                  <span
-                    key={`${index}-${round}-${running}`}
-                    className="absolute inset-0 origin-left rounded-full bg-ink-900"
-                    style={running ? { animation: `hero-progress ${INTERVAL}ms linear` } : undefined}
-                  />
-                </span>
-              ) : (
-                <span className="block h-1.5 w-1.5 rounded-full bg-ink-300 transition-all duration-300 hover:bg-ink-400" />
-              )}
-            </button>
-          ))}
+      {/* a single slide has nothing to rotate to */}
+      {slides.length > 1 && (
+        <div className="absolute right-4 bottom-4 z-20 flex items-center gap-1 rounded-full bg-white/90 p-1 shadow-raised ring-1 ring-ink-900/5 backdrop-blur sm:right-6 sm:bottom-6">
+          <button
+            type="button"
+            onClick={() => setMode(playing ? "paused" : "playing")}
+            aria-label={playing ? "Pause slideshow" : "Play slideshow"}
+            className="flex size-8 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100"
+          >
+            {playing ? <Pause size={14} fill="currentColor" aria-hidden="true" /> : <Play size={14} fill="currentColor" aria-hidden="true" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo(index - 1)}
+            aria-label="Previous slide"
+            className="flex size-8 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100"
+          >
+            <ChevronLeft size={17} aria-hidden="true" />
+          </button>
+          <div className="flex items-center gap-1.5 px-1" role="group" aria-label="Choose slide">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => goTo(i)}
+                aria-label={`Show slide ${i + 1}: ${s.title}`}
+                aria-current={i === index ? "true" : undefined}
+                className="flex h-6 items-center"
+              >
+                {i === index ? (
+                  <span className="relative block h-1.5 w-6 overflow-hidden rounded-full bg-ink-300">
+                    {/* fills over the slide's time while the banner rotates */}
+                    <span
+                      key={`${index}-${round}-${running}`}
+                      className="absolute inset-0 origin-left rounded-full bg-ink-900"
+                      style={running ? { animation: `hero-progress ${INTERVAL}ms linear` } : undefined}
+                    />
+                  </span>
+                ) : (
+                  <span className="block h-1.5 w-1.5 rounded-full bg-ink-300 transition-all duration-300 hover:bg-ink-400" />
+                )}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => goTo(index + 1)}
+            aria-label="Next slide"
+            className="flex size-8 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100"
+          >
+            <ChevronRight size={17} aria-hidden="true" />
+          </button>
         </div>
-        <button type="button" onClick={() => goTo(index + 1)} aria-label="Next slide" className="flex size-8 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100">
-          <ChevronRight size={17} aria-hidden="true" />
-        </button>
-      </div>
+      )}
     </section>
   );
 }

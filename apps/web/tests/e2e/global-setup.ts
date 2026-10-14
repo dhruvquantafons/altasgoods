@@ -7,7 +7,8 @@ const API_DIR = path.resolve(__dirname, "../../../api");
 /** Staff accounts are made the way real ones are: with the admin:create script, against the API's database. */
 function staffAccount(email: string, name: string, role: string) {
   execFileSync("npm", ["--prefix", API_DIR, "run", "-s", "admin:create", "--", "--email", email, "--name", name, "--role", role], {
-    env: { ...process.env, ADMIN_PASSWORD: E2E_PASSWORD },
+    // the API under test's database when it is given, never whatever apps/api/.env points at
+    env: { ...process.env, ADMIN_PASSWORD: E2E_PASSWORD, ...(process.env.E2E_DATABASE_URL ? { DATABASE_URL: process.env.E2E_DATABASE_URL } : {}) },
     stdio: ["ignore", "ignore", "inherit"],
   });
 }
@@ -36,7 +37,16 @@ export default async function globalSetup() {
   await shopper.patch("/v1/me", { phone: "9845012345" });
   const addresses = await shopper.get<unknown[]>("/v1/me/addresses");
   if (!addresses.length) {
-    await shopper.post("/v1/me/addresses", { name: "Ananya Sharma", phone: "9845012345", line1: "12, 4th Cross, Indiranagar", city: "Bengaluru", state: "Karnataka", pincode: "560038", type: "HOME", isDefault: true });
+    await shopper.post("/v1/me/addresses", {
+      name: "Ananya Sharma",
+      phone: "9845012345",
+      line1: "12, 4th Cross, Indiranagar",
+      city: "Bengaluru",
+      state: "Karnataka",
+      pincode: "560038",
+      type: "HOME",
+      isDefault: true,
+    });
   }
   const orders = await shopper.get<{ items: unknown[] }>("/v1/me/orders?pageSize=1");
   if (!orders.items.length) await paidOrder(shopper, "headphones-studio");

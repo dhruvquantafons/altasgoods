@@ -6,12 +6,16 @@ import { cartItems, offers, products } from "../../db/schema.js";
 import { notFound, unprocessable } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import { addCartItemBody, cartLineInput, patchCartItemBody } from "./commerce.schemas.js";
+import { SalesService } from "./sales.service.js";
 
 const MAX_QTY = 10;
 
 @Injectable()
 export class CartService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(SalesService) private readonly sales: SalesService,
+  ) {}
 
   async get(userId: string) {
     const rows = await this.db
@@ -21,6 +25,7 @@ export class CartService {
       .innerJoin(products, eq(products.id, offers.productId))
       .where(eq(cartItems.userId, userId))
       .orderBy(asc(cartItems.createdAt));
+    const live = await this.sales.live();
     const lines = rows.map(({ item, offer, product }) => {
       const available = offer.status === "ACTIVE" && product.listingStatus === "LIVE" ? offer.stock : 0;
       return {
@@ -33,7 +38,7 @@ export class CartService {
         variant: item.variant,
         qty: item.qty,
         savedForLater: item.savedForLater,
-        pricePaise: offer.pricePaise,
+        pricePaise: this.sales.priceFor(live, product, offer.pricePaise).pricePaise,
         mrpPaise: offer.mrpPaise,
         inStock: available >= item.qty,
         availableQty: Math.min(available, MAX_QTY),

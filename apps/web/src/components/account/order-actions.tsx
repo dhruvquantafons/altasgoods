@@ -70,6 +70,7 @@ export function CancelOrderButton({
 
   const close = () => {
     setOpen(false);
+    if (done) router.refresh();
     setTimeout(() => {
       setDone(false);
       setTouched(false);
@@ -105,8 +106,8 @@ export function CancelOrderButton({
                   const r = await cancelOrder(orderId, [reason, note.trim()].filter(Boolean).join(": "), selected);
                   setBusy(false);
                   if (!r.ok) return setApiError(r.error);
+                  // refreshed when the dialog closes: the cancelled order no longer shows this button, which would take the confirmation with it
                   setDone(true);
-                  router.refresh();
                 }}
               >
                 {mode === "cancel" ? `Cancel ${selected.length > 1 ? `${selected.length} items` : "item"}` : "Request cancellation"}

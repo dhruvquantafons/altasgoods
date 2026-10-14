@@ -76,6 +76,7 @@ function toProduct(p: ApiProduct, brand: Brand | undefined, category: Category |
     stock: p.offer.stock,
     soldLast30d: p.soldLast30d,
     listingStatus: p.offer.stock > 0 ? "live" : "out_of_stock",
+    sale: p.offer.sale ? { ...p.offer.sale, regularPrice: p.offer.regularPricePaise / 100 } : undefined,
     createdAt: p.createdAt,
   };
 }

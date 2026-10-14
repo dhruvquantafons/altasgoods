@@ -1,40 +1,47 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, Gauge, Inbox, MessagesSquare, Smile, Timer } from "lucide-react";
+import { ArrowRight, CheckCheck, Clock3, Inbox, MessagesSquare, Timer, UserX } from "lucide-react";
 import { AreaChart } from "@/components/charts/area-chart";
 import { BarList, StackedBar } from "@/components/charts/static";
-import { CardLink, Dot, formatTime, Mono } from "@/components/logistics/ops-ui";
-import { CHANNEL, PRESENCE, SlaBadge } from "@/components/support/meta";
+import { durationLabel, formatTime, Mono } from "@/components/logistics/ops-ui";
+import { CHANNEL, SlaBadge } from "@/components/support/meta";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/misc";
+import { Avatar, EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { currentUser } from "@/lib/api/server";
 import { currentTime, loadAgents, slaOf, tickets } from "@/lib/api/support";
-import { careAgents, careDaily, careToday } from "@/lib/mock/ops-extra";
 import { TICKET_PRIORITY } from "@/lib/status";
-import { cn, formatDateShort, formatNumber, formatWeekday } from "@/lib/utils";
+import { formatDateShort, formatWeekday } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
-const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : 0);
+const DAY = 86_400_000;
+const average = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 export default async function CareDeskOverview() {
-  const [{ tickets: active }, agents, user] = await Promise.all([tickets({ view: "open" }), loadAgents(), currentUser()]);
+  const [{ tickets: active }, { tickets: all }, agents, user] = await Promise.all([tickets({ view: "open" }), tickets({ view: "all" }), loadAgents(), currentUser()]);
   const now = currentTime();
   const unassigned = active.filter((t) => !t.assignee);
   const withSla = active.map((t) => ({ t, sla: slaOf(t, now) }));
   const atRisk = withSla.filter((x) => x.sla.state === "breached" || x.sla.state === "at_risk").sort((a, b) => a.sla.minsLeft - b.sla.minsLeft);
-  const y = careDaily.at(-1)!;
-  const next = atRisk[0]?.t ?? active[0];
-  // presence and chat load come from the telephony and chat platform (sample data until it is connected)
-  const roster = agents
-    .filter((a) => a.level !== "Admin")
-    .map((a) => ({ ...a, live: careAgents.find((c) => c.fullName === a.name) }))
-    .map((a) => ({ ...a, presence: a.live?.presence ?? ("online" as const), activeChats: a.live?.activeChats ?? 0, capacity: a.live?.capacity ?? 3, team: a.live?.team ?? "Care Desk" }));
+  const next = atRisk[0]?.t ?? unassigned[0] ?? active[0];
 
-  const chart = careDaily.map((d) => ({ label: formatDateShort(d.date), created: d.created, resolved: d.resolved }));
+  // the last 7 days, from the tickets themselves
+  const week = all.filter((t) => now - Date.parse(t.createdAt) < 7 * DAY);
+  const firstResponse = average(week.filter((t) => t.firstResponseAt).map((t) => (Date.parse(t.firstResponseAt!) - Date.parse(t.createdAt)) / 60_000));
+  const resolvedWeek = all.filter((t) => t.resolvedAt && now - Date.parse(t.resolvedAt) < 7 * DAY);
+  const resolution = average(resolvedWeek.map((t) => (Date.parse(t.resolvedAt!) - Date.parse(t.createdAt)) / 3_600_000));
+
+  const days = Array.from({ length: 14 }, (_, i) => new Date(now - (13 - i) * DAY));
+  const sameDay = (iso: string, d: Date) => new Date(iso).toDateString() === d.toDateString();
+  const chart = days.map((d) => ({
+    label: formatDateShort(d.toISOString()),
+    created: all.filter((t) => sameDay(t.createdAt, d)).length,
+    resolved: all.filter((t) => t.resolvedAt && sameDay(t.resolvedAt, d)).length,
+  }));
+
   const byCategory = Object.entries(
     active.reduce<Record<string, number>>((acc, t) => {
       acc[t.category] = (acc[t.category] ?? 0) + 1;
@@ -44,7 +51,8 @@ export default async function CareDeskOverview() {
     .map(([label, value]) => ({ label, value, href: `/support/tickets?category=${encodeURIComponent(label)}` }))
     .sort((a, b) => b.value - a.value);
   const byChannel = (Object.keys(CHANNEL) as (keyof typeof CHANNEL)[]).map((c) => ({ label: CHANNEL[c].label, value: active.filter((t) => t.channel === c).length }));
-  const online = roster.filter((a) => a.presence === "online" || a.presence === "busy");
+  const team = agents.filter((a) => a.level !== "Admin").map((a) => ({ ...a, open: active.filter((t) => t.assigneeId === a.id).length }));
+
   const today = new Date(now);
   const hour = Math.floor(((today.getUTCHours() * 60 + today.getUTCMinutes() + 330) % 1440) / 60);
 
@@ -52,7 +60,7 @@ export default async function CareDeskOverview() {
     <>
       <PageHeader
         title={`${hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"}, ${(user?.name ?? "there").split(" ")[0]}`}
-        description={`Care Desk queue health for ${formatWeekday(today)}, live as of ${formatTime(today)}.`}
+        description={`Care Desk queue for ${formatWeekday(today)}, as of ${formatTime(today)}.`}
         actions={
           <>
             <ButtonLink href="/support/tickets" variant="secondary" icon={Inbox}>
@@ -72,57 +80,63 @@ export default async function CareDeskOverview() {
           label="Open queue"
           value={active.filter((t) => t.status !== "awaiting_customer").length}
           icon={Inbox}
-          footer={`${unassigned.length} unassigned, ${active.filter((t) => t.status === "awaiting_customer").length} awaiting customer`}
+          footer={`${active.filter((t) => t.status === "awaiting_customer").length} awaiting the customer`}
           href="/support/tickets"
         />
-        <StatCard label="First response" value={`${careToday.frtMins} min`} icon={Timer} delta={pct(careToday.frtMins, y.frtMins)} upIsGood={false} deltaLabel="vs yesterday" />
-        <StatCard label="Resolution time" value={`${careToday.resolutionHrs} h`} icon={Clock3} delta={pct(careToday.resolutionHrs, y.resolutionHrs)} upIsGood={false} deltaLabel="vs yesterday" />
-        <StatCard label="SLA compliance" value={`${careToday.sla}%`} icon={Gauge} delta={pct(careToday.sla, y.sla)} deltaLabel="vs yesterday" />
-        <StatCard label="CSAT" value={`${careToday.csat}%`} icon={Smile} delta={pct(careToday.csat, y.csat)} deltaLabel="vs yesterday" className="col-span-2 md:col-span-1" />
+        <StatCard label="Unassigned" value={unassigned.length} icon={UserX} footer="Waiting for an agent" href="/support/tickets?view=unassigned" />
+        <StatCard label="First response" value={firstResponse === null ? "None yet" : durationLabel(Math.round(firstResponse))} icon={Timer} footer="Average, tickets from the last 7 days" />
+        <StatCard label="Resolution time" value={resolution === null ? "None yet" : `${resolution < 10 ? resolution.toFixed(1) : Math.round(resolution)} h`} icon={Clock3} footer="Average, resolved in the last 7 days" />
+        <StatCard label="Resolved" value={resolvedWeek.length} icon={CheckCheck} footer="In the last 7 days" className="col-span-2 md:col-span-1" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 xl:col-span-2">
           <Card>
             <CardHeader
-              title="SLA at risk"
-              description="Overdue or due within the hour, most urgent first"
+              title="Reply overdue or due soon"
+              description="Most urgent first"
               action={
-                <Badge tone={atRisk.some((x) => x.sla.state === "breached") ? "danger" : "warning"}>
-                  {atRisk.length} ticket{atRisk.length === 1 ? "" : "s"}
-                </Badge>
+                atRisk.length ? (
+                  <Badge tone={atRisk.some((x) => x.sla.state === "breached") ? "danger" : "warning"}>
+                    {atRisk.length} ticket{atRisk.length === 1 ? "" : "s"}
+                  </Badge>
+                ) : undefined
               }
             />
-            <ul className="mt-2 divide-y divide-line">
-              {atRisk.slice(0, 8).map(({ t, sla }) => {
-                const Ch = CHANNEL[t.channel].icon;
-                return (
-                  <li key={t.id}>
-                    <Link href={`/support/tickets/${t.id}`} className="flex flex-col gap-2 px-5 py-3 transition-colors hover:bg-ink-50/70 sm:flex-row sm:items-center sm:gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Mono className="text-xs text-ink-500">{t.id}</Mono>
-                          <StatusBadge meta={TICKET_PRIORITY[t.priority]} size="sm" />
-                          <span className="inline-flex items-center gap-1 text-xs text-ink-500">
-                            <Ch size={13} aria-hidden="true" />
-                            {CHANNEL[t.channel].label}
-                          </span>
+            {atRisk.length === 0 ? (
+              <EmptyState icon={CheckCheck} title="No replies are overdue" description="Every open ticket is inside its reply target." />
+            ) : (
+              <ul className="mt-2 divide-y divide-line">
+                {atRisk.slice(0, 8).map(({ t, sla }) => {
+                  const Ch = CHANNEL[t.channel].icon;
+                  return (
+                    <li key={t.id}>
+                      <Link href={`/support/tickets/${t.id}`} className="flex flex-col gap-2 px-5 py-3 transition-colors hover:bg-ink-50/70 sm:flex-row sm:items-center sm:gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Mono className="text-xs text-ink-500">{t.id}</Mono>
+                            <StatusBadge meta={TICKET_PRIORITY[t.priority]} size="sm" />
+                            <span className="inline-flex items-center gap-1 text-xs text-ink-500">
+                              <Ch size={13} aria-hidden="true" />
+                              {CHANNEL[t.channel].label}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-[13px] font-medium text-ink-900">{t.subject}</p>
+                          <p className="truncate text-xs text-ink-500">
+                            {t.customerName}, {t.assignee ?? "Unassigned"}
+                          </p>
                         </div>
-                        <p className="mt-1 truncate text-[13px] font-medium text-ink-900">{t.subject}</p>
-                        <p className="truncate text-xs text-ink-500">
-                          {t.customerName}, {t.assignee ?? "Unassigned"}
-                        </p>
-                      </div>
-                      <SlaBadge sla={sla} />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+                        <SlaBadge sla={sla} />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </Card>
 
           <Card>
-            <CardHeader title="Contacts, last 14 days" description="Tickets created and resolved per day, completed days only" action={<CardLink href="/support/performance">Team performance</CardLink>} />
+            <CardHeader title="Tickets, last 14 days" description="Created and resolved per day" />
             <div className="px-5 pt-3 pb-5">
               <AreaChart
                 data={chart}
@@ -131,7 +145,7 @@ export default async function CareDeskOverview() {
                   { key: "resolved", label: "Resolved", slot: 2 },
                 ]}
                 height={240}
-                ariaLabel="Tickets created and resolved per day over the last 14 completed days"
+                ariaLabel="Tickets created and resolved per day over the last 14 days"
               />
             </div>
           </Card>
@@ -139,42 +153,27 @@ export default async function CareDeskOverview() {
 
         <div className="flex min-w-0 flex-col gap-6">
           <Card>
-            <CardHeader title="Agent availability" description={`${online.length} of ${roster.length} agents signed in`} />
+            <CardHeader title="Team workload" description="Open tickets assigned to each agent" />
             <ul className="mt-2 divide-y divide-line">
-              {roster.map((a) => {
-                const load = active.filter((t) => t.assigneeId === a.id).length;
-                return (
-                  <li key={a.id} className="flex items-center gap-3 px-5 py-2.5">
-                    <span className="relative">
-                      <Avatar name={a.name} size="sm" />
-                      <Dot tone={PRESENCE[a.presence].tone} className="absolute -right-0.5 -bottom-0.5 size-2.5 ring-2 ring-white" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium text-ink-900">
-                        {a.name}
-                        {a.name === user?.name && <span className="ml-1.5 text-xs font-normal text-ink-500">(you)</span>}
-                      </p>
-                      <p className="truncate text-xs text-ink-500">
-                        {a.presence === "online" && a.activeChats >= a.capacity ? "At chat capacity" : PRESENCE[a.presence].label}, {a.level}, {a.team}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[13px] font-medium text-ink-900 tabular-nums">{load} open</p>
-                      <p className="text-xs text-ink-500 tabular-nums">
-                        {a.activeChats}/{a.capacity} chats
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
+              {team.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <Avatar name={a.name} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-ink-900">
+                      {a.name}
+                      {a.name === user?.name && <span className="ml-1.5 text-xs font-normal text-ink-500">(you)</span>}
+                    </p>
+                    <p className="truncate text-xs text-ink-500">{a.level}</p>
+                  </div>
+                  <p className="text-[13px] font-medium text-ink-900 tabular-nums">{a.open} open</p>
+                </li>
+              ))}
             </ul>
           </Card>
 
           <Card>
             <CardHeader title="Open tickets by category" />
-            <div className="px-5 pt-4 pb-5">
-              <BarList items={byCategory} />
-            </div>
+            <div className="px-5 pt-4 pb-5">{byCategory.length ? <BarList items={byCategory} /> : <p className="text-sm text-ink-500">No open tickets.</p>}</div>
           </Card>
 
           <Card>
@@ -185,10 +184,6 @@ export default async function CareDeskOverview() {
           </Card>
         </div>
       </div>
-
-      <p className={cn("mt-8 text-center text-xs text-ink-400")}>
-        {formatNumber(careToday.created)} contacts today so far, {formatNumber(careToday.resolved)} resolved. Longest chat wait {careToday.longestWaitMins} min.
-      </p>
     </>
   );
 }

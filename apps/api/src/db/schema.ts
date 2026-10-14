@@ -179,7 +179,11 @@ export const users = pgTable(
     emailVerifiedAt: ts("email_verified_at"),
     status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED">(),
     /** AltasGoods Control access; empty for shoppers */
-    staffRoles: text("staff_roles").array().notNull().$type<StaffRole[]>().default(sql`'{}'::text[]`),
+    staffRoles: text("staff_roles")
+      .array()
+      .notNull()
+      .$type<StaffRole[]>()
+      .default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -282,7 +286,10 @@ export const products = pgTable(
     rating: real("rating").notNull().default(0),
     ratingCount: integer("rating_count").notNull().default(0),
     reviewCount: integer("review_count").notNull().default(0),
-    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     assured: boolean("assured").notNull().default(false),
     listingStatus: text("listing_status").notNull().default("LIVE"),
     soldLast30d: integer("sold_last_30d").notNull().default(0),
@@ -374,6 +381,21 @@ export const cartItems = pgTable(
   (t) => [uniqueIndex("cart_items_line_uq").on(t.userId, t.offerId, t.variant), check("cart_qty_range", sql`${t.qty} between 1 and 10`)],
 );
 
+/** Products a customer saved for later, so the wishlist follows them across devices. */
+export const wishlistItems = pgTable(
+  "wishlist_items",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.productId] })],
+);
+
 export const coupons = pgTable("coupons", {
   code: text("code").primaryKey(),
   description: text("description").notNull(),
@@ -388,7 +410,49 @@ export const coupons = pgTable("coupons", {
   fundedBy: text("funded_by").notNull().default("STORE").$type<"STORE" | "BANK">(),
   usageLimit: integer("usage_limit"),
   usageCount: integer("usage_count").notNull().default(0),
+  /** listed on the storefront (cart, checkout, deals); hidden codes still work when typed */
+  showOnStorefront: boolean("show_on_storefront").notNull().default(true),
+  createdAt: createdAt(),
 });
+
+/**
+ * A sale: a percentage off every product it covers while it runs. Prices are
+ * worked out from it at read time (catalog, cart, checkout), so a sale starts
+ * and ends on its own; where sales overlap, the biggest discount wins.
+ */
+export const sales = pgTable(
+  "sales",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    headline: text("headline").notNull().default(""),
+    description: text("description").notNull().default(""),
+    discountPercent: integer("discount_percent").notNull(),
+    scope: text("scope").notNull().$type<"ALL" | "CATEGORIES" | "PRODUCTS">(),
+    categoryIds: text("category_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    productIds: text("product_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    startsAt: ts("starts_at").notNull(),
+    endsAt: ts("ends_at").notNull(),
+    status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "PAUSED">(),
+    /** an image path (/images/... or /media/...) for the storefront sale banner */
+    bannerImage: text("banner_image"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("sales_slug_uq").on(t.slug),
+    index("sales_window_idx").on(t.status, t.startsAt, t.endsAt),
+    check("sales_percent_ck", sql`${t.discountPercent} between 1 and 90`),
+    check("sales_window_ck", sql`${t.endsAt} > ${t.startsAt}`),
+  ],
+);
 
 /* --------------------------------- Orders -------------------------------- */
 
@@ -590,7 +654,7 @@ export const supportTickets = pgTable(
     channel: text("channel").notNull().$type<TicketChannel>(),
     priority: text("priority").notNull().default("NORMAL").$type<TicketPriority>(),
     status: text("status").notNull().default("NEW").$type<TicketStatus>(),
-    /** the customer; userId is set for customers with a BluBuy account in this database */
+    /** the customer; userId is set for customers with an AltasGoods account in this database */
     customerName: text("customer_name").notNull(),
     customerRef: text("customer_ref"),
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
@@ -776,3 +840,98 @@ export const customerUploads = pgTable("customer_uploads", {
   sizeBytes: integer("size_bytes").notNull(),
   createdAt: createdAt(),
 });
+
+/* ------------------------------- Admin ------------------------------- */
+
+/** Who changed what in AltasGoods Control. Order and ticket histories keep their own detailed events. */
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    /** kept as written, so the log still reads well after an account is removed */
+    actorName: text("actor_name").notNull(),
+    /** entity.verb, for example product.update or settings.update */
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id"),
+    summary: text("summary").notNull(),
+    /** the fields that changed: { field: [before, after] } */
+    changes: jsonb("changes").$type<Record<string, [unknown, unknown]>>(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("audit_events_created_idx").on(t.createdAt), index("audit_events_entity_idx").on(t.entityType, t.entityId)],
+);
+
+/** Store-wide settings, one row per group (only "store" today). */
+export const storeSettings = pgTable("store_settings", {
+  id: text("id").primaryKey(),
+  value: jsonb("value").notNull().$type<Record<string, unknown>>(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: updatedAt(),
+});
+
+/** Storefront CMS: homepage hero slides and promo tiles, managed in AltasGoods Control. */
+export const banners = pgTable(
+  "banners",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    placement: text("placement").notNull().$type<"HERO" | "PROMO">(),
+    eyebrow: text("eyebrow").notNull().default(""),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    /** the button on a hero slide; promo tiles are links as a whole */
+    ctaLabel: text("cta_label").notNull().default(""),
+    href: text("href").notNull(),
+    /** /images/... shipped with the storefront, or /media/... uploaded in AltasGoods Control */
+    image: text("image").notNull(),
+    alt: text("alt").notNull().default(""),
+    align: text("align").notNull().default("left").$type<"left" | "right">(),
+    theme: text("theme").notNull().default("dark").$type<"dark" | "light">(),
+    /** CSS object-position for the image, for example "70% center" */
+    position: text("position").notNull().default("center"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    active: boolean("active").notNull().default(true),
+    startsAt: ts("starts_at"),
+    endsAt: ts("ends_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("banners_placement_idx").on(t.placement, t.sortOrder)],
+);
+
+/**
+ * Customer reviews. Only someone with a delivered order line for the product
+ * can write one, once per product. Publishing one updates the product's
+ * rating, rating_count and review_count as a running total.
+ */
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    orderItemId: uuid("order_item_id").references(() => orderItems.id, { onDelete: "set null" }),
+    rating: integer("rating").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    status: text("status").notNull().$type<"PENDING" | "PUBLISHED" | "HIDDEN">(),
+    /** the store's public reply, shown under the review */
+    reply: text("reply"),
+    repliedAt: ts("replied_at"),
+    /** internal: why it was hidden, for the team */
+    adminNote: text("admin_note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("reviews_user_product_uq").on(t.userId, t.productId),
+    index("reviews_product_idx").on(t.productId, t.status, t.createdAt),
+    index("reviews_status_idx").on(t.status, t.createdAt),
+    check("reviews_rating_ck", sql`${t.rating} between 1 and 5`),
+  ],
+);

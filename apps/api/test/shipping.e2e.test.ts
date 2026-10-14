@@ -8,7 +8,7 @@ import { orderItems } from "../src/db/schema.js";
 import { ShippingService } from "../src/modules/commerce/shipping/shipping.service.js";
 import type { Booking, LogisticsProvider, ShipmentRequest } from "../src/modules/commerce/shipping/provider.js";
 import { courierStatus } from "../src/modules/commerce/shipping/shiprocket.provider.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_AGENT, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
 
 /** A courier that books instantly and reports whatever scan the test sets. */
 const scans = new Map<string, string>();
@@ -110,5 +110,29 @@ describe("shipping with a courier", () => {
     expect(r.body.results[0]).toMatchObject({ ok: false, error: expect.stringContaining("wallet") });
     const [row] = await db.select({ status: orderItems.status }).from(orderItems).where(eq(orderItems.id, line.itemId));
     expect(row!.status).toBe("PACKED");
+  });
+});
+
+describe("shipping console", () => {
+  it("tells staff which courier is connected and what Shiprocket still needs", async () => {
+    const r = await t.http.get("/v1/admin/logistics/status").set(staff).expect(200);
+    // this suite stands a fake Shiprocket in; the checklist mirrors whatever the environment holds
+    const e = env();
+    expect(r.body).toEqual({
+      provider: "SHIPROCKET",
+      shiprocket: { credentials: !!(e.SHIPROCKET_EMAIL && e.SHIPROCKET_PASSWORD), pickupLocation: !!e.SHIPROCKET_PICKUP_LOCATION, webhookToken: !!e.SHIPROCKET_WEBHOOK_TOKEN },
+      webhookPath: "/v1/logistics/webhooks/tracking",
+    });
+    await t.http.get("/v1/admin/logistics/status").set(shopper).expect(403);
+    const agent = (await signIn(t.http, DEMO_AGENT)).auth;
+    await t.http.get("/v1/admin/logistics/status").set(agent).expect(403);
+  });
+
+  it("finds a shipment by its AWB", async () => {
+    const line = await packedLine("tea-assam");
+    await transition([line.itemId], "READY_TO_SHIP");
+    const [row] = await db.select({ awb: orderItems.awb }).from(orderItems).where(eq(orderItems.id, line.itemId));
+    const r = await t.http.get(`/v1/admin/order-items?q=${row!.awb}`).set(staff).expect(200);
+    expect(r.body.items.map((i: { id: string }) => i.id)).toEqual([line.itemId]);
   });
 });

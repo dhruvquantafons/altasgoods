@@ -5,13 +5,18 @@ import { NextResponse, type NextRequest } from "next/server";
  * 1. refreshes an expired or expiring access token with the refresh token, and
  *    hands the new token to this same request so Server Components see it;
  * 2. sends signed-out visitors of protected areas to sign in;
- * 3. keeps AltasGoods Control and the Care Desk to staff.
+ * 3. keeps AltasGoods Control and the Care Desk to staff, and Shipping and
+ *    the workspace launcher to admins (Super Admin or Ops Admin).
  * Real authorisation happens in the API on every call.
  */
 const ACCESS = "bb_at";
 const REFRESH = "bb_rt";
-const PROTECTED = [/^\/account(\/|$)/, /^\/checkout(\/|$)/, /^\/order\//, /^\/admin(\/|$)/, /^\/support(\/|$)/];
-const STAFF_AREAS = /^\/(admin|support)(\/|$)/;
+const PROTECTED = [/^\/account(\/|$)/, /^\/checkout(\/|$)/, /^\/order\//, /^\/admin(\/|$)/, /^\/support(\/|$)/, /^\/logistics(\/|$)/, /^\/portals(\/|$)/];
+const STAFF_AREAS = /^\/(admin|support|logistics|portals)(\/|$)/;
+/** areas for admins only: the API behind Shipping needs Ops Admin, and Super Admin passes every check */
+const ADMIN_AREAS = /^\/(logistics|portals)(\/|$)/;
+const isAdmin = (staff: string[]) => staff.includes("SUPER_ADMIN") || staff.includes("OPS_ADMIN");
+const allowed = (path: string, staff: string[]) => (ADMIN_AREAS.test(path) ? isAdmin(staff) : staff.length > 0);
 
 const apiUrl = () => process.env.ALTASGOODS_API_URL ?? process.env.BLUBUY_API_URL ?? "http://localhost:4000";
 const cookieBase = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: process.env.NODE_ENV === "production" };
@@ -36,7 +41,7 @@ export async function proxy(req: NextRequest) {
   const current = claims(access);
   // roles live in the token: refresh once when a staff area needs one the token lacks,
   // so someone given a staff role since sign in gets straight in
-  const lacksGrant = !!current && STAFF_AREAS.test(path) && !current.staff.length;
+  const lacksGrant = !!current && STAFF_AREAS.test(path) && !allowed(path, current.staff);
   if ((!current || current.exp * 1000 < Date.now() + 30_000 || lacksGrant) && refresh) {
     try {
       const r = await fetch(`${apiUrl()}/v1/auth/refresh`, {
@@ -69,7 +74,7 @@ export async function proxy(req: NextRequest) {
     url.searchParams.set("next", path + req.nextUrl.search);
     if (STAFF_AREAS.test(path)) url.searchParams.set("as", "staff");
     res = NextResponse.redirect(url);
-  } else if (signedIn && STAFF_AREAS.test(path) && !session!.staff.length) {
+  } else if (signedIn && STAFF_AREAS.test(path) && !allowed(path, session!.staff)) {
     const url = new URL("/login", req.url);
     url.searchParams.set("next", path + req.nextUrl.search);
     url.searchParams.set("as", "staff");

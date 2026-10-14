@@ -1,23 +1,16 @@
 import { SettingsForm } from "@/components/admin/settings-form";
 import { PageHeader } from "@/components/ui/page-header";
-import { categories } from "@/lib/mock";
-import { platformSettings } from "@/lib/mock/admin-extra";
+import { loadSettings } from "@/lib/api/admin-system";
+import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "Settings" };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const { updatedAt, updatedBy, ...settings } = await loadSettings();
   return (
     <>
-      <PageHeader
-        title="Platform settings"
-        description="Marketplace-wide configuration. Values are versioned; anything that changes what customers pay or sellers receive needs a Finance Manager's approval."
-      />
-      <SettingsForm
-        data={{
-          ...platformSettings,
-          returnWindows: platformSettings.returnWindows.map((r) => ({ ...r, name: categories.find((c) => c.id === r.categoryId)?.name ?? r.categoryId })),
-        }}
-      />
+      <PageHeader title="Settings" description="Store-wide settings. Changes take effect on the storefront and at checkout as soon as you save, and are recorded in the audit log." />
+      <SettingsForm initial={settings} savedNote={updatedAt ? `Last saved ${formatDateTime(updatedAt)}${updatedBy ? ` by ${updatedBy}` : ""}.` : "Using the default settings."} />
     </>
   );
 }

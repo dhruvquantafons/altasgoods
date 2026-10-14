@@ -24,9 +24,7 @@ export function Tabs({
     <div className={className}>
       <div
         role="tablist"
-        className={cn(
-          variant === "pill" ? "inline-flex gap-1 rounded-xl bg-ink-100 p-1" : "flex gap-6 overflow-x-auto border-b border-line scrollbar-none",
-        )}
+        className={cn(variant === "pill" ? "inline-flex gap-1 rounded-xl bg-ink-100 p-1" : "flex gap-6 overflow-x-auto border-b border-line scrollbar-none")}
       >
         {tabs.map((t) => (
           <button
@@ -98,10 +96,7 @@ export function Modal({
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-ink-950/40 backdrop-blur-[2px] animate-fade-in" onClick={onClose} aria-hidden="true" />
       <div
-        className={cn(
-          "absolute flex",
-          side === "right" ? "inset-y-0 right-0 w-full justify-end" : "inset-0 items-center justify-center p-4",
-        )}
+        className={cn("absolute flex", side === "right" ? "inset-y-0 right-0 w-full justify-end" : "inset-0 items-center justify-center p-4")}
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
@@ -153,6 +148,7 @@ export function Switch({
   ariaLabel?: string;
 }) {
   const [inner, setInner] = useState(defaultChecked ?? false);
+  const id = useId();
   const on = checked ?? inner;
   const btn = (
     <button
@@ -160,6 +156,8 @@ export function Switch({
       role="switch"
       aria-checked={on}
       aria-label={ariaLabel}
+      aria-labelledby={label && !ariaLabel ? `${id}-label` : undefined}
+      aria-describedby={label && description ? `${id}-desc` : undefined}
       disabled={disabled}
       onClick={() => {
         setInner(!on);
@@ -177,8 +175,14 @@ export function Switch({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-sm font-medium text-ink-900">{label}</p>
-        {description && <p className="mt-0.5 text-[13px] text-ink-500">{description}</p>}
+        <p id={`${id}-label`} className="text-sm font-medium text-ink-900">
+          {label}
+        </p>
+        {description && (
+          <p id={`${id}-desc`} className="mt-0.5 text-[13px] text-ink-500">
+            {description}
+          </p>
+        )}
       </div>
       {btn}
     </div>
@@ -232,17 +236,7 @@ export function Popover({
 }
 
 /** A row inside a Popover menu. */
-export function MenuItem({
-  children,
-  onClick,
-  icon,
-  danger,
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  icon?: ReactNode;
-  danger?: boolean;
-}) {
+export function MenuItem({ children, onClick, icon, danger }: { children: ReactNode; onClick?: () => void; icon?: ReactNode; danger?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -268,7 +262,10 @@ export function useToast() {
     return () => clearTimeout(t);
   }, [msg]);
   const node = msg ? (
-    <div role="status" className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-medium text-white shadow-pop animate-fade-in">
+    <div
+      role="status"
+      className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-medium text-white shadow-pop animate-fade-in"
+    >
       {msg}
     </div>
   ) : null;

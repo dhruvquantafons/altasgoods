@@ -46,7 +46,9 @@ export async function quoteCheckout(input: { addressId: string; lines: LineInput
   try {
     const { resolved } = await resolveOffers(input.lines);
     if (!resolved.length) return { ok: false, error: "These items are no longer available", code: "UNAVAILABLE" };
-    const r = await (await api()).POST("/v1/checkout/quote", {
+    const r = await (
+      await api()
+    ).POST("/v1/checkout/quote", {
       body: {
         addressId: input.addressId,
         couponCode: input.couponCode || undefined,
@@ -70,7 +72,9 @@ export async function placeOrder(input: {
   try {
     const { resolved, missing } = await resolveOffers(input.lines);
     if (missing) return { ok: false, error: "Some items in your cart are no longer sold. Remove them and try again.", code: "UNAVAILABLE" };
-    const r = await (await api()).POST("/v1/orders", {
+    const r = await (
+      await api()
+    ).POST("/v1/orders", {
       params: { header: { "idempotency-key": input.idempotencyKey } },
       body: {
         addressId: input.addressId,
@@ -133,6 +137,27 @@ export async function loadServerCart(): Promise<Result<LineInput[]>> {
   }
 }
 
+/** Replaces the signed-in account's wishlist (product ids, newest first). */
+export async function syncWishlist(productIds: string[]): Promise<Result<null>> {
+  try {
+    const r = await (await api()).PUT("/v1/me/wishlist", { body: { productIds } });
+    return r.response.ok ? { ok: true, data: null } : fail(r.error, "Could not save your wishlist");
+  } catch {
+    return offline;
+  }
+}
+
+/** The signed-in account's wishlist, newest first. */
+export async function loadServerWishlist(): Promise<Result<string[]>> {
+  try {
+    const r = await (await api()).GET("/v1/me/wishlist");
+    if (!r.data) return fail(r.error, "Could not load your wishlist");
+    return { ok: true, data: r.data.productIds };
+  } catch {
+    return offline;
+  }
+}
+
 export async function completeSandboxPayment(paymentId: string, outcome: "SUCCESS" | "FAILURE"): Promise<Result<PaymentDetail>> {
   try {
     const r = await (await api()).POST("/v1/payments/{id}/sandbox/complete", { params: { path: { id: paymentId } }, body: { outcome } });
@@ -172,8 +197,7 @@ export async function cancelOrder(orderId: string, reason: string, itemIds?: str
   try {
     const r = await (await api()).POST("/v1/me/orders/{id}/cancel", { params: { path: { id: orderId } }, body: { reason, itemIds } });
     if (!r.data) return fail(r.error, "This order could not be cancelled");
-    revalidatePath(`/account/orders/${orderId}`);
-    revalidatePath("/account/orders");
+    // no revalidation here: re-rendering now would unmount the dialog showing the confirmation; it refreshes the page when closed
     return { ok: true, data: r.data };
   } catch {
     return offline;

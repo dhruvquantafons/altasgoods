@@ -15,14 +15,12 @@ import {
   Check,
   CircleAlert,
   CreditCard,
-  Gift,
   Landmark,
   Loader2,
   Lock,
   MapPin,
   Pencil,
   Plus,
-  QrCode,
   ShieldCheck,
   Smartphone,
   Truck,
@@ -33,53 +31,34 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/input";
 import { Stepper } from "@/components/ui/misc";
 import { cn, formatINR } from "@/lib/utils";
 import { useCart } from "./cart-context";
-import { COD_LIMIT, daysFromNow, formatPromise, INDIAN_STATES, isValidPincode, lookupPincode, promiseDays } from "./delivery";
+import { daysFromNow, formatPromise, INDIAN_STATES, isValidPincode, lookupPincode, promiseDays } from "./delivery";
+import { useDeliveryRules } from "./store-settings";
 import { PriceDetails } from "./price-details";
-import { bestBankOffer, computeTotals } from "./pricing";
-import { QrArt } from "./qr-art";
-import type { AddressLite, BankOffer, CartCatalog, CartLine, CouponLite, WalletLite } from "./types";
+import { computeTotals } from "./pricing";
+import type { AddressLite, CartCatalog, CartLine, CouponLite } from "./types";
 
 type PayMethod = "upi" | "card" | "netbanking" | "emi" | "paylater" | "cod";
 type Choice = "standard" | "slot1" | "slot2";
 
-const STEPS = [
-  { label: "Sign in" },
-  { label: "Address" },
-  { label: "Delivery" },
-  { label: "Summary" },
-  { label: "Payment" },
-];
-
-
-const EMI_BANKS = ["Kaveri Bank credit card", "Coral Bank credit card", "Sahyadri Bank debit card"];
-
-function emiMonthly(amount: number, months: number, noCost: boolean) {
-  if (noCost) return Math.ceil(amount / months);
-  const r = 0.14 / 12;
-  return Math.ceil((amount * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1));
-}
+const STEPS = [{ label: "Sign in" }, { label: "Address" }, { label: "Delivery" }, { label: "Summary" }, { label: "Payment" }];
 
 export function CheckoutFlow({
   catalog,
   coupons,
-  bankOffers,
-  banks,
-  wallet,
   customer,
   addresses: initialAddresses,
   buyNow,
 }: {
   catalog: CartCatalog;
   coupons: CouponLite[];
-  bankOffers: BankOffer[];
-  banks: string[];
-  wallet: WalletLite;
   customer: { name: string; phone: string };
   addresses: AddressLite[];
   buyNow?: CartLine;
 }) {
   const router = useRouter();
   const cart = useCart();
+  const rules = useDeliveryRules();
+  const COD_LIMIT = rules.codLimit;
   const lines = useMemo(() => (buyNow ? [buyNow] : cart.active), [buyNow, cart.active]);
 
   const [step, setStep] = useState(1);
@@ -89,20 +68,6 @@ export function CheckoutFlow({
   const [choice, setChoice] = useState<Choice | null>(null);
   const [install, setInstall] = useState(false);
   const [method, setMethod] = useState<PayMethod>("upi");
-  const [upiMode, setUpiMode] = useState<"id" | "qr">("id");
-  const [upiId, setUpiId] = useState("");
-  const [upiVerified, setUpiVerified] = useState<string | null>(null);
-  const [cardMode, setCardMode] = useState<"saved" | "new">("saved");
-  const [card, setCard] = useState({ number: "", expiry: "", cvv: "", name: "", save: false });
-  const [savedCvv, setSavedCvv] = useState("");
-  const [bank, setBank] = useState("");
-  const [emiBank, setEmiBank] = useState(EMI_BANKS[0]!);
-  const [emiMonths, setEmiMonths] = useState(6);
-  const [useCredits, setUseCredits] = useState(false);
-  const [useGift, setUseGift] = useState(false);
-  const [giftBalance, setGiftBalance] = useState(wallet.giftCard);
-  const [giftCode, setGiftCode] = useState("");
-  const [giftMsg, setGiftMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   // one key per checkout attempt: retries and double clicks return the same order
@@ -111,7 +76,7 @@ export function CheckoutFlow({
 
   const address = addresses.find((a) => a.id === addressId) ?? addresses[0];
   const info = lookupPincode(address?.pincode ?? "");
-  const localTotals = computeTotals(lines, catalog, { couponCode: cart.coupon, coupons, method });
+  const localTotals = computeTotals(lines, catalog, { couponCode: cart.coupon, coupons, method, rules });
 
   // The API prices the order; its quote is the authority for every amount shown.
   const request = useMemo(
@@ -146,39 +111,17 @@ export function CheckoutFlow({
     : localTotals;
 
   /* ----- money ----- */
-  const bankKey = method === "card" && cardMode === "saved" ? "Kaveri Bank" : method === "emi" ? emiBank.split(" ")[0] + " Bank" : undefined;
-  // bank offers apply once a payment method is chosen at the payment step
-  const bankDeal =
-    step < 4
-      ? null
-      : method === "emi"
-      ? emiMonths >= 6
-        ? bestBankOffer(bankOffers, totals.total, "emi", bankKey)
-        : null
-      : bestBankOffer(bankOffers, totals.total, method === "netbanking" || method === "cod" || method === "paylater" ? "none" : method, bankKey);
-  const bankValue = bankDeal?.value ?? 0;
-  let remaining = Math.max(0, totals.total - bankValue);
-  const creditsUsed = useCredits ? Math.min(wallet.credits, remaining) : 0;
-  remaining -= creditsUsed;
-  const giftUsed = useGift ? Math.min(giftBalance, remaining) : 0;
-  remaining -= giftUsed;
-  const payable = remaining;
-  const extra = [
-    ...(bankDeal ? [{ label: bankDeal.offer.kind === "UPI offer" ? "UPI offer" : "Bank offer", value: bankValue, note: bankDeal.offer.title }] : []),
-    ...(creditsUsed ? [{ label: "AltasGoods Credits", value: creditsUsed }] : []),
-    ...(giftUsed ? [{ label: "Gift card balance", value: giftUsed }] : []),
-  ];
+  const payable = totals.total;
   const codBlock =
     quote && !quote.cod.available
       ? quote.cod.reason
       : payable > COD_LIMIT
-      ? `Pay on delivery is available for orders up to ${formatINR(COD_LIMIT)}`
-      : !info?.codAvailable
-        ? `Pay on delivery is not available for pincode ${address?.pincode}`
-        : totals.lines.some((l) => !l.offer.codAvailable)
-          ? "One or more items cannot be paid on delivery"
-          : null;
-  const payLaterBlock = payable > wallet.payLaterLimit ? `Your available limit is ${formatINR(wallet.payLaterLimit)}` : null;
+        ? `Pay on delivery is available for orders up to ${formatINR(COD_LIMIT)}`
+        : !info?.codAvailable
+          ? `Pay on delivery is not available for pincode ${address?.pincode}`
+          : totals.lines.some((l) => !l.offer.codAvailable)
+            ? "One or more items cannot be paid on delivery"
+            : null;
 
   /* ----- delivery: everything ships together from the store ----- */
   const deliveryInfo = () => {
@@ -205,21 +148,7 @@ export function CheckoutFlow({
       </div>
     );
 
-  const validatePayment = () => {
-    if (payable === 0) return null;
-    if (method === "upi" && upiMode === "id" && !upiVerified) return "Verify your UPI ID, or switch to the QR code option";
-    if (method === "card" && cardMode === "saved" && !/^\d{3}$/.test(savedCvv)) return "Enter the 3 digit CVV for your saved card";
-    if (method === "card" && cardMode === "new") {
-      if (card.number.replace(/\s/g, "").length < 15) return "Enter a valid card number";
-      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(card.expiry)) return "Enter the expiry as MM/YY";
-      if (!/^\d{3,4}$/.test(card.cvv)) return "Enter the CVV";
-      if (!card.name.trim()) return "Enter the name on the card";
-    }
-    if (method === "netbanking" && !bank) return "Choose your bank";
-    if (method === "cod" && codBlock) return codBlock;
-    if (method === "paylater" && payLaterBlock) return payLaterBlock;
-    return null;
-  };
+  const validatePayment = () => (method === "cod" && codBlock ? codBlock : null);
 
   const place = async () => {
     const err = validatePayment();
@@ -249,7 +178,16 @@ export function CheckoutFlow({
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   };
 
-  const ctaLabel = step < 4 ? (step === 1 ? "Deliver to this address" : step === 2 ? "Continue" : "Continue to payment") : payable === 0 ? "Place order" : method === "cod" ? "Place order" : `Pay ${formatINR(payable)}`;
+  const ctaLabel =
+    step < 4
+      ? step === 1
+        ? "Deliver to this address"
+        : step === 2
+          ? "Continue"
+          : "Continue to payment"
+      : method === "cod"
+        ? "Place order"
+        : `Pay ${formatINR(payable)}`;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 pt-6 pb-36 sm:px-6 lg:px-8 lg:pt-8 lg:pb-16">
@@ -272,7 +210,18 @@ export function CheckoutFlow({
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
         <div className="flex min-w-0 flex-col gap-4">
           {/* 1. Sign in */}
-          <StepCard n={1} title="Signed in" done icon={UserRound} summary={`${customer.name}, ${customer.phone}`} action={<Link href="/login?next=/checkout" className="text-[13px] font-semibold text-brand-700 hover:underline">Change</Link>} />
+          <StepCard
+            n={1}
+            title="Signed in"
+            done
+            icon={UserRound}
+            summary={`${customer.name}, ${customer.phone}`}
+            action={
+              <Link href="/login?next=/checkout" className="text-[13px] font-semibold text-brand-700 hover:underline">
+                Change
+              </Link>
+            }
+          />
 
           {/* 2. Address */}
           <StepCard
@@ -291,7 +240,13 @@ export function CheckoutFlow({
                   const ai = lookupPincode(a.pincode);
                   const on = a.id === addressId;
                   return (
-                    <label key={a.id} className={cn("flex cursor-pointer gap-3 rounded-xl border p-4 transition-colors", on ? "border-brand-500 bg-brand-50/40 ring-1 ring-brand-500" : "border-line hover:border-line-strong")}>
+                    <label
+                      key={a.id}
+                      className={cn(
+                        "flex cursor-pointer gap-3 rounded-xl border p-4 transition-colors",
+                        on ? "border-brand-500 bg-brand-50/40 ring-1 ring-brand-500" : "border-line hover:border-line-strong",
+                      )}
+                    >
                       <input type="radio" name="address" checked={on} onChange={() => setAddressId(a.id)} className="mt-1 size-4 shrink-0 accent-brand-600" />
                       <span className="min-w-0 flex-1 text-sm">
                         <span className="flex flex-wrap items-center gap-2">
@@ -305,9 +260,13 @@ export function CheckoutFlow({
                           {a.landmark ? `, ${a.landmark}` : ""}, {a.city}, {a.state} {a.pincode}
                         </span>
                         <span className="mt-0.5 block text-ink-500">{a.phone}</span>
-                        <span className={cn("mt-1.5 inline-flex items-center gap-1 text-xs font-medium", ai?.serviceable ? "text-success-700" : "text-danger-700")}>
+                        <span
+                          className={cn("mt-1.5 inline-flex items-center gap-1 text-xs font-medium", ai?.serviceable ? "text-success-700" : "text-danger-700")}
+                        >
                           {ai?.serviceable ? <Check size={13} aria-hidden="true" /> : <CircleAlert size={13} aria-hidden="true" />}
-                          {ai?.serviceable ? `All items deliverable${ai.codAvailable ? ", pay on delivery available" : ""}` : "Not deliverable to this pincode yet"}
+                          {ai?.serviceable
+                            ? `All items deliverable${ai.codAvailable ? ", pay on delivery available" : ""}`
+                            : "Not deliverable to this pincode yet"}
                         </span>
                       </span>
                     </label>
@@ -341,12 +300,21 @@ export function CheckoutFlow({
                 phone={customer.phone}
               />
             ) : (
-              <button type="button" onClick={() => setAdding(true)} className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-brand-700 hover:underline">
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-brand-700 hover:underline"
+              >
                 <Plus size={16} aria-hidden="true" /> Add a new address
               </button>
             )}
             <StepActions>
-              <button type="button" disabled={!info?.serviceable} onClick={next} className="h-11 rounded-xl bg-brand-600 px-6 text-sm font-semibold text-white hover:bg-brand-700 disabled:bg-brand-300">
+              <button
+                type="button"
+                disabled={!info?.serviceable}
+                onClick={next}
+                className="h-11 rounded-xl bg-brand-600 px-6 text-sm font-semibold text-white hover:bg-brand-700 disabled:bg-brand-300"
+              >
                 Deliver to this address
               </button>
             </StepActions>
@@ -368,9 +336,7 @@ export function CheckoutFlow({
                 const fee = totals.delivery ? formatINR(totals.delivery) : "Free";
                 const opts: { key: Choice; title: string; sub: string; price: string }[] = d.large
                   ? d.slots.map((s) => ({ key: s.key, title: s.label, sub: "Scheduled delivery, our team calls 1 hour before", price: fee }))
-                  : [
-                      { key: "standard", title: `Delivery by ${formatPromise(daysFromNow(d.days))}`, sub: "Standard delivery", price: fee },
-                    ];
+                  : [{ key: "standard", title: `Delivery by ${formatPromise(daysFromNow(d.days))}`, sub: "Standard delivery", price: fee }];
                 return (
                   <div className="rounded-xl border border-line">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
@@ -388,7 +354,13 @@ export function CheckoutFlow({
                     <fieldset className="flex flex-col gap-2 p-3">
                       <legend className="sr-only">Delivery option</legend>
                       {opts.map((o) => (
-                        <label key={o.key} className={cn("flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5", d.choice === o.key ? "bg-brand-50/60" : "hover:bg-ink-50")}>
+                        <label
+                          key={o.key}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5",
+                            d.choice === o.key ? "bg-brand-50/60" : "hover:bg-ink-50",
+                          )}
+                        >
                           <input type="radio" name="ship" checked={d.choice === o.key} onChange={() => setChoice(o.key)} className="size-4 accent-brand-600" />
                           <span className="flex-1 text-sm">
                             <span className="block font-semibold text-ink-900">{o.title}</span>
@@ -441,7 +413,11 @@ export function CheckoutFlow({
                     </p>
                     <p className="mt-1 text-xs text-ink-600">
                       {l.offer.returnWindowDays ? `${l.offer.returnWindowDays} day return policy` : "Not returnable, damage covered"}
-                      {l.offer.assured && <span className="ml-2 inline-flex items-center gap-0.5 font-medium text-brand-700"><BadgeCheck size={12} aria-hidden="true" /> Assured</span>}
+                      {l.offer.assured && (
+                        <span className="ml-2 inline-flex items-center gap-0.5 font-medium text-brand-700">
+                          <BadgeCheck size={12} aria-hidden="true" /> Assured
+                        </span>
+                      )}
                     </p>
                   </div>
                   <p className="shrink-0 text-sm font-semibold text-ink-900 tabular-nums">{formatINR(l.lineTotal)}</p>
@@ -460,228 +436,46 @@ export function CheckoutFlow({
 
           {/* 5. Payment */}
           <StepCard n={5} title="Payment" icon={Lock} active={step === 4}>
-            {/* Balances (hidden until stored value is priced by the API) */}
-            {(wallet.credits > 0 || wallet.giftCard > 0) && (
-            <div className="rounded-xl border border-line">
-              <p className="border-b border-line px-4 py-3 text-sm font-semibold text-ink-900">Use your AltasGoods balance</p>
-              <div className="flex flex-col divide-y divide-line">
-                <BalanceRow icon={Wallet} label={`AltasGoods Credits: ${formatINR(wallet.credits)}`} hint="Refund credits, never expire" checked={useCredits} disabled={!wallet.credits} onChange={setUseCredits} value={creditsUsed} />
-                <BalanceRow icon={Gift} label={`Gift card balance: ${formatINR(giftBalance)}`} hint="Valid for 1 year from activation" checked={useGift} disabled={!giftBalance} onChange={setUseGift} value={giftUsed} />
-              </div>
-              <form
-                className="flex flex-wrap items-start gap-2 border-t border-line px-4 py-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (/^BBGC-?[A-Z0-9]{4}-?[A-Z0-9]{4}-?[A-Z0-9]{4}$/.test(giftCode.trim().toUpperCase())) {
-                    setGiftBalance((b) => b + 1000);
-                    setUseGift(true);
-                    setGiftMsg("₹1,000 added to your gift card balance");
-                    setGiftCode("");
-                  } else setGiftMsg("That code is not valid. Gift card codes look like BBGC-XXXX-XXXX-XXXX.");
-                }}
+            <fieldset className="overflow-hidden rounded-xl border border-line">
+              <legend className="sr-only">Payment method</legend>
+              <PayOption id="upi" icon={Smartphone} title="UPI" sub="Pay with any UPI app" method={method} setMethod={setMethod}>
+                <p className="text-sm text-ink-600">
+                  After you place the order, Razorpay&apos;s secure window opens. Enter your UPI ID or scan the QR code there, then approve in your UPI app.
+                </p>
+              </PayOption>
+              <PayOption id="card" icon={CreditCard} title="Credit or debit card" sub="Visa, Mastercard, RuPay and more" method={method} setMethod={setMethod}>
+                <p className="text-sm text-ink-600">
+                  You enter your card details in Razorpay&apos;s secure window. AltasGoods never sees or stores your card number.
+                </p>
+              </PayOption>
+              <PayOption id="netbanking" icon={Landmark} title="Net banking" sub="Pay from your bank account" method={method} setMethod={setMethod}>
+                <p className="text-sm text-ink-600">You choose your bank in Razorpay&apos;s secure window and sign in on your bank&apos;s page.</p>
+              </PayOption>
+              <PayOption id="emi" icon={CalendarClock} title="EMI" sub="On eligible credit and debit cards" method={method} setMethod={setMethod}>
+                <p className="text-sm text-ink-600">
+                  The EMI plans your bank offers, with their interest, are shown in Razorpay&apos;s secure window before you confirm.
+                </p>
+              </PayOption>
+              <PayOption id="paylater" icon={Wallet} title="Pay Later" sub="With supported pay later providers" method={method} setMethod={setMethod}>
+                <p className="text-sm text-ink-600">
+                  You choose a provider in Razorpay&apos;s secure window. Your limit and repayment terms come from that provider.
+                </p>
+              </PayOption>
+              <PayOption
+                id="cod"
+                icon={Banknote}
+                title="Pay on delivery"
+                sub={codBlock ?? "Cash or UPI at your door. No extra charge."}
+                method={method}
+                setMethod={setMethod}
+                disabled={!!codBlock}
+                last
               >
-                <label htmlFor="gift-code" className="sr-only">
-                  Gift card code
-                </label>
-                <Input id="gift-code" inputSize="sm" value={giftCode} onChange={(e) => setGiftCode(e.target.value)} placeholder="Redeem a gift card code" className="min-w-0 flex-1 font-mono uppercase placeholder:font-sans placeholder:normal-case" />
-                <button type="submit" className="h-8 rounded-lg border border-line-strong px-3 text-[13px] font-medium text-ink-800 hover:bg-ink-50">
-                  Redeem
-                </button>
-                {giftMsg && <p className="w-full text-xs text-ink-600">{giftMsg}</p>}
-              </form>
-            </div>
-            )}
-
-            {payable === 0 ? (
-              <p className="mt-4 flex items-center gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700">
-                <Check size={16} aria-hidden="true" /> Your AltasGoods balance covers this order. No further payment needed.
-              </p>
-            ) : (
-              <fieldset className="mt-4 overflow-hidden rounded-xl border border-line">
-                <legend className="sr-only">Payment method</legend>
-                <PayOption id="upi" icon={Smartphone} title="UPI" sub="Pay with any UPI app" method={method} setMethod={setMethod} badge={bestBankOffer(bankOffers, totals.total, "upi") ? `Save ${formatINR(bestBankOffer(bankOffers, totals.total, "upi")!.value)}` : undefined}>
-                  <div className="flex gap-2">
-                    {(["id", "qr"] as const).map((m) => (
-                      <button key={m} type="button" onClick={() => setUpiMode(m)} aria-pressed={upiMode === m} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium", upiMode === m ? "bg-ink-900 text-white" : "bg-ink-100 text-ink-700")}>
-                        {m === "id" ? <Smartphone size={14} aria-hidden="true" /> : <QrCode size={14} aria-hidden="true" />}
-                        {m === "id" ? "UPI ID" : "Scan QR code"}
-                      </button>
-                    ))}
-                  </div>
-                  {upiMode === "id" ? (
-                    <div className="mt-3">
-                      <Field label="UPI ID" htmlFor="upi-id" hint={upiVerified ? undefined : "For example ananya.sharma@kaveri. You will approve the request in your UPI app within 15 minutes."}>
-                        <div className="flex gap-2">
-                          <Input
-                            id="upi-id"
-                            value={upiId}
-                            onChange={(e) => {
-                              setUpiId(e.target.value.trim());
-                              setUpiVerified(null);
-                            }}
-                            placeholder="yourname@bank"
-                            className="min-w-0 flex-1"
-                            autoComplete="off"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setUpiVerified(/^[\w.-]{2,}@[a-z]{2,}$/i.test(upiId) ? customer.name : null)}
-                            className="h-10 rounded-lg border border-line-strong px-4 text-sm font-medium text-ink-800 hover:bg-ink-50"
-                          >
-                            Verify
-                          </button>
-                        </div>
-                      </Field>
-                      {upiVerified && (
-                        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-success-700">
-                          <BadgeCheck size={14} aria-hidden="true" /> Verified: {upiVerified}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                      <div className="rounded-xl border border-line p-2">
-                        <QrArt seed={`${payable}-${addressId}`} label={`UPI QR code to pay ${formatINR(payable)}`} />
-                      </div>
-                      <div className="text-sm text-ink-600">
-                        <p className="font-semibold text-ink-900">Scan with any UPI app to pay {formatINR(payable)}</p>
-                        <p className="mt-1">The code is valid for 15 minutes after you place the order. Keep this page open until payment is confirmed.</p>
-                      </div>
-                    </div>
-                  )}
-                </PayOption>
-
-                <PayOption id="card" icon={CreditCard} title="Credit or debit card" sub="Saved cards are tokenised, we never store card numbers" method={method} setMethod={setMethod} badge={bankOffers.length && totals.total >= 5000 ? "10% off with Kaveri Bank" : undefined}>
-                  <div className="flex flex-col gap-2">
-                    <label className={cn("flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5", cardMode === "saved" ? "border-brand-500 bg-brand-50/40" : "border-line")}>
-                      <input type="radio" name="card-mode" checked={cardMode === "saved"} onChange={() => setCardMode("saved")} className="size-4 accent-brand-600" />
-                      <span className="flex-1 text-sm">
-                        <span className="block font-medium text-ink-900">Kaveri Bank credit card ending 4821</span>
-                        <span className="block text-xs text-ink-500">Expires 08/29, saved as a secure token</span>
-                      </span>
-                      {cardMode === "saved" && (
-                        <Input aria-label="CVV" inputMode="numeric" maxLength={3} value={savedCvv} onChange={(e) => setSavedCvv(e.target.value.replace(/\D/g, ""))} placeholder="CVV" inputSize="sm" className="w-20" type="password" autoComplete="cc-csc" />
-                      )}
-                    </label>
-                    <label className={cn("flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5", cardMode === "new" ? "border-brand-500 bg-brand-50/40" : "border-line")}>
-                      <input type="radio" name="card-mode" checked={cardMode === "new"} onChange={() => setCardMode("new")} className="size-4 accent-brand-600" />
-                      <span className="text-sm font-medium text-ink-900">Use a new card</span>
-                    </label>
-                  </div>
-                  {cardMode === "new" && (
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <Field label="Card number" htmlFor="cc-num" className="sm:col-span-2">
-                        <Input
-                          id="cc-num"
-                          inputMode="numeric"
-                          autoComplete="cc-number"
-                          value={card.number}
-                          onChange={(e) => setCard((c) => ({ ...c, number: e.target.value.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim() }))}
-                          placeholder="1234 5678 9012 3456"
-                        />
-                      </Field>
-                      <Field label="Expiry (MM/YY)" htmlFor="cc-exp">
-                        <Input
-                          id="cc-exp"
-                          inputMode="numeric"
-                          autoComplete="cc-exp"
-                          value={card.expiry}
-                          onChange={(e) => {
-                            const d = e.target.value.replace(/\D/g, "").slice(0, 4);
-                            setCard((c) => ({ ...c, expiry: d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d }));
-                          }}
-                          placeholder="MM/YY"
-                        />
-                      </Field>
-                      <Field label="CVV" htmlFor="cc-cvv">
-                        <Input id="cc-cvv" type="password" inputMode="numeric" autoComplete="cc-csc" maxLength={4} value={card.cvv} onChange={(e) => setCard((c) => ({ ...c, cvv: e.target.value.replace(/\D/g, "") }))} placeholder="3 digits" />
-                      </Field>
-                      <Field label="Name on card" htmlFor="cc-name" className="sm:col-span-2">
-                        <Input id="cc-name" autoComplete="cc-name" value={card.name} onChange={(e) => setCard((c) => ({ ...c, name: e.target.value }))} />
-                      </Field>
-                      <Checkbox
-                        className="sm:col-span-2"
-                        checked={card.save}
-                        onChange={(e) => setCard((c) => ({ ...c, save: e.target.checked }))}
-                        label="Save this card securely for future payments"
-                        description="Stored as a token by our payment partner as per RBI rules. Optional."
-                      />
-                    </div>
-                  )}
-                </PayOption>
-
-                <PayOption id="netbanking" icon={Landmark} title="Net banking" sub="All major banks" method={method} setMethod={setMethod}>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {banks.slice(0, 6).map((b) => (
-                      <button key={b} type="button" onClick={() => setBank(b)} aria-pressed={bank === b} className={cn("flex h-11 items-center gap-2 rounded-lg border px-3 text-left text-[13px] font-medium", bank === b ? "border-brand-500 bg-brand-50/40 text-ink-900" : "border-line text-ink-700 hover:border-line-strong")}>
-                        <Landmark size={15} className="shrink-0 text-ink-400" aria-hidden="true" />
-                        <span className="truncate">{b}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <Select aria-label="Other banks" value={banks.includes(bank) && banks.indexOf(bank) < 6 ? "" : bank} onChange={(e) => setBank(e.target.value)} className="mt-2 sm:max-w-xs">
-                    <option value="">Other banks</option>
-                    {["Malabar Rural Bank", "Godavari Bank", "Tapti Urban Bank"].map((b) => (
-                      <option key={b}>{b}</option>
-                    ))}
-                  </Select>
-                </PayOption>
-
-                <PayOption id="emi" icon={CalendarClock} title="EMI" sub={totals.total >= 3000 ? "No cost EMI on 3 and 6 months" : "Available on orders of ₹3,000 and above"} method={method} setMethod={setMethod} disabled={totals.total < 3000}>
-                  <Select aria-label="EMI card" value={emiBank} onChange={(e) => setEmiBank(e.target.value)} className="sm:max-w-xs">
-                    {EMI_BANKS.map((b) => (
-                      <option key={b}>{b}</option>
-                    ))}
-                  </Select>
-                  <div className="mt-3 overflow-hidden rounded-lg border border-line">
-                    <table className="w-full text-[13px]">
-                      <thead className="bg-ink-50 text-xs text-ink-500">
-                        <tr>
-                          <th className="px-3 py-2 text-left font-medium">Plan</th>
-                          <th className="px-3 py-2 text-right font-medium">Monthly</th>
-                          <th className="px-3 py-2 text-right font-medium">Interest</th>
-                          <th className="px-3 py-2 text-right font-medium">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line">
-                        {[3, 6, 9, 12].map((m) => {
-                          const noCost = m <= 6 && !emiBank.startsWith("Sahyadri");
-                          const amt = Math.max(0, totals.total);
-                          const monthly = emiMonthly(amt, m, noCost);
-                          return (
-                            <tr key={m} className={cn("cursor-pointer", emiMonths === m && "bg-brand-50/50")} onClick={() => setEmiMonths(m)}>
-                              <td className="px-3 py-2">
-                                <label className="flex cursor-pointer items-center gap-2">
-                                  <input type="radio" name="emi" checked={emiMonths === m} onChange={() => setEmiMonths(m)} className="size-3.5 accent-brand-600" />
-                                  {m} months {noCost && <span className="rounded bg-success-50 px-1.5 py-px text-[11px] font-semibold text-success-700">No cost</span>}
-                                </label>
-                              </td>
-                              <td className="px-3 py-2 text-right text-ink-900 tabular-nums">{formatINR(monthly)}</td>
-                              <td className="px-3 py-2 text-right text-ink-600 tabular-nums">{noCost ? formatINR(0) : formatINR(monthly * m - amt)}</td>
-                              <td className="px-3 py-2 text-right text-ink-900 tabular-nums">{formatINR(monthly * m)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="mt-2 text-xs text-ink-500">No cost EMI: the interest is given to you as an upfront discount by the brand or AltasGoods. Bank GST on interest may apply on interest bearing plans.</p>
-                </PayOption>
-
-                <PayOption id="paylater" icon={Wallet} title="AltasGoods Pay Later" sub={payLaterBlock ?? `Available limit ${formatINR(wallet.payLaterLimit)}. Pay by 15 Nov, no extra cost.`} method={method} setMethod={setMethod} disabled={!!payLaterBlock}>
-                  <p className="text-sm text-ink-600">
-                    You will pay {formatINR(payable)} in one bill on 15 Nov, with no interest if paid on time. Offered with our NBFC partner. Late payment charges are shown in your Pay
-                    Later agreement.
-                  </p>
-                </PayOption>
-
-                <PayOption id="cod" icon={Banknote} title="Pay on delivery" sub={codBlock ?? "Cash or UPI at your door. No extra charge."} method={method} setMethod={setMethod} disabled={!!codBlock} last>
-                  <p className="text-sm text-ink-600">
-                    Keep {formatINR(payable)} ready or pay by scanning the associate&apos;s UPI QR. AltasGoods never charges a fee for paying on delivery.
-                  </p>
-                </PayOption>
-              </fieldset>
-            )}
+                <p className="text-sm text-ink-600">
+                  Keep {formatINR(payable)} ready or pay by UPI when your order arrives. AltasGoods never charges a fee for paying on delivery.
+                </p>
+              </PayOption>
+            </fieldset>
 
             {error && (
               <p role="alert" className="mt-4 flex items-center gap-2 rounded-lg bg-danger-50 px-3 py-2.5 text-sm text-danger-700">
@@ -690,7 +484,12 @@ export function CheckoutFlow({
             )}
             <div className="mt-5 hidden flex-col gap-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-ink-500">By placing this order you agree to AltasGoods&apos;s terms of use and return policy.</p>
-              <button type="button" onClick={place} disabled={placing} className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-400">
+              <button
+                type="button"
+                onClick={place}
+                disabled={placing}
+                className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-400"
+              >
                 {placing ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Lock size={16} aria-hidden="true" />}
                 {placing ? "Processing payment" : ctaLabel}
               </button>
@@ -699,7 +498,7 @@ export function CheckoutFlow({
         </div>
 
         <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
-          <PriceDetails totals={totals} extra={extra} totalLabel={step === 4 ? "Amount payable" : "Order total"} />
+          <PriceDetails totals={totals} totalLabel={step === 4 ? "Amount payable" : "Order total"} />
           <div className="rounded-2xl border border-line bg-white p-4 text-[13px] text-ink-600">
             <p className="flex items-center gap-2 font-semibold text-ink-900">
               <ShieldCheck size={15} className="text-success-600" aria-hidden="true" /> AltasGoods Guarantee
@@ -786,36 +585,6 @@ function StepActions({ children }: { children: ReactNode }) {
   return <div className="mt-5 hidden justify-end sm:flex">{children}</div>;
 }
 
-function BalanceRow({
-  icon: Icon,
-  label,
-  hint,
-  checked,
-  disabled,
-  onChange,
-  value,
-}: {
-  icon: typeof Gift;
-  label: string;
-  hint: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: (v: boolean) => void;
-  value: number;
-}) {
-  return (
-    <label className={cn("flex items-center gap-3 px-4 py-3", disabled ? "opacity-50" : "cursor-pointer hover:bg-ink-25")}>
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="size-4 shrink-0 accent-brand-600" />
-      <Icon size={17} className="shrink-0 text-ink-500" aria-hidden="true" />
-      <span className="min-w-0 flex-1 text-sm">
-        <span className="block font-medium text-ink-900">{label}</span>
-        <span className="block text-xs text-ink-500">{hint}</span>
-      </span>
-      {checked && value > 0 && <span className="text-sm font-semibold text-success-700 tabular-nums">-{formatINR(value)}</span>}
-    </label>
-  );
-}
-
 function PayOption({
   id,
   icon: Icon,
@@ -823,18 +592,16 @@ function PayOption({
   sub,
   method,
   setMethod,
-  badge,
   disabled,
   last,
   children,
 }: {
   id: PayMethod;
-  icon: typeof Gift;
+  icon: typeof MapPin;
   title: string;
   sub: string;
   method: PayMethod;
   setMethod: (m: PayMethod) => void;
-  badge?: string;
   disabled?: boolean;
   last?: boolean;
   children: ReactNode;
@@ -851,7 +618,6 @@ function PayOption({
           <span className="block text-sm font-semibold text-ink-900">{title}</span>
           <span className="block text-xs text-ink-500">{sub}</span>
         </span>
-        {badge && <span className="hidden shrink-0 rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-semibold text-success-700 sm:inline">{badge}</span>}
       </label>
       {on && <div className="px-4 pb-4 sm:pl-[4.25rem]">{children}</div>}
     </div>
@@ -859,7 +625,17 @@ function PayOption({
 }
 
 /** Saves the address; resolves to an error message, or null once saved. */
-function AddressForm({ onSave, onCancel, name, phone }: { onSave: (a: AddressLite) => Promise<string | null>; onCancel: () => void; name: string; phone: string }) {
+function AddressForm({
+  onSave,
+  onCancel,
+  name,
+  phone,
+}: {
+  onSave: (a: AddressLite) => Promise<string | null>;
+  onCancel: () => void;
+  name: string;
+  phone: string;
+}) {
   const [f, setF] = useState({ pincode: "", name, phone, line1: "", line2: "", landmark: "", city: "", state: "", type: "home" as AddressLite["type"] });
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -873,11 +649,23 @@ function AddressForm({ onSave, onCancel, name, phone }: { onSave: (a: AddressLit
   };
   const save = async () => {
     if (!info) return setErr("Enter a valid 6 digit pincode");
-    if (!f.name.trim() || !f.line1.trim() || f.phone.replace(/\D/g, "").length < 10) return setErr("Fill in your name, a 10 digit mobile number and the house or building");
+    if (!f.name.trim() || !f.line1.trim() || f.phone.replace(/\D/g, "").length < 10)
+      return setErr("Fill in your name, a 10 digit mobile number and the house or building");
     if (f.city.trim().length < 2 || !f.state) return setErr("Fill in the city and choose the state");
     setErr(null);
     setSaving(true);
-    const error = await onSave({ id: `addr-new-${f.pincode}-${f.line1.length}`, name: f.name, phone: f.phone, line1: f.line1, line2: f.line2 || undefined, landmark: f.landmark || undefined, city: f.city.trim(), state: f.state, pincode: f.pincode, type: f.type });
+    const error = await onSave({
+      id: `addr-new-${f.pincode}-${f.line1.length}`,
+      name: f.name,
+      phone: f.phone,
+      line1: f.line1,
+      line2: f.line2 || undefined,
+      landmark: f.landmark || undefined,
+      city: f.city.trim(),
+      state: f.state,
+      pincode: f.pincode,
+      type: f.type,
+    });
     setSaving(false);
     if (error) setErr(error);
   };
@@ -886,13 +674,27 @@ function AddressForm({ onSave, onCancel, name, phone }: { onSave: (a: AddressLit
       <p className="text-sm font-semibold text-ink-900">Add a new address</p>
       <p className="mt-0.5 text-xs text-ink-500">Fields marked * are required. We use your phone number only to coordinate delivery.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <Field label="Pincode" required htmlFor="na-pin" hint={info ? (info.serviceable ? undefined : "Not serviceable yet") : "City and state fill in automatically where we can"}>
+        <Field
+          label="Pincode"
+          required
+          htmlFor="na-pin"
+          hint={info ? (info.serviceable ? undefined : "Not serviceable yet") : "City and state fill in automatically where we can"}
+        >
           <Input id="na-pin" inputMode="numeric" autoComplete="postal-code" value={f.pincode} onChange={setPincode} />
         </Field>
         <Field label="Address type" htmlFor="na-type">
           <div className="flex gap-2" id="na-type">
             {(["home", "work", "other"] as const).map((t) => (
-              <button key={t} type="button" onClick={() => setF((x) => ({ ...x, type: t }))} aria-pressed={f.type === t} className={cn("h-10 flex-1 rounded-lg border text-sm font-medium capitalize", f.type === t ? "border-brand-500 bg-brand-50 text-brand-700" : "border-line-strong text-ink-700")}>
+              <button
+                key={t}
+                type="button"
+                onClick={() => setF((x) => ({ ...x, type: t }))}
+                aria-pressed={f.type === t}
+                className={cn(
+                  "h-10 flex-1 rounded-lg border text-sm font-medium capitalize",
+                  f.type === t ? "border-brand-500 bg-brand-50 text-brand-700" : "border-line-strong text-ink-700",
+                )}
+              >
                 {t}
               </button>
             ))}

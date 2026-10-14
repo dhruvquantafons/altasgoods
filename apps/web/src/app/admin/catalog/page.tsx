@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PackageSearch, Plus } from "lucide-react";
+import { FileUp, PackageSearch, Plus } from "lucide-react";
 import { ActiveToggle } from "@/components/admin/catalog/active-toggle";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { hrefWith, sp } from "@/components/admin/helpers";
@@ -54,9 +54,14 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
         title="Products"
         description="Everything the store sells. Changes here show in the store straight away."
         actions={
-          <ButtonLink href="/admin/catalog/new" size="sm" icon={Plus}>
-            Add product
-          </ButtonLink>
+          <>
+            <ButtonLink href="/admin/catalog/import" variant="secondary" size="sm" icon={FileUp}>
+              Import CSV
+            </ButtonLink>
+            <ButtonLink href="/admin/catalog/new" size="sm" icon={Plus}>
+              Add product
+            </ButtonLink>
+          </>
         }
       />
       <TabLinks className="mb-5" active={view} items={VIEWS.map((v) => ({ key: v.key, label: v.label, href: hrefWith("/admin/catalog", { ...current, page: undefined, view: v.key === "all" ? undefined : v.key }) }))} />
@@ -74,7 +79,7 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
           <EmptyState
             icon={PackageSearch}
             title={q || category !== "all" || view !== "all" ? "No products match" : "No products yet"}
-            description={q || category !== "all" || view !== "all" ? "Try a different search or clear the filters." : "Add your first product to start selling."}
+            description={q || category !== "all" || view !== "all" ? "Try a different search or clear the filters." : "Add your first product, or import them all from a CSV file."}
           />
         ) : (
           <TableContainer>

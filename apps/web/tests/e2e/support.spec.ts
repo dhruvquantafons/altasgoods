@@ -90,18 +90,42 @@ test("bulk assignment in the inbox is saved", async ({ browser }) => {
   await ctx.close();
 });
 
-test("an agent opens a ticket from the order lookup", async ({ browser }) => {
+test("an agent finds an order and opens a ticket from it", async ({ browser }) => {
+  const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
+  const orders = await shopper.get<{ items: { id: string }[] }>("/v1/me/orders?pageSize=1");
+  const orderId = orders.items[0]!.id;
+
   const ctx = await signedIn(browser, REVATHI);
   const page = await ctx.newPage();
-  await page.goto("/support/orders");
-  const first = page.locator("a[href^='/support/orders?q=']").first();
-  if (await first.count()) await first.click();
-  else await page.goto("/support/orders?q=BB-");
-  const create = page.getByRole("button", { name: "Create ticket" }).first();
-  await create.click();
+  const errors = watchErrors(page);
+  await page.goto(`/support/orders?q=${orderId}`);
+  await page.getByRole("link", { name: orderId, exact: true }).first().click();
+  await expect(page).toHaveURL(new RegExp(`/support/orders/${orderId}$`));
+  await expect(page.getByText(ACCOUNTS.shopper)).toHaveCount(0); // the email is not shown in full here
+  await page.getByRole("button", { name: "Create ticket" }).first().click();
   await page.locator("#nt-body").fill("Customer called to confirm the delivery address.");
   await page.getByRole("dialog").getByRole("button", { name: "Create ticket" }).click();
   await expect(page).toHaveURL(/\/support\/tickets\/TK-\d+$/);
   await expect(page.getByText("Customer called to confirm the delivery address.")).toBeVisible();
+  // the ticket shows the live order and the customer's account
+  await expect(page.getByRole("link", { name: "Open order" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open customer profile" })).toBeVisible();
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+test("an agent looks a customer up and sees their real orders and tickets", async ({ browser }) => {
+  const ctx = await signedIn(browser, REVATHI);
+  const page = await ctx.newPage();
+  await page.goto(`/support/customers?q=${ACCOUNTS.shopper}`);
+  const row = page.locator("tr", { hasText: ACCOUNTS.shopper });
+  await expect(row).toHaveCount(1);
+  await row.getByRole("link").first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Ananya Sharma");
+  await expect(page.getByText("Recent orders")).toBeVisible();
+  await expect(page.locator("a[href^='/support/orders/']").first()).toBeVisible();
+  // staff accounts are not customers
+  await page.goto("/support/customers?q=altasgoods.test");
+  await expect(page.locator("tr", { hasText: ACCOUNTS.staff })).toHaveCount(0);
   await ctx.close();
 });

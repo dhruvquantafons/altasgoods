@@ -54,6 +54,7 @@ export function apiAs(session: { accessToken: string }) {
     post: <T = Json>(p: string, body?: unknown, headers?: Record<string, string>) => call<T>("POST", p, body ?? {}, headers),
     patch: <T = Json>(p: string, body: unknown) => call<T>("PATCH", p, body),
     put: <T = Json>(p: string, body: unknown) => call<T>("PUT", p, body),
+    del: (p: string) => call("DELETE", p),
   };
 }
 
@@ -176,13 +177,13 @@ export const AREAS: Area[] = [
   {
     name: "storefront and public pages",
     account: null,
-    roots: ["/", "/portals", "/careers", "/login", "/signup", "/forgot-password", "/s?q=laptop"],
+    roots: ["/", "/careers", "/login", "/signup", "/forgot-password", "/s?q=laptop"],
     include: /^\//,
-    exclude: /^\/(account|checkout|order|admin|logistics|support)(\/|$)/,
+    exclude: /^\/(account|checkout|order|admin|logistics|portals|support)(\/|$)/,
   },
   { name: "My Account and checkout", account: ACCOUNTS.shopper, roots: ["/account", "/cart", "/checkout"], include: /^\/(account|cart|checkout)(\/|$)/ },
   { name: "AltasGoods Control", account: ACCOUNTS.staff, roots: ["/admin"], include: /^\/admin(\/|$)/ },
-  { name: "Hub Console", account: ACCOUNTS.staff, roots: ["/logistics"], include: /^\/logistics(\/|$)/ },
+  { name: "Shipping and workspaces", account: ACCOUNTS.staff, roots: ["/logistics", "/logistics/shipments", "/portals"], include: /^\/(logistics|portals)(\/|$)/ },
   { name: "Care Desk", account: ACCOUNTS.staff, roots: ["/support"], include: /^\/support(\/|$)/ },
 ];
 

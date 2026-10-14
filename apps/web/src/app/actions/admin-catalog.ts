@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { api, authHeader } from "@/lib/api/server";
 import { apiUrl } from "@/lib/api/session";
 import { CATALOG_TAG } from "@/lib/store-catalog";
-import type { AdminBrand, AdminCategory, AdminProduct } from "@/lib/api/types";
+import type { AdminBrand, AdminCategory, AdminProduct, ProductImportResult } from "@/lib/api/types";
 import type { paths } from "@/lib/api/schema";
 
 /** Catalog edits in AltasGoods Control. The API checks the staff role and validates every field. */
@@ -62,6 +62,27 @@ export async function uploadProductImage(form: FormData): Promise<Result<{ id: s
     const json = await r.json().catch(() => null);
     if (!r.ok) return problem(json, r.status === 413 ? "Images can be up to 4 MB" : "The image could not be uploaded");
     return { ok: true, data: json as { id: string; url: string } };
+  } catch {
+    return offline;
+  }
+}
+
+/**
+ * Sends a product CSV (the form carries `file`) to be checked, or imported when
+ * `dryRun` is false. New categories and products reach the storefront straight away.
+ */
+export async function importProducts(form: FormData, dryRun: boolean): Promise<Result<ProductImportResult>> {
+  const file = form.get("file");
+  if (!(file instanceof File) || !file.size) return { ok: false, error: "Choose a CSV file" };
+  const body = new FormData();
+  body.set("file", file, file.name);
+  try {
+    const r = await fetch(`${apiUrl()}/v1/admin/products/import?dryRun=${dryRun}`, { method: "POST", headers: await authHeader(), body, cache: "no-store" });
+    const json = await r.json().catch(() => null);
+    if (!r.ok) return problem(json, r.status === 413 ? "CSV files can be up to 4 MB. Split it into smaller files." : "The file could not be imported");
+    const result = json as ProductImportResult;
+    if (!dryRun && (result.summary.created || result.summary.updated)) refreshCatalog();
+    return { ok: true, data: result };
   } catch {
     return offline;
   }

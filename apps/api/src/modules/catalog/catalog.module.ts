@@ -3,6 +3,10 @@ import { AdminCatalogController, MediaController } from "./admin-catalog.control
 import { AdminCatalogService } from "./admin-catalog.service.js";
 import { CatalogController } from "./catalog.controller.js";
 import { CatalogService } from "./catalog.service.js";
+import { ProductImportService } from "./product-import.service.js";
 
-@Module({ controllers: [CatalogController, AdminCatalogController, MediaController], providers: [CatalogService, AdminCatalogService], exports: [CatalogService] })
+import { AdminReviewsController, ReviewsController } from "./reviews.controllers.js";
+import { ReviewsService } from "./reviews.service.js";
+
+@Module({ controllers: [CatalogController, AdminCatalogController, MediaController, ReviewsController, AdminReviewsController], providers: [CatalogService, AdminCatalogService, ProductImportService, ReviewsService], exports: [CatalogService] })
 export class CatalogModule {}

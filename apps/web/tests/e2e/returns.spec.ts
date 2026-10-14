@@ -75,6 +75,44 @@ test("a failed check is recorded with the store's notes", async ({ browser }) =>
   await ctx.close();
 });
 
+test("store staff record the pickup by hand and settle a failed check", async ({ browser }) => {
+  const { shopper, staff } = await sessions();
+  const { itemId } = await paidOrder(shopper, "headphones-studio");
+  await deliver(staff, itemId);
+  const created = await shopper.post<Return>("/v1/me/returns", returnRequest(itemId));
+
+  const ctx = await signedIn(browser, ACCOUNTS.staff);
+  const page = await ctx.newPage();
+  const errors = watchErrors(page);
+  await page.goto(`/admin/returns/${created.id}`);
+
+  await page.getByRole("button", { name: "Update pickup" }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("What happened").selectOption("RECEIVED");
+  await dialog.getByLabel("Courier AWB").fill("SR90012345");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("button", { name: "Pass check" })).toBeVisible();
+  await expect(page.getByText("SR90012345")).toBeVisible();
+
+  await page.getByRole("button", { name: "Fail check" }).click();
+  dialog = page.getByRole("dialog");
+  await dialog.getByLabel("What is wrong with the item").fill("Scratches on the headband");
+  await dialog.getByRole("button", { name: "Record failed check" }).click();
+
+  await page.getByRole("button", { name: "Accept anyway" }).click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("button", { name: "Accept return" })).toBeDisabled();
+  await dialog.getByLabel("Why it is accepted").fill("Minor wear, goodwill");
+  await dialog.getByRole("button", { name: "Accept return" }).click();
+  await expect(page.getByRole("button", { name: "Accept anyway" })).toHaveCount(0);
+
+  const after = await staff.get<Return>(`/v1/admin/returns/${created.id}`);
+  expect(after.status).toBe("COMPLETED");
+  expect(after.refundStatus).not.toBeNull();
+  await expectNoErrors(errors, "admin return pickup");
+  await ctx.close();
+});
+
 test("store staff approve and reject requests made after the return window", async ({ browser }) => {
   const { shopper, staff } = await sessions();
   const late = async () => {

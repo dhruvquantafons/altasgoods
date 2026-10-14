@@ -16,6 +16,7 @@ type Snapshot = { total: number; paymentLabel: string; cod: boolean; items: { id
 export function NewTicketButton({
   customerName,
   customerRef,
+  customerId,
   orderId,
   orderSnapshot,
   label = "New ticket",
@@ -27,6 +28,8 @@ export function NewTicketButton({
 }: {
   customerName: string;
   customerRef?: string;
+  /** the customer's account, so the ticket shows on their profile */
+  customerId?: string;
   orderId?: string;
   orderSnapshot?: Snapshot;
   label?: string;
@@ -48,7 +51,7 @@ export function NewTicketButton({
   async function create() {
     setBusy(true);
     setError(null);
-    const r = await openTicketForCustomer({ subject: subject.trim(), category, channel, customerName, customerRef, orderId, orderSnapshot, body: body.trim() });
+    const r = await openTicketForCustomer({ subject: subject.trim(), category, channel, customerName, customerRef, customerId, orderId, orderSnapshot, body: body.trim() });
     setBusy(false);
     if (!r.ok) return setError(r.error);
     setOpen(false);

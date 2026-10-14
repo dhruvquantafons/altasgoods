@@ -4,6 +4,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { ApiError, conflict, notFound, unprocessable } from "../../../common/errors.js";
 import type { Clock } from "../../../common/infra.module.js";
+import { env, isProduction } from "../../../config/env.js";
 import { CLOCK, DB, FILE_STORE } from "../../../common/tokens.js";
 import type { Db, Tx } from "../../../db/client.js";
 import { addresses, customerUploads, offers, orderItems, orders, products, refunds, returnEvents, returns, users, type Actor, type ReturnStatus } from "../../../db/schema.js";
@@ -37,6 +38,9 @@ const MOVES: Partial<Record<ReturnStatus, ReturnStatus[]>> = {
   QC_PASSED: ["COMPLETED"],
   QC_FAILED: ["COMPLETED", "REJECTED"],
 };
+/** The reverse pickup, in order. A scan that skips steps walks the return through each one. */
+const PICKUP_PATH: ReturnStatus[] = ["PICKUP_SCHEDULED", "OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"];
+export type PickupScan = "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED";
 
 /** Customer returns (spec 2.7, 9.1.5, 11.3): request, pickup, the store's check and the resolution. */
 @Injectable()
@@ -70,10 +74,43 @@ export class ReturnsService {
     return r;
   }
 
-  /** Books the reverse pickup once a return is approved. */
+  /**
+   * Books the reverse pickup once a return is approved. Courier return pickups
+   * are not connected yet: outside development the store arranges the pickup
+   * and records its progress (recordPickup), so no made-up AWB is shown.
+   */
   private async schedulePickup(tx: Tx, r: Return, actor: Actor) {
     const approved = r.status === "APPROVED" ? r : await this.move(tx, r, "APPROVED", actor, r.status === "PENDING_REVIEW" ? "Approved by the store" : "In-policy return, approved automatically");
-    return this.move(tx, approved, "PICKUP_SCHEDULED", "SYSTEM", ["Pickup booked", approved.pickupDate && `for ${pickupDay(approved.pickupDate)}`].filter(Boolean).join(" ") + (approved.pickupSlot ? `, ${approved.pickupSlot}` : ""), { awb: approved.awb ?? `BBR${randomInt(1_000_000_000, 9_999_999_999)}` });
+    const simulated = !isProduction() && env().LOGISTICS_PROVIDER === "simulated";
+    const when = [approved.pickupDate && `for ${pickupDay(approved.pickupDate)}`, approved.pickupSlot].filter(Boolean).join(", ");
+    return this.move(tx, approved, "PICKUP_SCHEDULED", "SYSTEM", [simulated ? "Pickup booked" : "Pickup requested", when].filter(Boolean).join(" "), {
+      awb: approved.awb ?? (simulated ? `BBR${randomInt(1_000_000_000, 9_999_999_999)}` : null),
+    });
+  }
+
+  /** One pickup step; picking the item up starts the return on the order line and pays doorstep refunds. */
+  private async pickupStep(tx: Tx, r: Return, to: ReturnStatus, actor: Actor, note: string | null, patch: Partial<Return> = {}) {
+    const next = await this.move(tx, r, to, actor, note, patch);
+    if (to !== "PICKED_UP") return next;
+    await this.workflow.transition(tx, { orderId: next.orderId, itemIds: [next.orderItemId], to: "RETURN_IN_PROGRESS", actor, note: `Return ${next.id} picked up` });
+    // low value returns are refunded at the doorstep (spec 10.6)
+    return next.instantRefund ? this.resolve(tx, next) : next;
+  }
+
+  /** Moves a return along its pickup to `to`, through any steps in between. */
+  private async walkPickup(tx: Tx, r: Return, to: PickupScan, actor: Actor, note: string | null, patch: Partial<Return> = {}) {
+    if (r.status === "PICKUP_FAILED" && to !== "PICKUP_FAILED") r = await this.move(tx, r, "PICKUP_SCHEDULED", actor, "Pickup re-attempted");
+    const from = PICKUP_PATH.indexOf(r.status);
+    const target = to === "PICKUP_FAILED" ? PICKUP_PATH.indexOf("OUT_FOR_PICKUP") : PICKUP_PATH.indexOf(to);
+    if (from < 0 || target < from || (target === from && to !== "PICKUP_FAILED")) {
+      throw conflict("INVALID_TRANSITION", `A return that is ${r.status.toLowerCase().replace(/_/g, " ")} cannot move to ${to.toLowerCase().replace(/_/g, " ")}`);
+    }
+    for (let i = from + 1; i <= target; i++) {
+      const last = i === target && to !== "PICKUP_FAILED";
+      r = await this.pickupStep(tx, r, PICKUP_PATH[i]!, actor, last ? note : null, last ? patch : {});
+    }
+    if (to === "PICKUP_FAILED") r = await this.move(tx, r, "PICKUP_FAILED", actor, note, patch);
+    return r;
   }
 
   /** Refund (once) or replacement, and the order line follows. */
@@ -330,19 +367,48 @@ export class ReturnsService {
     return this.view(id);
   }
 
+  /**
+   * A failed check is settled with the customer: accept the return anyway
+   * (the refund or replacement goes out), or reject it and send the item back.
+   */
+  async settle(id: string, accept: boolean, note?: string) {
+    const actor: Actor = "STAFF";
+    await this.db.transaction(async (tx) => {
+      const r = await this.lock(tx, id);
+      if (r.status !== "QC_FAILED") throw conflict("NOT_QC_FAILED", "Only a return that failed the check is settled this way");
+      if (!note || note.length < 5) throw unprocessable("REASON_REQUIRED", accept ? "Note why the return is accepted anyway" : "Give the customer a reason");
+      if (accept) {
+        await tx.insert(returnEvents).values({ returnId: r.id, fromStatus: r.status, toStatus: r.status, actor, note: `Accepted despite the check: ${note}`, at: this.clock.now() });
+        await this.finish(tx, r, actor);
+      } else {
+        await this.move(tx, r, "REJECTED", actor, note, { decisionNote: note });
+        await this.workflow.transition(tx, { orderId: r.orderId, itemIds: [r.orderItemId], to: "DELIVERED", actor, note: `Return ${r.id} rejected after the check, item sent back` });
+      }
+    });
+    return this.view(id);
+  }
+
   /* ---------------------------- Logistics ----------------------------- */
 
-  /** Stands in for reverse pickup scans until the logistics integration (development only). */
-  async advance(id: string, to: "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED") {
+  /**
+   * The store records the reverse pickup by hand (until courier return pickups
+   * are connected): out for pickup, picked up, failed, in transit or received,
+   * with the courier's AWB once it has one.
+   */
+  async recordPickup(id: string, to: PickupScan, input: { awb?: string; note?: string } = {}) {
     await this.db.transaction(async (tx) => {
-      let r = await this.lock(tx, id);
-      if (to === "OUT_FOR_PICKUP" && r.status === "PICKUP_FAILED") r = await this.move(tx, r, "PICKUP_SCHEDULED", "LOGISTICS", "Re-attempt booked");
-      r = await this.move(tx, r, to, "LOGISTICS", null);
-      if (to === "PICKED_UP") {
-        await this.workflow.transition(tx, { orderId: r.orderId, itemIds: [r.orderItemId], to: "RETURN_IN_PROGRESS", actor: "LOGISTICS", note: `Return ${r.id} picked up` });
-        // low value returns are refunded at the doorstep (spec 10.6)
-        if (r.instantRefund) await this.resolve(tx, r);
-      }
+      const r = await this.lock(tx, id);
+      if (to === "PICKUP_FAILED" && (!input.note || input.note.length < 5)) throw unprocessable("REASON_REQUIRED", "Note why the pickup failed");
+      await this.walkPickup(tx, r, to, "STAFF", input.note || null, input.awb ? { awb: input.awb } : {});
+    });
+    return this.view(id);
+  }
+
+  /** Stands in for reverse pickup scans until the logistics integration (development only). */
+  async advance(id: string, to: PickupScan) {
+    await this.db.transaction(async (tx) => {
+      const r = await this.lock(tx, id);
+      await this.walkPickup(tx, r, to, "LOGISTICS", null);
     });
     return this.view(id);
   }

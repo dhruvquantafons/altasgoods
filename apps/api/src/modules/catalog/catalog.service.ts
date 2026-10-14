@@ -1,23 +1,46 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, lte, sql, type SQL } from "drizzle-orm";
 import type { Db } from "../../db/client.js";
-import { brands, categories, offers, products } from "../../db/schema.js";
+import { brands, categories, offers, products, sales } from "../../db/schema.js";
 import { notFound } from "../../common/errors.js";
 import { HOUSE_SELLER_ID } from "../../common/house.js";
-import { DB } from "../../common/tokens.js";
+import type { Clock } from "../../common/infra.module.js";
+import { CLOCK, DB } from "../../common/tokens.js";
+import { bestSale, salePrice, type LiveSale } from "../commerce/pricing.js";
 import type { ProductQuery, ProductSummary } from "./catalog.schemas.js";
 
 export const discountPercent = (price: number, mrp: number) => (mrp > price ? Math.floor(((mrp - price) / mrp) * 100) : 0);
 
-/** The store's offer for each product; a paused offer takes the product off sale. */
-const HOUSE_OFFER = sql`
-  select o.product_id, o.id as offer_id, o.price_paise, o.mrp_paise, o.stock, o.delivery_days, o.cod_available, o.return_window_days
+/**
+ * The store's offer for each product at a moment; a paused offer takes the
+ * product off sale. price_paise is the selling price with the biggest live sale
+ * applied, rounded down to the rupee exactly as salePrice() in pricing.ts does.
+ */
+const houseOffer = (at: Date) => sql`
+  select o.product_id, o.id as offer_id, o.mrp_paise, o.stock, o.delivery_days, o.cod_available, o.return_window_days,
+         o.price_paise as regular_price_paise,
+         case when s.discount_percent is null then o.price_paise
+              else greatest(100, (o.price_paise * (100 - s.discount_percent) / 10000) * 100) end as price_paise,
+         s.id as sale_id, s.name as sale_name, s.slug as sale_slug, s.discount_percent as sale_percent, s.ends_at as sale_ends_at
   from offers o
+  join products op on op.id = o.product_id
+  left join lateral (
+    select sa.id, sa.name, sa.slug, sa.discount_percent, sa.ends_at from sales sa
+    where sa.status = 'ACTIVE' and sa.starts_at <= ${at} and sa.ends_at > ${at}
+      and (sa.scope = 'ALL'
+        or (sa.scope = 'CATEGORIES' and op.category_id = any(sa.category_ids))
+        or (sa.scope = 'PRODUCTS' and o.product_id = any(sa.product_ids)))
+    order by sa.discount_percent desc, sa.ends_at asc
+    limit 1
+  ) s on true
   where o.seller_id = ${HOUSE_SELLER_ID} and o.status = 'ACTIVE'`;
 
 @Injectable()
 export class CatalogService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async categoryTree() {
     const rows = await this.db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.name));
@@ -66,7 +89,7 @@ export class CatalogService {
       from products p
       join brands b on b.id = p.brand_id
       join categories c on c.id = p.category_id
-      join (${HOUSE_OFFER}) bo on bo.product_id = p.id`;
+      join (${houseOffer(this.clock.now())}) bo on bo.product_id = p.id`;
     const whereAll = sql.join([...where, ...priceAndBrand], sql` and `);
 
     const orderBy = {
@@ -87,7 +110,8 @@ export class CatalogService {
         select p.id, p.slug, p.title, p.subcategory, p.images, p.rating, p.rating_count, p.assured, p.tags,
                b.id as brand_id, b.slug as brand_slug, b.name as brand_name,
                c.id as category_id, c.slug as category_slug, c.name as category_name,
-               bo.offer_id, bo.price_paise, bo.mrp_paise, bo.stock, bo.delivery_days, bo.cod_available, bo.return_window_days
+               bo.offer_id, bo.price_paise, bo.mrp_paise, bo.stock, bo.delivery_days, bo.cod_available, bo.return_window_days,
+               bo.sale_id, bo.sale_name, bo.sale_slug, bo.sale_percent, bo.sale_ends_at
         ${base} where ${whereAll}
         order by ${orderBy}, p.id
         limit ${q.pageSize} offset ${offset}`),
@@ -122,7 +146,8 @@ export class CatalogService {
    * The web app caches it and refreshes it when the catalog changes.
    */
   async storefront() {
-    const [rows, cats, brandRows] = await Promise.all([
+    const now = this.clock.now();
+    const [rows, cats, brandRows, live] = await Promise.all([
       this.db
         .select({ product: products, offer: offers })
         .from(products)
@@ -131,13 +156,20 @@ export class CatalogService {
         .orderBy(asc(products.createdAt), asc(products.id)),
       this.db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.name)),
       this.db.select().from(brands).orderBy(asc(brands.name)),
+      this.db
+        .select({ id: sales.id, name: sales.name, slug: sales.slug, discountPercent: sales.discountPercent, scope: sales.scope, categoryIds: sales.categoryIds, productIds: sales.productIds, endsAt: sales.endsAt })
+        .from(sales)
+        .where(and(eq(sales.status, "ACTIVE"), lte(sales.startsAt, now), gt(sales.endsAt, now))),
     ]);
+    const saleFor = (p: { id: string; categoryId: string }) => bestSale(live as LiveSale[], p);
     return {
       categories: cats
         .filter((c) => !c.parentId)
         .map((c) => ({ id: c.id, slug: c.slug, name: c.name, icon: c.icon, image: c.image, children: cats.filter((x) => x.parentId === c.id).map((x) => ({ id: x.id, slug: x.slug, name: x.name })) })),
       brands: brandRows.map((b) => ({ id: b.id, slug: b.slug, name: b.name })),
-      products: rows.map(({ product: p, offer: o }) => ({
+      products: rows.map(({ product: p, offer: o }) => {
+        const sale = saleFor(p);
+        return {
         id: p.id,
         slug: p.slug,
         sku: p.sku,
@@ -159,15 +191,18 @@ export class CatalogService {
         createdAt: p.createdAt.toISOString(),
         offer: {
           id: o.id,
-          pricePaise: o.pricePaise,
+          pricePaise: sale ? salePrice(o.pricePaise, sale.discountPercent) : o.pricePaise,
           mrpPaise: o.mrpPaise,
+          regularPricePaise: o.pricePaise,
+          sale: sale ? { id: sale.id, name: sale.name, slug: sale.slug, percent: sale.discountPercent, endsAt: sale.endsAt.toISOString() } : null,
           // exact stock stays private; a cart line is capped at 10 anyway
           stock: Math.min(o.stock, 10),
           deliveryDays: o.deliveryDays,
           codAvailable: o.codAvailable,
           returnWindowDays: o.returnWindowDays,
         },
-      })),
+      };
+      }),
     };
   }
 
@@ -215,6 +250,9 @@ function toSummary(r: Record<string, unknown>): ProductSummary & { stock: number
     inStock: Number(r.stock) > 0,
     deliveryDays: Number(r.delivery_days),
     offerId: String(r.offer_id),
+    sale: r.sale_id
+      ? { id: String(r.sale_id), name: String(r.sale_name), slug: String(r.sale_slug), percent: Number(r.sale_percent), endsAt: new Date(r.sale_ends_at as string).toISOString() }
+      : null,
     stock: Number(r.stock),
     codAvailable: Boolean(r.cod_available),
     returnWindowDays: Number(r.return_window_days),

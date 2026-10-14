@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPinned, RotateCcw, Truck, Undo2 } from "lucide-react";
+import { MapPinned, PenLine, RotateCcw, Truck, Undo2 } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -129,6 +129,11 @@ function OrderItemRow({ order, item, first }: { order: Order; item: OrderItem; f
         {delivered && ri.eligible && (
           <ButtonLink href={`/account/orders/${order.id}/return?item=${item.id}`} size="sm" variant="secondary" icon={RotateCcw} className="sm:w-full">
             Return or replace
+          </ButtonLink>
+        )}
+        {delivered && !st.ret && (
+          <ButtonLink href={`/account/reviews?write=${item.productId}`} size="sm" variant="secondary" icon={PenLine} className="sm:w-full">
+            Write a review
           </ButtonLink>
         )}
         {!active && <BuyAgainButton title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />}

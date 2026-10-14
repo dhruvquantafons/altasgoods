@@ -41,7 +41,14 @@ export const refundSchema = z.object({
 
 export const decisionBody = z.object({ approve: z.boolean(), note: z.string().trim().max(500).optional() });
 export const qcBody = z.object({ pass: z.boolean(), note: z.string().trim().max(500).optional() });
-export const advanceBody = z.object({ to: z.enum(["OUT_FOR_PICKUP", "PICKED_UP", "PICKUP_FAILED", "IN_TRANSIT", "RECEIVED"]) });
+const pickupScan = z.enum(["OUT_FOR_PICKUP", "PICKED_UP", "PICKUP_FAILED", "IN_TRANSIT", "RECEIVED"]);
+export const advanceBody = z.object({ to: pickupScan });
+export const pickupBody = z.object({
+  to: pickupScan.describe("The pickup's new state; steps in between are recorded too"),
+  awb: z.string().trim().min(4).max(40).regex(/^[A-Za-z0-9-]+$/, "Use the AWB as the courier printed it").optional().describe("The courier's AWB for the reverse pickup"),
+  note: z.string().trim().max(500).optional().describe("Required when the pickup failed"),
+});
+export const settleBody = z.object({ accept: z.boolean(), note: z.string().trim().max(500) });
 export const returnListQuery = z.object({ status: z.string().max(200).optional() });
 
 export const returnSchema = z.object({

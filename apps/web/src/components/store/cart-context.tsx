@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { loadServerCart, syncCart, type LineInput } from "@/app/actions/store";
+import { loadServerCart, loadServerWishlist, syncCart, syncWishlist, type LineInput } from "@/app/actions/store";
 import { CircleCheck } from "lucide-react";
 import type { CartLine } from "./types";
 import { DEFAULT_PINCODE } from "./delivery";
@@ -72,7 +72,6 @@ export interface CartState {
   coupon: string | null;
 }
 
-
 /** A new browser starts with an empty cart; a signed-in account's cart is merged in after sign in. */
 const DEFAULT_CART: CartState = { lines: [], coupon: null };
 
@@ -94,7 +93,13 @@ const cartStore = createPersistedStore<CartState>("altasgoods.cart.v1", DEFAULT_
     coupon: typeof r.coupon === "string" ? r.coupon : null,
     lines: r.lines
       .filter((l) => l && typeof l.productId === "string")
-      .map((l) => ({ productId: l.productId, variant: l.variant, saved: l.saved, qty: Math.max(1, Math.min(10, Number(l.qty) || 1)), key: lineKey(l.productId, l.variant) })),
+      .map((l) => ({
+        productId: l.productId,
+        variant: l.variant,
+        saved: l.saved,
+        qty: Math.max(1, Math.min(10, Number(l.qty) || 1)),
+        key: lineKey(l.productId, l.variant),
+      })),
   };
 });
 
@@ -102,7 +107,12 @@ const wishlistStore = createPersistedStore<string[]>("altasgoods.wishlist.v1", [
   Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : null,
 );
 
-const pincodeStore = createPersistedStore<string>("altasgoods.pincode.v1", DEFAULT_PINCODE, (raw) => (typeof raw === "string" && /^[1-8]\d{5}$/.test(raw) ? raw : null));
+/** Whether this browser's cart and wishlist belong to a signed-in account. */
+const signedInFlag = createPersistedStore<boolean>("altasgoods.signed-in.v1", false, (raw) => (typeof raw === "boolean" ? raw : null));
+
+const pincodeStore = createPersistedStore<string>("altasgoods.pincode.v1", DEFAULT_PINCODE, (raw) =>
+  typeof raw === "string" && /^[1-8]\d{5}$/.test(raw) ? raw : null,
+);
 
 export const MAX_QTY = 10;
 
@@ -138,6 +148,17 @@ export function CartProvider({ children, signedIn = false }: { children: ReactNo
   const [merged, setMerged] = useState(false);
   const merging = useRef(false);
 
+  // Signing out leaves the account's cart and wishlist in this browser; clear them so
+  // the next person to use it does not see them, or merge them into their own account.
+  useEffect(() => {
+    if (signedIn) signedInFlag.write(true);
+    else if (signedInFlag.read()) {
+      cartStore.write(DEFAULT_CART);
+      wishlistStore.write([]);
+      signedInFlag.write(false);
+    }
+  }, [signedIn]);
+
   // After sign in: merge the account's cart into this browser's cart once.
   useEffect(() => {
     if (!signedIn || merging.current) return;
@@ -156,6 +177,24 @@ export function CartProvider({ children, signedIn = false }: { children: ReactNo
     }, 600);
     return () => clearTimeout(t);
   }, [state.lines, signedIn, merged]);
+
+  // The wishlist works the same way: merge the account's once, then mirror changes.
+  const wishlist = usePersisted(wishlistStore);
+  const [wishMerged, setWishMerged] = useState(false);
+  const wishMerging = useRef(false);
+  useEffect(() => {
+    if (!signedIn || wishMerging.current) return;
+    wishMerging.current = true;
+    loadServerWishlist().then((r) => {
+      if (r.ok) wishlistStore.write([...new Set([...wishlistStore.read(), ...r.data])]);
+      setWishMerged(true);
+    });
+  }, [signedIn]);
+  useEffect(() => {
+    if (!signedIn || !wishMerged) return;
+    const t = setTimeout(() => syncWishlist(wishlist), 400);
+    return () => clearTimeout(t);
+  }, [wishlist, signedIn, wishMerged]);
 
   useEffect(() => {
     if (!toast) return;

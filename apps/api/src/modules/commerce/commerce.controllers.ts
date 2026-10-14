@@ -5,16 +5,19 @@ import type { Redis } from "ioredis";
 import { z } from "zod";
 import { forbidden } from "../../common/errors.js";
 import { REDIS } from "../../common/tokens.js";
-import { isProduction } from "../../config/env.js";
+import { env, isProduction } from "../../config/env.js";
 import { CurrentUser, Public, StaffOnly, type AuthUser } from "../auth/auth.guard.js";
 import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
+import { WishlistService } from "./wishlist.service.js";
 import * as s from "./commerce.schemas.js";
 import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
 import { ShippingService } from "./shipping/shipping.service.js";
+import { AuditService } from "../admin/audit.service.js";
+import { AdminInsightsService } from "./admin-insights.service.js";
 
 const uuidParam = { schema: z.uuid() };
 
@@ -46,6 +49,25 @@ export class AddressesController {
   @HttpCode(204)
   async remove(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string) {
     await this.svc.remove(u.id, id);
+  }
+}
+
+@ApiTags("Wishlist")
+@ApiBearerAuth()
+@Controller("v1/me/wishlist")
+export class WishlistController {
+  constructor(@Inject(WishlistService) private readonly svc: WishlistService) {}
+
+  @Get()
+  @ApiResponse({ status: 200, standardSchema: s.wishlistSchema })
+  get(@CurrentUser() u: AuthUser) {
+    return this.svc.get(u.id);
+  }
+
+  @Put()
+  @ApiResponse({ status: 200, standardSchema: s.wishlistSchema })
+  replace(@CurrentUser() u: AuthUser, @Body({ schema: s.putWishlistBody }) body: z.infer<typeof s.putWishlistBody>) {
+    return this.svc.replace(u.id, body.productIds);
   }
 }
 
@@ -158,7 +180,11 @@ export class PaymentsController {
   @Post(":id/sandbox/complete")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.paymentDetailSchema })
-  sandbox(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.sandboxCompleteBody }) body: z.infer<typeof s.sandboxCompleteBody>) {
+  sandbox(
+    @CurrentUser() u: AuthUser,
+    @Param("id", uuidParam) id: string,
+    @Body({ schema: s.sandboxCompleteBody }) body: z.infer<typeof s.sandboxCompleteBody>,
+  ) {
     return this.payments.sandboxComplete(u.id, id, body.outcome);
   }
 
@@ -189,6 +215,7 @@ export class AdminOrdersController {
   constructor(
     @Inject(FulfilmentService) private readonly svc: FulfilmentService,
     @Inject(ShippingService) private readonly shipping: ShippingService,
+    @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
   @Get("order-items")
@@ -206,8 +233,35 @@ export class AdminOrdersController {
   @Post("order-items/transition")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.transitionResult })
-  transition(@CurrentUser() u: AuthUser, @Body({ schema: s.transitionBody }) body: z.infer<typeof s.transitionBody>) {
-    return this.svc.transition(u.id, body);
+  async transition(@CurrentUser() u: AuthUser, @Body({ schema: s.transitionBody }) body: z.infer<typeof s.transitionBody>) {
+    const r = await this.svc.transition(u.id, body);
+    const done = r.results.filter((x) => x.ok).length;
+    const verb: Record<typeof body.to, string> = { ACCEPTED: "Accepted", PACKED: "Packed", READY_TO_SHIP: "Marked ready to ship", CANCELLED: "Cancelled" };
+    if (done) {
+      await this.audit.log(
+        u,
+        `order.${body.to.toLowerCase()}`,
+        { type: "order_item", id: done === 1 ? r.results.find((x) => x.ok)!.id : null },
+        `${verb[body.to]} ${done} order line${done === 1 ? "" : "s"}${body.reason ? `: ${body.reason}` : ""}`,
+      );
+    }
+    return r;
+  }
+
+  /** Which courier is connected, and what Shiprocket still needs before it can take over. */
+  @Get("logistics/status")
+  @ApiResponse({ status: 200, standardSchema: s.logisticsStatusSchema })
+  logisticsStatus() {
+    const e = env();
+    return {
+      provider: this.shipping.providerName,
+      shiprocket: {
+        credentials: !!(e.SHIPROCKET_EMAIL && e.SHIPROCKET_PASSWORD),
+        pickupLocation: !!e.SHIPROCKET_PICKUP_LOCATION,
+        webhookToken: !!e.SHIPROCKET_WEBHOOK_TOKEN,
+      },
+      webhookPath: "/v1/logistics/webhooks/tracking",
+    };
   }
 
   /** Asks the courier for the line's latest scan now, instead of waiting for the next poll. */
@@ -216,6 +270,32 @@ export class AdminOrdersController {
   @ApiResponse({ status: 200, standardSchema: s.trackingRefreshResult })
   refreshTracking(@Param("id", uuidParam) id: string) {
     return this.shipping.refresh(id);
+  }
+}
+
+@ApiTags("Admin")
+@ApiBearerAuth()
+@StaffOnly("OPS_ADMIN")
+@Controller("v1/admin")
+export class AdminInsightsController {
+  constructor(@Inject(AdminInsightsService) private readonly svc: AdminInsightsService) {}
+
+  @Get("overview")
+  @ApiResponse({ status: 200, standardSchema: s.adminOverviewSchema })
+  overview() {
+    return this.svc.overview();
+  }
+
+  @Get("payments")
+  @ApiResponse({ status: 200, standardSchema: s.adminPaymentList })
+  payments(@Query({ schema: s.adminPaymentsQuery }) q: z.infer<typeof s.adminPaymentsQuery>) {
+    return this.svc.payments(q);
+  }
+
+  @Get("refunds")
+  @ApiResponse({ status: 200, standardSchema: s.adminRefundList })
+  refunds(@Query({ schema: s.adminRefundsQuery }) q: z.infer<typeof s.adminRefundsQuery>) {
+    return this.svc.refunds(q);
   }
 }
 

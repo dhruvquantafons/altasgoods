@@ -64,6 +64,41 @@
       "when": 1791866475745,
       "tag": "0008_email_password_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791889063072,
+      "tag": "0009_admin_audit_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791890499170,
+      "tag": "0010_sales_coupons",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791891178708,
+      "tag": "0011_storefront_banners",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791950635155,
+      "tag": "0012_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791953945915,
+      "tag": "0013_wishlist",
+      "breakpoints": true
     }
   ]
 }

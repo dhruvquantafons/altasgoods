@@ -86,6 +86,16 @@ export async function gradeStoreReturn(id: string, pass: boolean, note?: string)
   return returnCall(id, async () => (await api()).POST("/v1/admin/returns/{id}/qc", { params: { path: { id } }, body: { pass, note: note || undefined } }), "Could not save the check");
 }
 
+/** Records the reverse pickup by hand (steps in between are recorded too), with the courier's AWB if there is one. */
+export async function recordReturnPickup(id: string, to: "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED", awb?: string, note?: string) {
+  return returnCall(id, async () => (await api()).POST("/v1/admin/returns/{id}/pickup", { params: { path: { id } }, body: { to, awb: awb || undefined, note: note || undefined } }), "Could not update the pickup");
+}
+
+/** Settles a failed check: accept the return anyway, or reject it and send the item back. */
+export async function settleStoreReturn(id: string, accept: boolean, note: string) {
+  return returnCall(id, async () => (await api()).POST("/v1/admin/returns/{id}/settle", { params: { path: { id } }, body: { accept, note } }), "Could not settle the return");
+}
+
 /** Development only: stands in for reverse pickup scans. */
 export async function simulateReturnScan(id: string, to: "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED") {
   const blocked = devOnly();

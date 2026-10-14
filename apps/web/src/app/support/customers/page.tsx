@@ -2,68 +2,46 @@ import Link from "next/link";
 import { ChevronRight, Search, UserSearch } from "lucide-react";
 import { AutoSubmitForm } from "@/components/logistics/ops-client";
 import { maskPhone, Mono, one, Pager, qs } from "@/components/logistics/ops-ui";
-import { RiskPill } from "@/components/support/meta";
+import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Avatar, EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { tickets } from "@/lib/api/support";
-import { customers } from "@/lib/mock";
-import type { Customer } from "@/lib/types";
-import { cn, formatDate, formatINR } from "@/lib/utils";
+import { loadCustomers } from "@/lib/api/support";
+import { cn, formatDate } from "@/lib/utils";
 
 export const metadata = { title: "Customer lookup" };
 
-const PAGE = 20;
-
-function matches(c: Customer, q: string) {
-  const digits = q.replace(/\D/g, "");
-  return (
-    c.name.toLowerCase().includes(q) ||
-    c.email.toLowerCase().includes(q) ||
-    c.id.toLowerCase() === q ||
-    (digits.length >= 4 && c.phone.replace(/\D/g, "").includes(digits))
-  );
-}
-
 export default async function CustomersPage(props: PageProps<"/support/customers">) {
   const sp = await props.searchParams;
-  const q = (one(sp.q) ?? "").trim().toLowerCase();
-  const risk = one(sp.risk) ?? "";
+  const q = (one(sp.q) ?? "").trim();
   const page = Math.max(1, Number(one(sp.page)) || 1);
-
-  const rows = customers
-    .filter((c) => (!q || matches(c, q)) && (!risk || (risk === "high" ? c.riskScore >= 70 : c.status !== "active")))
-    .sort((a, b) => b.lifetimeValue - a.lifetimeValue);
-  const paged = rows.slice((page - 1) * PAGE, page * PAGE);
-  const { tickets: active } = await tickets({ view: "open" });
-  const openTickets = (name: string) => active.filter((t) => t.customerName === name).length;
-  const params = { q: q || undefined, risk: risk || undefined };
+  const data = await loadCustomers(q, page);
 
   return (
     <>
-      <PageHeader title="Customer lookup" description="Find a customer by name, email, phone or customer ID. Contact details stay masked unless revealed." />
+      <PageHeader title="Customer lookup" description="Find a customer by name, email or mobile number. Newest accounts first." />
       <Card className="overflow-hidden">
         <AutoSubmitForm action="/support/customers" className="flex flex-wrap items-center gap-2 px-5 py-4">
-          <Input name="q" defaultValue={q} icon={Search} inputSize="sm" placeholder="Name, email, last 4 digits of phone or c-001" aria-label="Search customers" className="w-full sm:w-80" />
-          <Select name="risk" defaultValue={risk} selectSize="sm" aria-label="Risk" className="w-[calc(50%-4px)] sm:w-44">
-            <option value="">Any risk</option>
-            <option value="high">High risk score</option>
-            <option value="flagged">Flagged or blocked</option>
-          </Select>
+          <Input name="q" defaultValue={q} icon={Search} inputSize="sm" placeholder="Name, email or mobile number" aria-label="Search customers" className="w-full sm:w-80" />
           <button type="submit" className={buttonClasses({ variant: "secondary", size: "sm" })}>
             Search
           </button>
-          {(q || risk) && (
+          {q && (
             <Link href="/support/customers" className="px-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
               Clear
             </Link>
           )}
         </AutoSubmitForm>
-        {paged.length === 0 ? (
-          <EmptyState icon={UserSearch} title="No customers found" description="Check the spelling, or search by the last 4 digits of the registered mobile number." className="border-t border-line" />
+        {data.items.length === 0 ? (
+          <EmptyState
+            icon={UserSearch}
+            title={q ? "No customers found" : "No customers yet"}
+            description={q ? "Check the spelling, or search by email or mobile number." : "Customers appear here once they sign up."}
+            className="border-t border-line"
+          />
         ) : (
           <>
             <TableContainer className="hidden md:block">
@@ -71,11 +49,8 @@ export default async function CustomersPage(props: PageProps<"/support/customers
                 <THead>
                   <TR>
                     <TH>Customer</TH>
-                    <TH>Phone</TH>
-                    <TH>City</TH>
+                    <TH>Mobile</TH>
                     <TH align="right">Orders</TH>
-                    <TH align="right">Lifetime value</TH>
-                    <TH>Risk</TH>
                     <TH align="right">Open tickets</TH>
                     <TH>Joined</TH>
                     <TH>
@@ -84,62 +59,55 @@ export default async function CustomersPage(props: PageProps<"/support/customers
                   </TR>
                 </THead>
                 <TBody>
-                  {paged.map((c) => {
-                    const open = openTickets(c.name);
-                    return (
-                      <TR key={c.id}>
-                        <TD>
-                          <Link href={`/support/customers/${c.id}`} className="group flex items-center gap-3">
-                            <Avatar name={c.name} size="sm" />
-                            <span>
-                              <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-900 group-hover:text-brand-700">
-                                {c.name}
-                              </span>
-                              <span className="font-mono text-[11px] text-ink-500">{c.id}</span>
+                  {data.items.map((c) => (
+                    <TR key={c.id}>
+                      <TD>
+                        <Link href={`/support/customers/${c.id}`} className="group flex items-center gap-3">
+                          <Avatar name={c.name ?? c.email} size="sm" />
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-900 group-hover:text-brand-700">
+                              {c.name ?? "No name"}
+                              {c.status === "BLOCKED" && (
+                                <Badge size="sm" tone="danger">
+                                  Blocked
+                                </Badge>
+                              )}
                             </span>
-                          </Link>
-                        </TD>
-                        <TD>
-                          <Mono className="text-ink-700">{maskPhone(c.phone)}</Mono>
-                        </TD>
-                        <TD className="text-[13px]">{c.city}</TD>
-                        <TD align="right">{c.orders}</TD>
-                        <TD align="right" className="font-medium text-ink-900">
-                          {formatINR(c.lifetimeValue)}
-                        </TD>
-                        <TD>
-                          <RiskPill score={c.riskScore} />
-                        </TD>
-                        <TD align="right" className={cn(open > 0 && "font-medium text-ink-900")}>
-                          {open || "-"}
-                        </TD>
-                        <TD className="text-[13px] text-ink-500">{formatDate(c.joinedAt)}</TD>
-                        <TD align="right">
-                          <ChevronRight size={16} className="text-ink-300" aria-hidden="true" />
-                        </TD>
-                      </TR>
-                    );
-                  })}
+                            <span className="block truncate text-xs text-ink-500">{c.email}</span>
+                          </span>
+                        </Link>
+                      </TD>
+                      <TD>{c.phone ? <Mono className="text-ink-700">{maskPhone(c.phone)}</Mono> : <span className="text-xs text-ink-400">Not given</span>}</TD>
+                      <TD align="right">{c.orders}</TD>
+                      <TD align="right" className={cn(c.openTickets > 0 && "font-medium text-ink-900")}>
+                        {c.openTickets || "-"}
+                      </TD>
+                      <TD className="text-[13px] text-ink-500">{formatDate(c.createdAt)}</TD>
+                      <TD align="right">
+                        <ChevronRight size={16} className="text-ink-300" aria-hidden="true" />
+                      </TD>
+                    </TR>
+                  ))}
                 </TBody>
               </Table>
             </TableContainer>
             <ul className="divide-y divide-line border-t border-line md:hidden">
-              {paged.map((c) => (
+              {data.items.map((c) => (
                 <li key={c.id}>
                   <Link href={`/support/customers/${c.id}`} className="flex items-center gap-3 px-4 py-3">
-                    <Avatar name={c.name} size="sm" />
+                    <Avatar name={c.name ?? c.email} size="sm" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-ink-900">{c.name}</span>
-                      <span className="block text-xs text-ink-500">
-                        {c.orders} orders, {formatINR(c.lifetimeValue)}, {c.city}
+                      <span className="block text-sm font-medium text-ink-900">{c.name ?? c.email}</span>
+                      <span className="block truncate text-xs text-ink-500">
+                        {c.orders} orders, {c.email}
                       </span>
                     </span>
-                    <RiskPill score={c.riskScore} />
+                    <ChevronRight size={16} className="text-ink-300" aria-hidden="true" />
                   </Link>
                 </li>
               ))}
             </ul>
-            <Pager page={page} pageSize={PAGE} total={rows.length} label="customers" hrefFor={(p) => `/support/customers${qs({ ...params, page: p > 1 ? p : undefined })}`} />
+            <Pager page={page} pageSize={data.pageSize} total={data.total} label="customers" hrefFor={(p) => `/support/customers${qs({ q: q || undefined, page: p > 1 ? p : undefined })}`} />
           </>
         )}
       </Card>

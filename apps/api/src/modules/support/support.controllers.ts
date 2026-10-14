@@ -5,6 +5,8 @@ import type { Response } from "express";
 import { z } from "zod";
 import { CurrentUser, StaffOnly, type AuthUser } from "../auth/auth.guard.js";
 import * as s from "./support.schemas.js";
+import { AuditService } from "../admin/audit.service.js";
+import { SupportLookupService } from "./support-lookup.service.js";
 import { SupportService } from "./support.service.js";
 
 const ticketId = { schema: z.string().regex(/^TK-\d+$/, "Ticket ids look like TK-51908") };
@@ -22,12 +24,76 @@ function sendFile(res: Response, file: { content: Buffer; mimeType: string; file
   res.send(file.content);
 }
 
+/** Customers in AltasGoods Control: the same lookup the Care Desk uses, plus blocking an account. */
+@ApiTags("Admin")
+@ApiBearerAuth()
+@StaffOnly("OPS_ADMIN")
+@Controller("v1/admin/customers")
+export class AdminCustomersController {
+  constructor(
+    @Inject(SupportLookupService) private readonly lookup: SupportLookupService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
+
+  @Get()
+  @ApiResponse({ status: 200, standardSchema: s.customerList })
+  list(@Query({ schema: s.customerSearchQuery }) q: z.infer<typeof s.customerSearchQuery>) {
+    return this.lookup.customers(q);
+  }
+
+  @Get(":id")
+  @ApiResponse({ status: 200, standardSchema: s.customerProfile })
+  get(@Param("id", uuidParam) id: string) {
+    return this.lookup.customer(id);
+  }
+
+  /** Blocking signs the customer out everywhere and stops them signing in; their orders carry on. */
+  @Patch(":id")
+  @ApiResponse({ status: 200, standardSchema: s.customerProfile })
+  async setStatus(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.customerStatusBody }) body: z.infer<typeof s.customerStatusBody>) {
+    const before = await this.lookup.customer(id);
+    const after = await this.lookup.setStatus(id, body.status);
+    if (before.status !== after.status) {
+      await this.audit.log(u, body.status === "BLOCKED" ? "customer.block" : "customer.unblock", { type: "customer", id }, `${body.status === "BLOCKED" ? "Blocked" : "Unblocked"} ${after.name ?? after.email}${body.reason ? `: ${body.reason}` : ""}`, { status: [before.status, after.status] });
+    }
+    return after;
+  }
+}
+
 @ApiTags("Care Desk")
 @ApiBearerAuth()
 @StaffOnly("SUPPORT_AGENT", "SUPPORT_SPECIALIST", "SUPPORT_SUPERVISOR")
 @Controller("v1/support")
 export class SupportController {
-  constructor(@Inject(SupportService) private readonly svc: SupportService) {}
+  constructor(
+    @Inject(SupportService) private readonly svc: SupportService,
+    @Inject(SupportLookupService) private readonly lookup: SupportLookupService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
+
+  @Get("customers")
+  @ApiResponse({ status: 200, standardSchema: s.customerList })
+  customers(@Query({ schema: s.customerSearchQuery }) q: z.infer<typeof s.customerSearchQuery>) {
+    return this.lookup.customers(q);
+  }
+
+  @Get("customers/:id")
+  @ApiResponse({ status: 200, standardSchema: s.customerProfile })
+  customer(@Param("id", uuidParam) id: string) {
+    return this.lookup.customer(id);
+  }
+
+  @Get("orders")
+  @ApiResponse({ status: 200, standardSchema: z.array(s.supportOrderRow) })
+  orders(@Query({ schema: s.orderSearchQuery }) q: z.infer<typeof s.orderSearchQuery>) {
+    return this.lookup.orders(q);
+  }
+
+  @Get("orders/:id")
+  @ApiResponse({ status: 200, standardSchema: s.supportOrderDetail })
+  order(@Param("id", { schema: z.string().max(40) }) id: string) {
+    return this.lookup.order(id);
+  }
 
   @Get("tickets")
   @ApiResponse({ status: 200, standardSchema: s.ticketList })
@@ -77,7 +143,10 @@ export class SupportController {
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.ticketDetail })
   async act(@CurrentUser() u: AuthUser, @Param("id", ticketId) id: string, @Body({ schema: s.actionBody }) body: z.infer<typeof s.actionBody>) {
-    return this.svc.act(await this.svc.staff(u.id), id, body);
+    const t = await this.svc.act(await this.svc.staff(u.id), id, body);
+    const latest = t.actions.at(-1);
+    await this.audit.log(u, `ticket.${body.kind.toLowerCase()}`, { type: "ticket", id }, `${body.kind.toLowerCase().replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())} on ticket ${id}${latest ? ` (${latest.status.toLowerCase().replace(/_/g, " ")})` : ""}`);
+    return t;
   }
 
   @Post("actions/:id/approve")
@@ -85,7 +154,9 @@ export class SupportController {
   @StaffOnly("SUPPORT_SUPERVISOR")
   @ApiResponse({ status: 200, standardSchema: s.ticketDetail })
   async approve(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.decisionBody }) body: z.infer<typeof s.decisionBody>) {
-    return this.svc.decide(await this.svc.staff(u.id), id, true, body.note);
+    const t = await this.svc.decide(await this.svc.staff(u.id), id, true, body.note);
+    await this.audit.log(u, "ticket.approve", { type: "ticket", id: t.id }, `Approved a refund request on ticket ${t.id}`);
+    return t;
   }
 
   @Post("actions/:id/reject")
@@ -93,7 +164,9 @@ export class SupportController {
   @StaffOnly("SUPPORT_SUPERVISOR")
   @ApiResponse({ status: 200, standardSchema: s.ticketDetail })
   async reject(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.decisionBody }) body: z.infer<typeof s.decisionBody>) {
-    return this.svc.decide(await this.svc.staff(u.id), id, false, body.note);
+    const t = await this.svc.decide(await this.svc.staff(u.id), id, false, body.note);
+    await this.audit.log(u, "ticket.reject", { type: "ticket", id: t.id }, `Rejected a refund request on ticket ${t.id}`);
+    return t;
   }
 
   @Post("tickets/:id/attachments")

@@ -1,7 +1,11 @@
 import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
-/** scrypt with OWASP's recommended cost (N=2^17, r=8, p=1): about 64 MB and 100 ms per hash. */
-const PARAMS = { N: 2 ** 17, r: 8, p: 1 };
+/**
+ * scrypt with OWASP's recommended cost (N=2^17, r=8, p=1): about 64 MB and
+ * 100 ms per hash. The test suite hashes hundreds of passwords, so it uses a
+ * lighter cost; every hash records its own cost, so verifying is unaffected.
+ */
+const PARAMS = process.env.NODE_ENV === "test" ? { N: 2 ** 14, r: 8, p: 1 } : { N: 2 ** 17, r: 8, p: 1 };
 const KEY_LENGTH = 64;
 
 const derive = (password: string, salt: Buffer, o: { N: number; r: number; p: number }) =>

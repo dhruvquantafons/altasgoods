@@ -138,6 +138,65 @@ describe("returns", () => {
     expect(failed.body).toMatchObject({ status: "QC_FAILED", qcNote: "Jar is missing from the box", refundStatus: null });
   });
 
+  it("lets the store record the pickup by hand, through every step", async () => {
+    const { itemId } = await deliveredLine("airfryer-crisp");
+    const r = (await t.http.post("/v1/me/returns").set(shopper).send(request(itemId)).expect(201)).body;
+    const url = `/v1/admin/returns/${r.id}/pickup`;
+    await t.http.post(url).set(shopper).send({ to: "RECEIVED" }).expect(403);
+
+    // a failed attempt needs a reason, and the next scan rebooks it
+    await t.http.post(url).set(staff).send({ to: "PICKUP_FAILED" }).expect(422);
+    const failed = await t.http.post(url).set(staff).send({ to: "PICKUP_FAILED", note: "Customer not at home" }).expect(200);
+    expect(failed.body.status).toBe("PICKUP_FAILED");
+
+    const received = await t.http.post(url).set(staff).send({ to: "RECEIVED", awb: "SR77001234" }).expect(200);
+    expect(received.body).toMatchObject({ status: "RECEIVED", awb: "SR77001234" });
+    expect(received.body.events.slice(-5).map((e: { toStatus: string; actor: string }) => `${e.actor}:${e.toStatus}`)).toEqual([
+      "STAFF:PICKUP_SCHEDULED",
+      "STAFF:OUT_FOR_PICKUP",
+      "STAFF:PICKED_UP",
+      "STAFF:IN_TRANSIT",
+      "STAFF:RECEIVED",
+    ]);
+    const [item] = await db.select({ status: orderItems.status }).from(orderItems).where(eq(orderItems.id, itemId));
+    expect(item!.status).toBe("RETURN_IN_PROGRESS");
+    expect((await t.http.post(url).set(staff).send({ to: "IN_TRANSIT" }).expect(409)).body.code).toBe("INVALID_TRANSITION");
+
+    const done = await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: true }).expect(200);
+    expect(done.body.status).toBe("COMPLETED");
+  });
+
+  it("pays doorstep refunds when the store records the pickup", async () => {
+    const { itemId } = await deliveredLine("cookware-pan");
+    const r = (await t.http.post("/v1/me/returns").set(shopper).send(request(itemId, { reasonCode: "NO_LONGER_NEEDED", reasonLabel: "No longer needed", fault: "CUSTOMER" })).expect(201)).body;
+    const picked = await t.http.post(`/v1/admin/returns/${r.id}/pickup`).set(staff).send({ to: "PICKED_UP" }).expect(200);
+    expect(picked.body).toMatchObject({ status: "PICKED_UP", instantRefund: true });
+    expect(picked.body.refundStatus).not.toBeNull();
+  });
+
+  it("settles a failed check either way", async () => {
+    const received = async (slug: string) => {
+      const { itemId } = await deliveredLine(slug);
+      const r = (await t.http.post("/v1/me/returns").set(shopper).send(request(itemId)).expect(201)).body;
+      await t.http.post(`/v1/admin/returns/${r.id}/pickup`).set(staff).send({ to: "RECEIVED" }).expect(200);
+      await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: false, note: "Box opened, seal broken" }).expect(200);
+      return { id: r.id as string, itemId };
+    };
+
+    const accepted = await received("headphones-studio");
+    await t.http.post(`/v1/admin/returns/${accepted.id}/settle`).set(staff).send({ accept: true, note: "" }).expect(422);
+    const ok = await t.http.post(`/v1/admin/returns/${accepted.id}/settle`).set(staff).send({ accept: true, note: "Goodwill, first return" }).expect(200);
+    expect(ok.body.status).toBe("COMPLETED");
+    expect(ok.body.refundStatus).not.toBeNull();
+
+    const rejected = await received("airfryer-crisp");
+    const no = await t.http.post(`/v1/admin/returns/${rejected.id}/settle`).set(staff).send({ accept: false, note: "Used item, sending it back" }).expect(200);
+    expect(no.body).toMatchObject({ status: "REJECTED", decisionNote: "Used item, sending it back" });
+    const [item] = await db.select({ status: orderItems.status }).from(orderItems).where(eq(orderItems.id, rejected.itemId));
+    expect(item!.status).toBe("DELIVERED");
+    expect((await t.http.post(`/v1/admin/returns/${rejected.id}/settle`).set(staff).send({ accept: true, note: "Changed my mind" }).expect(409)).body.code).toBe("NOT_QC_FAILED");
+  });
+
   it("moves a pickup and lists every refund", async () => {
     const { itemId } = await deliveredLine("earbuds-pods");
     const r = (await t.http.post("/v1/me/returns").set(shopper).send(request(itemId)).expect(201)).body;

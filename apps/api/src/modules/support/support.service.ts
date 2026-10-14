@@ -93,6 +93,7 @@ export class SupportService {
     if (q.category) filters.push(eq(supportTickets.category, q.category as Ticket["category"]));
     if (q.channel) filters.push(eq(supportTickets.channel, q.channel));
     if (q.customerRef) filters.push(eq(supportTickets.customerRef, q.customerRef));
+    if (q.customerId) filters.push(eq(supportTickets.userId, q.customerId));
     if (q.orderId) filters.push(eq(supportTickets.orderId, q.orderId));
     const view = this.viewWhere(q.view, me);
     const where = and(...filters, ...(view ? [view] : []));
@@ -143,6 +144,7 @@ export class SupportService {
       status: t.status,
       customerName: t.customerName,
       customerRef: t.customerRef,
+      customerId: t.userId,
       orderId: t.orderId,
       assignee: t.assigneeId ? { id: t.assigneeId, name: assigneeName ?? "Agent" } : null,
       createdAt: t.createdAt.toISOString(),
@@ -497,7 +499,7 @@ export class SupportService {
         status: "OPEN",
         customerName: input.customerName,
         customerRef: input.customerRef ?? null,
-        userId: dbOrder?.userId ?? null,
+        userId: dbOrder?.userId ?? input.customerId ?? null,
         orderId: input.orderId ?? null,
         orderSnapshot: snapshot,
         assigneeId: me.id,

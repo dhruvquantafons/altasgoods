@@ -27,9 +27,6 @@ test("a shopper adds to cart, checks out with UPI and pays", async ({ browser })
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Continue to payment" }).click();
   await page.getByRole("radio", { name: /^UPI Pay with any UPI app/ }).check();
-  await page.getByLabel("UPI ID").fill("test@okaxis");
-  await page.getByRole("button", { name: "Verify", exact: true }).click();
-  await expect(page.getByText(/Verified: /)).toBeVisible();
   await page.getByRole("button", { name: /^Pay ₹/ }).click();
 
   await page.waitForURL(/\/checkout\/pay\//);
@@ -153,6 +150,8 @@ test("store staff accept, pack and ship an order through to delivery", async ({ 
 
 test("a signed in shopper's call back request reaches the Care Desk", async ({ browser }) => {
   const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
+  // the button crawler may have removed the number from the shared shopper's profile
+  await shopper.patch("/v1/me", { phone: "9845012345" });
   const ctx = await signedIn(browser, ACCOUNTS.shopper);
   const page = await ctx.newPage();
   await page.goto("/contact");
@@ -202,20 +201,24 @@ test("store staff add a product with a photo, then take it off sale", async ({ b
   const slug = page.url().split("/admin/catalog/p-")[1]!;
   const live = await fetch(`${API}/v1/products/${slug}`);
   expect(live.status).toBe(200);
-  expect(await live.json()).toMatchObject({ title, pricePaise: 249_900, inStock: true });
+  const body = (await live.json()) as { pricePaise: number; sale: { percent: number } | null };
+  // a live sale covering the category (the development seed has one) lowers the price, exactly as checkout will
+  const selling = (paise: number) => (body.sale ? Math.max(100, Math.floor((paise * (100 - body.sale.percent)) / 10_000) * 100) : paise);
+  const rupees = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
+  expect(body).toMatchObject({ title, pricePaise: selling(249_900), inStock: true });
 
   // the shopper sees it straight away, at the price set in Control
   const shop = await ctx.newPage();
   await shop.goto(`/p/${slug}`);
   await expect(shop.getByRole("heading", { name: title })).toBeVisible();
-  await expect(shop.getByText("₹2,499").first()).toBeVisible();
+  await expect(shop.getByText(rupees(selling(249_900))).first()).toBeVisible();
 
   // a price change reaches the product page too
   await page.getByLabel("Selling price").fill("1999");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Saved. The store shows the changes now.")).toBeVisible();
   await shop.reload();
-  await expect(shop.getByText("₹1,999").first()).toBeVisible();
+  await expect(shop.getByText(rupees(selling(199_900))).first()).toBeVisible();
 
   await page.goto(`/admin/catalog?q=${encodeURIComponent(title)}`);
   const row = page.getByRole("row").filter({ hasText: title });

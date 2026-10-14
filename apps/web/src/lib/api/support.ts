@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { PRIORITY_POLICY, type TicketSla } from "@/lib/mock/ops-extra";
+import { PRIORITY_POLICY, type TicketSla } from "@/lib/care-policy";
 import type { TicketPriority, TicketStatus as UiStatus } from "@/lib/status";
 import type { Ticket } from "@/lib/types";
 import { UI_TICKET_STATUS } from "@/lib/support-status";
@@ -18,8 +18,11 @@ export type CareTicket = Omit<Ticket, "status" | "messages"> & {
   status: UiStatus;
   assigneeId?: string;
   customerRef?: string;
+  /** the customer's account, when they have one */
+  customerId?: string;
   firstResponseAt?: string;
   lastCustomerAt?: string;
+  resolvedAt?: string;
   lastMessage?: { kind: string; author: string; body: string; at: string };
   messages: Ticket["messages"];
 };
@@ -32,6 +35,7 @@ export function toCareTicket(s: TicketSummary): CareTicket {
     subject: s.subject,
     customerName: s.customerName,
     customerRef: s.customerRef ?? undefined,
+    customerId: s.customerId ?? undefined,
     orderId: s.orderId ?? undefined,
     category: s.category as Ticket["category"],
     channel: s.channel.toLowerCase() as Ticket["channel"],
@@ -44,6 +48,7 @@ export function toCareTicket(s: TicketSummary): CareTicket {
     slaDueAt: new Date(base + PRIORITY_POLICY[priority].firstResponseMins * 60_000).toISOString(),
     firstResponseAt: s.firstResponseAt ?? undefined,
     lastCustomerAt: s.lastCustomerAt ?? undefined,
+    resolvedAt: s.resolvedAt ?? undefined,
     lastMessage: s.lastMessage ?? undefined,
     messages: [],
   };
@@ -78,7 +83,7 @@ export function slaOf(t: CareTicket, now = Date.now()): TicketSla {
   };
 }
 
-type Query = { view?: "open" | "mine" | "unassigned" | "escalated" | "awaiting" | "resolved" | "all"; q?: string; priority?: string; category?: string; channel?: string; customerRef?: string; orderId?: string };
+type Query = { view?: "open" | "mine" | "unassigned" | "escalated" | "awaiting" | "resolved" | "all"; q?: string; priority?: string; category?: string; channel?: string; customerRef?: string; customerId?: string; orderId?: string };
 
 /** Tickets from the API, with the queue counts. Cached per request and query. */
 export const loadTickets = cache(async (key: string) => {
@@ -93,6 +98,7 @@ export const loadTickets = cache(async (key: string) => {
           category: query.category || undefined,
           channel: (query.channel?.toUpperCase() || undefined) as "CHAT" | "EMAIL" | "PHONE" | "APP" | undefined,
           customerRef: query.customerRef || undefined,
+          customerId: query.customerId || undefined,
           orderId: query.orderId || undefined,
           pageSize: 300,
         },
@@ -113,3 +119,21 @@ export async function loadTicket(id: string): Promise<{ ticket: CareTicket; deta
 export const currentTime = () => Date.now();
 
 export const loadAgents = cache(async () => unwrap(await (await api()).GET("/v1/support/agents")));
+
+/** Shoppers by name, email or phone. */
+export async function loadCustomers(q: string, page = 1) {
+  return unwrap(await (await api()).GET("/v1/support/customers", { params: { query: { q: q || undefined, page, pageSize: 25 } } }));
+}
+
+export const loadCustomer = cache(async (id: string) => unwrap(await (await api()).GET("/v1/support/customers/{id}", { params: { path: { id } } }), { notFoundOn404: true }));
+
+/** Orders by order id, AWB, or the customer's name or email; the latest orders without a search. */
+export async function loadSupportOrders(q: string) {
+  return unwrap(await (await api()).GET("/v1/support/orders", { params: { query: { q: q || undefined } } }));
+}
+
+/** One order for the Care Desk, or null when it is not in this database. */
+export const loadSupportOrder = cache(async (id: string) => {
+  const r = await (await api()).GET("/v1/support/orders/{id}", { params: { path: { id } } });
+  return r.response.status === 404 ? null : unwrap(r);
+});

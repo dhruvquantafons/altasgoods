@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Bell, ChevronsUpDown, CircleHelp, LayoutGrid, LogOut, Menu, Search, Settings, UserRound, X } from "lucide-react";
+import { Bell, ChevronsUpDown, CircleHelp, LayoutGrid, LogOut, Menu, Search, UserRound, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Avatar, Kbd } from "@/components/ui/misc";
 import { Popover } from "@/components/ui/interactive";
@@ -202,7 +202,8 @@ export function DashboardShell({ workspace, nav, user, notifications = [], searc
   const [drawer, setDrawer] = useState(false);
   const current = WORKSPACES.find((w) => w.key === workspace)!;
   const searchRef = useRef<HTMLInputElement>(null);
-  const accountHref = `${current.href}/account`;
+  // AltasGoods Control has its own account page; elsewhere staff use the profile in My Account
+  const accountHref = current.key === "admin" ? "/admin/account" : "/account/profile";
   const signOutHref = `/signed-out?from=${workspace}`;
   const searchHref = searchAction ?? current.href;
 
@@ -318,14 +319,6 @@ export function DashboardShell({ workspace, nav, user, notifications = [], searc
                   <Link href={accountHref} onClick={close} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-ink-700 hover:bg-ink-50 hover:text-ink-900">
                     <UserRound size={16} className="text-ink-400" aria-hidden="true" />
                     Profile
-                  </Link>
-                  <Link
-                    href={`${accountHref}?tab=preferences`}
-                    onClick={close}
-                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-ink-700 hover:bg-ink-50 hover:text-ink-900"
-                  >
-                    <Settings size={16} className="text-ink-400" aria-hidden="true" />
-                    Preferences
                   </Link>
                   <div className="my-1 h-px bg-line" />
                   {/* no close() here: unmounting the popover on click would drop the form before it submits */}

@@ -272,20 +272,21 @@ export function needsSecureDelivery(order: Order) {
 
 /* ------------------------------- Payments ------------------------------- */
 
+/** The payment method as the customer chose it; card and bank details stay with Razorpay. */
 export function paymentLabel(method: PaymentMethod) {
   switch (method) {
     case "upi":
-      return "UPI, ananya.sharma@kaveri";
+      return "UPI";
     case "card":
-      return "Kaveri Bank credit card ending 4821";
+      return "Credit or debit card";
     case "emi":
-      return "No cost EMI, Kaveri Bank credit card";
+      return "EMI";
     case "netbanking":
-      return "Net banking, Sahyadri Bank";
+      return "Net banking";
     case "wallet":
       return "AltasGoods Credits";
     case "paylater":
-      return "AltasGoods Pay Later";
+      return "Pay Later";
     case "giftcard":
       return "AltasGoods Gift Card";
     case "cod":

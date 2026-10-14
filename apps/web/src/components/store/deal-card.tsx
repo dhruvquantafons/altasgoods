@@ -1,18 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
-import type { DealSlot } from "@/lib/mock/store-extra";
 import { cn, formatINR } from "@/lib/utils";
 import { WishlistButton } from "./cart-buttons";
 import { DealTimer } from "./countdown";
 import { featuredOffer } from "./product-card";
 import { percentOff } from "./price";
 
-/**
- * Deal tile: the price shown is the live deal price; the claimed bar and the
- * timer come from real allocation data and the real deal end time.
- */
-export function DealCard({ product: p, deal, showTimer = true, className }: { product: Product; deal: DealSlot; showTimer?: boolean; className?: string }) {
+/** A product in a live sale: the sale price against M.R.P., the sale's name and when it ends. */
+export function DealCard({ product: p, showTimer = true, className }: { product: Product; showTimer?: boolean; className?: string }) {
+  const sale = p.sale;
   const offer = featuredOffer(p);
   const off = percentOff(offer.price, offer.mrp);
   const brand = p.brandName;
@@ -40,22 +37,12 @@ export function DealCard({ product: p, deal, showTimer = true, className }: { pr
             </span>
           )}
         </p>
-        <div className="mt-auto pt-3">
-          <div
-            className="h-1.5 w-full overflow-hidden rounded-full bg-accent-100"
-            role="progressbar"
-            aria-valuenow={deal.claimedPct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`${deal.claimedPct}% of this deal claimed`}
-          >
-            <div className="h-full rounded-full bg-accent-600" style={{ width: `${deal.claimedPct}%` }} />
+        {sale && (
+          <div className="mt-auto flex flex-col gap-0.5 pt-3 text-xs whitespace-nowrap sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+            <span className="truncate font-medium text-accent-800">{sale.name}</span>
+            {showTimer && <DealTimer endsAt={sale.endsAt} compact className="font-semibold text-accent-800" />}
           </div>
-          <div className="mt-1.5 flex flex-col gap-0.5 text-xs whitespace-nowrap sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-            <span className="font-medium text-ink-600 tabular-nums">{deal.claimedPct}% claimed</span>
-            {showTimer && <DealTimer endsAt={deal.endsAt} compact className="font-semibold text-accent-800" />}
-          </div>
-        </div>
+        )}
       </div>
     </article>
   );

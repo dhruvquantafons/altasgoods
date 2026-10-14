@@ -29,7 +29,10 @@ export class FulfilmentService {
   async list(query: z.infer<typeof fulfilmentItemsQuery>) {
     // lines still waiting for the customer's payment are not ready to fulfil
     const base: SQL[] = [ne(orderItems.status, "PENDING")];
-    if (query.q) base.push(or(sql`${orderItems.orderId} ilike ${"%" + query.q + "%"}`, sql`${orderItems.title} ilike ${"%" + query.q + "%"}`)!);
+    if (query.q) {
+      const like = `%${query.q}%`;
+      base.push(or(sql`${orderItems.orderId} ilike ${like}`, sql`${orderItems.title} ilike ${like}`, sql`${orderItems.awb} ilike ${like}`)!);
+    }
     const where = and(...base, ...(query.status.length ? [inArray(orderItems.status, query.status)] : []));
 
     const [rows, [total], counts] = await Promise.all([
@@ -80,9 +83,10 @@ export class FulfilmentService {
     };
   }
 
-  async order(orderId: string) {
+  /** One order for staff. The Care Desk also sees lines still waiting for payment ("I paid but there is no order"). */
+  async order(orderId: string, { includeUnpaid = false } = {}) {
     const [order] = await this.db.select().from(orders).where(eq(orders.id, orderId));
-    const items = order ? await this.db.select().from(orderItems).where(and(eq(orderItems.orderId, orderId), ne(orderItems.status, "PENDING"))) : [];
+    const items = order ? await this.db.select().from(orderItems).where(and(eq(orderItems.orderId, orderId), ...(includeUnpaid ? [] : [ne(orderItems.status, "PENDING")]))) : [];
     if (!order || !items.length) throw notFound("Order");
     const ids = items.map((i) => i.id);
     const events = await this.db.select().from(orderEvents).where(and(eq(orderEvents.orderId, orderId), inArray(orderEvents.orderItemId, ids))).orderBy(asc(orderEvents.id));

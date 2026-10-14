@@ -64,6 +64,7 @@ export async function openTicketForCustomer(input: {
   channel: "CHAT" | "EMAIL" | "PHONE" | "APP";
   customerName: string;
   customerRef?: string;
+  customerId?: string;
   orderId?: string;
   orderSnapshot?: { total: number; paymentLabel: string; cod: boolean; items: { id: string; title: string; price: number; quantity: number }[] };
   body: string;

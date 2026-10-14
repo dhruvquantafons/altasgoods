@@ -12,7 +12,7 @@ import { AREAS, crawl, signedIn, watchErrors } from "./support";
 test.describe.configure({ mode: "parallel" });
 
 // pages whose buttons change real data through the API; the flow tests cover them
-const API_PAGES = /^\/(checkout|order|cart)(\/|$)|^\/account\/orders|^\/admin\/(orders|returns|catalog|categories|brands)(\/|$)/;
+const API_PAGES = /^\/(checkout|order|cart)(\/|$)|^\/account\/orders|^\/admin\/(orders|returns|catalog|categories|brands)(\/|$)|^\/logistics\/shipments|^\/admin\/(cms|promotions|reviews|customers|settings|account)(\/|$)/;
 const SKIP_NAMES = /sign ?out|log ?out/i;
 const MAX_BUTTONS = 40;
 

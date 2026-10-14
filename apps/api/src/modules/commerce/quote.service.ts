@@ -4,7 +4,9 @@ import type { Clock } from "../../common/infra.module.js";
 import { CLOCK } from "../../common/tokens.js";
 import type { Tx } from "../../db/client.js";
 import { coupons, offers, products, type PaymentMethod } from "../../db/schema.js";
-import { COD_LIMIT_PAISE, couponDiscount, deliveryFee, promiseDate } from "./pricing.js";
+import { SettingsService } from "../admin/settings.service.js";
+import { SalesService } from "./sales.service.js";
+import { couponDiscount, deliveryFee, promiseDate } from "./pricing.js";
 
 export interface QuoteLineInput {
   offerId: string;
@@ -25,10 +27,17 @@ export type Quote = Awaited<ReturnType<QuoteService["build"]>>;
 /** Prices a set of lines exactly as an order would be priced. */
 @Injectable()
 export class QuoteService {
-  constructor(@Inject(CLOCK) private readonly clock: Clock) {}
+  constructor(
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(SalesService) private readonly sales: SalesService,
+  ) {}
 
   async build(tx: Tx, input: QuoteInput) {
     const now = this.clock.now();
+    const [settings, live] = await Promise.all([this.settings.get(), this.sales.live(now, tx)]);
+    // the price the customer pays: any live sale applied, exactly as the catalog shows it
+    const priceOf = (p: { product: { id: string; categoryId: string }; offer: { pricePaise: number } }) => this.sales.priceFor(live, p.product, p.offer.pricePaise).pricePaise;
     const ids = [...new Set(input.lines.map((l) => l.offerId))];
     const query = tx
       .select({ offer: offers, product: products })
@@ -72,14 +81,14 @@ export class QuoteService {
       image: p.product.images[0] ?? "",
       variant: p.input.variant,
       qty: p.input.qty,
-      unitPricePaise: p.offer.pricePaise,
+      unitPricePaise: priceOf(p),
       mrpPaise: p.offer.mrpPaise,
-      lineTotalPaise: p.offer.pricePaise * p.input.qty,
+      lineTotalPaise: priceOf(p) * p.input.qty,
     }));
 
     const mrpTotal = priced.reduce((a, p) => a + p.offer.mrpPaise * p.input.qty, 0);
     const subtotal = lines.reduce((a, l) => a + l.lineTotalPaise, 0);
-    const delivery = lines.length ? deliveryFee(subtotal) : 0;
+    const delivery = lines.length ? deliveryFee(subtotal, settings.delivery) : 0;
 
     let coupon: { code: string; applied: boolean; message: string } | null = null;
     let couponDiscountPaise = 0;
@@ -97,8 +106,8 @@ export class QuoteService {
     const codBlocker = priced.find((p) => !p.offer.codAvailable);
     const cod = codBlocker
       ? { available: false, reason: `Pay on delivery is not available for ${codBlocker.product.title}` }
-      : total > COD_LIMIT_PAISE
-        ? { available: false, reason: "Pay on delivery is available for orders up to ₹50,000" }
+      : total > settings.cod.maxOrderPaise
+        ? { available: false, reason: `Pay on delivery is available for orders up to ₹${(settings.cod.maxOrderPaise / 100).toLocaleString("en-IN")}` }
         : { available: true, reason: null };
     if (input.paymentMethod === "COD" && !cod.available) issues.push({ offerId: priced[0]?.offer.id ?? ids[0] ?? "", code: "COD_UNAVAILABLE", message: cod.reason! });
 

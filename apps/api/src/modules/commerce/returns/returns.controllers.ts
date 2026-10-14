@@ -7,6 +7,7 @@ import { forbidden } from "../../../common/errors.js";
 import { isProduction } from "../../../config/env.js";
 import { CurrentUser, StaffOnly, type AuthUser } from "../../auth/auth.guard.js";
 import * as s from "./returns.schemas.js";
+import { AuditService } from "../../admin/audit.service.js";
 import { ReturnsService } from "./returns.service.js";
 
 const returnId = { schema: z.string().regex(/^RT-\d+$/, "Return ids look like RT-70001") };
@@ -87,7 +88,10 @@ export class CustomerReturnsController {
 @StaffOnly("OPS_ADMIN")
 @Controller("v1/admin/returns")
 export class AdminReturnsController {
-  constructor(@Inject(ReturnsService) private readonly svc: ReturnsService) {}
+  constructor(
+    @Inject(ReturnsService) private readonly svc: ReturnsService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @ApiResponse({ status: 200, standardSchema: z.array(s.returnSchema) })
@@ -104,15 +108,39 @@ export class AdminReturnsController {
   @Post(":id/decision")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
-  decide(@Param("id", returnId) id: string, @Body({ schema: s.decisionBody }) body: z.infer<typeof s.decisionBody>) {
-    return this.svc.decide(id, body.approve, body.note);
+  async decide(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.decisionBody }) body: z.infer<typeof s.decisionBody>) {
+    const r = await this.svc.decide(id, body.approve, body.note);
+    await this.audit.log(u, body.approve ? "return.approve" : "return.reject", { type: "return", id }, `${body.approve ? "Approved" : "Rejected"} return ${id}${body.note ? `: ${body.note}` : ""}`);
+    return r;
   }
 
   @Post(":id/qc")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
-  qc(@Param("id", returnId) id: string, @Body({ schema: s.qcBody }) body: z.infer<typeof s.qcBody>) {
-    return this.svc.qc(id, body.pass, body.note);
+  async qc(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.qcBody }) body: z.infer<typeof s.qcBody>) {
+    const r = await this.svc.qc(id, body.pass, body.note);
+    await this.audit.log(u, body.pass ? "return.qc_pass" : "return.qc_fail", { type: "return", id }, `Quality check ${body.pass ? "passed" : "failed"} for return ${id}${body.note ? `: ${body.note}` : ""}`);
+    return r;
+  }
+
+  /** Records the reverse pickup by hand while courier return pickups are not connected. */
+  @Post(":id/pickup")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.returnSchema })
+  async pickup(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.pickupBody }) body: z.infer<typeof s.pickupBody>) {
+    const r = await this.svc.recordPickup(id, body.to, { awb: body.awb, note: body.note });
+    await this.audit.log(u, "return.pickup", { type: "return", id }, `Recorded return ${id} as ${String(body.to).toLowerCase().replace(/_/g, " ")}`);
+    return r;
+  }
+
+  /** Settles a failed check: accept the return anyway, or reject it and send the item back. */
+  @Post(":id/settle")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.returnSchema })
+  async settle(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.settleBody }) body: z.infer<typeof s.settleBody>) {
+    const r = await this.svc.settle(id, body.accept, body.note);
+    await this.audit.log(u, body.accept ? "return.accept" : "return.send_back", { type: "return", id }, `${body.accept ? "Accepted" : "Sent back"} return ${id} after a failed check${body.note ? `: ${body.note}` : ""}`);
+    return r;
   }
 
   @Get(":id/photos/:photoId")

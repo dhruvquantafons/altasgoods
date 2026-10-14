@@ -1,36 +1,25 @@
-import { CmsStudio, type StudioProduct } from "@/components/admin/cms-studio";
-import { KpiStrip } from "@/components/admin/kpi-strip";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { BannerStudio } from "@/components/admin/banner-studio";
 import { PageHeader } from "@/components/ui/page-header";
-import { categories, products } from "@/lib/mock";
-import { heroBanners, homeSlots } from "@/lib/mock/admin-extra";
-import { formatCompact } from "@/lib/utils";
+import { loadBanners } from "@/lib/api/admin-system";
 
 export const metadata = { title: "Storefront CMS" };
 
-export default function CmsPage() {
-  const ids = new Set(homeSlots.flatMap((s) => s.productIds ?? []));
-  const productMap: Record<string, StudioProduct> = Object.fromEntries(
-    products.filter((p) => ids.has(p.id)).map((p) => [p.id, { id: p.id, title: p.title, image: p.image, price: p.price, mrp: p.mrp }]),
-  );
-  const live = heroBanners.filter((b) => b.status === "live");
-  const impressions = live.reduce((a, b) => a + b.impressions, 0);
-  const ctr = live.reduce((a, b) => a + b.ctr * b.impressions, 0) / impressions;
-
+export default async function CmsPage() {
+  const banners = await loadBanners();
   return (
     <>
-      <PageHeader title="Storefront CMS" description="Homepage merchandising: slot order, hero banners, rails and targeting. Preview by persona before you publish; every publish is audited." />
-
-      <KpiStrip
-        className="mb-6"
-        items={[
-          { label: "Live slots", value: homeSlots.filter((s) => s.status === "live").length, hint: `${homeSlots.filter((s) => s.status !== "live").length} scheduled or draft` },
-          { label: "Live hero banners", value: live.length, hint: "rotating every 6 seconds" },
-          { label: "Hero impressions", value: formatCompact(impressions), hint: "live banners, since launch" },
-          { label: "Hero click-through", value: `${ctr.toFixed(1)}%`, hint: "weighted by impressions" },
-        ]}
+      <PageHeader
+        title="Storefront CMS"
+        description="The homepage hero slides and promo tiles. Changes show on the storefront as soon as you save, and every change is in the audit log. Sales and their homepage strip are managed in Coupons and sales."
+        actions={
+          <Link href="/" target="_blank" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-line-strong bg-white px-4 text-sm font-medium text-ink-800 hover:bg-ink-50">
+            View homepage <ArrowUpRight size={15} aria-hidden="true" />
+          </Link>
+        }
       />
-
-      <CmsStudio slots={homeSlots} banners={heroBanners} products={productMap} categories={categories.map((c) => ({ id: c.id, name: c.name, image: c.image ?? "" }))} />
+      <BannerStudio banners={banners} />
     </>
   );
 }

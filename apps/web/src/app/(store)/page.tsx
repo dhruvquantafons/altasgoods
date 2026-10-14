@@ -8,18 +8,10 @@ import { Rail, RailItem } from "@/components/store/rail";
 import { Section, SectionTitle } from "@/components/store/section";
 import { SaleCountdown } from "@/components/store/countdown";
 import { formatPromise, formatTime } from "@/components/store/delivery";
-import { SALE_EVENT } from "@/lib/mock";
-import {
-  BANK_OFFERS,
-  bestSellers,
-  BRAND_SPOTLIGHTS,
-  DEALS_OF_THE_DAY,
-  HERO_SLIDES,
-  isBrowsable,
-  PROMO_TILES,
-  recommendedForYou,
-} from "@/lib/mock/store-extra";
+import { bestSellers, BRAND_SPOTLIGHTS, isBrowsable, recommendedForYou } from "@/lib/mock/store-extra";
+import { getStoreBanners } from "@/lib/store-banners";
 import { getStoreCatalog } from "@/lib/store-catalog";
+import { getLiveSales, getStoreCoupons } from "@/lib/store-promotions";
 import { cn } from "@/lib/utils";
 
 export const metadata = {
@@ -27,54 +19,60 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  const catalog = await getStoreCatalog();
-  // only products on sale get a deal tile (the others would fail at order placement)
-  const deals = DEALS_OF_THE_DAY.map((d) => ({ deal: d, product: catalog.product(d.productId)! })).filter((x) => x.product && isBrowsable(x.product));
+  const [catalog, liveSales, coupons, banners] = await Promise.all([getStoreCatalog(), getLiveSales(), getStoreCoupons(), getStoreBanners()]);
+  const sale = liveSales[0];
+  // products in a live sale that can be bought now, biggest discount first
+  const deals = catalog.products
+    .filter((p) => p.sale && isBrowsable(p))
+    .sort((a, b) => b.sale!.percent - a.sale!.percent || b.soldLast30d - a.soldLast30d)
+    .slice(0, 10);
+  const coupon = coupons[0];
   const best = bestSellers(catalog.products);
   const recommended = recommendedForYou(catalog.products);
   const categories = catalog.categories.filter((c) => c.image);
   const spotlights = BRAND_SPOTLIGHTS.filter((b) => catalog.brand(b.slug));
-  const dealEnds = DEALS_OF_THE_DAY[0]!.endsAt;
 
   return (
     <div className="pb-16 lg:pb-24">
       {/* Hero */}
       <Section className="pt-4 lg:pt-6">
-        <HeroCarousel slides={HERO_SLIDES} />
+        <HeroCarousel slides={banners.hero} />
       </Section>
 
-      {/* Sale strip */}
-      <Section className="mt-6 lg:mt-8">
-        <div className="relative overflow-hidden rounded-2xl bg-brand-950 px-5 py-6 text-white sm:px-8 lg:px-10">
-          <div className="pointer-events-none absolute -top-24 -right-10 size-80 rounded-full bg-brand-600/35 blur-3xl" aria-hidden="true" />
-          <div className="pointer-events-none absolute -bottom-32 left-1/4 size-72 rounded-full bg-accent-400/20 blur-3xl" aria-hidden="true" />
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-xl">
-              <p className="flex items-center gap-2 text-[13px] font-semibold text-accent-300">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-400 opacity-60" />
-                  <span className="relative inline-flex size-2 rounded-full bg-accent-400" />
-                </span>
-                Live now, ends {formatPromise(SALE_EVENT.endsAt)} at {formatTime(SALE_EVENT.endsAt)}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight lg:text-[30px]">{SALE_EVENT.name}</h2>
-              <p className="mt-1.5 text-sm text-brand-100 lg:text-[15px]">
-                Deal prices are locked for the event and checked against the lowest price of the last 30 days. {BANK_OFFERS[0]!.title}, plus an extra 10% off with
-                code BIGDAYS10.
-              </p>
-            </div>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center lg:gap-6">
-              <SaleCountdown endsAt={SALE_EVENT.endsAt} size="md" />
-              <Link
-                href="/deals"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent-400 px-5 text-sm font-semibold text-ink-950 transition-colors hover:bg-accent-300"
-              >
-                Explore deals <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+      {/* Sale strip: the live sale, when there is one */}
+      {sale && (
+        <Section className="mt-6 lg:mt-8">
+          <div className="relative overflow-hidden rounded-2xl bg-brand-950 px-5 py-6 text-white sm:px-8 lg:px-10">
+            <div className="pointer-events-none absolute -top-24 -right-10 size-80 rounded-full bg-brand-600/35 blur-3xl" aria-hidden="true" />
+            <div className="pointer-events-none absolute -bottom-32 left-1/4 size-72 rounded-full bg-accent-400/20 blur-3xl" aria-hidden="true" />
+            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-xl">
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-accent-300">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-400 opacity-60" />
+                    <span className="relative inline-flex size-2 rounded-full bg-accent-400" />
+                  </span>
+                  Live now, ends {formatPromise(sale.endsAt)} at {formatTime(sale.endsAt)}
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight lg:text-[30px]">{sale.name}</h2>
+                <p className="mt-1.5 text-sm text-brand-100 lg:text-[15px]">
+                  {sale.headline || `${sale.discountPercent}% off while the sale lasts.`}
+                  {coupon ? ` Plus ${coupon.description.toLowerCase()} with code ${coupon.code}.` : ""}
+                </p>
+              </div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center lg:gap-6">
+                <SaleCountdown endsAt={sale.endsAt} size="md" />
+                <Link
+                  href="/deals"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent-400 px-5 text-sm font-semibold text-ink-950 transition-colors hover:bg-accent-300"
+                >
+                  Explore deals <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </Section>
+        </Section>
+      )}
 
       {/* Categories */}
       <Section className="mt-12 lg:mt-16" labelledBy="home-cats">
@@ -84,7 +82,13 @@ export default async function HomePage() {
             <li key={c.id}>
               <Link href={`/c/${c.slug}`} className="group flex flex-col items-center text-center">
                 <span className="relative block aspect-square w-full overflow-hidden rounded-2xl bg-ink-50 ring-1 ring-line ring-inset">
-                  <Image src={c.image!} alt="" fill sizes="(min-width: 1024px) 10vw, 20vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <Image
+                    src={c.image!}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 10vw, 20vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
                 </span>
                 <span className="mt-2 text-xs leading-tight font-medium text-ink-800 group-hover:text-brand-700 sm:text-[13px]">{c.name}</span>
               </Link>
@@ -93,28 +97,32 @@ export default async function HomePage() {
         </ul>
       </Section>
 
-      {/* Deal of the Day */}
-      <Section className="mt-12 lg:mt-16" labelledBy="home-dotd">
-        <SectionTitle
-          id="home-dotd"
-          title="Deal of the Day"
-          description="One-day prices, at least 20% below the lowest price of the last 30 days"
-          eyebrow={
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-2.5 py-1 text-xs font-semibold text-accent-900 ring-1 ring-accent-100 ring-inset">
-              <Timer size={13} aria-hidden="true" /> Ends today at {formatTime(dealEnds)}
-            </span>
-          }
-          href="/deals"
-          linkLabel="All deals"
-        />
-        <Rail label="Deals of the day">
-          {deals.map(({ deal, product }) => (
-            <RailItem key={product.id} className="lg:w-[calc((100%-4*1.5rem)/5)]">
-              <DealCard product={product} deal={deal} />
-            </RailItem>
-          ))}
-        </Rail>
-      </Section>
+      {/* Products in the live sales */}
+      {deals.length > 0 && (
+        <Section className="mt-12 lg:mt-16" labelledBy="home-dotd">
+          <SectionTitle
+            id="home-dotd"
+            title={sale ? `${sale.name} deals` : "On sale now"}
+            description="Sale prices, charged exactly as shown at checkout"
+            eyebrow={
+              sale ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-2.5 py-1 text-xs font-semibold text-accent-900 ring-1 ring-accent-100 ring-inset">
+                  <Timer size={13} aria-hidden="true" /> Ends {formatPromise(sale.endsAt)} at {formatTime(sale.endsAt)}
+                </span>
+              ) : undefined
+            }
+            href="/deals"
+            linkLabel="All deals"
+          />
+          <Rail label="Products on sale">
+            {deals.map((product) => (
+              <RailItem key={product.id} className="lg:w-[calc((100%-4*1.5rem)/5)]">
+                <DealCard product={product} />
+              </RailItem>
+            ))}
+          </Rail>
+        </Section>
+      )}
 
       {/* Best sellers */}
       <Section className="mt-12 lg:mt-16" labelledBy="home-best">
@@ -131,10 +139,19 @@ export default async function HomePage() {
       {/* Promo tiles */}
       <Section className="mt-12 lg:mt-16">
         <div className="grid gap-4 md:grid-cols-2 lg:gap-6">
-          {PROMO_TILES.map((t) => (
+          {banners.promo.map((t) => (
             <Link key={t.id} href={t.href} className="group relative block h-56 overflow-hidden rounded-2xl bg-ink-100 lg:h-64">
-              <Image src={t.image} alt={t.alt} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
-              <div className={cn("absolute inset-0", t.align === "right" ? "bg-gradient-to-l" : "bg-gradient-to-r", "from-white/90 via-white/55 to-transparent")} aria-hidden="true" />
+              <Image
+                src={t.image}
+                alt={t.alt}
+                fill
+                sizes="(min-width: 768px) 50vw, 100vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              />
+              <div
+                className={cn("absolute inset-0", t.align === "right" ? "bg-gradient-to-l" : "bg-gradient-to-r", "from-white/90 via-white/55 to-transparent")}
+                aria-hidden="true"
+              />
               <div className="absolute inset-0 bg-white/45 md:hidden" aria-hidden="true" />
               <div className={cn("relative flex h-full flex-col justify-center p-6 lg:p-8", t.align === "right" && "items-end text-right")}>
                 <p className="text-xs font-semibold tracking-wide text-ink-600 uppercase">{t.eyebrow}</p>
@@ -161,26 +178,32 @@ export default async function HomePage() {
 
       {/* Brand spotlights */}
       {spotlights.length > 0 && (
-      <Section className="mt-12 lg:mt-16" labelledBy="home-brands">
-        <SectionTitle id="home-brands" title="Brands in the spotlight" description="Verified brand stores on AltasGoods" />
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
-          {spotlights.map((b) => (
-            <Link key={b.slug} href={`/s?brand=${b.slug}`} className={cn("group relative flex flex-col overflow-hidden rounded-2xl p-5 lg:p-6", b.tone)}>
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-600">
-                <BadgeCheck size={14} className="text-brand-600" aria-hidden="true" /> Verified brand
-              </span>
-              <span className="mt-2 font-display text-xl font-semibold tracking-tight text-ink-900 lg:text-2xl">{b.brand}</span>
-              <span className="mt-1 text-[13px] text-ink-600">{b.tagline}</span>
-              <span className="relative mt-5 aspect-[4/3] overflow-hidden rounded-xl bg-white/60">
-                <Image src={b.image} alt="" fill sizes="(min-width: 1024px) 22vw, 45vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-              </span>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ink-900">
-                Visit store <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-              </span>
-            </Link>
-          ))}
-        </div>
-      </Section>
+        <Section className="mt-12 lg:mt-16" labelledBy="home-brands">
+          <SectionTitle id="home-brands" title="Brands in the spotlight" description="Verified brand stores on AltasGoods" />
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
+            {spotlights.map((b) => (
+              <Link key={b.slug} href={`/s?brand=${b.slug}`} className={cn("group relative flex flex-col overflow-hidden rounded-2xl p-5 lg:p-6", b.tone)}>
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-600">
+                  <BadgeCheck size={14} className="text-brand-600" aria-hidden="true" /> Verified brand
+                </span>
+                <span className="mt-2 font-display text-xl font-semibold tracking-tight text-ink-900 lg:text-2xl">{b.brand}</span>
+                <span className="mt-1 text-[13px] text-ink-600">{b.tagline}</span>
+                <span className="relative mt-5 aspect-[4/3] overflow-hidden rounded-xl bg-white/60">
+                  <Image
+                    src={b.image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 22vw, 45vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
+                </span>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ink-900">
+                  Visit store <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Section>
       )}
 
       {/* Trust strip */}

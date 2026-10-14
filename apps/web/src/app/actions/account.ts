@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { api } from "@/lib/api/server";
 import type { Address, User } from "@/lib/api/types";
+import { CATALOG_TAG } from "@/lib/store-catalog";
 
 /** My Account mutations, made with the session cookie on the server. */
 
@@ -69,6 +70,43 @@ export async function makeDefaultAddress(id: string): Promise<Result<Address>> {
   return run(async () => (await api()).PATCH("/v1/me/addresses/{id}", { params: { path: { id } }, body: { isDefault: true } }), "Could not update your default address", "/account/addresses");
 }
 
+export async function listAddresses(): Promise<Result<Address[]>> {
+  return run(async () => (await api()).GET("/v1/me/addresses"), "Could not load your addresses");
+}
+
 export async function deleteAddress(id: string): Promise<Result<undefined>> {
   return run(async () => (await api()).DELETE("/v1/me/addresses/{id}", { params: { path: { id } } }), "Could not remove this address", "/account/addresses");
+}
+
+/* --------------------------------- Reviews --------------------------------- */
+
+export interface ReviewDraft {
+  rating: number;
+  title: string;
+  body: string;
+}
+
+/** Reviews change a product's rating, so the storefront's cached catalog refreshes too. */
+function refreshReviews(slug?: string) {
+  updateTag(CATALOG_TAG);
+  revalidatePath("/account/reviews");
+  if (slug) revalidatePath(`/p/${slug}`);
+}
+
+export async function createReview(productId: string, slug: string, draft: ReviewDraft): Promise<Result<{ status: string }>> {
+  const r = await run(async () => (await api()).POST("/v1/me/reviews", { body: { productId, ...draft } }), "Could not save your review");
+  if (r.ok) refreshReviews(slug);
+  return r.ok ? { ok: true, data: { status: r.data.status } } : r;
+}
+
+export async function updateReview(id: string, slug: string, draft: ReviewDraft): Promise<Result<{ status: string }>> {
+  const r = await run(async () => (await api()).PATCH("/v1/me/reviews/{id}", { params: { path: { id } }, body: draft }), "Could not save your review");
+  if (r.ok) refreshReviews(slug);
+  return r.ok ? { ok: true, data: { status: r.data.status } } : r;
+}
+
+export async function deleteReview(id: string, slug: string): Promise<Result<undefined>> {
+  const r = await run(async () => (await api()).DELETE("/v1/me/reviews/{id}", { params: { path: { id } } }), "Could not delete your review");
+  if (r.ok) refreshReviews(slug);
+  return r;
 }

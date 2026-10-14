@@ -6,7 +6,8 @@ import { useState, type ReactNode } from "react";
 import { BadgeCheck, Bookmark, Lock, Minus, Plus, ShoppingBag, Tag, Trash2, Truck, X } from "lucide-react";
 import { cn, formatINR } from "@/lib/utils";
 import { MAX_QTY, useCart, usePincode } from "./cart-context";
-import { daysFromNow, formatPromise, FREE_DELIVERY_THRESHOLD, lookupPincode, promiseDays } from "./delivery";
+import { daysFromNow, formatPromise, lookupPincode, promiseDays } from "./delivery";
+import { useDeliveryRules } from "./store-settings";
 import { PriceDetails } from "./price-details";
 import { computeTotals, couponBlocker, couponValue, priceLines, type PricedLine } from "./pricing";
 import { percentOff } from "./price";
@@ -19,7 +20,8 @@ export function CartView({ catalog, coupons: all, children }: { catalog: CartCat
   // The cart cannot see order history, so a first-order coupon (BLUFIRST) was always blocked here, even on a first order.
   // Like UPI-only coupons, it can be applied in the cart; the checkout quote from the API decides and says so if it does not apply.
   const coupons = all.map((c) => (c.firstOrderOnly ? { ...c, firstOrderOnly: undefined, description: `${c.description}. Checked against your orders at checkout.` } : c));
-  const totals = computeTotals(cart.active, catalog, { couponCode: cart.coupon, coupons });
+  const rules = useDeliveryRules();
+  const totals = computeTotals(cart.active, catalog, { couponCode: cart.coupon, coupons, rules });
   const saved = priceLines(cart.saved, catalog);
   const empty = totals.lines.length === 0;
 
@@ -60,7 +62,7 @@ export function CartView({ catalog, coupons: all, children }: { catalog: CartCat
           <div className="flex min-w-0 flex-col gap-5">
             {(() => {
               const days = promiseDays(totals.deliveryDays, info);
-              const short = FREE_DELIVERY_THRESHOLD - totals.priceTotal;
+              const short = rules.freeFrom - totals.priceTotal;
               return (
                 <section aria-label="Items in your cart" className="overflow-hidden rounded-2xl border border-line">
                   <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-ink-25 px-4 py-3 sm:px-5">

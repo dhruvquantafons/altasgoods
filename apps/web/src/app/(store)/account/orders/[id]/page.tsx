@@ -8,6 +8,7 @@ import {
   Headset,
   LifeBuoy,
   PackageX,
+  PenLine,
   RotateCcw,
   ShieldCheck,
   Truck,
@@ -291,6 +292,9 @@ function ItemRow({ order, item }: { order: Order; item: OrderItem }) {
               Return or replace
             </ButtonLink>
           )}
+          <ButtonLink href={`/account/reviews?write=${item.productId}`} size="sm" variant="secondary" icon={PenLine} className="sm:w-full">
+            Write a review
+          </ButtonLink>
           <BuyAgainButton title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />
         </div>
       )}

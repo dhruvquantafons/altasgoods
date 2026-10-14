@@ -30,15 +30,27 @@ export function nextStep(r: ReturnRequest) {
     case "RECEIVED":
       return "Check the item";
     case "QC_FAILED":
-      return "Failed check: settle with the customer";
-    case "PICKUP_SCHEDULED":
-      return r.pickupDate ? `Pickup on ${formatDateShort(`${r.pickupDate}T12:00:00+05:30`)}` : "Pickup booked";
+      return "Failed check: accept it anyway, or reject it and send the item back";
+    case "PICKUP_SCHEDULED": {
+      const day = r.pickupDate ? `Pickup on ${formatDateShort(`${r.pickupDate}T12:00:00+05:30`)}` : "Pickup requested";
+      // no AWB yet: the store books the pickup with the courier and records it here
+      return r.awb ? day : `${day}: book it with the courier`;
+    }
     case "PICKUP_FAILED":
-      return "Pickup failed, rebooking";
+      return "Pickup failed: arrange another attempt";
     case "PICKED_UP":
     case "IN_TRANSIT":
       return "On the way back";
     default:
       return null;
+  }
+}
+
+/** Which courier ships orders, and what Shiprocket still needs before it can take over. Null when the API is unreachable. */
+export async function loadLogisticsStatus() {
+  try {
+    return unwrap(await (await api()).GET("/v1/admin/logistics/status"));
+  } catch {
+    return null;
   }
 }

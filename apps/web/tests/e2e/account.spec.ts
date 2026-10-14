@@ -94,7 +94,7 @@ test("the wishlist holds what the shopper saved, and pages with no data behind t
   await page.getByRole("button", { name: /^Remove .* from wishlist$/ }).click();
   await expect(page.getByText("Your wishlist is empty")).toBeVisible();
 
-  for (const path of ["/account/wallet", "/account/payments", "/account/reviews", "/account/notifications"]) {
+  for (const path of ["/account/wallet", "/account/payments", "/account/notifications"]) {
     const r = await page.goto(path);
     expect(r?.status(), path).toBe(404);
   }

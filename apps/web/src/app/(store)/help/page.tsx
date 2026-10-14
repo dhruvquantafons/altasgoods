@@ -8,7 +8,8 @@ import { formatDayMonth } from "@/components/store/delivery";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { loadMyOrders, toUiOrder } from "@/lib/api/account-orders";
 import { currentUser } from "@/lib/api/server";
-import { COMPANY, GRIEVANCE_OFFICER, HELP_FAQS, HELP_TOPICS } from "@/lib/mock/store-extra";
+import { HELP_FAQS, HELP_TOPICS } from "@/lib/mock/store-extra";
+import { getStoreSettings } from "@/lib/store-settings";
 import { ORDER_STATUS } from "@/lib/status";
 import { cn, formatINR } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ function issuesFor(status: string) {
 }
 
 export default async function HelpPage(props: PageProps<"/help">) {
+  const { company: COMPANY, grievance: GRIEVANCE_OFFICER } = await getStoreSettings();
   const sp = await props.searchParams;
   const q = (typeof sp.q === "string" ? sp.q : "").trim();
   const faqs = q ? HELP_FAQS.filter((f) => `${f.q} ${f.a} ${f.group}`.toLowerCase().includes(q.toLowerCase())) : HELP_FAQS;

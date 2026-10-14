@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Truck } from "lucide-react";
 import type { Product } from "@/lib/types";
-import { dealFor } from "@/lib/mock/store-extra";
 import { cn } from "@/lib/utils";
 import { AddToCartButton, WishlistButton } from "./cart-buttons";
 import { DealTimer } from "./countdown";
-import { DEFAULT_PINCODE, FREE_DELIVERY_THRESHOLD, lookupPincode, promiseDays, promiseLabel } from "./delivery";
+import { DEFAULT_PINCODE, lookupPincode, promiseDays, promiseLabel } from "./delivery";
+import { DeliveryText } from "./store-settings";
 import { AssuredMark, PriceRow, RatingChip } from "./price";
 
 const defaultPin = lookupPincode(DEFAULT_PINCODE);
@@ -27,9 +27,7 @@ export function cardBadge(p: Product, deal?: boolean): { label: string; classNam
 export function deliveryLine(p: Product) {
   const offer = featuredOffer(p);
   const days = promiseDays(offer.deliveryDays, defaultPin);
-  const free = offer.price >= FREE_DELIVERY_THRESHOLD;
-  const when = promiseLabel(days);
-  return { free, when, days, text: `${free ? "Free delivery" : "Delivery"} ${days <= 1 ? when : `by ${when}`}` };
+  return { price: offer.price, when: promiseLabel(days), days };
 }
 
 function variantSummary(p: Product) {
@@ -58,7 +56,7 @@ export function ProductCard({
   const brand = p.brandName;
   const offer = featuredOffer(p);
   const available = offer.stock > 0;
-  const deal = dealFor(p.id);
+  const deal = p.sale;
   const badge = cardBadge(p, !!deal);
   const delivery = deliveryLine(p);
   const lowStock = available && offer.stock > 0 && offer.stock <= 8;
@@ -106,7 +104,7 @@ export function ProductCard({
           <p className="mt-1 flex items-start gap-1.5 text-xs leading-snug text-ink-700">
             <Truck size={14} strokeWidth={1.8} className="shrink-0 text-ink-500" aria-hidden="true" />
             <span>
-              {delivery.free ? <span className="font-medium">{delivery.text}</span> : delivery.text}
+              <DeliveryText price={delivery.price} days={delivery.days} when={delivery.when} />
             </span>
           </p>
         ) : (

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { COD_LIMIT, DELIVERY_FEE, FREE_DELIVERY_THRESHOLD, formatCountdown, formatHoursMinutes, isValidPincode, lookupPincode, msToCutoff, promiseDays } from "@/components/store/delivery";
+import { DEFAULT_RULES } from "@/components/store/store-settings";
+import { formatCountdown, formatHoursMinutes, isValidPincode, lookupPincode, msToCutoff, promiseDays } from "@/components/store/delivery";
 import { bestBankOffer, computeTotals, couponBlocker, lineKey, priceLines } from "@/components/store/pricing";
 import type { BankOffer, CartCatalog, CartLine, CartOffer, CouponLite } from "@/components/store/types";
 
@@ -54,9 +55,9 @@ describe("cart totals", () => {
     expect(t.savings).toBe(8999 + 499 - 4999 - 299);
 
     const small = computeTotals([line("cable")], catalog, { couponCode: null, coupons: [] });
-    expect(299).toBeLessThan(FREE_DELIVERY_THRESHOLD);
-    expect(small.delivery).toBe(DELIVERY_FEE);
-    expect(small.total).toBe(299 + DELIVERY_FEE);
+    expect(299).toBeLessThan(DEFAULT_RULES.freeFrom);
+    expect(small.delivery).toBe(DEFAULT_RULES.fee);
+    expect(small.total).toBe(299 + DEFAULT_RULES.fee);
   });
 
   it("applies a coupon only when it is eligible, capped at its maximum", () => {
@@ -101,7 +102,7 @@ describe("delivery promise", () => {
     expect(promiseDays(2, info, after)).toBe(promiseDays(2, info, before) + 1);
     expect(msToCutoff(before)).toBe(3600_000);
     expect(msToCutoff(after)).toBe(0);
-    expect(COD_LIMIT).toBe(50000);
+    expect(DEFAULT_RULES.codLimit).toBe(50000);
   });
 
   it("formats countdowns", () => {

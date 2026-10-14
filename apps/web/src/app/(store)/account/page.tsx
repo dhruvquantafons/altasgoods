@@ -1,6 +1,7 @@
 import { loadAccountOrders } from "@/lib/api/account-orders";
 import { loadMyReturns, toAccountReturn } from "@/lib/api/returns";
 import { currentUser } from "@/lib/api/server";
+import { getStoreCatalog } from "@/lib/store-catalog";
 import Link from "next/link";
 import { ArrowRight, Package, Undo2 } from "lucide-react";
 import { dateLabel, greeting, isActive, itemState, trackIndex } from "@/components/account/lib";
@@ -9,18 +10,22 @@ import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { IconTile } from "@/components/ui/misc";
-import { productBySlug, recommendations } from "@/lib/mock/account-extra";
 import type { Tone } from "@/lib/status";
 import { formatINR, productSlug } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
 export default async function AccountOverviewPage() {
-  const [user, accountOrders, accountReturns] = await Promise.all([
+  const [user, accountOrders, accountReturns, catalog] = await Promise.all([
     currentUser(),
     loadAccountOrders(),
-    loadMyReturns().then((r) => r.returns.map((x) => toAccountReturn(x, "your original payment method")), () => []),
+    loadMyReturns().then(
+      (r) => r.returns.map((x) => toAccountReturn(x, "your original payment method")),
+      () => [],
+    ),
+    getStoreCatalog(),
   ]);
+  const popular = [...catalog.products].sort((a, b) => b.soldLast30d - a.soldLast30d || b.ratingCount - a.ratingCount).slice(0, 6);
   const firstName = user?.name?.trim().split(/\s+/)[0];
   const active = accountOrders.filter((o) => isActive(o.status));
   const arriving = [...active].sort((a, b) => trackIndex(b.status) - trackIndex(a.status) || +new Date(a.promisedBy) - +new Date(b.promisedBy)).slice(0, 4);
@@ -28,7 +33,14 @@ export default async function AccountOverviewPage() {
   const openReturns = accountReturns.filter((r) => !["completed", "rejected", "cancelled"].includes(r.status));
 
   const tiles: { label: string; value: string; hint: string; href: string; icon: typeof Package; tone: Tone }[] = [
-    { label: "Orders", value: `${active.length} on the way`, hint: `${accountOrders.length} ${accountOrders.length === 1 ? "order" : "orders"} in all`, href: "/account/orders", icon: Package, tone: "brand" },
+    {
+      label: "Orders",
+      value: `${active.length} on the way`,
+      hint: `${accountOrders.length} ${accountOrders.length === 1 ? "order" : "orders"} in all`,
+      href: "/account/orders",
+      icon: Package,
+      tone: "brand",
+    },
     { label: "Returns", value: `${openReturns.length} open`, hint: "Pickups and refunds", href: "/account/returns", icon: Undo2, tone: "info" },
   ];
 
@@ -36,9 +48,7 @@ export default async function AccountOverviewPage() {
     <>
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[22px] leading-tight font-semibold text-ink-900 sm:text-[26px]">
-            {firstName ? `${greeting()}, ${firstName}` : greeting()}
-          </h1>
+          <h1 className="text-[22px] leading-tight font-semibold text-ink-900 sm:text-[26px]">{firstName ? `${greeting()}, ${firstName}` : greeting()}</h1>
           <p className="mt-1 text-sm text-ink-500">Your orders, money and account, all in one place.</p>
         </div>
       </div>
@@ -63,7 +73,12 @@ export default async function AccountOverviewPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-6">
-          <Panel title="Arriving soon" description={`${active.length} orders on the way`} action={<MoreLink href="/account/orders?status=active">All active orders</MoreLink>} bodyClassName="px-0 pb-1 sm:px-0">
+          <Panel
+            title="Arriving soon"
+            description={`${active.length} orders on the way`}
+            action={<MoreLink href="/account/orders?status=active">All active orders</MoreLink>}
+            bodyClassName="px-0 pb-1 sm:px-0"
+          >
             {!arriving.length && <p className="px-5 py-6 text-sm text-ink-500 sm:px-6">Nothing on the way right now.</p>}
             <ul className="divide-y divide-line">
               {arriving.map((o) => {
@@ -71,7 +86,10 @@ export default async function AccountOverviewPage() {
                 const st = itemState(o, first);
                 return (
                   <li key={o.id}>
-                    <Link href={`/account/orders/${o.id}`} className="group flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-ink-50/60 sm:flex-row sm:items-center sm:px-6">
+                    <Link
+                      href={`/account/orders/${o.id}`}
+                      className="group flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-ink-50/60 sm:flex-row sm:items-center sm:px-6"
+                    >
                       <div className="flex min-w-0 flex-1 items-center gap-4">
                         <div className="relative shrink-0">
                           <ProductImage src={first.image} alt="" size={60} rounded="lg" />
@@ -177,15 +195,13 @@ export default async function AccountOverviewPage() {
         </div>
       </div>
 
-      <Panel title="Popular right now" description="Picks from across the store" action={<MoreLink href="/s">Keep shopping</MoreLink>} className="mt-6">
+      <Panel title="Popular right now" description="Best sellers this month" action={<MoreLink href="/s">Keep shopping</MoreLink>} className="mt-6">
         <ProductRail>
-          {recommendations.slice(0, 6).map((r) => {
-            const p = productBySlug(r.slug);
-            return p ? <ProductTile key={r.slug} product={p} note={r.reason} /> : null;
-          })}
+          {popular.map((p) => (
+            <ProductTile key={p.id} product={p} />
+          ))}
         </ProductRail>
       </Panel>
-
     </>
   );
 }

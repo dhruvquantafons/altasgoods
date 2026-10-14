@@ -98,6 +98,8 @@ export interface Product {
   stock: number;
   soldLast30d: number;
   listingStatus: ListingStatus;
+  /** the live sale behind the price, when there is one; price is already the sale price */
+  sale?: { id: string; name: string; slug: string; percent: number; endsAt: string; regularPrice: number };
   createdAt: string;
 }
 

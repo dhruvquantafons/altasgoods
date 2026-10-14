@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ReturnActions, ReturnScanSimulator } from "@/components/admin/fulfilment/return-actions";
+import { ReturnActions, ReturnPickupUpdate, ReturnScanSimulator } from "@/components/admin/fulfilment/return-actions";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -36,6 +36,7 @@ export default async function AdminReturnPage(props: PageProps<"/admin/returns/[
         actions={
           <>
             <ReturnScanSimulator id={r.id} status={r.status} />
+            <ReturnPickupUpdate id={r.id} status={r.status} awb={r.awb} />
             <ReturnActions id={r.id} status={r.status} />
           </>
         }

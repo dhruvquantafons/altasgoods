@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgePercent, Info, Landmark, Timer, Zap } from "lucide-react";
+import { Info, Tag } from "lucide-react";
 import { SaleCountdown } from "@/components/store/countdown";
 import { CouponCard } from "@/components/store/coupon-card";
 import { DealCard } from "@/components/store/deal-card";
@@ -9,32 +9,29 @@ import { ProductCard, featuredOffer } from "@/components/store/product-card";
 import { percentOff } from "@/components/store/price";
 import { Rail, RailItem } from "@/components/store/rail";
 import { Section, SectionTitle } from "@/components/store/section";
-import { SALE_EVENT } from "@/lib/mock";
+import { inStock, isBrowsable } from "@/lib/mock/store-extra";
 import { getStoreCatalog } from "@/lib/store-catalog";
-import { BANK_OFFERS, DEALS_OF_THE_DAY, FLASH_DEALS, inStock, isBrowsable, storefrontCoupons } from "@/lib/mock/store-extra";
+import { getLiveSales, getStoreCoupons } from "@/lib/store-promotions";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "AltasGoods Big Days deals" };
+export async function generateMetadata() {
+  const [sale] = await getLiveSales();
+  return { title: sale ? `${sale.name} deals` : "Deals" };
+}
 
 const DISCOUNTS = [20, 30, 40];
 
 export default async function DealsPage(props: PageProps<"/deals">) {
   const sp = await props.searchParams;
-  const catalog = await getStoreCatalog();
+  const [catalog, liveSales, coupons] = await Promise.all([getStoreCatalog(), getLiveSales(), getStoreCoupons()]);
   const { categories, products } = catalog;
-  const getProduct = catalog.product;
+  const sale = liveSales[0];
   const cat = typeof sp.cat === "string" ? sp.cat : "";
   const minOff = Number(typeof sp.off === "string" ? sp.off : 0) || 0;
-  const match = (id: string) => {
-    const p = getProduct(id);
-    // suppressed listings cannot be bought, so their deal tiles are not shown
-    if (!p || !isBrowsable(p)) return false;
-    const o = featuredOffer(p);
-    return (!cat || p.categorySlug === cat) && percentOff(o.price, o.mrp) >= minOff;
-  };
-  const flash = FLASH_DEALS.filter((d) => match(d.productId)).sort((a, b) => +new Date(a.endsAt) - +new Date(b.endsAt));
-  const dotd = DEALS_OF_THE_DAY.filter((d) => match(d.productId));
-  const coupons = storefrontCoupons().filter((c) => !c.firstOrderOnly);
+  const off = (p: (typeof products)[number]) => percentOff(featuredOffer(p).price, featuredOffer(p).mrp);
+  const onSale = products
+    .filter((p) => p.sale && isBrowsable(p) && (!cat || p.categorySlug === cat) && off(p) >= minOff)
+    .sort((a, b) => b.sale!.percent - a.sale!.percent || off(b) - off(a));
   const href = (patch: { cat?: string; off?: number }) => {
     const q = new URLSearchParams();
     const c = patch.cat ?? cat;
@@ -44,7 +41,7 @@ export default async function DealsPage(props: PageProps<"/deals">) {
     const s = q.toString();
     return `/deals${s ? `?${s}` : ""}#deals`;
   };
-  // the four categories with the most products on sale (or just the chosen one)
+  // the four categories with the most products (or just the chosen one)
   const railCats = [...categories]
     .sort((a, b) => catalog.inCategory(b.slug).length - catalog.inCategory(a.slug).length)
     .slice(0, 4)
@@ -53,41 +50,45 @@ export default async function DealsPage(props: PageProps<"/deals">) {
 
   return (
     <div className="pb-16 lg:pb-24">
-      {/* Event hero */}
+      {/* The live sale */}
       <Section className="pt-4 lg:pt-6">
         <div className="relative overflow-hidden rounded-2xl bg-brand-950 text-white">
-          <Image src="/images/banners/hero-festive.jpg" alt="" fill loading="eager" sizes="100vw" className="object-cover object-right opacity-70" />
+          <Image src={sale?.bannerImage ?? "/images/banners/hero-festive.jpg"} alt="" fill loading="eager" sizes="100vw" className="object-cover object-right opacity-70" />
           <div className="absolute inset-0 bg-gradient-to-r from-brand-950 via-brand-950/85 to-brand-950/10" aria-hidden="true" />
           <div className="relative grid gap-8 px-6 py-10 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:px-12 lg:py-14">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-accent-300 ring-1 ring-white/15">
-                <span className="size-1.5 rounded-full bg-accent-400" aria-hidden="true" /> Live now, {formatPromise(SALE_EVENT.startsAt)} to {formatPromise(SALE_EVENT.endsAt)}
-              </p>
-              <h1 className="mt-4 text-4xl leading-[1.05] font-semibold tracking-tight lg:text-[56px]">{SALE_EVENT.name}</h1>
+              {sale && (
+                <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-accent-300 ring-1 ring-white/15">
+                  <span className="size-1.5 rounded-full bg-accent-400" aria-hidden="true" /> Live now, {formatPromise(sale.startsAt)} to {formatPromise(sale.endsAt)}
+                </p>
+              )}
+              <h1 className="mt-4 text-4xl leading-[1.05] font-semibold tracking-tight lg:text-[56px]">{sale ? sale.name : "Deals"}</h1>
               <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/80 lg:text-base">
-                India&apos;s calmest festive sale. Every deal price is checked against the lowest price of the last 30 days, and every timer counts down to a real end
-                time.
+                {sale
+                  ? sale.headline || sale.description || `${sale.discountPercent}% off while the sale lasts.`
+                  : "No sale is running right now. Here are the biggest discounts on M.R.P. across the store."}
               </p>
-              <ul className="mt-6 flex flex-wrap gap-2 text-[13px]">
-                {[
-                  { icon: Landmark, label: "10% off with Kaveri Bank cards" },
-                  { icon: BadgePercent, label: "Extra 10% with BIGDAYS10" },
-                ].map((b) => (
-                  <li key={b.label} className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-3 py-1.5 text-white/90 ring-1 ring-white/10">
-                    <b.icon size={14} className="text-accent-300" aria-hidden="true" /> {b.label}
-                  </li>
-                ))}
-              </ul>
+              {coupons.length > 0 && (
+                <ul className="mt-6 flex flex-wrap gap-2 text-[13px]">
+                  {coupons.slice(0, 2).map((c) => (
+                    <li key={c.code} className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-3 py-1.5 text-white/90 ring-1 ring-white/10">
+                      <Tag size={14} className="text-accent-300" aria-hidden="true" /> {c.description} with {c.code}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <div className="lg:justify-self-end">
-              <p className="text-sm font-medium text-white/70">Sale ends in</p>
-              <div className="mt-3">
-                <SaleCountdown endsAt={SALE_EVENT.endsAt} />
+            {sale && (
+              <div className="lg:justify-self-end">
+                <p className="text-sm font-medium text-white/70">Sale ends in</p>
+                <div className="mt-3">
+                  <SaleCountdown endsAt={sale.endsAt} />
+                </div>
+                <p className="mt-3 text-[13px] text-white/60">
+                  Ends {formatPromise(sale.endsAt)} at {formatTime(sale.endsAt)}
+                </p>
               </div>
-              <p className="mt-3 text-[13px] text-white/60">
-                Ends {formatPromise(SALE_EVENT.endsAt)} at {formatTime(SALE_EVENT.endsAt)}
-              </p>
-            </div>
+            )}
           </div>
         </div>
       </Section>
@@ -122,10 +123,7 @@ export default async function DealsPage(props: PageProps<"/deals">) {
                 href={href({ off: d })}
                 scroll={false}
                 aria-current={minOff === d ? "true" : undefined}
-                className={cn(
-                  "flex h-8 items-center rounded-lg px-3 font-medium transition-colors",
-                  minOff === d ? "bg-accent-100 text-accent-900" : "text-ink-700 hover:bg-ink-50",
-                )}
+                className={cn("flex h-8 items-center rounded-lg px-3 font-medium transition-colors", minOff === d ? "bg-accent-100 text-accent-900" : "text-ink-700 hover:bg-ink-50")}
               >
                 {d ? `${d}%+` : "Any"}
               </Link>
@@ -134,92 +132,43 @@ export default async function DealsPage(props: PageProps<"/deals">) {
         </div>
       </Section>
 
-      {/* Flash deals */}
-      <Section className="mt-10" labelledBy="deals-flash">
-        <SectionTitle
-          id="deals-flash"
-          title={
-            <span className="flex items-center gap-2">
-              <Zap size={22} className="text-accent-600" aria-hidden="true" /> Blu Flash Deals
-            </span>
-          }
-          description="Up to 12 hours each, limited quantity, at least 15% below the 30 day low"
-        />
-        {flash.length ? (
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-            {flash.map((d) => (
-              <li key={d.productId} className="flex">
-                <DealCard product={getProduct(d.productId)!} deal={d} className="w-full" />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center text-sm text-ink-500">
-            No flash deals match these filters right now. New flash deals start every few hours.
-          </p>
-        )}
-      </Section>
-
-      {/* Deal of the day */}
-      {dotd.length > 0 && (
-        <Section className="mt-14" labelledBy="deals-dotd">
-          <SectionTitle
-            id="deals-dotd"
-            title="Deal of the Day"
-            description="One-day prices, at least 20% below the 30 day low"
-            aside={
-              <span className="hidden items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-900 ring-1 ring-accent-100 ring-inset sm:inline-flex">
-                <Timer size={13} aria-hidden="true" /> Ends today at {formatTime(DEALS_OF_THE_DAY[0]!.endsAt)}
-              </span>
-            }
-          />
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 lg:gap-6">
-            {dotd.map((d) => (
-              <li key={d.productId} className="flex">
-                <DealCard product={getProduct(d.productId)!} deal={d} showTimer={false} className="w-full" />
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {/* Coupons and bank offers */}
-      <Section className="mt-14" labelledBy="deals-coupons">
-        <div className="grid gap-10 lg:grid-cols-2">
-          <div>
-            <SectionTitle id="deals-coupons" title="Coupons to collect" description="Collect one, it applies in your cart when you are eligible" />
-            <div className="grid gap-3">
-              {coupons.map((c) => (
-                <CouponCard key={c.code} coupon={c} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <SectionTitle title="Bank and partner offers" description="One bank offer per order, applied automatically at payment" />
-            <ul className="divide-y divide-line rounded-2xl border border-line">
-              {BANK_OFFERS.map((o) => (
-                <li key={o.id} className="flex gap-3 p-4">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-success-50 text-success-700">
-                    <Landmark size={17} strokeWidth={1.8} aria-hidden="true" />
-                  </span>
-                  <span className="text-sm">
-                    <span className="block font-medium text-ink-900">{o.title}</span>
-                    <span className="mt-0.5 block text-[13px] text-ink-500">{o.detail}</span>
-                  </span>
+      {/* Products in the live sales */}
+      {liveSales.length > 0 && (
+        <Section className="mt-10" labelledBy="deals-sale">
+          <SectionTitle id="deals-sale" title={sale ? `In the ${sale.name}` : "On sale"} description="Sale prices, charged exactly as shown at checkout" />
+          {onSale.length ? (
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 lg:gap-6">
+              {onSale.map((p) => (
+                <li key={p.id} className="flex">
+                  <DealCard product={p} className="w-full" />
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center text-sm text-ink-500">No sale products match these filters. Try another category or discount.</p>
+          )}
+        </Section>
+      )}
+
+      {/* Coupons */}
+      {coupons.length > 0 && (
+        <Section className="mt-14" labelledBy="deals-coupons">
+          <SectionTitle id="deals-coupons" title="Coupons to collect" description="Collect one, it applies in your cart when you are eligible" />
+          <div className="grid gap-3 md:grid-cols-2">
+            {coupons.map((c) => (
+              <CouponCard key={c.code} coupon={c} />
+            ))}
           </div>
-        </div>
-      </Section>
+        </Section>
+      )}
 
       {/* Category rails */}
       {railCats.map((slug) => {
         const c = categories.find((x) => x.slug === slug)!;
         const list = products
           .filter((p) => p.categoryId === c.id && isBrowsable(p) && inStock(p))
-          .filter((p) => percentOff(featuredOffer(p).price, featuredOffer(p).mrp) >= Math.max(minOff, 20))
-          .sort((a, b) => percentOff(featuredOffer(b).price, featuredOffer(b).mrp) - percentOff(featuredOffer(a).price, featuredOffer(a).mrp));
+          .filter((p) => off(p) >= Math.max(minOff, 20))
+          .sort((a, b) => off(b) - off(a));
         if (list.length < 2) return null;
         return (
           <Section key={slug} className="mt-14" labelledBy={`deals-${slug}`}>
@@ -242,8 +191,8 @@ export default async function DealsPage(props: PageProps<"/deals">) {
           <div className="text-sm leading-relaxed text-ink-600">
             <p className="font-semibold text-ink-900">How AltasGoods prices deals</p>
             <p className="mt-1 max-w-3xl">
-              A deal price must be below the lowest price the item sold for in the last 30 days and can never exceed the M.R.P. During the event, we can lower a
-              deal price but never raise it. &ldquo;Claimed&rdquo; bars show the share of the deal quantity already sold, and timers end at the real end time.
+              Sale prices are never above the M.R.P., timers end at the sale&apos;s real end time, and the price you see on a product is the price you are charged at
+              checkout. Coupons apply on top of sale prices when your order qualifies.
             </p>
           </div>
         </div>

@@ -20,6 +20,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminSystemController_auditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminSystemController_getSettings"];
+        put: operations["AdminSystemController_putSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontSettingsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminBannersController_list"];
+        put?: never;
+        post: operations["AdminBannersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/banners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminBannersController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminBannersController_update"];
+        trace?: never;
+    };
+    "/v1/admin/banners/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminBannersController_reorder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontBannersController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/signup": {
         parameters: {
             query?: never;
@@ -276,6 +388,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/products/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminCatalogController_importProducts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/products/{id}": {
         parameters: {
             query?: never;
@@ -388,6 +516,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/products/{slug}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReviewsController_forProduct"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReviewsController_mine"];
+        put?: never;
+        post: operations["ReviewsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/reviewable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReviewsController_reviewable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/reviews/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["ReviewsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["ReviewsController_update"];
+        trace?: never;
+    };
+    "/v1/admin/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminReviewsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/reviews/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminReviewsController_moderate"];
+        trace?: never;
+    };
     "/v1/me/addresses": {
         parameters: {
             query?: never;
@@ -482,6 +706,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["CartController_update"];
+        trace?: never;
+    };
+    "/v1/me/wishlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WishlistController_get"];
+        put: operations["WishlistController_replace"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/checkout/quote": {
@@ -708,6 +948,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/logistics/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminOrdersController_logisticsStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/order-items/{id}/tracking/refresh": {
         parameters: {
             query?: never;
@@ -718,6 +974,150 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AdminOrdersController_refreshTracking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminInsightsController_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminInsightsController_payments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminInsightsController_refunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminPromotionsController_sales"];
+        put?: never;
+        post: operations["AdminPromotionsController_createSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/sales/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminPromotionsController_sale"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminPromotionsController_deleteSale"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminPromotionsController_updateSale"];
+        trace?: never;
+    };
+    "/v1/admin/coupons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminPromotionsController_coupons"];
+        put?: never;
+        post: operations["AdminPromotionsController_createCoupon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/coupons/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminPromotionsController_deleteCoupon"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminPromotionsController_updateCoupon"];
+        trace?: never;
+    };
+    "/v1/storefront/sales/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontPromotionsController_liveSales"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/coupons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontPromotionsController_coupons"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -948,6 +1348,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/returns/{id}/pickup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminReturnsController_pickup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/returns/{id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminReturnsController_settle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/returns/{id}/photos/{photoId}": {
         parameters: {
             query?: never;
@@ -974,6 +1406,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["DevReturnsController_advance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_customers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/customers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_customer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_orders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SupportController_order"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1220,6 +1716,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminCustomersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/customers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminCustomersController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminCustomersController_setStatus"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1253,6 +1781,662 @@ export interface operations {
                         redis: boolean;
                         /** Format: date-time */
                         time: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminSystemController_auditLog: {
+        parameters: {
+            query?: {
+                /** @description Searches the summary */
+                q?: string;
+                /** @description An action or a prefix, for example product or sale.create */
+                action?: string;
+                entityType?: string;
+                entityId?: string;
+                actorId?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: number;
+                            /** Format: uuid */
+                            actorId: string | null;
+                            actorName: string;
+                            action: string;
+                            entityType: string;
+                            entityId: string | null;
+                            summary: string;
+                            changes: {
+                                [key: string]: (unknown | unknown)[];
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                        /** @description Everyone in the log, for the filter */
+                        actors: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    AdminSystemController_getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        delivery: {
+                            /** @description Delivery fee for orders below the free delivery threshold */
+                            feePaise: number;
+                            /** @description Orders at or above this subtotal ship free */
+                            freeFromPaise: number;
+                        };
+                        cod: {
+                            /** @description Largest order total that can be paid by cash on delivery */
+                            maxOrderPaise: number;
+                        };
+                        reviews: {
+                            /** @description Publish customer reviews straight away; otherwise they wait for approval */
+                            autoPublish: boolean;
+                        };
+                        notice: {
+                            enabled: boolean;
+                            /** @description Shown in a bar at the top of every storefront page while enabled */
+                            message: string;
+                        };
+                        company: {
+                            legalName: string;
+                            cin: string;
+                            gstin: string;
+                            registeredOffice: string;
+                            customerCare: string;
+                            customerCareHours: string;
+                            /** Format: email */
+                            email: string;
+                            website: string;
+                        };
+                        grievance: {
+                            name: string;
+                            designation: string;
+                            /** Format: email */
+                            email: string;
+                            phone: string;
+                            hours: string;
+                            address: string;
+                            ackHours: number;
+                            resolutionDays: number;
+                        };
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                        updatedBy: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminSystemController_putSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    delivery: {
+                        /** @description Delivery fee for orders below the free delivery threshold */
+                        feePaise: number;
+                        /** @description Orders at or above this subtotal ship free */
+                        freeFromPaise: number;
+                    };
+                    cod: {
+                        /** @description Largest order total that can be paid by cash on delivery */
+                        maxOrderPaise: number;
+                    };
+                    reviews: {
+                        /** @description Publish customer reviews straight away; otherwise they wait for approval */
+                        autoPublish: boolean;
+                    };
+                    notice: {
+                        enabled: boolean;
+                        /** @description Shown in a bar at the top of every storefront page while enabled */
+                        message: string;
+                    };
+                    company: {
+                        legalName: string;
+                        cin: string;
+                        gstin: string;
+                        registeredOffice: string;
+                        customerCare: string;
+                        customerCareHours: string;
+                        /** Format: email */
+                        email: string;
+                        website: string;
+                    };
+                    grievance: {
+                        name: string;
+                        designation: string;
+                        /** Format: email */
+                        email: string;
+                        phone: string;
+                        hours: string;
+                        address: string;
+                        ackHours: number;
+                        resolutionDays: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        delivery: {
+                            /** @description Delivery fee for orders below the free delivery threshold */
+                            feePaise: number;
+                            /** @description Orders at or above this subtotal ship free */
+                            freeFromPaise: number;
+                        };
+                        cod: {
+                            /** @description Largest order total that can be paid by cash on delivery */
+                            maxOrderPaise: number;
+                        };
+                        reviews: {
+                            /** @description Publish customer reviews straight away; otherwise they wait for approval */
+                            autoPublish: boolean;
+                        };
+                        notice: {
+                            enabled: boolean;
+                            /** @description Shown in a bar at the top of every storefront page while enabled */
+                            message: string;
+                        };
+                        company: {
+                            legalName: string;
+                            cin: string;
+                            gstin: string;
+                            registeredOffice: string;
+                            customerCare: string;
+                            customerCareHours: string;
+                            /** Format: email */
+                            email: string;
+                            website: string;
+                        };
+                        grievance: {
+                            name: string;
+                            designation: string;
+                            /** Format: email */
+                            email: string;
+                            phone: string;
+                            hours: string;
+                            address: string;
+                            ackHours: number;
+                            resolutionDays: number;
+                        };
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                        updatedBy: string | null;
+                    };
+                };
+            };
+        };
+    };
+    StorefrontSettingsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        delivery: {
+                            /** @description Delivery fee for orders below the free delivery threshold */
+                            feePaise: number;
+                            /** @description Orders at or above this subtotal ship free */
+                            freeFromPaise: number;
+                        };
+                        cod: {
+                            /** @description Largest order total that can be paid by cash on delivery */
+                            maxOrderPaise: number;
+                        };
+                        notice: {
+                            enabled: boolean;
+                            /** @description Shown in a bar at the top of every storefront page while enabled */
+                            message: string;
+                        };
+                        company: {
+                            legalName: string;
+                            cin: string;
+                            gstin: string;
+                            registeredOffice: string;
+                            customerCare: string;
+                            customerCareHours: string;
+                            /** Format: email */
+                            email: string;
+                            website: string;
+                        };
+                        grievance: {
+                            name: string;
+                            designation: string;
+                            /** Format: email */
+                            email: string;
+                            phone: string;
+                            hours: string;
+                            address: string;
+                            ackHours: number;
+                            resolutionDays: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    AdminBannersController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        placement: "HERO" | "PROMO";
+                        eyebrow: string;
+                        title: string;
+                        body: string;
+                        /** @description The button on a hero slide */
+                        ctaLabel: string;
+                        href: string;
+                        image: string;
+                        /** @description Describes the image for screen readers */
+                        alt: string;
+                        /** @enum {string} */
+                        align: "left" | "right";
+                        /**
+                         * @description Light text on a dark image, or dark text on a light one
+                         * @enum {string}
+                         */
+                        theme: "dark" | "light";
+                        position: string;
+                        active: boolean;
+                        /** Format: date-time */
+                        startsAt: string | null;
+                        /** Format: date-time */
+                        endsAt: string | null;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        /** @description Active and inside its schedule right now */
+                        showing: boolean;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminBannersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    placement: "HERO" | "PROMO";
+                    /** @default  */
+                    eyebrow?: string;
+                    title: string;
+                    /** @default  */
+                    body?: string;
+                    /**
+                     * @description The button on a hero slide
+                     * @default
+                     */
+                    ctaLabel?: string;
+                    href: string;
+                    image: string;
+                    /**
+                     * @description Describes the image for screen readers
+                     * @default
+                     */
+                    alt?: string;
+                    /**
+                     * @default left
+                     * @enum {string}
+                     */
+                    align?: "left" | "right";
+                    /**
+                     * @description Light text on a dark image, or dark text on a light one
+                     * @default dark
+                     * @enum {string}
+                     */
+                    theme?: "dark" | "light";
+                    /** @default center */
+                    position?: string;
+                    /** @default true */
+                    active?: boolean;
+                    /**
+                     * Format: date-time
+                     * @default null
+                     */
+                    startsAt?: string | null;
+                    /**
+                     * Format: date-time
+                     * @default null
+                     */
+                    endsAt?: string | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        placement: "HERO" | "PROMO";
+                        eyebrow: string;
+                        title: string;
+                        body: string;
+                        /** @description The button on a hero slide */
+                        ctaLabel: string;
+                        href: string;
+                        image: string;
+                        /** @description Describes the image for screen readers */
+                        alt: string;
+                        /** @enum {string} */
+                        align: "left" | "right";
+                        /**
+                         * @description Light text on a dark image, or dark text on a light one
+                         * @enum {string}
+                         */
+                        theme: "dark" | "light";
+                        position: string;
+                        active: boolean;
+                        /** Format: date-time */
+                        startsAt: string | null;
+                        /** Format: date-time */
+                        endsAt: string | null;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        /** @description Active and inside its schedule right now */
+                        showing: boolean;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminBannersController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBannersController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    eyebrow?: string;
+                    title?: string;
+                    body?: string;
+                    /** @description The button on a hero slide */
+                    ctaLabel?: string;
+                    href?: string;
+                    image?: string;
+                    /** @description Describes the image for screen readers */
+                    alt?: string;
+                    /** @enum {string} */
+                    align?: "left" | "right";
+                    /**
+                     * @description Light text on a dark image, or dark text on a light one
+                     * @enum {string}
+                     */
+                    theme?: "dark" | "light";
+                    position?: string;
+                    active?: boolean;
+                    /** Format: date-time */
+                    startsAt?: string | null;
+                    /** Format: date-time */
+                    endsAt?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        placement: "HERO" | "PROMO";
+                        eyebrow: string;
+                        title: string;
+                        body: string;
+                        /** @description The button on a hero slide */
+                        ctaLabel: string;
+                        href: string;
+                        image: string;
+                        /** @description Describes the image for screen readers */
+                        alt: string;
+                        /** @enum {string} */
+                        align: "left" | "right";
+                        /**
+                         * @description Light text on a dark image, or dark text on a light one
+                         * @enum {string}
+                         */
+                        theme: "dark" | "light";
+                        position: string;
+                        active: boolean;
+                        /** Format: date-time */
+                        startsAt: string | null;
+                        /** Format: date-time */
+                        endsAt: string | null;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        /** @description Active and inside its schedule right now */
+                        showing: boolean;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminBannersController_reorder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    placement: "HERO" | "PROMO";
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        placement: "HERO" | "PROMO";
+                        eyebrow: string;
+                        title: string;
+                        body: string;
+                        /** @description The button on a hero slide */
+                        ctaLabel: string;
+                        href: string;
+                        image: string;
+                        /** @description Describes the image for screen readers */
+                        alt: string;
+                        /** @enum {string} */
+                        align: "left" | "right";
+                        /**
+                         * @description Light text on a dark image, or dark text on a light one
+                         * @enum {string}
+                         */
+                        theme: "dark" | "light";
+                        position: string;
+                        active: boolean;
+                        /** Format: date-time */
+                        startsAt: string | null;
+                        /** Format: date-time */
+                        endsAt: string | null;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        /** @description Active and inside its schedule right now */
+                        showing: boolean;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontBannersController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hero: {
+                            /** Format: uuid */
+                            id: string;
+                            eyebrow: string;
+                            title: string;
+                            body: string;
+                            /** @description The button on a hero slide */
+                            ctaLabel: string;
+                            href: string;
+                            image: string;
+                            /** @description Describes the image for screen readers */
+                            alt: string;
+                            /** @enum {string} */
+                            align: "left" | "right";
+                            /**
+                             * @description Light text on a dark image, or dark text on a light one
+                             * @enum {string}
+                             */
+                            theme: "dark" | "light";
+                            position: string;
+                        }[];
+                        promo: {
+                            /** Format: uuid */
+                            id: string;
+                            eyebrow: string;
+                            title: string;
+                            body: string;
+                            /** @description The button on a hero slide */
+                            ctaLabel: string;
+                            href: string;
+                            image: string;
+                            /** @description Describes the image for screen readers */
+                            alt: string;
+                            /** @enum {string} */
+                            align: "left" | "right";
+                            /**
+                             * @description Light text on a dark image, or dark text on a light one
+                             * @enum {string}
+                             */
+                            theme: "dark" | "light";
+                            position: string;
+                        }[];
                     };
                 };
             };
@@ -1778,8 +2962,20 @@ export interface operations {
                             offer: {
                                 /** Format: uuid */
                                 id: string;
+                                /** @description What the customer pays now, any live sale applied */
                                 pricePaise: number;
                                 mrpPaise: number;
+                                /** @description The price without a sale */
+                                regularPricePaise: number;
+                                sale: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    slug: string;
+                                    percent: number;
+                                    /** Format: date-time */
+                                    endsAt: string;
+                                } | null;
                                 /** @description Units available to order, capped at 10 */
                                 stock: number;
                                 deliveryDays: number;
@@ -1857,6 +3053,16 @@ export interface operations {
                             deliveryDays: number;
                             /** Format: uuid */
                             offerId: string;
+                            /** @description The live sale behind pricePaise, when there is one */
+                            sale: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                slug: string;
+                                percent: number;
+                                /** Format: date-time */
+                                endsAt: string;
+                            } | null;
                         }[];
                         page: number;
                         pageSize: number;
@@ -1925,6 +3131,16 @@ export interface operations {
                         deliveryDays: number;
                         /** Format: uuid */
                         offerId: string;
+                        /** @description The live sale behind pricePaise, when there is one */
+                        sale: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            slug: string;
+                            percent: number;
+                            /** Format: date-time */
+                            endsAt: string;
+                        } | null;
                         images: string[];
                         description: string;
                         highlights: string[];
@@ -2126,6 +3342,62 @@ export interface operations {
             };
         };
     };
+    AdminCatalogController_importProducts: {
+        parameters: {
+            query?: {
+                /** @description Check the file and report what would change, without saving */
+                dryRun?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        dryRun: boolean;
+                        columns: {
+                            name: string;
+                            use: string;
+                        }[];
+                        summary: {
+                            rows: number;
+                            created: number;
+                            updated: number;
+                            skipped: number;
+                            newCategories: string[];
+                            newSubcategories: string[];
+                            newBrands: string[];
+                            imagesDownloaded: number;
+                            imagesFailed: number;
+                        };
+                        rows: {
+                            line: number;
+                            sku: string;
+                            title: string;
+                            /** @enum {string} */
+                            action: "create" | "update" | "skip";
+                            productId: string | null;
+                            errors: string[];
+                            warnings: string[];
+                        }[];
+                    };
+                };
+            };
+        };
+    };
     AdminCatalogController_product: {
         parameters: {
             query?: never;
@@ -2212,11 +3484,8 @@ export interface operations {
                 "application/json": {
                     title?: string;
                     sku?: string;
-                    /** @default  */
                     description?: string;
-                    /** @default [] */
                     highlights?: string[];
-                    /** @default [] */
                     specs?: {
                         group: string;
                         items: {
@@ -2224,7 +3493,6 @@ export interface operations {
                             value: string;
                         }[];
                     }[];
-                    /** @default [] */
                     variants?: {
                         name: string;
                         values: {
@@ -2238,18 +3506,13 @@ export interface operations {
                     categoryId?: string;
                     subcategory?: string;
                     brandId?: string;
-                    /** @default [] */
                     tags?: ("bestseller" | "new" | "deal" | "limited")[];
                     pricePaise?: number;
                     mrpPaise?: number;
                     stock?: number;
-                    /** @default 3 */
                     deliveryDays?: number;
-                    /** @default true */
                     codAvailable?: boolean;
-                    /** @default 7 */
                     returnWindowDays?: number;
-                    /** @default true */
                     active?: boolean;
                 };
             };
@@ -2614,6 +3877,361 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ReviewsController_forProduct: {
+        parameters: {
+            query?: {
+                sort?: "recent" | "high" | "low";
+                stars?: number;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            rating: number;
+                            title: string;
+                            body: string;
+                            /** @description First name and last initial */
+                            author: string;
+                            /**
+                             * @description Every review comes from a delivered order
+                             * @enum {boolean}
+                             */
+                            verified: true;
+                            reply: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                        /** @description Published written reviews by star, 5 to 1 */
+                        breakdown: {
+                            stars: number;
+                            count: number;
+                        }[];
+                        /** @description The signed-in customer has a delivered order for this product and has not reviewed it */
+                        canReview: boolean;
+                    };
+                };
+            };
+        };
+    };
+    ReviewsController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        product: {
+                            id: string;
+                            slug: string;
+                            title: string;
+                            image: string;
+                        };
+                        rating: number;
+                        title: string;
+                        body: string;
+                        /** @enum {string} */
+                        status: "PENDING" | "PUBLISHED" | "HIDDEN";
+                        reply: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    ReviewsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    productId: string;
+                    rating: number;
+                    title: string;
+                    /** @default  */
+                    body?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        product: {
+                            id: string;
+                            slug: string;
+                            title: string;
+                            image: string;
+                        };
+                        rating: number;
+                        title: string;
+                        body: string;
+                        /** @enum {string} */
+                        status: "PENDING" | "PUBLISHED" | "HIDDEN";
+                        reply: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    ReviewsController_reviewable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        slug: string;
+                        title: string;
+                        image: string;
+                        /** Format: date-time */
+                        deliveredAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    ReviewsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReviewsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    rating?: number;
+                    title?: string;
+                    /** @default  */
+                    body?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        product: {
+                            id: string;
+                            slug: string;
+                            title: string;
+                            image: string;
+                        };
+                        rating: number;
+                        title: string;
+                        body: string;
+                        /** @enum {string} */
+                        status: "PENDING" | "PUBLISHED" | "HIDDEN";
+                        reply: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminReviewsController_list: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "PUBLISHED" | "HIDDEN";
+                rating?: number;
+                /** @description Product, title or customer email */
+                q?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            product: {
+                                id: string;
+                                slug: string;
+                                title: string;
+                                image: string;
+                            };
+                            rating: number;
+                            title: string;
+                            body: string;
+                            /** @enum {string} */
+                            status: "PENDING" | "PUBLISHED" | "HIDDEN";
+                            reply: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            customer: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                            orderId: string | null;
+                            adminNote: string | null;
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                        counts: {
+                            PENDING: number;
+                            PUBLISHED: number;
+                            HIDDEN: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    AdminReviewsController_moderate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status?: "PUBLISHED" | "HIDDEN";
+                    /** @description The store's public reply; null removes it */
+                    reply?: string | null;
+                    adminNote?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        product: {
+                            id: string;
+                            slug: string;
+                            title: string;
+                            image: string;
+                        };
+                        rating: number;
+                        title: string;
+                        body: string;
+                        /** @enum {string} */
+                        status: "PENDING" | "PUBLISHED" | "HIDDEN";
+                        reply: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        customer: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                        };
+                        orderId: string | null;
+                        adminNote: string | null;
+                    };
+                };
             };
         };
     };
@@ -3091,6 +4709,56 @@ export interface operations {
                             subtotalPaise: number;
                             savingsPaise: number;
                         };
+                    };
+                };
+            };
+        };
+    };
+    WishlistController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Newest first */
+                        productIds: string[];
+                    };
+                };
+            };
+        };
+    };
+    WishlistController_replace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    productIds: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Newest first */
+                        productIds: string[];
                     };
                 };
             };
@@ -3974,6 +5642,38 @@ export interface operations {
             };
         };
     };
+    AdminOrdersController_logisticsStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Who ships orders right now
+                         * @enum {string}
+                         */
+                        provider: "SIMULATED" | "SHIPROCKET";
+                        shiprocket: {
+                            credentials: boolean;
+                            pickupLocation: boolean;
+                            webhookToken: boolean;
+                        };
+                        /** @description Path of the tracking webhook to give the courier, after the API's address */
+                        webhookPath: string;
+                    };
+                };
+            };
+        };
+    };
     AdminOrdersController_refreshTracking: {
         parameters: {
             query?: never;
@@ -3997,6 +5697,707 @@ export interface operations {
                         status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                         trackingStatus: string | null;
                     };
+                };
+            };
+        };
+    };
+    AdminInsightsController_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Since midnight IST */
+                        today: {
+                            orders: number;
+                            revenuePaise: number;
+                        };
+                        last7Days: {
+                            orders: number;
+                            revenuePaise: number;
+                        };
+                        last30Days: {
+                            orders: number;
+                            revenuePaise: number;
+                        };
+                        /** @description Over the last 30 days */
+                        averageOrderPaise: number;
+                        work: {
+                            toAccept: number;
+                            toPack: number;
+                            toHandOver: number;
+                            returnsWaiting: number;
+                            refundsPending: number;
+                            refundsPendingPaise: number;
+                        };
+                        /** @description The last 14 days, oldest first */
+                        series: {
+                            date: string;
+                            orders: number;
+                            revenuePaise: number;
+                        }[];
+                        topProducts: {
+                            productId: string;
+                            title: string;
+                            image: string;
+                            units: number;
+                            revenuePaise: number;
+                        }[];
+                        latestOrders: {
+                            id: string;
+                            /** Format: date-time */
+                            placedAt: string;
+                            /** @enum {string} */
+                            status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                            totalPaise: number;
+                            /** @enum {string} */
+                            paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            customerName: string;
+                        }[];
+                        lowStock: {
+                            productId: string;
+                            title: string;
+                            image: string | null;
+                            stock: number;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    AdminInsightsController_payments: {
+        parameters: {
+            query?: {
+                status?: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                method?: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                provider?: "SANDBOX" | "RAZORPAY" | "COD";
+                /** @description Order ID, gateway reference or customer email */
+                q?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            /** @enum {string} */
+                            provider: "SANDBOX" | "RAZORPAY" | "COD";
+                            /** @enum {string} */
+                            method: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                            providerRef: string | null;
+                            failureReason: string | null;
+                            /** Format: date-time */
+                            capturedAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            customer: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                        summary: {
+                            capturedTodayCount: number;
+                            capturedTodayPaise: number;
+                            failedLast24h: number;
+                            refundsPendingCount: number;
+                            refundsPendingPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    AdminInsightsController_refunds: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+                /** @description Order ID or customer email */
+                q?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+                            reason: string;
+                            /** @enum {string} */
+                            method: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            /** @enum {string} */
+                            provider: "SANDBOX" | "RAZORPAY" | "COD";
+                            providerRef: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            completedAt: string | null;
+                            customer: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminPromotionsController_sales: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        slug: string;
+                        headline: string;
+                        description: string;
+                        discountPercent: number;
+                        /** @enum {string} */
+                        scope: "ALL" | "CATEGORIES" | "PRODUCTS";
+                        categoryIds: string[];
+                        productIds: string[];
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "PAUSED";
+                        bannerImage: string | null;
+                        /**
+                         * @description Worked out from the status and the dates
+                         * @enum {string}
+                         */
+                        state: "LIVE" | "SCHEDULED" | "ENDED" | "PAUSED";
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminPromotionsController_createSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description For example Diwali Dhamaka */
+                    name: string;
+                    /**
+                     * @description One line for the storefront banner
+                     * @default
+                     */
+                    headline?: string;
+                    /** @default  */
+                    description?: string;
+                    discountPercent: number;
+                    /** @enum {string} */
+                    scope: "ALL" | "CATEGORIES" | "PRODUCTS";
+                    /** @default [] */
+                    categoryIds?: string[];
+                    /** @default [] */
+                    productIds?: string[];
+                    /** Format: date-time */
+                    startsAt: string;
+                    /** Format: date-time */
+                    endsAt: string;
+                    /**
+                     * @default ACTIVE
+                     * @enum {string}
+                     */
+                    status?: "ACTIVE" | "PAUSED";
+                    /** @default null */
+                    bannerImage?: string | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        slug: string;
+                        headline: string;
+                        description: string;
+                        discountPercent: number;
+                        /** @enum {string} */
+                        scope: "ALL" | "CATEGORIES" | "PRODUCTS";
+                        categoryIds: string[];
+                        productIds: string[];
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "PAUSED";
+                        bannerImage: string | null;
+                        /**
+                         * @description Worked out from the status and the dates
+                         * @enum {string}
+                         */
+                        state: "LIVE" | "SCHEDULED" | "ENDED" | "PAUSED";
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminPromotionsController_sale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        slug: string;
+                        headline: string;
+                        description: string;
+                        discountPercent: number;
+                        /** @enum {string} */
+                        scope: "ALL" | "CATEGORIES" | "PRODUCTS";
+                        categoryIds: string[];
+                        productIds: string[];
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "PAUSED";
+                        bannerImage: string | null;
+                        /**
+                         * @description Worked out from the status and the dates
+                         * @enum {string}
+                         */
+                        state: "LIVE" | "SCHEDULED" | "ENDED" | "PAUSED";
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminPromotionsController_deleteSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminPromotionsController_updateSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description For example Diwali Dhamaka */
+                    name?: string;
+                    /** @description One line for the storefront banner */
+                    headline?: string;
+                    description?: string;
+                    discountPercent?: number;
+                    /** @enum {string} */
+                    scope?: "ALL" | "CATEGORIES" | "PRODUCTS";
+                    categoryIds?: string[];
+                    productIds?: string[];
+                    /** Format: date-time */
+                    startsAt?: string;
+                    /** Format: date-time */
+                    endsAt?: string;
+                    /** @enum {string} */
+                    status?: "ACTIVE" | "PAUSED";
+                    bannerImage?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        slug: string;
+                        headline: string;
+                        description: string;
+                        discountPercent: number;
+                        /** @enum {string} */
+                        scope: "ALL" | "CATEGORIES" | "PRODUCTS";
+                        categoryIds: string[];
+                        productIds: string[];
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "PAUSED";
+                        bannerImage: string | null;
+                        /**
+                         * @description Worked out from the status and the dates
+                         * @enum {string}
+                         */
+                        state: "LIVE" | "SCHEDULED" | "ENDED" | "PAUSED";
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminPromotionsController_coupons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        description: string;
+                        /** @enum {string} */
+                        type: "PERCENT" | "FLAT";
+                        value: number;
+                        maxDiscountPaise: number | null;
+                        minOrderPaise: number;
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "PAUSED";
+                        usageLimit: number | null;
+                        usageCount: number;
+                        showOnStorefront: boolean;
+                        /** @enum {string} */
+                        state: "LIVE" | "SCHEDULED" | "ENDED" | "PAUSED" | "USED_UP";
+                    }[];
+                };
+            };
+        };
+    };
+    AdminPromotionsController_createCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    description: string;
+                    /** @enum {string} */
+                    type: "PERCENT" | "FLAT";
+                    /** @description A percentage for PERCENT, paise for FLAT */
+                    value: number;
+                    /** @default null */
+                    maxDiscountPaise?: number | null;
+                    /** @default 0 */
+                    minOrderPaise?: number;
+                    /** Format: date-time */
+                    startsAt: string;
+                    /** Format: date-time */
+                    endsAt: string;
+                    /**
+                     * @default ACTIVE
+                     * @enum {string}
+                     */
+                    status?: "ACTIVE" | "PAUSED";
+                    /** @default null */
+                    usageLimit?: number | null;
+                    /** @default true */
+                    showOnStorefront?: boolean;
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        description: string;
+                        /** @enum {string} */
+                        type: "PERCENT" | "FLAT";
+                        value: number;
+                        maxDiscountPaise: number | null;
+                        minOrderPaise: number;
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "PAUSED";
+                        usageLimit: number | null;
+                        usageCount: number;
+                        showOnStorefront: boolean;
+                        /** @enum {string} */
+                        state: "LIVE" | "SCHEDULED" | "ENDED" | "PAUSED" | "USED_UP";
+                    };
+                };
+            };
+        };
+    };
+    AdminPromotionsController_deleteCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminPromotionsController_updateCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    description?: string;
+                    /** @enum {string} */
+                    type?: "PERCENT" | "FLAT";
+                    /** @description A percentage for PERCENT, paise for FLAT */
+                    value?: number;
+                    maxDiscountPaise?: number | null;
+                    minOrderPaise?: number;
+                    /** Format: date-time */
+                    startsAt?: string;
+                    /** Format: date-time */
+                    endsAt?: string;
+                    /** @enum {string} */
+                    status?: "ACTIVE" | "PAUSED";
+                    usageLimit?: number | null;
+                    showOnStorefront?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        description: string;
+                        /** @enum {string} */
+                        type: "PERCENT" | "FLAT";
+                        value: number;
+                        maxDiscountPaise: number | null;
+                        minOrderPaise: number;
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "PAUSED";
+                        usageLimit: number | null;
+                        usageCount: number;
+                        showOnStorefront: boolean;
+                        /** @enum {string} */
+                        state: "LIVE" | "SCHEDULED" | "ENDED" | "PAUSED" | "USED_UP";
+                    };
+                };
+            };
+        };
+    };
+    StorefrontPromotionsController_liveSales: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        slug: string;
+                        headline: string;
+                        description: string;
+                        discountPercent: number;
+                        /** @enum {string} */
+                        scope: "ALL" | "CATEGORIES" | "PRODUCTS";
+                        categoryIds: string[];
+                        productIds: string[];
+                        /** Format: date-time */
+                        startsAt: string;
+                        /** Format: date-time */
+                        endsAt: string;
+                        bannerImage: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontPromotionsController_coupons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        description: string;
+                        /** @enum {string} */
+                        type: "PERCENT" | "FLAT";
+                        value: number;
+                        maxDiscountPaise: number | null;
+                        minOrderPaise: number;
+                        /** Format: date-time */
+                        endsAt: string;
+                    }[];
                 };
             };
         };
@@ -4929,6 +7330,187 @@ export interface operations {
             };
         };
     };
+    AdminReturnsController_pickup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description The pickup's new state; steps in between are recorded too
+                     * @enum {string}
+                     */
+                    to: "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED";
+                    /** @description The courier's AWB for the reverse pickup */
+                    awb?: string;
+                    /** @description Required when the pickup failed */
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        decisionNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminReturnsController_settle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    accept: boolean;
+                    note: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        decisionNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
     AdminReturnsController_photo: {
         parameters: {
             query?: never;
@@ -5036,6 +7618,238 @@ export interface operations {
             };
         };
     };
+    SupportController_customers: {
+        parameters: {
+            query?: {
+                q?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                            phone: string | null;
+                            /** @enum {string} */
+                            status: "ACTIVE" | "BLOCKED";
+                            /** Format: date-time */
+                            createdAt: string;
+                            orders: number;
+                            openTickets: number;
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                    };
+                };
+            };
+        };
+    };
+    SupportController_customer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        phone: string | null;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "BLOCKED";
+                        emailVerified: boolean;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** @description Orders that went through */
+                        orderCount: number;
+                        /** @description Total of those orders, less cancellations */
+                        spentPaise: number;
+                        /** @description The 20 most recent orders, failed payments included */
+                        orders: {
+                            id: string;
+                            /** Format: date-time */
+                            placedAt: string;
+                            /** @enum {string} */
+                            status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                            /** @enum {string} */
+                            paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            /** @enum {string} */
+                            paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                            totalPaise: number;
+                            itemCount: number;
+                            firstItem: {
+                                title: string;
+                                image: string;
+                            } | null;
+                            customer: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    SupportController_orders: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** Format: date-time */
+                        placedAt: string;
+                        /** @enum {string} */
+                        status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @enum {string} */
+                        paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                        /** @enum {string} */
+                        paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                        totalPaise: number;
+                        itemCount: number;
+                        firstItem: {
+                            title: string;
+                            image: string;
+                        } | null;
+                        customer: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                        };
+                    }[];
+                };
+            };
+        };
+    };
+    SupportController_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** Format: date-time */
+                        placedAt: string;
+                        /** @enum {string} */
+                        status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @enum {string} */
+                        paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                        /** @enum {string} */
+                        paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                        totalPaise: number;
+                        shipTo: {
+                            name: string;
+                            city: string;
+                            state: string;
+                            pincode: string;
+                        };
+                        address: {
+                            name: string;
+                            phone: string;
+                            line1: string;
+                            line2: string | null;
+                            landmark: string | null;
+                            city: string;
+                            state: string;
+                            pincode: string;
+                        };
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            productId: string;
+                            title: string;
+                            image: string;
+                            variant: string;
+                            qty: number;
+                            unitPricePaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
+                            /** Format: date-time */
+                            dispatchBy: string | null;
+                            /** Format: date-time */
+                            promisedBy: string;
+                            awb: string | null;
+                            courier: string | null;
+                            labelUrl: string | null;
+                            trackingStatus: string | null;
+                            /** Format: date-time */
+                            trackedAt: string | null;
+                            trackingUrl: string | null;
+                            simulated: boolean;
+                        }[];
+                        events: {
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            fromStatus: string | null;
+                            toStatus: string;
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        customer: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                            phone: string | null;
+                        };
+                    };
+                };
+            };
+        };
+    };
     SupportController_list: {
         parameters: {
             query?: {
@@ -5045,6 +7859,8 @@ export interface operations {
                 category?: string;
                 channel?: "CHAT" | "EMAIL" | "PHONE" | "APP";
                 customerRef?: string;
+                /** @description The customer's account */
+                customerId?: string;
                 orderId?: string;
                 pageSize?: number;
             };
@@ -5072,6 +7888,11 @@ export interface operations {
                             status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                             customerName: string;
                             customerRef: string | null;
+                            /**
+                             * Format: uuid
+                             * @description The customer's account, when they have one
+                             */
+                            customerId: string | null;
                             orderId: string | null;
                             assignee: {
                                 /** Format: uuid */
@@ -5132,6 +7953,11 @@ export interface operations {
                     priority?: "LOW" | "NORMAL" | "HIGH" | "URGENT";
                     customerName: string;
                     customerRef?: string;
+                    /**
+                     * Format: uuid
+                     * @description The customer's account, when the ticket is opened from their profile
+                     */
+                    customerId?: string;
                     orderId?: string;
                     /** @description For orders from the imported history; orders in this database are looked up */
                     orderSnapshot?: {
@@ -5168,6 +7994,11 @@ export interface operations {
                         status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                         customerName: string;
                         customerRef: string | null;
+                        /**
+                         * Format: uuid
+                         * @description The customer's account, when they have one
+                         */
+                        customerId: string | null;
                         orderId: string | null;
                         assignee: {
                             /** Format: uuid */
@@ -5312,6 +8143,11 @@ export interface operations {
                         status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                         customerName: string;
                         customerRef: string | null;
+                        /**
+                         * Format: uuid
+                         * @description The customer's account, when they have one
+                         */
+                        customerId: string | null;
                         orderId: string | null;
                         assignee: {
                             /** Format: uuid */
@@ -5443,6 +8279,11 @@ export interface operations {
                         status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                         customerName: string;
                         customerRef: string | null;
+                        /**
+                         * Format: uuid
+                         * @description The customer's account, when they have one
+                         */
+                        customerId: string | null;
                         orderId: string | null;
                         assignee: {
                             /** Format: uuid */
@@ -5607,6 +8448,11 @@ export interface operations {
                         status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                         customerName: string;
                         customerRef: string | null;
+                        /**
+                         * Format: uuid
+                         * @description The customer's account, when they have one
+                         */
+                        customerId: string | null;
                         orderId: string | null;
                         assignee: {
                             /** Format: uuid */
@@ -5751,6 +8597,11 @@ export interface operations {
                         status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                         customerName: string;
                         customerRef: string | null;
+                        /**
+                         * Format: uuid
+                         * @description The customer's account, when they have one
+                         */
+                        customerId: string | null;
                         orderId: string | null;
                         assignee: {
                             /** Format: uuid */
@@ -5877,6 +8728,11 @@ export interface operations {
                         status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                         customerName: string;
                         customerRef: string | null;
+                        /**
+                         * Format: uuid
+                         * @description The customer's account, when they have one
+                         */
+                        customerId: string | null;
                         orderId: string | null;
                         assignee: {
                             /** Format: uuid */
@@ -6003,6 +8859,11 @@ export interface operations {
                         status: "NEW" | "OPEN" | "PENDING_CUSTOMER" | "PENDING_INTERNAL" | "ESCALATED" | "RESOLVED" | "REOPENED" | "CLOSED";
                         customerName: string;
                         customerRef: string | null;
+                        /**
+                         * Format: uuid
+                         * @description The customer's account, when they have one
+                         */
+                        customerId: string | null;
                         orderId: string | null;
                         assignee: {
                             /** Format: uuid */
@@ -6427,6 +9288,174 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    AdminCustomersController_list: {
+        parameters: {
+            query?: {
+                q?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                            phone: string | null;
+                            /** @enum {string} */
+                            status: "ACTIVE" | "BLOCKED";
+                            /** Format: date-time */
+                            createdAt: string;
+                            orders: number;
+                            openTickets: number;
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminCustomersController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        phone: string | null;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "BLOCKED";
+                        emailVerified: boolean;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** @description Orders that went through */
+                        orderCount: number;
+                        /** @description Total of those orders, less cancellations */
+                        spentPaise: number;
+                        /** @description The 20 most recent orders, failed payments included */
+                        orders: {
+                            id: string;
+                            /** Format: date-time */
+                            placedAt: string;
+                            /** @enum {string} */
+                            status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                            /** @enum {string} */
+                            paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            /** @enum {string} */
+                            paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                            totalPaise: number;
+                            itemCount: number;
+                            firstItem: {
+                                title: string;
+                                image: string;
+                            } | null;
+                            customer: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    AdminCustomersController_setStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status: "ACTIVE" | "BLOCKED";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        phone: string | null;
+                        /** @enum {string} */
+                        status: "ACTIVE" | "BLOCKED";
+                        emailVerified: boolean;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** @description Orders that went through */
+                        orderCount: number;
+                        /** @description Total of those orders, less cancellations */
+                        spentPaise: number;
+                        /** @description The 20 most recent orders, failed payments included */
+                        orders: {
+                            id: string;
+                            /** Format: date-time */
+                            placedAt: string;
+                            /** @enum {string} */
+                            status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                            /** @enum {string} */
+                            paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            /** @enum {string} */
+                            paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                            totalPaise: number;
+                            itemCount: number;
+                            firstItem: {
+                                title: string;
+                                image: string;
+                            } | null;
+                            customer: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                                email: string;
+                            };
+                        }[];
+                    };
+                };
             };
         };
     };

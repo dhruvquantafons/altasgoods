@@ -33,6 +33,9 @@ export type ProductQuery = z.infer<typeof productQuery>;
 const brandRef = z.object({ id: z.string(), slug: z.string(), name: z.string() });
 const categoryRef = z.object({ id: z.string(), slug: z.string(), name: z.string() });
 
+/** A live sale as products show it: the badge, and when it ends. */
+export const saleRef = z.object({ id: z.uuid(), name: z.string(), slug: z.string(), percent: z.number().int(), endsAt: z.iso.datetime() });
+
 export const productSummary = z.object({
   id: z.string(),
   slug: z.string(),
@@ -52,6 +55,7 @@ export const productSummary = z.object({
   deliveryDays: z.number().int(),
   /** the store's offer: what carts and orders reference */
   offerId: z.uuid(),
+  sale: saleRef.nullable().describe("The live sale behind pricePaise, when there is one"),
 });
 export type ProductSummary = z.infer<typeof productSummary>;
 
@@ -113,8 +117,10 @@ export const storefrontProduct = z.object({
   createdAt: z.iso.datetime(),
   offer: z.object({
     id: z.uuid(),
-    pricePaise: z.number().int(),
+    pricePaise: z.number().int().describe("What the customer pays now, any live sale applied"),
     mrpPaise: z.number().int(),
+    regularPricePaise: z.number().int().describe("The price without a sale"),
+    sale: saleRef.nullable(),
     stock: z.number().int().describe("Units available to order, capped at 10"),
     deliveryDays: z.number().int(),
     codAvailable: z.boolean(),

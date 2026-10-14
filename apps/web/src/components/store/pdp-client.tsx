@@ -22,7 +22,8 @@ import { cn, formatINR } from "@/lib/utils";
 import { useCart, usePincode, useWishlist } from "./cart-context";
 import { AddToCartButton, BuyNowButton } from "./cart-buttons";
 import { CutoffNote, DealTimer, useClock } from "./countdown";
-import { COD_LIMIT, FREE_DELIVERY_THRESHOLD, DELIVERY_FEE, formatPromise, isValidPincode, lookupPincode, promiseDays, promiseLabel } from "./delivery";
+import { formatPromise, isValidPincode, lookupPincode, promiseDays, promiseLabel } from "./delivery";
+import { useDeliveryRules } from "./store-settings";
 import type { CartOffer } from "./types";
 
 /* -------------------------------- Context -------------------------------- */
@@ -44,7 +45,7 @@ export interface PdpData {
   large: boolean;
   policyShort: string;
   warranty: string;
-  deal?: { endsAt: string; claimedPct: number; kind: "deal_of_the_day" | "flash" };
+  sale?: { name: string; percent: number; endsAt: string; regularPrice: number };
 }
 
 interface PdpState {
@@ -196,6 +197,7 @@ function DeliveryModule() {
   const info = lookupPincode(pincode);
   const o = data.offer;
   const days = promiseDays(o.deliveryDays, info, now);
+  const { freeFrom: FREE_DELIVERY_THRESHOLD, fee: DELIVERY_FEE, codLimit: COD_LIMIT } = useDeliveryRules();
   const free = price * qty >= FREE_DELIVERY_THRESHOLD;
   const codReason = !o.codAvailable
     ? "Pay on delivery is not offered for this item"
@@ -337,16 +339,13 @@ export function BuyBox() {
       <p className="sr-only">Buying options</p>
       <p className="font-display text-[26px] leading-none font-semibold tracking-tight text-ink-900 tabular-nums">{formatINR(price * qty)}</p>
       {qty > 1 && <p className="mt-1 text-xs text-ink-500">{formatINR(price)} each</p>}
-      {data.deal && (
+      {data.sale && (
         <div className="mt-3 rounded-lg bg-accent-50 px-3 py-2 text-[13px] text-accent-900 ring-1 ring-accent-100 ring-inset">
           <p className="flex items-center justify-between gap-2 font-semibold">
-            {data.deal.kind === "flash" ? "Blu Flash Deal" : "Deal of the Day"}
-            <DealTimer endsAt={data.deal.endsAt} compact />
+            {data.sale.name}: {data.sale.percent}% off
+            <DealTimer endsAt={data.sale.endsAt} compact />
           </p>
-          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-accent-100" aria-hidden="true">
-            <div className="h-full rounded-full bg-accent-600" style={{ width: `${data.deal.claimedPct}%` }} />
-          </div>
-          <p className="mt-1 text-xs text-accent-800">{data.deal.claimedPct}% claimed</p>
+          <p className="mt-1 text-xs text-accent-800">Regular price {formatINR(data.sale.regularPrice)}. The sale price is what you pay at checkout.</p>
         </div>
       )}
 

@@ -35,6 +35,7 @@ export type AdminProductRow = AdminProductList["items"][number];
 export type AdminProduct = Json<"/v1/admin/products/{id}", "get">;
 export type AdminCategory = Json<"/v1/admin/categories", "get">[number];
 export type AdminBrand = Json<"/v1/admin/brands", "get">[number];
+export type ProductImportResult = Json<"/v1/admin/products/import", "post", 201>;
 export type ApiOrderItemStatus = OrderItem["status"];
 export type ApiOrderStatus = Order["status"];
 export type PaymentMethod = Order["paymentMethod"];

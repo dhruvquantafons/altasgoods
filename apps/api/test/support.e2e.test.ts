@@ -197,3 +197,46 @@ describe("a customer conversation, end to end", () => {
     await t.http.get(`${ME}/tickets/${notMine.id}`).set(shopper).expect(404);
   });
 });
+
+describe("customer and order lookup", () => {
+  it("finds shoppers by email or name, never staff, and shows their orders", async () => {
+    await t.http.get(`${S}/customers`).set(shopper).expect(403);
+    const found = await t.http.get(`${S}/customers`).query({ q: DEMO_CUSTOMER.toUpperCase() }).set(revathi).expect(200);
+    expect(found.body.items).toHaveLength(1);
+    expect(found.body.items[0]).toMatchObject({ email: DEMO_CUSTOMER, name: "Ananya Sharma" });
+    expect(found.body.items[0].orders).toBeGreaterThan(0);
+    const staffOnly = await t.http.get(`${S}/customers`).query({ q: "@altasgoods.in" }).set(revathi).expect(200);
+    expect(staffOnly.body.items).toEqual([]);
+
+    const profile = await t.http.get(`${S}/customers/${found.body.items[0].id}`).set(revathi).expect(200);
+    expect(profile.body.orders.map((o: { id: string }) => o.id)).toContain(orderId);
+    expect(profile.body.spentPaise).toBeGreaterThan(0);
+    const [staffUser] = await db.select({ id: users.id }).from(users).where(eq(users.email, DEMO_STAFF));
+    await t.http.get(`${S}/customers/${staffUser!.id}`).set(revathi).expect(404);
+  });
+
+  it("finds orders by id or the customer's email, and opens one with shipping and payment", async () => {
+    const byId = await t.http.get(`${S}/orders`).query({ q: orderId }).set(revathi).expect(200);
+    expect(byId.body.map((o: { id: string }) => o.id)).toEqual([orderId]);
+    const byEmail = await t.http.get(`${S}/orders`).query({ q: DEMO_CUSTOMER }).set(revathi).expect(200);
+    expect(byEmail.body.map((o: { id: string }) => o.id)).toContain(orderId);
+
+    const order = await t.http.get(`${S}/orders/${orderId}`).set(revathi).expect(200);
+    expect(order.body).toMatchObject({ id: orderId, paymentMethod: "UPI", customer: { email: DEMO_CUSTOMER } });
+    expect(order.body.items[0]).not.toHaveProperty("allowedActions");
+    await t.http.get(`${S}/orders/BB-NOPE`).set(revathi).expect(404);
+  });
+
+  it("links tickets to the customer's account", async () => {
+    const [ananya] = await db.select({ id: users.id }).from(users).where(eq(users.email, DEMO_CUSTOMER));
+    const created = await t.http
+      .post(`${S}/tickets`)
+      .set(revathi)
+      .send({ subject: "Asked about delivery", category: "Delivery", customerName: "Ananya Sharma", customerId: ananya!.id, body: "Called to ask when the parcel arrives." })
+      .expect(201);
+    expect(created.body.customerId).toBe(ananya!.id);
+    const theirs = await t.http.get(`${S}/tickets`).query({ view: "all", customerId: ananya!.id }).set(revathi).expect(200);
+    expect(theirs.body.items.map((i: { id: string }) => i.id)).toContain(created.body.id);
+    expect(theirs.body.items.every((i: { customerId: string }) => i.customerId === ananya!.id)).toBe(true);
+  });
+});

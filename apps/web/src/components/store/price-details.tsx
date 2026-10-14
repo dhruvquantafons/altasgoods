@@ -1,6 +1,9 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { cn, formatINR } from "@/lib/utils";
 import type { Totals } from "./pricing";
+import { useDeliveryRules } from "./store-settings";
 
 /**
  * The one price breakdown used in cart and checkout: M.R.P. total, discount,
@@ -20,6 +23,7 @@ export function PriceDetails({
   footer?: ReactNode;
   className?: string;
 }) {
+  const rules = useDeliveryRules();
   const extraOff = extra.reduce((a, e) => a + e.value, 0);
   const payable = Math.max(0, totals.total - extraOff);
   const savings = totals.savings + extraOff;
@@ -41,7 +45,7 @@ export function PriceDetails({
           label="Delivery charges"
           value={totals.delivery === 0 ? "Free" : formatINR(totals.delivery)}
           green={totals.delivery === 0}
-          hint={totals.delivery === 0 ? undefined : `₹40 on orders under ₹499`}
+          hint={totals.delivery === 0 ? undefined : `${formatINR(rules.fee)} on orders under ${formatINR(rules.freeFrom)}`}
         />
         {extra.map((e) => (
           <Row key={e.label} label={e.label} value={`-${formatINR(e.value)}`} green hint={e.note} />

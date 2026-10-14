@@ -6,6 +6,7 @@ import { ApplyForm } from "@/components/store/apply-form";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { getRole, ROLES } from "@/lib/mock/company";
+import { getStoreSettings } from "@/lib/store-settings";
 import { cn, formatDate } from "@/lib/utils";
 
 export function generateStaticParams() {
@@ -41,7 +42,12 @@ export default async function RolePage(props: PageProps<"/careers/[slug]">) {
 
   return (
     <div className="pb-16 lg:pb-24">
-      <InfoHero crumbs={[{ label: "Home", href: "/" }, { label: "Careers", href: "/careers" }, { label: role.title }]} eyebrow={role.team} title={role.title} description={role.summary}>
+      <InfoHero
+        crumbs={[{ label: "Home", href: "/" }, { label: "Careers", href: "/careers" }, { label: role.title }]}
+        eyebrow={role.team}
+        title={role.title}
+        description={role.summary}
+      >
         <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-600">
           <li className="inline-flex items-center gap-1.5">
             <MapPin size={15} className="text-ink-400" aria-hidden="true" />
@@ -99,8 +105,8 @@ export default async function RolePage(props: PageProps<"/careers/[slug]">) {
         <aside className="lg:sticky lg:top-28 lg:self-start">
           <div className="rounded-2xl border border-line bg-white p-6">
             <h2 className="text-lg font-semibold text-ink-900">Apply for this role</h2>
-            <p className="mt-1 mb-5 text-sm text-ink-500">Takes about 3 minutes. No cover letter needed.</p>
-            <ApplyForm roleTitle={role.title} />
+            <p className="mt-1 mb-5 text-sm text-ink-500">No cover letter needed.</p>
+            <ApplyForm roleTitle={role.title} email={(await getStoreSettings()).company.email} />
           </div>
         </aside>
       </div>

@@ -1,246 +1,174 @@
 "use client";
 
-import { useState, type ComponentProps, type ReactNode } from "react";
-import { Info, Megaphone } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
+import { Save } from "lucide-react";
+import { saveSettings, type SettingsInput } from "@/app/actions/admin-system";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Field, Input, Textarea } from "@/components/ui/input";
 import { Switch, useToast } from "@/components/ui/interactive";
-import { cn } from "@/lib/utils";
 
-export interface SettingsData {
-  returnWindows: { categoryId: string; name: string; days: number; resolution: string }[];
-  cod: { maxOrderValue: number; maxUndelivered: number; pincodeRtoThreshold: number; refusalsToDisable: number };
-  delivery: { freeAbove: number; fee: number; platformFee: number };
-  grievance: { name: string; designation: string; email: string; phone: string; address: string };
-  maintenance: { enabled: boolean; message: string; audience: string };
+/** Amounts are edited in rupees and saved in paise. */
+const toRupees = (p: number) => String(p / 100);
+const toPaise = (r: string) => Math.round(Number(r || 0) * 100);
+
+type Form = Omit<SettingsInput, "delivery" | "cod"> & { delivery: { fee: string; freeFrom: string }; cod: { maxOrder: string } };
+
+function fromSettings(s: SettingsInput): Form {
+  return {
+    ...s,
+    delivery: { fee: toRupees(s.delivery.feePaise), freeFrom: toRupees(s.delivery.freeFromPaise) },
+    cod: { maxOrder: toRupees(s.cod.maxOrderPaise) },
+  };
 }
 
-const SECTIONS = [
-  { id: "returns", label: "Return windows" },
-  { id: "payments", label: "Payments and COD" },
-  { id: "delivery", label: "Delivery and fees" },
-  { id: "grievance", label: "Grievance officer" },
-  { id: "maintenance", label: "Maintenance banner" },
-];
-
-const INITIAL_METHODS: Record<string, boolean> = { UPI: true, "Credit and debit cards": true, "Net banking": true, Wallets: true, "Card EMI": true, "Cash on delivery": true, "AltasGoods Pay Later": false };
-
-function Rupee(props: ComponentProps<typeof Input>) {
-  return <Input type="number" min={0} suffix="INR" {...props} />;
+function toSettings(f: Form): SettingsInput {
+  return {
+    ...f,
+    delivery: { feePaise: toPaise(f.delivery.fee), freeFromPaise: toPaise(f.delivery.freeFrom) },
+    cod: { maxOrderPaise: toPaise(f.cod.maxOrder) },
+  };
 }
 
-/** Platform settings with a sticky save bar; money-impacting changes go to a Finance Manager (maker-checker). */
-export function SettingsForm({ data }: { data: SettingsData }) {
-  const [version, setVersion] = useState(0);
-  const [dirty, setDirty] = useState(false);
-  const [maintenance, setMaintenance] = useState(data.maintenance.enabled);
-  const [message, setMessage] = useState(data.maintenance.message);
-  const [methods, setMethods] = useState(INITIAL_METHODS);
-  const { show, node } = useToast();
-  const touch = () => setDirty(true);
-
-  const section = (id: string, title: string, description: string, money: boolean, children: ReactNode) => (
-    <Card id={id} className="scroll-mt-24">
-      <CardHeader
-        title={title}
-        description={description}
-        action={money ? <span className="rounded-md border border-warning-100 bg-warning-50 px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-warning-700">Maker-checker</span> : undefined}
-      />
-      <div className="px-5 pt-4 pb-5">{children}</div>
+function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  return (
+    <Card>
+      <CardHeader title={title} description={description} />
+      <div className="grid gap-4 px-5 pt-4 pb-5 sm:grid-cols-2">{children}</div>
     </Card>
   );
+}
+
+/** Store-wide settings. Saving takes effect on the storefront and at checkout straight away. */
+export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; savedNote?: string }) {
+  const router = useRouter();
+  const [form, setForm] = useState<Form>(() => fromSettings(initial));
+  const [saved, setSaved] = useState(() => JSON.stringify(fromSettings(initial)));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
+  const dirty = JSON.stringify(form) !== saved;
+
+  const set = <G extends keyof Form>(group: G, field: keyof Form[G], value: unknown) => setForm((f) => ({ ...f, [group]: { ...(f[group] as object), [field]: value } }));
+  const err = (path: string) => errors[path];
+
+  const text = (group: "company" | "grievance", field: string, label: string, opts: { hint?: string; type?: string; wide?: boolean } = {}) => {
+    const path = `${group}.${field}`;
+    return (
+      <Field label={label} htmlFor={`st-${group}-${field}`} error={err(path)} hint={opts.hint} className={opts.wide ? "sm:col-span-2" : undefined}>
+        <Input
+          id={`st-${group}-${field}`}
+          type={opts.type ?? "text"}
+          value={String((form[group] as Record<string, unknown>)[field] ?? "")}
+          onChange={(e) => set(group, field as never, opts.type === "number" ? Number(e.target.value) : e.target.value)}
+          aria-invalid={Boolean(err(path))}
+        />
+      </Field>
+    );
+  };
+
+  const money = (group: "delivery" | "cod", field: string, path: string, label: string, hint: string) => (
+    <Field label={label} htmlFor={`st-${group}-${field}`} error={err(path)} hint={hint}>
+      <div className="flex">
+        <span className="inline-flex h-10 items-center rounded-l-lg border border-r-0 border-line-strong bg-ink-50 px-3 text-sm text-ink-600">₹</span>
+        <Input
+          id={`st-${group}-${field}`}
+          inputMode="decimal"
+          className="min-w-0 flex-1 rounded-l-none"
+          value={(form[group] as Record<string, string>)[field]}
+          onChange={(e) => set(group, field as never, e.target.value.replace(/[^\d.]/g, ""))}
+          aria-invalid={Boolean(err(path))}
+        />
+      </div>
+    </Field>
+  );
+
+  const save = async () => {
+    setBusy(true);
+    const r = await saveSettings(toSettings(form));
+    setBusy(false);
+    if (!r.ok) {
+      setErrors(r.fields ?? {});
+      return toast.show(r.error);
+    }
+    setErrors({});
+    const next = fromSettings(r.data);
+    setForm(next);
+    setSaved(JSON.stringify(next));
+    toast.show("Settings saved");
+    router.refresh();
+  };
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
-      <nav aria-label="Settings sections" className="hidden lg:block">
-        <ul className="sticky top-24 flex flex-col gap-0.5">
-          {SECTIONS.map((s) => (
-            <li key={s.id}>
-              <a href={`#${s.id}`} className="block rounded-lg px-3 py-1.5 text-[13px] font-medium text-ink-600 hover:bg-white hover:text-ink-900">
-                {s.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    <div className="flex flex-col gap-6 pb-24">
+      <Section title="Delivery" description="What customers pay for delivery. Checked again at checkout.">
+        {money("delivery", "fee", "delivery.feePaise", "Delivery fee", "Charged on orders below the free delivery amount")}
+        {money("delivery", "freeFrom", "delivery.freeFromPaise", "Free delivery from", "Orders at or above this amount ship free")}
+      </Section>
 
-      <form key={version} onChange={touch} onSubmit={(e) => e.preventDefault()} className="flex max-w-3xl min-w-0 flex-col gap-6 pb-24">
-        {section(
-          "returns",
-          "Return windows",
-          "Counted from the delivery date. Damaged, defective or wrong items can always be reported within the window or 7 days, whichever is longer.",
-          false,
-          <div className="divide-y divide-line rounded-xl border border-line">
-            {data.returnWindows.map((r) => (
-              <div key={r.categoryId} className="flex items-center gap-4 px-4 py-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium text-ink-900">{r.name}</p>
-                  <p className="truncate text-xs text-ink-500">{r.resolution}</p>
-                </div>
-                <label className="flex items-center gap-2 text-[13px] text-ink-600">
-                  <span className="sr-only">Return window for {r.name} in days</span>
-                  <Input type="number" min={0} max={30} defaultValue={r.days} inputSize="sm" className="w-20 text-right" />
-                  days
-                </label>
-              </div>
-            ))}
-          </div>,
-        )}
+      <Section title="Cash on delivery">
+        {money("cod", "maxOrder", "cod.maxOrderPaise", "Largest cash on delivery order", "Above this total, customers must pay online")}
+      </Section>
 
-        {section(
-          "payments",
-          "Payments and cash on delivery",
-          "No COD surcharge or payment handling fee is ever charged to customers (dark patterns guidelines).",
-          true,
-          <div className="flex flex-col gap-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="COD maximum order value" hint="Orders above this are prepaid only">
-                <Rupee defaultValue={data.cod.maxOrderValue} />
-              </Field>
-              <Field label="Undelivered COD shipments allowed" hint="Per customer at one time">
-                <Input type="number" min={1} defaultValue={data.cod.maxUndelivered} />
-              </Field>
-              <Field label="Disable COD for a pincode above" hint="30 day COD RTO rate">
-                <Input type="number" min={5} max={60} defaultValue={data.cod.pincodeRtoThreshold} suffix="%" />
-              </Field>
-              <Field label="COD refusals before COD is disabled" hint="In 90 days; re-enabled after 3 prepaid deliveries">
-                <Input type="number" min={1} defaultValue={data.cod.refusalsToDisable} />
-              </Field>
-            </div>
-            <div>
-              <p className="mb-2 text-[13px] font-medium text-ink-700">Payment methods at checkout</p>
-              <div className="grid gap-x-6 gap-y-3 rounded-xl border border-line p-4 sm:grid-cols-2">
-                {Object.entries(methods).map(([m, on]) => (
-                  <Switch
-                    key={m}
-                    label={m}
-                    description={m === "AltasGoods Pay Later" ? "Phase 2, NBFC partner onboarding" : undefined}
-                    checked={on}
-                    disabled={m === "AltasGoods Pay Later"}
-                    onChange={(v) => {
-                      setMethods((x) => ({ ...x, [m]: v }));
-                      touch();
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>,
-        )}
+      <Section title="Reviews">
+        <div className="sm:col-span-2">
+          <Switch
+            checked={form.reviews.autoPublish}
+            onChange={(v) => set("reviews", "autoPublish", v)}
+            label="Publish reviews straight away"
+            description="When off, new customer reviews wait in Reviews until someone approves them."
+          />
+        </div>
+      </Section>
 
-        {section(
-          "delivery",
-          "Delivery and platform fees",
-          "Any customer fee must be shown on the product page and cart from the first price display; no drip pricing.",
-          true,
-          <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Free delivery above" hint="Per seller shipment">
-              <Rupee defaultValue={data.delivery.freeAbove} />
-            </Field>
-            <Field label="Delivery fee below" hint="Per shipment">
-              <Rupee defaultValue={data.delivery.fee} />
-            </Field>
-            <Field label="Platform fee per order" hint="Currently not charged">
-              <Rupee defaultValue={data.delivery.platformFee} />
-            </Field>
-          </div>,
-        )}
+      <Section title="Storefront notice" description="A bar across the top of every storefront page, for holidays, delays or maintenance.">
+        <div className="sm:col-span-2">
+          <Switch checked={form.notice.enabled} onChange={(v) => set("notice", "enabled", v)} label="Show the notice" />
+        </div>
+        <Field label="Message" htmlFor="st-notice" error={err("notice.message")} hint={`${form.notice.message.length} of 200 characters`} className="sm:col-span-2">
+          <Textarea id="st-notice" className="min-h-16" maxLength={200} value={form.notice.message} onChange={(e) => set("notice", "message", e.target.value)} placeholder="For example: Orders placed on 1 and 2 November ship on 3 November." />
+        </Field>
+      </Section>
 
-        {section(
-          "grievance",
-          "Grievance officer",
-          "Required by the Consumer Protection (E-Commerce) Rules, 2020. Shown in the storefront footer and Help. Complaints are acknowledged within 48 hours and resolved within 1 month.",
-          false,
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name">
-              <Input defaultValue={data.grievance.name} />
-            </Field>
-            <Field label="Designation">
-              <Input defaultValue={data.grievance.designation} />
-            </Field>
-            <Field label="Email">
-              <Input type="email" defaultValue={data.grievance.email} />
-            </Field>
-            <Field label="Phone">
-              <Input defaultValue={data.grievance.phone} />
-            </Field>
-            <Field label="Postal address" className="sm:col-span-2">
-              <Textarea defaultValue={data.grievance.address} className="min-h-16" />
-            </Field>
-          </div>,
-        )}
+      <Section title="Company" description="Shown in the storefront footer, on Contact, Help, About and product pages, as the e-commerce rules require.">
+        {text("company", "legalName", "Legal name", { wide: true })}
+        {text("company", "registeredOffice", "Registered office", { wide: true })}
+        {text("company", "cin", "CIN")}
+        {text("company", "gstin", "GSTIN")}
+        {text("company", "customerCare", "Customer care number")}
+        {text("company", "customerCareHours", "Customer care hours")}
+        {text("company", "email", "Customer care email", { type: "email" })}
+        {text("company", "website", "Website")}
+      </Section>
 
-        {section(
-          "maintenance",
-          "Maintenance banner",
-          "A site-wide notice above the storefront header. Use for planned downtime or payment degradation only.",
-          false,
-          <div className="flex flex-col gap-4">
-            <Switch
-              label="Show the banner"
-              description="Visible on web and in the apps within 2 minutes"
-              checked={maintenance}
-              onChange={(v) => {
-                setMaintenance(v);
-                touch();
-              }}
-            />
-            <Field label="Message">
-              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} className="min-h-16" maxLength={160} />
-            </Field>
-            <Field label="Audience">
-              <Select defaultValue={data.maintenance.audience}>
-                <option>Everyone</option>
-                <option>App users only</option>
-                <option>Web users only</option>
-              </Select>
-            </Field>
-            <div>
-              <p className="mb-1.5 text-xs font-medium text-ink-500">Preview</p>
-              <div className={cn("flex items-center gap-2 rounded-lg px-3 py-2 text-[13px]", maintenance ? "bg-ink-900 text-white" : "border border-dashed border-line-strong text-ink-500")}>
-                <Megaphone size={15} className="shrink-0" aria-hidden="true" />
-                {maintenance ? message : "Banner is off"}
-              </div>
-            </div>
-          </div>,
-        )}
-      </form>
+      <Section title="Grievance officer" description="Required by the Consumer Protection (E-Commerce) Rules, 2020.">
+        {text("grievance", "name", "Name")}
+        {text("grievance", "designation", "Designation")}
+        {text("grievance", "email", "Email", { type: "email" })}
+        {text("grievance", "phone", "Phone")}
+        {text("grievance", "hours", "Hours", { wide: true })}
+        {text("grievance", "address", "Address", { wide: true })}
+        {text("grievance", "ackHours", "Acknowledge complaints within (hours)", { type: "number" })}
+        {text("grievance", "resolutionDays", "Resolve complaints within (days)", { type: "number" })}
+      </Section>
 
-      {dirty && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur-md lg:left-64">
-          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
-            <p className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-ink-600">
-              <Info size={15} className="shrink-0 text-ink-400" aria-hidden="true" />
-              Unsaved changes. Money-impacting settings go to a Finance Manager for approval before they take effect.
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                // the form key resets uncontrolled fields; controlled ones (switches, banner text) are reset here
-                setVersion((v) => v + 1);
-                setMethods(INITIAL_METHODS);
-                setMaintenance(data.maintenance.enabled);
-                setMessage(data.maintenance.message);
-                setDirty(false);
-              }}
-            >
-              Discard
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setDirty(false);
-                show("Saved. Changes needing approval were sent to Finance.");
-              }}
-            >
-              Save changes
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur lg:left-64">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <p className="text-[13px] text-ink-500">{dirty ? "You have unsaved changes." : (savedNote ?? "All changes saved.")}</p>
+          <div className="flex gap-2">
+            {dirty && (
+              <Button variant="secondary" onClick={() => setForm(JSON.parse(saved) as Form)}>
+                Discard
+              </Button>
+            )}
+            <Button icon={Save} disabled={!dirty || busy} onClick={save}>
+              {busy ? "Saving" : "Save settings"}
             </Button>
           </div>
         </div>
-      )}
-      {node}
+      </div>
+      {toast.node}
     </div>
   );
 }

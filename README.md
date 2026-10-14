@@ -1,16 +1,16 @@
 # AltasGoods
 
-AltasGoods is an online store for India: one business selling its own catalog, with a storefront for shoppers and separate workspaces for the store's staff, support agents and logistics team. Payments run on Razorpay and shipping on Shiprocket, each behind a switch so development can use a local sandbox instead.
+AltasGoods is an online store for India: one business selling its own catalog, with a storefront for shoppers and separate workspaces for the store's staff and support agents. Payments run on Razorpay and shipping on Shiprocket, each behind a switch so development can use a local sandbox instead.
 
 | Workspace | Start here | For |
 |---|---|---|
 | Storefront | `/` | Shoppers: home, search, category, product page, cart, checkout |
 | My Account | `/account` | Shoppers: orders and tracking, returns, support |
-| AltasGoods Control | `/admin` | Store staff: orders, returns, products, categories, brands |
+| AltasGoods Control | `/admin` | Store staff: orders, returns, customers, payments, products, sales and coupons, homepage banners, reviews, settings, audit log |
 | Care Desk | `/support` | Support agents: tickets with full order context, refunds |
-| Hub Console | `/logistics` | Logistics team (design preview, see below) |
+| Shipping | `/logistics` | Admins: shipments, courier status, tracking and labels |
 
-Open `http://localhost:3000/portals` to reach every workspace.
+Admins can open `http://localhost:3000/portals` to reach every workspace. Shipping and `/portals` need the `SUPER_ADMIN` or `OPS_ADMIN` role.
 
 ## Run it
 
@@ -47,10 +47,10 @@ The buying journey and store operations run on the API and database. Some screen
 | Area | Real (API and database) | Sample data |
 |---|---|---|
 | Storefront | Catalog, category and product listings, search, cart, checkout, payment, order confirmation | Product reviews and Q&A, the homepage sale banner, the Deals page |
-| My Account | Overview, orders, order detail and tracking, cancellation, returns, support conversations, profile (name, email, mobile, change password, sign out of other devices), addresses. The wishlist is real but kept in the browser, like the cart | None. Credits, saved payment methods, reviews and notifications were removed until there is a backend for them |
-| AltasGoods Control | Orders, returns and refunds, products, categories, brands, the order queue counts on Overview | Overview charts and KPIs, customers, payments, coupons and sales page, storefront CMS, reviews, reports, team and roles, audit log, settings |
-| Care Desk | Ticket inbox and ticket workspace, replies, notes, refunds | Knowledge base, performance, order lookup, parts of customer pages |
-| Hub Console | | All of it |
+| My Account | Overview, orders, order detail and tracking, cancellation, returns, support conversations, profile (name, email, mobile, change password, sign out of other devices), addresses, reviews, and the wishlist (saved to the account like the cart, and cleared from the browser on sign out) | None. Credits, saved payment methods and notifications were removed until there is a backend for them |
+| AltasGoods Control | Overview (sales, work waiting, 14 day chart, best sellers, low stock), orders, returns, customers (with block), payments and refunds, products, categories, brands, sales and coupons (prices change on the storefront and at checkout), Storefront CMS (homepage hero slides and promo tiles), reviews (moderation and replies), settings (delivery fee, COD limit, review publishing, storefront notice, company and grievance details), audit log, your account | None |
+| Care Desk | Overview (queue, response and resolution times, 14 day chart, team workload, all from the tickets), ticket inbox and workspace with the live customer and order, replies, notes, refunds, customer lookup and profiles, order lookup and order pages | None. Reply macros and SLA targets are settings in `apps/web/src/lib/care-policy.ts` |
+| Shipping | Overview with the connected courier and a Shiprocket setup checklist, shipment counts by stage, late and returned parcels; the shipments list with AWB search, latest scan, label, tracking link and refresh | |
 | Sign in | Email and password sign up and sign in, password reset by emailed code, change password, sessions | |
 
 Sample data lives in `apps/web/src/lib/mock` and is anchored to 1 Oct 2026, so dates on those screens (such as the sale banner) do not follow today's date.
@@ -91,7 +91,7 @@ SHIPROCKET_WEBHOOK_TOKEN=          # optional
 - Tracking updates every 10 minutes, on demand with **Refresh tracking**, and optionally by webhook at `/v1/logistics/webhooks/tracking` (header `x-api-key`). Shiprocket rejects webhook URLs that contain "shiprocket", "sr" or "kr", including in the domain.
 - Shiprocket has no test mode: every booking is a real shipment charged to the wallet. Cancel test bookings before pickup.
 - Before switching on, the Shiprocket account needs KYC, a bank account, a verified pickup address and a wallet balance, and products need their real packed weight (`weight_grams` on each offer, 800 g by default).
-- Returns (reverse pickups) are still simulated.
+- Return pickups are not booked with Shiprocket yet. Staff book the reverse pickup in the Shiprocket panel and record each step on the admin return page with **Update pickup** (out for pickup, picked up, failed, in transit, received, plus the AWB). Low value returns are refunded when the pickup is marked picked up; the rest after the store's check. A failed check is settled with **Accept anyway** or **Reject and send back**.
 
 `npm run db:seed` always uses the payment sandbox and the simulated courier, whatever `.env` says, so seeding never charges or ships anything.
 
@@ -109,9 +109,9 @@ SHIPROCKET_WEBHOOK_TOKEN=          # optional
 
 | Where | Command | Covers |
 |---|---|---|
-| `apps/api` | `npm test` | 93 unit and integration tests against `altasgoods_test`: orders, payments (sandbox and Razorpay), shipping (Shiprocket provider and a fake courier end to end), returns, support, auth (sign up, sign in, password reset, SMTP email), catalog admin |
+| `apps/api` | `npm test` | 133 unit and integration tests against `altasgoods_test`: orders, payments (sandbox and Razorpay), shipping (Shiprocket provider and a fake courier end to end), returns, support, auth (sign up, sign in, password reset, SMTP email), catalog admin and CSV import |
 | `apps/web` | `npm test` | Unit tests for the API adapters, pricing and formatting |
-| `apps/web` | `npm run test:e2e` | Playwright journeys (sign up, sign in and password reset, checkout, cancellation, returns, Care Desk, access control) plus crawlers that open every page and press every button. Run with the sandbox and simulated courier; the global setup creates its own accounts with sign up and `admin:create` |
+| `apps/web` | `npm run test:e2e` | Playwright journeys (sign up, sign in and password reset, checkout, cancellation, returns, Care Desk, access control) plus crawlers that open every page and press every button. Run with the sandbox and simulated courier; the global setup creates its own accounts with sign up and `admin:create`. Set `E2E_DATABASE_URL` to the API's (throwaway) database to also run `end-to-end.spec.ts`, which reads Postgres to confirm every admin change is stored, shown on the storefront and in the audit log |
 
 Both apps typecheck in strict mode and lint clean (`npm run typecheck` in the API, `npx tsc --noEmit` and `npm run lint` in web).
 

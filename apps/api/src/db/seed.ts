@@ -44,6 +44,22 @@ const shiftFromMock = (iso: string) => new Date(Date.parse(iso) + Math.max(0, Da
 
 const WEIGHT_BY_CATEGORY: Record<string, number> = { "cat-home": 2500, "cat-appliances": 4500, "cat-electronics": 1200, "cat-mobiles": 450, "cat-fashion": 600, "cat-sports": 1500 };
 
+/** A sample sale for development, so the homepage sale strip and deals page have something live. Not used by tests. */
+export async function seedSampleSale(db: Db) {
+  const day = 86_400_000;
+  await db.insert(t.sales).values({
+    name: "AltasGoods Big Days",
+    slug: "big-days",
+    headline: "Up to 20% off home, kitchen and electronics",
+    description: "Prices are cut for the whole sale and charged exactly as shown at checkout.",
+    discountPercent: 20,
+    scope: "CATEGORIES",
+    categoryIds: ["cat-home", "cat-appliances", "cat-electronics"],
+    startsAt: new Date(Date.now() - day),
+    endsAt: new Date(Date.now() + 14 * day),
+  });
+}
+
 export async function seed(db: Db) {
   if (isProduction()) throw new Error("Refusing to seed a production database");
   const m = await loadMock();
@@ -52,6 +68,7 @@ export async function seed(db: Db) {
     return_events, returns, customer_uploads,
     support_attachments, support_actions, support_events, support_messages, support_tickets,
     media, files,
+    audit_events, store_settings, sales, banners, reviews,
     offers, products, seller_members, sellers, brands, categories, sessions, users restart identity cascade`);
   await db.execute(sql`alter sequence order_number_seq restart with 10001`);
   await db.execute(sql`alter sequence support_ticket_seq restart with 60001`);
@@ -142,12 +159,21 @@ export async function seed(db: Db) {
     })),
   );
 
+  // the homepage banners the storefront shipped with, now editable in Storefront CMS
+  const store = await import(pathToFileURL(fileURLToPath(new URL("store-extra.ts", WEB_MOCK))).href);
+  type Slide = { image: string; alt: string; eyebrow: string; title: string; body: string; cta?: string; href: string; align: "left" | "right"; theme?: "dark" | "light"; position?: string };
+  await db.insert(t.banners).values([
+    ...(store.HERO_SLIDES as Slide[]).map((b, i) => ({ placement: "HERO" as const, eyebrow: b.eyebrow, title: b.title, body: b.body, ctaLabel: b.cta ?? "", href: b.href, image: b.image, alt: b.alt, align: b.align, theme: b.theme ?? "dark", position: b.position ?? "center", sortOrder: i })),
+    ...(store.PROMO_TILES as Slide[]).map((b, i) => ({ placement: "PROMO" as const, eyebrow: b.eyebrow, title: b.title, body: b.body, href: b.href, image: b.image, alt: b.alt, align: b.align, sortOrder: i })),
+  ]);
+
   return { products: m.products.length };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { db, pool } = createDb();
   const counts = await seed(db);
+  await seedSampleSale(db);
   await pool.end();
   console.log(`Seeded ${counts.products} products. No accounts exist yet: run npm run admin:create for a staff account, and sign up at /signup to shop.`);
 }

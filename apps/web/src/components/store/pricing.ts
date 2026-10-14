@@ -4,7 +4,7 @@
  * platform fee and no cash on delivery fee; delivery is free for orders of
  * ₹499 or more. Everything ships together from the store.
  */
-import { DELIVERY_FEE, FREE_DELIVERY_THRESHOLD } from "./delivery";
+import { DEFAULT_RULES, type DeliveryRules } from "./store-settings";
 import type { BankOffer, CartCatalog, CartLine, CartOffer, CartProduct, CouponLite } from "./types";
 
 /** Where checkout leaves the just-placed order for the confirmation page. */
@@ -70,15 +70,16 @@ export function couponValue(c: CouponLite, lines: PricedLine[]) {
 export function computeTotals(
   lines: CartLine[],
   catalog: CartCatalog,
-  opts: { couponCode: string | null; coupons: CouponLite[]; method?: string },
+  opts: { couponCode: string | null; coupons: CouponLite[]; method?: string; rules?: DeliveryRules },
 ): Totals {
+  const rules = opts.rules ?? DEFAULT_RULES;
   const priced = priceLines(lines, catalog);
   const mrpTotal = priced.reduce((a, l) => a + l.lineMrp, 0);
   const priceTotal = priced.reduce((a, l) => a + l.lineTotal, 0);
   const coupon = opts.couponCode ? (opts.coupons.find((c) => c.code === opts.couponCode) ?? null) : null;
   const blocker = coupon ? couponBlocker(coupon, priced, { method: opts.method }) : null;
   const couponDiscount = coupon && !blocker ? couponValue(coupon, priced) : 0;
-  const delivery = priced.length && priceTotal < FREE_DELIVERY_THRESHOLD ? DELIVERY_FEE : 0;
+  const delivery = priced.length && priceTotal < rules.freeFrom ? rules.fee : 0;
   const total = priceTotal - couponDiscount + delivery;
   return {
     lines: priced,

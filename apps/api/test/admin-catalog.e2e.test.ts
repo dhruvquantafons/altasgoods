@@ -83,6 +83,14 @@ describe("products", () => {
     expect(out.body.items.every((i: { stock: number }) => i.stock === 0)).toBe(true);
   });
 
+  it("changes only the fields a patch sends", async () => {
+    const before = (await t.http.get(`${A}/products/p-tea-assam`).set(staff).expect(200)).body;
+    expect(before.specs.length).toBeGreaterThan(0);
+    await t.http.patch(`${A}/products/p-tea-assam`).set(staff).send({ stock: before.stock + 1 }).expect(200);
+    const after = (await t.http.get(`${A}/products/p-tea-assam`).set(staff).expect(200)).body;
+    expect(after).toEqual({ ...before, stock: before.stock + 1, updatedAt: after.updatedAt });
+  });
+
   it("is for catalog and operations staff only", async () => {
     await t.http.get(`${A}/products`).expect(401);
     await t.http.get(`${A}/products`).set(shopper).expect(403);

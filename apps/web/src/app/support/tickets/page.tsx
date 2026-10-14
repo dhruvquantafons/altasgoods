@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
 import { currentTime, isActiveTicket, loadAgents, slaOf, tickets } from "@/lib/api/support";
-import { PRIORITY_POLICY } from "@/lib/mock/ops-extra";
+import { PRIORITY_POLICY } from "@/lib/care-policy";
 import { TICKET_PRIORITY, TICKET_STATUS, type TicketPriority } from "@/lib/status";
 import type { Ticket } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";

@@ -1,27 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { deleteAddress, makeDefaultAddress, saveAddress } from "@/app/actions/account";
+import { deleteAddress, listAddresses, makeDefaultAddress, saveAddress } from "@/app/actions/account";
+import { toBookAddress, type BookAddress } from "@/lib/address-book";
 import { Building2, Home, MapPin, MapPinned, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, Select } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
 import { cn, formatPhone } from "@/lib/utils";
 
-export interface BookAddress {
-  id: string;
-  name: string;
-  phone: string;
-  line1: string;
-  line2?: string;
-  landmark?: string;
-  city: string;
-  state: string;
-  pincode: string;
-  type: "home" | "work" | "other";
-  isDefault?: boolean;
-}
 
 type Draft = Omit<BookAddress, "id" | "phone"> & { id?: string; mobile: string };
 
@@ -32,6 +19,7 @@ const TYPES: { key: BookAddress["type"]; label: string; icon: typeof Home }[] = 
 ];
 
 const empty: Draft = { name: "", mobile: "", line1: "", line2: "", landmark: "", city: "", state: "", pincode: "", type: "home", isDefault: false };
+
 
 function toDraft(a: BookAddress): Draft {
   const { phone, ...rest } = a;
@@ -55,7 +43,6 @@ export function AddressBook({
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
   const toast = useToast();
-  const router = useRouter();
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
@@ -98,15 +85,13 @@ export function AddressBook({
     });
     setBusy(false);
     if (!r.ok) return setFormError(r.error);
-    const a = r.data;
-    const saved: BookAddress = { ...a, line2: a.line2 ?? undefined, landmark: a.landmark ?? undefined, type: a.type.toLowerCase() as BookAddress["type"] };
+    const saved = toBookAddress(r.data);
     setItems((list) => {
       const next = draft.id ? list.map((x) => (x.id === saved.id ? saved : x)) : [...list, saved];
       return saved.isDefault ? next.map((x) => ({ ...x, isDefault: x.id === saved.id })) : next;
     });
     setOpen(false);
     toast.show(draft.id ? "Address updated" : "Address added");
-    router.refresh();
   };
 
   const setDefault = async (a: BookAddress) => {
@@ -122,11 +107,11 @@ export function AddressBook({
     const r = await deleteAddress(removing.id);
     setBusy(false);
     if (!r.ok) return toast.show(r.error);
-    // the API moves the default to the most recent address left
     setRemoving(null);
     toast.show("Address removed");
-    router.refresh();
-    setItems((list) => list.filter((x) => x.id !== removing.id));
+    // removing the default moves it to the most recent address left: show what the API chose
+    const fresh = await listAddresses();
+    setItems((list) => (fresh.ok ? fresh.data.map(toBookAddress) : list.filter((x) => x.id !== removing.id)));
   };
 
   const sorted = [...items].sort((a, b) => Number(Boolean(b.isDefault)) - Number(Boolean(a.isDefault)));

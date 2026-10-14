@@ -9,27 +9,21 @@ import { OffersList } from "@/components/store/offers";
 import { BuyBox, LivePrice, MobileBuyBar, PdpProvider, VariantPicker, type PdpData, type PdpVariant } from "@/components/store/pdp-client";
 import { AssuredMark } from "@/components/store/price";
 import { cardBadge, featuredOffer, ProductCard } from "@/components/store/product-card";
-import { FrequentlyBoughtTogether, QnaSection } from "@/components/store/qna";
+import { FrequentlyBoughtTogether } from "@/components/store/qna";
 import { Rail, RailItem } from "@/components/store/rail";
 import { ReviewsSection } from "@/components/store/reviews";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { Stars } from "@/components/ui/misc";
-import { reviewsFor } from "@/lib/mock";
+import { api, currentUser } from "@/lib/api/server";
 import { getStoreCatalog } from "@/lib/store-catalog";
+import { getStoreCoupons } from "@/lib/store-promotions";
+import { getStoreSettings } from "@/lib/store-settings";
 import {
-  aspectRatings,
-  bankOffersFor,
-  COMPANY,
-  GRIEVANCE_OFFICER,
-  dealFor,
   frequentlyBoughtWith,
   inStock,
   legalDeclarations,
-  questionsFor,
-  ratingHistogram,
   returnPolicyFor,
   similarProducts,
-  storefrontCoupons,
   toCartProduct,
   warrantyFor,
 } from "@/lib/mock/store-extra";
@@ -68,6 +62,7 @@ function buildVariants(p: Product, price: number): PdpVariant[] {
 
 
 export default async function ProductPage(props: PageProps<"/p/[slug]">) {
+  const { company: COMPANY, grievance: GRIEVANCE_OFFICER } = await getStoreSettings();
   const { slug } = await props.params;
   const catalog = await getStoreCatalog();
   const p = catalog.product(slug);
@@ -77,16 +72,25 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const cat = { name: p.categoryName, slug: p.categorySlug };
   const snapshot = toCartProduct(p);
   const offer = featuredOffer(p);
-  const deal = dealFor(p.id);
+  const deal = p.sale;
   const policy = returnPolicyFor(p, offer.returnWindowDays);
   const warranty = warrantyFor(p);
   const legal = legalDeclarations(p);
-  const reviews = reviewsFor(p.id);
-  const histogram = ratingHistogram(p.rating, p.ratingCount);
-  const qa = questionsFor(p);
+  // published reviews; signed in, the API also says whether this customer can review it
+  const [reviewData, user] = await Promise.all([
+    (await api())
+      .GET("/v1/products/{slug}/reviews", { params: { path: { slug: p.slug }, query: { pageSize: 50 } } })
+      .then((r) => r.data)
+      .catch(() => undefined),
+    currentUser(),
+  ]);
+  const reviews = reviewData?.items ?? [];
   const fbt = [p, ...frequentlyBoughtWith(catalog.products, p)];
   const similar = similarProducts(catalog.products, p);
-  const coupon = storefrontCoupons().find((c) => c.code === "BIGDAYS10" && offer.price >= c.minOrder);
+  // the listed coupon worth the most on this product alone
+  const coupon = (await getStoreCoupons())
+    .filter((c) => offer.price >= c.minOrder)
+    .sort((a, b) => (b.type === "flat" ? b.value : (offer.price * b.value) / 100) - (a.type === "flat" ? a.value : (offer.price * a.value) / 100))[0];
   const badge = cardBadge(p, !!deal);
 
   const data: PdpData = {
@@ -99,7 +103,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
     large: snapshot.large,
     policyShort: policy.short,
     warranty,
-    deal: deal ? { endsAt: deal.endsAt, claimedPct: deal.claimedPct, kind: deal.kind } : undefined,
+    sale: deal ? { name: deal.name, percent: deal.percent, endsAt: deal.endsAt, regularPrice: deal.regularPrice } : undefined,
   };
 
   // distinct photos are shown as they are; a single repeated photo gets zoomed detail views
@@ -140,9 +144,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
                 <Stars value={p.rating} size={15} />
                 <span className="text-brand-700">{formatNumber(p.ratingCount)} ratings</span>
               </Link>
-              <Link href="#questions" className="text-brand-700 hover:underline">
-                {qa.length} answered questions
-              </Link>
               {p.assured && <AssuredMark label="AltasGoods Assured" className="text-[13px]" />}
             </div>
             {p.soldLast30d >= 100 && (
@@ -155,13 +156,12 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               <LivePrice mrp={offer.mrp} />
             </div>
 
-            <div className="mt-6">
-              <OffersList
-                offers={bankOffersFor(offer.price)}
-                coupon={coupon ? { code: coupon.code, description: coupon.description } : undefined}
-                emiFrom={offer.price >= 3000 ? Math.ceil(offer.price / 6) : undefined}
-              />
-            </div>
+            {/* coupons the store lists; bank offers and EMI deals appear only once a payment partner provides them */}
+            {coupon && (
+              <div className="mt-6">
+                <OffersList offers={[]} coupon={{ code: coupon.code, description: coupon.description }} />
+              </div>
+            )}
 
             {p.variants.length > 0 && (
               <div className="mt-6">
@@ -213,7 +213,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
             ["#details", "Details", true],
             ["#returns", "Returns and warranty", true],
             ["#reviews", "Reviews", true],
-            ["#questions", "Questions", true],
             ["#similar", "Similar products", true],
           ]
             .filter(([, , show]) => show)
@@ -362,10 +361,11 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
         <ReviewsSection
           rating={p.rating}
           ratingCount={p.ratingCount}
-          reviewCount={p.reviewCount}
-          histogram={histogram}
-          aspects={aspectRatings(p)}
-          sellerName="AltasGoods"
+          writtenCount={(reviewData?.breakdown ?? []).reduce((n, b) => n + b.count, 0)}
+          breakdown={reviewData?.breakdown ?? []}
+          product={{ id: p.id, slug: p.slug, title: p.title }}
+          canReview={reviewData?.canReview ?? false}
+          signedIn={!!user}
           reviews={reviews.map((r) => ({
             id: r.id,
             author: r.author,
@@ -374,31 +374,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
             body: r.body,
             date: formatDayMonthYear(r.createdAt),
             sortKey: new Date(r.createdAt).getTime(),
-            verified: r.verified,
-            helpful: r.helpful,
-            variant: data.variants.length ? data.variants.map((v) => `${v.name}: ${v.default}`).join(", ") : undefined,
-            response:
-              r.rating <= 2
-                ? `We are sorry this did not meet your expectations, ${r.author.split(" ")[0]}. We have arranged a free replacement and shared your feedback with ${brand.name}.`
-                : undefined,
-          }))}
-        />
-      </section>
-
-      {/* Questions */}
-      <section id="questions" aria-labelledby="pdp-qa" className="mt-16 scroll-mt-40">
-        <h2 id="pdp-qa" className="mb-5 text-xl font-semibold tracking-tight text-ink-900 lg:text-2xl">
-          Questions and answers
-        </h2>
-        <QnaSection
-          productTitle={p.title}
-          items={qa.map((q) => ({
-            id: q.id,
-            question: q.question,
-            askedBy: q.askedBy,
-            askedOn: formatDayMonthYear(q.askedAt),
-            votes: q.votes,
-            answers: q.answers.map((a) => ({ by: a.by, role: a.role, body: a.body, on: formatDayMonthYear(a.at), helpful: a.helpful })),
+            reply: r.reply,
           }))}
         />
       </section>

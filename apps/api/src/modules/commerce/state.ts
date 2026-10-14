@@ -45,7 +45,8 @@ export const ITEM_TRANSITIONS: Partial<Record<OrderItemStatus, Rule[]>> = {
   ],
   // spec 11.3: a withdrawn or rejected return puts the line back to delivered
   RETURN_REQUESTED: [
-    { to: "RETURN_IN_PROGRESS", actors: ["LOGISTICS", "SYSTEM"] },
+    // STAFF records a reverse pickup by hand until courier return pickups are connected
+    { to: "RETURN_IN_PROGRESS", actors: ["LOGISTICS", "SYSTEM", "STAFF"] },
     { to: "DELIVERED", actors: ["CUSTOMER", "STAFF", "SYSTEM"] },
   ],
   RETURN_IN_PROGRESS: [

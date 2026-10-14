@@ -1,15 +1,13 @@
 import { z } from "zod";
 import { pageQuery, paginated } from "../../common/http.js";
-import { ORDER_ITEM_STATUSES, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "../../db/schema.js";
+import { ORDER_ITEM_STATUSES, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, REFUND_STATUSES } from "../../db/schema.js";
 import { normalizePhone } from "../auth/phone.js";
 
 /* -------------------------------- Addresses ------------------------------ */
 
 export const addressBody = z.object({
   name: z.string().trim().min(2).max(80),
-  phone: z
-    .string()
-    .transform((v, ctx) => normalizePhone(v) ?? (ctx.addIssue({ code: "custom", message: "Enter a valid 10 digit mobile number" }), z.NEVER)),
+  phone: z.string().transform((v, ctx) => normalizePhone(v) ?? (ctx.addIssue({ code: "custom", message: "Enter a valid 10 digit mobile number" }), z.NEVER)),
   line1: z.string().trim().min(3).max(200),
   line2: z.string().trim().max(200).optional(),
   landmark: z.string().trim().max(120).optional(),
@@ -68,13 +66,20 @@ export const cartSchema = z.object({
   summary: z.object({ itemCount: z.number().int(), mrpTotalPaise: z.number().int(), subtotalPaise: z.number().int(), savingsPaise: z.number().int() }),
 });
 
+export const wishlistSchema = z.object({ productIds: z.array(z.string()).describe("Newest first") });
+export const putWishlistBody = z.object({ productIds: z.array(z.string().min(1).max(100)).max(200) });
+
 /* -------------------------------- Checkout ------------------------------- */
 
 export const quoteBody = z.object({
   addressId: z.uuid(),
   couponCode: z.string().trim().toUpperCase().max(40).optional(),
   paymentMethod: z.enum(PAYMENT_METHODS).optional(),
-  lines: z.array(cartLineInput.omit({ savedForLater: true })).max(50).optional().describe("Buy now lines; defaults to the cart"),
+  lines: z
+    .array(cartLineInput.omit({ savedForLater: true }))
+    .max(50)
+    .optional()
+    .describe("Buy now lines; defaults to the cart"),
 });
 
 export const quoteLineSchema = z.object({
@@ -155,7 +160,17 @@ export const orderSchema = z.object({
   paymentMethod: z.enum(PAYMENT_METHODS),
   paymentStatus: z.enum(PAYMENT_STATUSES),
   paymentDueBy: z.iso.datetime().nullable(),
-  address: z.object({ name: z.string(), phone: z.string(), line1: z.string(), line2: z.string().nullable().optional(), landmark: z.string().nullable().optional(), city: z.string(), state: z.string(), pincode: z.string(), type: z.string() }),
+  address: z.object({
+    name: z.string(),
+    phone: z.string(),
+    line1: z.string(),
+    line2: z.string().nullable().optional(),
+    landmark: z.string().nullable().optional(),
+    city: z.string(),
+    state: z.string(),
+    pincode: z.string(),
+    type: z.string(),
+  }),
   mrpTotalPaise: z.number().int(),
   subtotalPaise: z.number().int(),
   couponCode: z.string().nullable(),
@@ -180,10 +195,17 @@ export const orderSummarySchema = z.object({
   itemCount: z.number().int(),
   items: z.array(orderItemSchema.pick({ id: true, productId: true, title: true, image: true, status: true, qty: true, promisedBy: true, deliveredAt: true })),
 });
-export const orderListQuery = z.object({ status: z.enum(["all", "open", "delivered", "cancelled"]).default("all"), ...pageQuery, pageSize: pageQuery.pageSize.default(10) });
+export const orderListQuery = z.object({
+  status: z.enum(["all", "open", "delivered", "cancelled"]).default("all"),
+  ...pageQuery,
+  pageSize: pageQuery.pageSize.default(10),
+});
 export const orderList = paginated(orderSummarySchema);
 
-export const cancelBody = z.object({ itemIds: z.array(z.uuid()).optional().describe("Defaults to every cancellable item"), reason: z.string().trim().min(3).max(200) });
+export const cancelBody = z.object({
+  itemIds: z.array(z.uuid()).optional().describe("Defaults to every cancellable item"),
+  reason: z.string().trim().min(3).max(200),
+});
 
 /* -------------------------------- Payments ------------------------------- */
 
@@ -193,7 +215,10 @@ export const paymentDetailSchema = paymentSummary.extend({
   provider: z.string(),
   failureReason: z.string().nullable(),
   orderStatus: z.enum(ORDER_STATUSES),
-  checkout: z.object({ gateway: z.literal("RAZORPAY"), keyId: z.string(), orderRef: z.string(), currency: z.literal("INR") }).nullable().describe("Set when the customer pays in the gateway's own checkout"),
+  checkout: z
+    .object({ gateway: z.literal("RAZORPAY"), keyId: z.string(), orderRef: z.string(), currency: z.literal("INR") })
+    .nullable()
+    .describe("Set when the customer pays in the gateway's own checkout"),
 });
 export { razorpayConfirmBody as confirmPaymentBody } from "./payments/razorpay.provider.js";
 
@@ -245,7 +270,16 @@ export const fulfilmentOrderSchema = z.object({
   totalPaise: z.number().int(),
   shipTo: z.object({ name: z.string(), city: z.string(), state: z.string(), pincode: z.string() }),
   /** the full delivery address and phone for the shipping label */
-  address: z.object({ name: z.string(), phone: z.string(), line1: z.string(), line2: z.string().nullable(), landmark: z.string().nullable(), city: z.string(), state: z.string(), pincode: z.string() }),
+  address: z.object({
+    name: z.string(),
+    phone: z.string(),
+    line1: z.string(),
+    line2: z.string().nullable(),
+    landmark: z.string().nullable(),
+    city: z.string(),
+    state: z.string(),
+    pincode: z.string(),
+  }),
   items: z.array(
     fulfilmentItemSchema.omit({ orderId: true, placedAt: true, paymentMethod: true, shipTo: true }).extend({
       allowedActions: z.array(z.enum(ORDER_ITEM_STATUSES)),
@@ -259,7 +293,16 @@ export const transitionBody = z.object({
   to: z.enum(["ACCEPTED", "PACKED", "READY_TO_SHIP", "CANCELLED"]),
   reason: z.string().trim().min(3).max(200).optional(),
 });
-export const transitionResult = z.object({ results: z.array(z.object({ id: z.uuid(), ok: z.boolean(), status: z.enum(ORDER_ITEM_STATUSES).nullable(), error: z.string().nullable() })) });
+export const transitionResult = z.object({
+  results: z.array(z.object({ id: z.uuid(), ok: z.boolean(), status: z.enum(ORDER_ITEM_STATUSES).nullable(), error: z.string().nullable() })),
+});
+
+export const logisticsStatusSchema = z.object({
+  provider: z.enum(["SIMULATED", "SHIPROCKET"]).describe("Who ships orders right now"),
+  /** what is set up for Shiprocket, so staff can see what is still missing */
+  shiprocket: z.object({ credentials: z.boolean(), pickupLocation: z.boolean(), webhookToken: z.boolean() }),
+  webhookPath: z.string().describe("Path of the tracking webhook to give the courier, after the API's address"),
+});
 
 export const trackingRefreshResult = z.object({ id: z.uuid(), status: z.enum(ORDER_ITEM_STATUSES), trackingStatus: z.string().nullable() });
 
@@ -268,4 +311,101 @@ export const devAdvanceBody = z.object({
   to: z.enum(["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED", "RTO_IN_TRANSIT", "RTO_RECEIVED"]),
   /** with DELIVERED: dates the delivery this many days back, to exercise return windows */
   deliveredDaysAgo: z.number().int().min(1).max(120).optional(),
+});
+
+/* ------------------------------ Admin insights ------------------------------ */
+
+const money = z.object({ orders: z.number().int(), revenuePaise: z.number().int() });
+
+export const adminOverviewSchema = z.object({
+  today: money.describe("Since midnight IST"),
+  last7Days: money,
+  last30Days: money,
+  averageOrderPaise: z.number().int().describe("Over the last 30 days"),
+  work: z.object({
+    toAccept: z.number().int(),
+    toPack: z.number().int(),
+    toHandOver: z.number().int(),
+    returnsWaiting: z.number().int(),
+    refundsPending: z.number().int(),
+    refundsPendingPaise: z.number().int(),
+  }),
+  series: z.array(z.object({ date: z.string(), orders: z.number().int(), revenuePaise: z.number().int() })).describe("The last 14 days, oldest first"),
+  topProducts: z.array(z.object({ productId: z.string(), title: z.string(), image: z.string(), units: z.number().int(), revenuePaise: z.number().int() })),
+  latestOrders: z.array(
+    z.object({
+      id: z.string(),
+      placedAt: z.iso.datetime(),
+      status: z.enum(ORDER_STATUSES),
+      totalPaise: z.number().int(),
+      paymentMethod: z.enum(PAYMENT_METHODS),
+      customerName: z.string(),
+    }),
+  ),
+  lowStock: z.array(z.object({ productId: z.string(), title: z.string(), image: z.string().nullable(), stock: z.number().int() })),
+});
+
+const customerRef = z.object({ id: z.uuid(), name: z.string().nullable(), email: z.string() });
+
+export const adminPaymentsQuery = z.object({
+  status: z.enum(PAYMENT_STATUSES).optional(),
+  method: z.enum(PAYMENT_METHODS).optional(),
+  provider: z.enum(["SANDBOX", "RAZORPAY", "COD"]).optional(),
+  q: z.string().trim().max(80).optional().describe("Order ID, gateway reference or customer email"),
+  ...pageQuery,
+});
+
+export const adminPaymentList = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      orderId: z.string(),
+      provider: z.enum(["SANDBOX", "RAZORPAY", "COD"]),
+      method: z.enum(PAYMENT_METHODS),
+      amountPaise: z.number().int(),
+      status: z.enum(PAYMENT_STATUSES),
+      providerRef: z.string().nullable(),
+      failureReason: z.string().nullable(),
+      capturedAt: z.iso.datetime().nullable(),
+      createdAt: z.iso.datetime(),
+      customer: customerRef,
+    }),
+  ),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+  summary: z.object({
+    capturedTodayCount: z.number().int(),
+    capturedTodayPaise: z.number().int(),
+    failedLast24h: z.number().int(),
+    refundsPendingCount: z.number().int(),
+    refundsPendingPaise: z.number().int(),
+  }),
+});
+
+export const adminRefundsQuery = z.object({
+  status: z.enum(REFUND_STATUSES).optional(),
+  q: z.string().trim().max(80).optional().describe("Order ID or customer email"),
+  ...pageQuery,
+});
+
+export const adminRefundList = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      orderId: z.string(),
+      amountPaise: z.number().int(),
+      status: z.enum(REFUND_STATUSES),
+      reason: z.string(),
+      method: z.enum(PAYMENT_METHODS),
+      provider: z.enum(["SANDBOX", "RAZORPAY", "COD"]),
+      providerRef: z.string().nullable(),
+      createdAt: z.iso.datetime(),
+      completedAt: z.iso.datetime().nullable(),
+      customer: customerRef,
+    }),
+  ),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
 });

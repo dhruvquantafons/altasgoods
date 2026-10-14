@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { TICKET_ACTION_KINDS, TICKET_CATEGORIES, TICKET_CHANNELS, TICKET_PRIORITIES, TICKET_STATUSES } from "../../db/schema.js";
+import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, TICKET_ACTION_KINDS, TICKET_CATEGORIES, TICKET_CHANNELS, TICKET_PRIORITIES, TICKET_STATUSES } from "../../db/schema.js";
+import { fulfilmentOrderSchema } from "../commerce/commerce.schemas.js";
 
 const status = z.enum(TICKET_STATUSES);
 const priority = z.enum(TICKET_PRIORITIES);
@@ -13,6 +14,7 @@ export const listQuery = z.object({
   category: z.string().max(40).optional(),
   channel: z.enum(TICKET_CHANNELS).optional(),
   customerRef: z.string().max(40).optional(),
+  customerId: z.uuid().optional().describe("The customer's account"),
   orderId: z.string().max(40).optional(),
   pageSize: z.coerce.number().int().min(1).max(300).default(200),
 });
@@ -66,6 +68,7 @@ export const staffCreateBody = z.object({
   priority: priority.optional(),
   customerName: z.string().trim().min(2).max(80),
   customerRef: z.string().max(40).optional(),
+  customerId: z.uuid().optional().describe("The customer's account, when the ticket is opened from their profile"),
   orderId: z.string().max(40).optional(),
   orderSnapshot: snapshotSchema.optional().describe("For orders from the imported history; orders in this database are looked up"),
   body: z.string().trim().min(5).max(5000).describe("What the customer reported, in the agent's words"),
@@ -84,6 +87,7 @@ export const ticketSummary = z.object({
   status,
   customerName: z.string(),
   customerRef: z.string().nullable(),
+  customerId: z.uuid().nullable().describe("The customer's account, when they have one"),
   orderId: z.string().nullable(),
   assignee: person.nullable(),
   createdAt: z.iso.datetime(),
@@ -146,3 +150,63 @@ export const customerTicket = z.object({
   canReply: z.boolean(),
   messages: z.array(messageSchema.omit({ kind: true }).extend({ kind: z.enum(["CUSTOMER", "AGENT", "SYSTEM"]) })),
 });
+
+/* ------------------------------- Lookups ------------------------------- */
+
+export const customerSearchQuery = z.object({
+  q: z.string().trim().max(80).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(60).default(25),
+});
+
+export const customerList = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string().nullable(),
+      email: z.string(),
+      phone: z.string().nullable(),
+      status: z.enum(["ACTIVE", "BLOCKED"]),
+      createdAt: z.iso.datetime(),
+      orders: z.number().int(),
+      openTickets: z.number().int(),
+    }),
+  ),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+});
+
+export const supportOrderRow = z.object({
+  id: z.string(),
+  placedAt: z.iso.datetime(),
+  status: z.enum(ORDER_STATUSES),
+  paymentMethod: z.enum(PAYMENT_METHODS),
+  paymentStatus: z.enum(PAYMENT_STATUSES),
+  totalPaise: z.number().int(),
+  itemCount: z.number().int(),
+  firstItem: z.object({ title: z.string(), image: z.string() }).nullable(),
+  customer: z.object({ id: z.uuid(), name: z.string().nullable(), email: z.string() }),
+});
+
+export const customerProfile = z.object({
+  id: z.uuid(),
+  name: z.string().nullable(),
+  email: z.string(),
+  phone: z.string().nullable(),
+  status: z.enum(["ACTIVE", "BLOCKED"]),
+  emailVerified: z.boolean(),
+  createdAt: z.iso.datetime(),
+  orderCount: z.number().int().describe("Orders that went through"),
+  spentPaise: z.number().int().describe("Total of those orders, less cancellations"),
+  orders: z.array(supportOrderRow).describe("The 20 most recent orders, failed payments included"),
+});
+
+export const orderSearchQuery = z.object({ q: z.string().trim().max(80).optional() });
+
+export const supportOrderDetail = fulfilmentOrderSchema.extend({
+  items: z.array(fulfilmentOrderSchema.shape.items.element.omit({ allowedActions: true })),
+  customer: z.object({ id: z.uuid(), name: z.string().nullable(), email: z.string(), phone: z.string().nullable() }),
+});
+
+export const customerStatusBody = z.object({ status: z.enum(["ACTIVE", "BLOCKED"]), reason: z.string().trim().max(200).optional() });

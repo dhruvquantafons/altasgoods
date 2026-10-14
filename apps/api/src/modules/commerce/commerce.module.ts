@@ -3,7 +3,18 @@ import { LOGISTICS_PROVIDER, PAYMENT_PROVIDER } from "../../common/tokens.js";
 import { env } from "../../config/env.js";
 import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
-import { AddressesController, AdminOrdersController, CartController, DevController, LogisticsController, OrdersController, PaymentsController } from "./commerce.controllers.js";
+import { WishlistService } from "./wishlist.service.js";
+import {
+  AddressesController,
+  AdminInsightsController,
+  AdminOrdersController,
+  CartController,
+  DevController,
+  WishlistController,
+  LogisticsController,
+  OrdersController,
+  PaymentsController,
+} from "./commerce.controllers.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
 import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
@@ -15,16 +26,39 @@ import { ShippingService } from "./shipping/shipping.service.js";
 import { ShiprocketLogisticsProvider } from "./shipping/shiprocket.provider.js";
 import { SimulatedLogisticsProvider } from "./shipping/simulated.provider.js";
 import { ShipmentTracker } from "./shipping/tracker.js";
+import { AdminInsightsService } from "./admin-insights.service.js";
+import { SalesService } from "./sales.service.js";
+import { AdminPromotionsController, StorefrontPromotionsController } from "./promotions.controllers.js";
+import { PromotionsService } from "./promotions.service.js";
 import { AdminReturnsController, CustomerReturnsController, DevReturnsController } from "./returns/returns.controllers.js";
 import { ReturnsService } from "./returns/returns.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
 
 @Module({
-  controllers: [AddressesController, CartController, OrdersController, PaymentsController, AdminOrdersController, LogisticsController, DevController, CustomerReturnsController, AdminReturnsController, DevReturnsController],
+  controllers: [
+    AddressesController,
+    CartController,
+    WishlistController,
+    OrdersController,
+    PaymentsController,
+    AdminOrdersController,
+    AdminInsightsController,
+    AdminPromotionsController,
+    StorefrontPromotionsController,
+    LogisticsController,
+    DevController,
+    CustomerReturnsController,
+    AdminReturnsController,
+    DevReturnsController,
+  ],
   providers: [
+    AdminInsightsService,
+    SalesService,
+    PromotionsService,
     AddressesService,
     CartService,
+    WishlistService,
     QuoteService,
     OrderWorkflow,
     PaymentsService,
@@ -40,7 +74,12 @@ import { OrderWorkflow } from "./workflow.service.js";
       useFactory: () => {
         const e = env();
         return e.PAYMENTS_PROVIDER === "razorpay"
-          ? new RazorpayPaymentProvider({ keyId: e.RAZORPAY_KEY_ID!, keySecret: e.RAZORPAY_KEY_SECRET!, webhookSecret: e.RAZORPAY_WEBHOOK_SECRET!, webOrigin: e.WEB_ORIGIN })
+          ? new RazorpayPaymentProvider({
+              keyId: e.RAZORPAY_KEY_ID!,
+              keySecret: e.RAZORPAY_KEY_SECRET!,
+              webhookSecret: e.RAZORPAY_WEBHOOK_SECRET!,
+              webOrigin: e.WEB_ORIGIN,
+            })
           : new SandboxPaymentProvider();
       },
     },
@@ -60,6 +99,6 @@ import { OrderWorkflow } from "./workflow.service.js";
       },
     },
   ],
-  exports: [ShippingService, ReturnsService, OrdersService, PaymentsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
+  exports: [SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
 })
 export class CommerceModule {}

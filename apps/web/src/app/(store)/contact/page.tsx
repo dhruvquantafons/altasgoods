@@ -5,12 +5,12 @@ import { CallbackRequest } from "@/components/store/callback-request";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { currentUser } from "@/lib/api/server";
-import { COMPANY, GRIEVANCE_OFFICER } from "@/lib/mock/store-extra";
+import { getStoreSettings, type StorefrontSettings } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Contact us" };
 
-const channels = [
+const channelsFor = (COMPANY: StorefrontSettings["company"]) => [
   { icon: Package, title: "Help with an order", body: "Track, cancel, return or report a problem. Fastest for anything about an order.", cta: "Go to your orders", href: "/account/orders" },
   { icon: MessageCircle, title: "Chat with us", body: "Talk to a person from Help in the app or on the web. Typical reply in 2 minutes.", cta: "Start a chat", href: "/account/support" },
   { icon: PhoneCall, title: `Call ${COMPANY.customerCare}`, body: `Toll free, ${COMPANY.customerCareHours}. Or ask us to call you back, below.`, cta: "Call now", href: `tel:${COMPANY.customerCare.replace(/\s/g, "")}` },
@@ -24,8 +24,9 @@ const teams = [
 
 export default async function ContactPage() {
   // signed-in shoppers get their number filled in for a call back
-  const user = await currentUser();
+  const [user, { company: COMPANY, grievance: GRIEVANCE_OFFICER }] = await Promise.all([currentUser(), getStoreSettings()]);
   const phone = user?.phone?.replace(/\D/g, "").slice(-10) ?? "";
+  const channels = channelsFor(COMPANY);
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero

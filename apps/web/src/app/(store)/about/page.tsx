@@ -5,14 +5,15 @@ import { ArrowRight, Building2, CalendarClock, HeartHandshake, Scale, Sparkles }
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { ABOUT_MILESTONES, ABOUT_NUMBERS, ABOUT_PRINCIPLES, OFFICES } from "@/lib/mock/company";
-import { COMPANY } from "@/lib/mock/store-extra";
+import { getStoreSettings } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "About AltasGoods" };
 
 const principleIcons = [Scale, CalendarClock, HeartHandshake, Sparkles];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { company: COMPANY } = await getStoreSettings();
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero

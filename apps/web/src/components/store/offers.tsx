@@ -48,7 +48,7 @@ export function OffersList({
         <p className="flex items-center gap-2 text-sm font-semibold text-ink-900">
           <BadgePercent size={17} className="text-success-700" aria-hidden="true" /> Offers
         </p>
-        <p className="text-xs text-ink-500">Best offer applies automatically at payment</p>
+        {offers.length > 0 && <p className="text-xs text-ink-500">Best offer applies automatically at payment</p>}
       </div>
       <div className="px-4">
         <ul className="divide-y divide-line">

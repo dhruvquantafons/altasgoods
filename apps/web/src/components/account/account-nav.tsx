@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import {
   Heart,
+  Star,
   LayoutGrid,
   LifeBuoy,
   MapPin,
@@ -35,7 +36,13 @@ const groups: { title?: string; items: NavItem[] }[] = [
       { href: "/account/returns", label: "Returns and refunds", short: "Returns", icon: Undo2, count: "returns" },
     ],
   },
-  { title: "Shopping", items: [{ href: "/account/wishlist", label: "Wishlist", short: "Wishlist", icon: Heart }] },
+  {
+    title: "Shopping",
+    items: [
+      { href: "/account/wishlist", label: "Wishlist", short: "Wishlist", icon: Heart },
+      { href: "/account/reviews", label: "Reviews", short: "Reviews", icon: Star },
+    ],
+  },
   {
     title: "Settings",
     items: [

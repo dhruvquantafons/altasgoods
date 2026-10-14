@@ -21,7 +21,7 @@ export class ConsoleEmailProvider implements EmailProvider {
   }
 }
 
-/** Sends through any SMTP server (Zoho, Brevo, Google Workspace, Amazon SES SMTP and so on). */
+/** Sends through an SMTP server (Titan Mail in production). */
 export class SmtpEmailProvider implements EmailProvider, OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger("Email");
   private readonly transport: Transporter;
@@ -40,6 +40,8 @@ export class SmtpEmailProvider implements EmailProvider, OnApplicationBootstrap,
         // never fall back to plain text in production
         requireTLS: isProduction() && !(config.SMTP_SECURE ?? config.SMTP_PORT === 465),
         pool: true,
+        // mailbox providers like Titan throttle clients that open many parallel connections
+        maxConnections: 2,
         connectionTimeout: 10_000,
         greetingTimeout: 10_000,
         socketTimeout: 20_000,

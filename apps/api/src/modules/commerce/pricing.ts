@@ -4,7 +4,7 @@
  */
 import { istAt, istParts } from "../../common/time.js";
 
-/** Customer delivery fee: free for orders of ₹499 or more. */
+/** Defaults for the delivery fee (free from ₹499) and the cash on delivery limit; staff change them in Settings. */
 export const FREE_DELIVERY_FROM_PAISE = 49_900;
 export const DELIVERY_FEE_PAISE = 4_000;
 export const COD_LIMIT_PAISE = 5_000_000;
@@ -34,8 +34,8 @@ export function couponDiscount(c: CouponRule, subtotalPaise: number, now: Date):
   return { discountPaise: Math.min(capped, subtotalPaise), message: "Coupon applied" };
 }
 
-export function deliveryFee(subtotalPaise: number) {
-  return subtotalPaise >= FREE_DELIVERY_FROM_PAISE ? 0 : DELIVERY_FEE_PAISE;
+export function deliveryFee(subtotalPaise: number, rule: { feePaise: number; freeFromPaise: number } = { feePaise: DELIVERY_FEE_PAISE, freeFromPaise: FREE_DELIVERY_FROM_PAISE }) {
+  return subtotalPaise >= rule.freeFromPaise ? 0 : rule.feePaise;
 }
 
 /** Orders confirmed before 2 pm IST count from today. */
@@ -50,4 +50,36 @@ export function promiseDate(now: Date, deliveryDays: number) {
 /** The store hands the parcel to the courier by 6 pm IST after the handling days. */
 export function dispatchByDate(now: Date, handlingDays: number) {
   return istAt(now, startDays(now) + Math.max(0, handlingDays - 1), 18);
+}
+
+/**
+ * A price with a sale's percentage off, rounded down to the rupee and never
+ * below ₹1. The catalog query (catalog.service.ts houseOffer) uses the same
+ * integer arithmetic, so listings, cart and checkout always agree.
+ */
+export function salePrice(pricePaise: number, percent: number) {
+  if (!percent) return pricePaise;
+  return Math.max(100, Math.floor((pricePaise * (100 - percent)) / 10_000) * 100);
+}
+
+export interface LiveSale {
+  id: string;
+  name: string;
+  slug: string;
+  discountPercent: number;
+  scope: "ALL" | "CATEGORIES" | "PRODUCTS";
+  categoryIds: string[];
+  productIds: string[];
+  endsAt: Date;
+}
+
+/** The sale that gives a product its biggest discount (the one ending soonest on a tie), or null. */
+export function bestSale(sales: LiveSale[], product: { id: string; categoryId: string }) {
+  let best: LiveSale | null = null;
+  for (const s of sales) {
+    const covers = s.scope === "ALL" || (s.scope === "CATEGORIES" && s.categoryIds.includes(product.categoryId)) || (s.scope === "PRODUCTS" && s.productIds.includes(product.id));
+    if (!covers) continue;
+    if (!best || s.discountPercent > best.discountPercent || (s.discountPercent === best.discountPercent && s.endsAt < best.endsAt)) best = s;
+  }
+  return best;
 }

@@ -9,9 +9,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { loadMyOrder, toUiOrder } from "@/lib/api/account-orders";
 import { api } from "@/lib/api/server";
 import { currentTime } from "@/lib/api/support";
-import { getProduct } from "@/lib/mock";
 import { pickupSlots, returnPolicyFor, RETURN_REASONS } from "@/lib/mock/account-extra";
 import { PAYMENT_METHOD } from "@/lib/status";
+import { getStoreCatalog } from "@/lib/store-catalog";
 
 const DAY = 86_400_000;
 /** Damage, defect and wrong item claims stay open this long after delivery; the store reviews late ones (spec 11.3). */
@@ -25,14 +25,19 @@ export default async function ReturnPage(props: PageProps<"/account/orders/[id]/
   const { id } = await props.params;
   const sp = await props.searchParams;
   const client = await api();
-  const [raw, myReturns, addressBook] = await Promise.all([loadMyOrder(id), client.GET("/v1/me/returns").then((r) => r.data ?? []), client.GET("/v1/me/addresses").then((r) => r.data ?? [])]);
+  const [raw, myReturns, addressBook, catalog] = await Promise.all([
+    loadMyOrder(id),
+    client.GET("/v1/me/returns").then((r) => r.data ?? []),
+    client.GET("/v1/me/addresses").then((r) => r.data ?? []),
+    getStoreCatalog(),
+  ]);
   if (!raw) notFound();
   const order = toUiOrder(raw);
   const now = currentTime();
   const delivered = order.deliveredAt;
 
   const items: WizardItem[] = raw.items.map((it) => {
-    const product = getProduct(it.productId);
+    const product = catalog.product(it.productId);
     const policy = returnPolicyFor(product);
     const open = myReturns.find((r) => r.orderItemId === it.id && !["CANCELLED", "REJECTED", "COMPLETED"].includes(r.status));
     const deliveredOn = it.deliveredAt ? Date.parse(it.deliveredAt) : null;
@@ -81,7 +86,11 @@ export default async function ReturnPage(props: PageProps<"/account/orders/[id]/
           { label: "Return or replace" },
         ]}
         title="Return or replace items"
-        description={delivered ? `Delivered on ${dayLabel(delivered)}. Free doorstep pickup, and no questions asked for items inside their return window.` : "Returns open once your order is delivered."}
+        description={
+          delivered
+            ? `Delivered on ${dayLabel(delivered)}. Free doorstep pickup, and no questions asked for items inside their return window.`
+            : "Returns open once your order is delivered."
+        }
       />
 
       {anyEligible ? (
@@ -103,7 +112,12 @@ export default async function ReturnPage(props: PageProps<"/account/orders/[id]/
             const [weekday, date] = label.split(", ");
             return { key: s.date, weekday: weekday!, date: date!, full: label, windows: s.windows };
           })}
-          payment={{ label: PAYMENT_METHOD[method], timing: refundTiming(method), isCod: method === "cod", creditsOnly: method === "wallet" || method === "giftcard" }}
+          payment={{
+            label: PAYMENT_METHOD[method],
+            timing: refundTiming(method),
+            isCod: method === "cod",
+            creditsOnly: method === "wallet" || method === "giftcard",
+          }}
         />
       ) : (
         <section className="rounded-[var(--radius-card)] border border-line bg-surface shadow-card">
