@@ -12,9 +12,7 @@ AltasGoods is an online store for India: one business selling its own catalog, w
 
 Admins can open `http://localhost:3000/portals` to reach every workspace. Shipping and `/portals` need the `SUPER_ADMIN` or `OPS_ADMIN` role.
 
-## Handover (October 2026)
-
-The project is moving to a new lead developer. This section says where things stand. The rest of this README is the reference.
+## Project status (October 2026)
 
 ### Where it stands
 
@@ -32,7 +30,7 @@ Git history tells the same story: phase 1 (every screen on mock data), phase 2 (
 
 ### Environment files
 
-Two local files hold settings. Both are git ignored, so the new developer must create their own. Every setting is listed with a comment in [`apps/api/.env.example`](apps/api/.env.example).
+Two local files hold settings. Both are git ignored, so each developer creates their own. Every setting is listed with a comment in [`apps/api/.env.example`](apps/api/.env.example).
 
 **`apps/api/.env`** (copy from `.env.example`). The API validates it at startup (`apps/api/src/config/env.ts`) and refuses to start with a readable message if something is missing.
 
@@ -51,12 +49,12 @@ Two local files hold settings. Both are git ignored, so the new developer must c
 
 The fastest way to a working setup is the sandbox for everything: `PAYMENTS_PROVIDER=sandbox`, `LOGISTICS_PROVIDER=simulated`, `EMAIL_PROVIDER=console`. No outside account is needed.
 
-### Accounts and credentials to hand over
+### Outside accounts
 
-These are shared privately, never in the repository:
+Credentials are shared privately, never in the repository:
 
 - **Razorpay**: the test mode key ID and secret currently in use, and later the live keys from the business's own account.
-- **Shiprocket**: the API user (email and password). The current one was made under the previous developer's email, so create a new API user for the new owner. Shiprocket has no test mode: every booking is real and charged to the wallet.
+- **Shiprocket**: the API user (email and password). The current one is under a personal email; a business owned API user is better. Shiprocket has no test mode: every booking is real and charged to the wallet.
 - **Titan Mail**: the `no-reply@` mailbox password, and access to the domain's DNS for SPF and DKIM.
 - **GitHub**: repository access.
 
