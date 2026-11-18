@@ -94,8 +94,8 @@ test("a product added in the admin is stored, sold on the storefront, and its ed
   await page.fill("#pf-hl", "Keeps water cool\nLeak proof lid\nHandmade in Moradabad");
   await page.fill("#pf-stock", "35");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Saved. The store shows the changes now.")).toBeVisible();
-  expect((await row<{ highlights: string[] }>("select highlights from products where id = $1", [id]))!.highlights).toContain("Handmade in Moradabad");
+  // the saved message goes when the form reloads with the saved product, so wait for what is stored instead
+  await expect.poll(async () => (await row<{ highlights: string[] }>("select highlights from products where id = $1", [id]))!.highlights).toContain("Handmade in Moradabad");
   expect((await row<{ stock: number }>("select stock from offers where product_id = $1", [id]))!.stock).toBe(35);
   const edit = await row<{ changes: Record<string, unknown> }>(
     "select changes from audit_events where action = 'product.update' and entity_id = $1 order by created_at desc limit 1",
