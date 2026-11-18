@@ -127,7 +127,7 @@ function OrderItemRow({ order, item, first }: { order: Order; item: OrderItem; f
             Write a review
           </ButtonLink>
         )}
-        {!active && <BuyAgainButton title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />}
+        {!active && <BuyAgainButton productId={item.productId} variant={item.variant} title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />}
       </div>
     </li>
   );

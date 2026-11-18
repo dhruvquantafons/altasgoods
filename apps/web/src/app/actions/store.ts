@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { api, publicApi } from "@/lib/api/server";
+import { buyAgainOutcome, type BuyAgainOutcome } from "@/lib/buy-again";
 import type { Address, Order, PaymentDetail, PaymentMethod, Quote } from "@/lib/api/types";
 
 /**
@@ -40,6 +41,16 @@ async function resolveOffers(lines: LineInput[]) {
     return offerId ? [{ offerId, qty: l.qty, variant: l.variant ?? "", savedForLater: !!l.saved }] : [];
   });
   return { resolved, missing: lines.length - resolved.length };
+}
+
+/** Whether a product from a past order can be bought again: still on sale and in stock. */
+export async function checkBuyAgain(productId: string): Promise<BuyAgainOutcome> {
+  try {
+    const r = await publicApi().GET("/v1/products/{slug}", { params: { path: { slug: productId } } });
+    return buyAgainOutcome({ status: r.response.status, inStock: r.data?.inStock });
+  } catch {
+    return "error";
+  }
 }
 
 export async function quoteCheckout(input: { addressId: string; lines: LineInput[]; couponCode?: string | null; method?: string }): Promise<Result<Quote>> {
