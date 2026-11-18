@@ -1,264 +1,445 @@
 # AltasGoods
 
-AltasGoods is an online store for India: one business selling its own catalog, with a storefront for shoppers and separate workspaces for the store's staff and support agents. Payments run on Razorpay and shipping on Shiprocket, each behind a switch so development can use a local sandbox instead.
+AltasGoods is an online store for India. One business sells its own catalog. There is a storefront for shoppers and separate workspaces for the store's staff, support agents and shipping.
 
-| Workspace | Start here | For |
+The code is finished and tested against stand-ins for every outside service. What remains is connecting the real accounts (Razorpay, Shiprocket, SMTP) and deploying to production. This README is written for the developer doing that.
+
+| Workspace | URL | Who uses it |
 |---|---|---|
-| Storefront | `/` | Shoppers: home, search, category, product page, cart, checkout |
-| My Account | `/account` | Shoppers: orders and tracking, returns, support |
-| AltasGoods Control | `/admin` | Store staff: orders, returns, customers, payments, products, sales and coupons, homepage banners, reviews, staff, pages and content, settings, exports, audit log |
-| Care Desk | `/support` | Support agents: tickets with full order context, refunds |
-| Shipping | `/logistics` | Admins: shipments, courier status, tracking and labels |
+| Storefront | `/` | Shoppers: browse, search, cart, checkout |
+| My Account | `/account` | Shoppers: orders, tracking, returns, support, profile |
+| AltasGoods Control | `/admin` | Store staff: orders, refunds, catalog, content, settings, staff, exports |
+| Care Desk | `/support` | Support agents: tickets with the customer's orders, refunds |
+| Shipping | `/logistics` | Admins: shipments, courier status, labels |
+| Workspace launcher | `/portals` | Super Admin and Ops Admin |
 
-Admins can open `http://localhost:3000/portals` to reach every workspace. Shipping and `/portals` need the `SUPER_ADMIN` or `OPS_ADMIN` role.
+Signed-in staff also see their workspaces in the storefront's **Account and lists** menu.
 
-## Project status (October 2026)
+## Contents
 
-### Where it stands
+1. [Run it locally](#1-run-it-locally)
+2. [Demo accounts](#2-demo-accounts)
+3. [How the system fits together](#3-how-the-system-fits-together)
+4. [Configuration](#4-configuration)
+5. [Payments: Razorpay](#5-payments-razorpay)
+6. [Shipping: Shiprocket](#6-shipping-shiprocket)
+7. [Email: SMTP](#7-email-smtp)
+8. [Deploying to production](#8-deploying-to-production)
+9. [Go-live checklist](#9-go-live-checklist)
+10. [Setting up the store after deploy](#10-setting-up-the-store-after-deploy)
+11. [Developing](#11-developing)
+12. [Known limitations and next steps](#12-known-limitations-and-next-steps)
 
-| Area | State |
-|---|---|
-| Storefront, checkout, My Account | Done and on the API. Customers can buy again, delete their account (it is anonymised, orders are kept) and get order emails. Credits refunds are gone: refunds go to the payment method or a UPI id |
-| AltasGoods Control (admin) | Done and on the API. Staff screen with invites, product archive, delete and slug, editable content pages (policies, help and FAQ, about, careers, press, brand spotlights), manual and goodwill refunds, mark paid, refund retry and the Needs attention list, order address edits and internal notes, lost and returned to store parcels, CSV exports, GST rates (store default, category, product), a COD switch, delivery areas (pincode rules), a customer email switch, sales and coupons, Storefront CMS, reviews, settings and the audit log |
-| Care Desk | Done and on the API |
-| Pincode check | Real: the admin's delivery area rules, plus Shiprocket serviceability when `SHIPROCKET_PICKUP_PINCODE` is set |
-| Payments (Razorpay) | Integrated and tested with Razorpay **test** keys. Live keys need the business's KYC'd account |
-| Shipping (Shiprocket) | Integrated (forward shipments, labels, tracking). Not yet switched on locally: the pickup address is not set. Return pickups are still booked by hand |
-| Email (Titan SMTP) | Code done and tested: password and staff invite emails, and customer order emails (see [Customer emails](#customer-emails)). **Pending:** the mailbox password, and SPF and DKIM records on the sending domain. Until then `EMAIL_PROVIDER=console` |
-| Production deployment | Not started. No hosting, CI or Docker setup exists yet |
+## 1. Run it locally
 
-Git history tells the same story: phase 1 (every screen on mock data), phase 2 (API, returns, Care Desk), the rebrand from BluBuy to AltasGoods, removing the seller side and the membership, then Razorpay, Shiprocket and email, then an admin and go live hardening pass (staff, content, refunds, GST, delivery areas, customer emails).
-
-### Environment files
-
-Two local files hold settings. Both are git ignored, so each developer creates their own. Every setting is listed with a comment in [`apps/api/.env.example`](apps/api/.env.example).
-
-**`apps/api/.env`** (copy from `.env.example`). The API validates it at startup (`apps/api/src/config/env.ts`) and refuses to start with a readable message if something is missing.
-
-| Setting | Notes |
-|---|---|
-| `NODE_ENV` | Required, no default: `development`, `test` or `production`. A missing value stops startup. `npm start` sets `production`. `db:migrate` and `admin:create` read `.env` too, so on a server set `NODE_ENV=production` for them as well (`db:seed` is for development only and refuses to run in production) |
-| `DATABASE_URL`, `TEST_DATABASE_URL` | Your local Postgres. Tests wipe `TEST_DATABASE_URL` on every run, so never point it at real data |
-| `REDIS_URL` | Any local Redis. Database 5 is used by default |
-| `JWT_SECRET` | 32 characters or more. `openssl rand -base64 48` |
-| `PAYMENTS_WEBHOOK_SECRET` | Any long random string (sandbox provider only) |
-| `WEB_ORIGIN` | The web app's address, for CORS and payment return links |
-| `TRUST_PROXY` | Which peers may name the real client IP in `X-Forwarded-For`. Default `loopback` (web and API on one machine). See [Reverse proxy](#reverse-proxy-and-trust_proxy) |
-| `PAYMENTS_PROVIDER` | `sandbox` (no account needed) or `razorpay`, which needs `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` |
-| `LOGISTICS_PROVIDER` | `simulated` (no account needed) or `shiprocket`, which needs `SHIPROCKET_EMAIL`, `SHIPROCKET_PASSWORD` `SHIPROCKET_PICKUP_LOCATION`. Optional `SHIPROCKET_PICKUP_PINCODE` (6 digits) turns on Shiprocket's serviceability check for delivery pincodes |
-| `EMAIL_PROVIDER` | `console` (prints emails in the API terminal) or `smtp`, which needs `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM`. Production refuses `console`. SMTP sends password and staff invite emails and all customer order emails |
-
-**`apps/web/.env.local`** needs one line: `ALTASGOODS_API_URL=http://localhost:4000`. (An older copy may also have `BLUBUY_API_URL` from before the rebrand. It is unused and can be deleted.)
-
-The fastest way to a working setup is the sandbox for everything: `PAYMENTS_PROVIDER=sandbox`, `LOGISTICS_PROVIDER=simulated`, `EMAIL_PROVIDER=console`. No outside account is needed.
-
-### Outside accounts
-
-Credentials are shared privately, never in the repository:
-
-- **Razorpay**: the test mode key ID and secret currently in use, and later the live keys from the business's own account.
-- **Shiprocket**: the API user (email and password). The current one is under a personal email; a business owned API user is better. Shiprocket has no test mode: every booking is real and charged to the wallet.
-- **Titan Mail**: the `no-reply@` mailbox password, and access to the domain's DNS for SPF and DKIM.
-- **GitHub**: repository access.
-
-Note that `.env.example` uses `altasgoods.in` in `EMAIL_FROM` while the configured mailbox is on `altasgoods.com`. Confirm which domain is real before going live.
-
-### Things to know first
-
-- **Next.js 16 is new.** Its APIs differ from older versions. `apps/web/AGENTS.md` asks you (and any AI coding tool) to read the guides in `node_modules/next/dist/docs/` before changing web code. `next dev` re-adds that file if removed.
-- **The API contract is generated.** After changing an API route or request schema, run `npm run openapi` in `apps/api`, then `npm run api:types` in `apps/web`, and commit both outputs.
-- **Database changes** go in `apps/api/src/db/schema.ts`, then `npm run db:generate` writes a new SQL migration in `src/db/migrations`. There are 25 so far (`0000` to `0024`).
-- **Seeding never touches real services.** `npm run db:seed` and the tests always use the payment sandbox, the simulated courier and console email, whatever `.env` says.
-- **Staff accounts** are made in AltasGoods Control > Staff, where a Super Admin adds people in one of two ways: an emailed one-time link to choose their own password (mode `invite`), or a temporary password the admin passes on, which they must change at first sign in (mode `password`). `npm run admin:create` in `apps/api` is only for the first Super Admin.
-- `docs/architecture/` and `docs/research/` hold the original design (workflows, state machines, design tokens). Status names and return rules in the code follow `docs/research/01-marketplace-workflows.md` section 11.
-
-## Run it
-
-You need Node 22.12 or newer, PostgreSQL 16 (with `pg_trgm`) and Redis.
+You need Node 22.12 or newer, PostgreSQL 16 (with the `pg_trgm` extension available) and Redis.
 
 ```bash
-# 1. API (details in apps/api/README.md)
-cd apps/api && npm install && cp .env.example .env    # then set JWT_SECRET and PAYMENTS_WEBHOOK_SECRET
-createdb altasgoods_dev && createdb altasgoods_test    # or point DATABASE_URL and TEST_DATABASE_URL at your own
-npm run db:migrate && npm run db:seed                  # catalog only, no accounts
-npm run admin:create -- --email you@example.com --name "Your Name"   # your AltasGoods Control account
-npm run dev                      # http://localhost:4000, API docs at /docs
+# Terminal 1: API
+cd apps/api
+npm install
+cp .env.example .env              # then set JWT_SECRET and PAYMENTS_WEBHOOK_SECRET
+createdb altasgoods_dev && createdb altasgoods_test
+npm run db:migrate                # create the tables
+npm run db:seed                   # demo catalog (products, categories, banners, content pages)
+npm run db:demo-accounts          # one sign-in per role, see section 2
+npm run dev                       # http://localhost:4000 (API docs at /docs)
 
-# 2. Web, in a second terminal
-cd apps/web && npm install
+# Terminal 2: web
+cd apps/web
+npm install
 echo "ALTASGOODS_API_URL=http://localhost:4000" > .env.local
-npm run dev                      # http://localhost:3000
+npm run dev                       # http://localhost:3000
 ```
 
-Out of the box payments use the local sandbox and shipping uses the simulated courier, so nothing real is charged or booked. See [Payments](#payments-razorpay) and [Shipping](#shipping-shiprocket) to switch them on.
+Out of the box nothing touches the outside world. Payments use a local sandbox page with Pay and Fail buttons. Shipping uses a simulated courier, and staff advance its scans with Simulate buttons on the admin order page. Emails print in the API terminal.
 
-### Accounts
+**Useful commands in `apps/api`:**
 
-Everyone signs in with an email and a password. There are no demo accounts:
-
-- **Shoppers** create an account at `/signup`.
-- **Staff** (AltasGoods Control and Care Desk). The first Super Admin is created with `npm run admin:create` in `apps/api`, which asks for the password. After that, a Super Admin adds staff in AltasGoods Control > Staff: pick a role, then either email them a one-time link to choose their own password (it works once and expires in 72 hours; Resend invite sends a new one), or set a temporary password they must change at first sign in. If the invite email cannot be sent, the staff list shows Invite not sent until a resend goes through. Staff sign in at `/login?as=staff` (opening `/admin` takes you there). `admin:create` still takes `--role SUPPORT_AGENT`, `SUPPORT_SPECIALIST` or `SUPPORT_SUPERVISOR`; the default is `SUPER_ADMIN`.
-- **Forgot password** emails a 6 digit code. In development the email is printed in the API terminal and the code is shown on the page, so no mail server is needed. Production sends through SMTP (see `EMAIL_PROVIDER` in `apps/api/.env.example`) and refuses to start without it.
-
-## What is real and what is sample data
-
-The buying journey and store operations run on the API and database. Almost nothing is sample data now.
-
-| Area | Real (API and database) | Fixed content in the web app |
-|---|---|---|
-| Storefront | Catalog, category and product listings, search, cart, checkout, payment, order confirmation, product reviews, the Deals page and live sales, homepage hero slides and promo tiles, the company pages (About, Press, Careers, Policies, Help and FAQs) and brand spotlights from the content API, pincode serviceability, product legal declarations | Product page warranty text |
-| My Account | Overview, orders, order detail and tracking, cancellation, buy again, returns, support conversations, profile (name, email, mobile, change password, sign out of other devices), delete account, addresses, reviews, and the wishlist | None. Credits, saved payment methods and notifications were removed |
-| AltasGoods Control | Overview, orders (refunds, mark paid, address edit, internal notes, lost and returned parcels), returns, customers (with block), payments and refunds (retry, Needs attention), products (archive, delete, slug), categories, brands, sales and coupons, Storefront CMS, pages and content, reviews, staff, settings (delivery fee, COD switch and limit, GST rates, delivery areas, customer emails, review publishing, storefront notice, company and grievance details), CSV exports, audit log, your account | None |
-| Care Desk | Overview (queue, response and resolution times, 14 day chart, team workload, all from the tickets), ticket inbox and workspace with the live customer and order, replies, notes, refunds, customer lookup and profiles, order lookup and order pages | None. Reply macros and SLA targets are settings in `apps/web/src/lib/care-policy.ts` |
-| Shipping | Overview with the connected courier and a Shiprocket setup checklist, shipment counts by stage, late and returned parcels; the shipments list with AWB search, latest scan, label, tracking link and refresh | |
-| Sign in | Email and password sign up and sign in, password reset by emailed code, change password, sessions | |
-
-A few helpers the real pages import (listing filters, the state list, return reasons, return windows and pickup slots) still sit in `apps/web/src/lib`. They are rules, not sample data.
-
-## Customer emails
-
-Customers get these emails through the same SMTP setup as password reset. Each is sent once: it is deduplicated by a key, so a repeated courier scan or webhook never sends it twice.
-
-| Email | Sent when |
+| Command | What it does |
 |---|---|
-| Order placed | A cash on delivery order is placed, or a prepaid payment is captured |
-| Payment failed | The first failed attempt on an order still waiting for payment |
-| Order not completed | An unpaid order expires (replaces the cancelled email) |
-| Order cancelled | Lines are cancelled by the customer, staff or the system. States any refund on its way |
-| Shipped | A parcel is on its way, with the tracking link |
-| Out for delivery | The courier is out for delivery |
-| Delivered | A parcel is delivered |
-| Parcel lost | A parcel is marked lost. States any refund on its way |
-| Parcel returned | A parcel comes back to the store. States any refund on its way |
-| Refund started | An admin, goodwill, manual, Care Desk or late or duplicate payment refund begins. Cancellation, lost, returned and return refunds fold this into their own email |
-| Refund completed | A refund is paid out |
-| Return approved, rejected, picked up, quality check failed, refunded, replaced | The return reaches that step. Links go to `/account/returns#<id>` |
-| Care Desk reply | An agent replies to a conversation. Internal notes send nothing |
+| `npm run db:reset` | Drop and recreate the dev schema, then seed. Wipes all data |
+| `npm run admin:create -- --email you@x.com --name "Name" [--role ROLE]` | Create a staff account, or add a role to an existing one. Asks for the password |
+| `npm run db:demo-accounts` | Re-create the demo sign-ins. Safe to repeat |
 
-- **Settings switch.** AltasGoods Control > Settings > Customer emails pauses them. The switch is read when an email is queued, so mail already queued still goes out.
-- **Blocked and deleted customers get none.**
-- **No staff notes.** Internal notes are never put in a customer email or on the customer's order page.
+## 2. Demo accounts
 
-## Payments (Razorpay)
+**Development only.** `npm run db:demo-accounts` creates these accounts. It refuses to run when `NODE_ENV=production` and is left out of the production build. Never create them on a live database.
 
-Set in `apps/api/.env`. `PAYMENTS_PROVIDER=sandbox` (the default) uses a local stand-in page with "pay" and "fail" buttons.
+Password for every account: **`Demo@12345`**
+
+| Role | Email | Signs in at | Can do |
+|---|---|---|---|
+| Super Admin | `superadmin@altasgoods.test` | `/login?as=staff` | Everything, including managing staff and the Care Desk |
+| Ops Admin | `ops@altasgoods.test` | `/login?as=staff` | Orders, returns, refunds, payments, customers, settings, catalog, content, exports, Shipping |
+| Catalog Manager | `catalog@altasgoods.test` | `/login?as=staff` | Products, categories, brands, homepage banners, content pages, reviews |
+| Auditor | `auditor@altasgoods.test` | `/login?as=staff` | Views every admin page and downloads exports. Cannot change anything |
+| Support Agent (L1) | `agent@altasgoods.test` | `/login?as=staff` | Care Desk. Refunds up to ₹2,000 |
+| Support Specialist (L2) | `specialist@altasgoods.test` | `/login?as=staff` | Care Desk. Refunds up to ₹10,000 |
+| Support Supervisor | `supervisor@altasgoods.test` | `/login?as=staff` | Care Desk. Approves refunds above an agent's limit |
+| Shopper | `shopper@altasgoods.test` | `/login` | The storefront and My Account |
+
+Opening `/admin` while signed out takes you to the staff sign-in page. Shoppers can also make their own accounts at `/signup`.
+
+**Real staff accounts.** In production there are no demo accounts:
+
+- **The first Super Admin** is made on the server with `admin:create` (see [section 8](#8-deploying-to-production)).
+- **Everyone else** is added in **AltasGoods Control > Staff**, in one of two ways:
+  - **Invite:** an emailed one-time link (72 hours) where they choose their own password.
+  - **Temporary password:** you share it privately, and they must change it at first sign-in.
+
+Taking away someone's role signs them out on every device.
+
+## 3. How the system fits together
+
+```
+Browser ──> Next.js web app (apps/web, port 3000) ──> NestJS API (apps/api, port 4000) ──> PostgreSQL
+                                                          │                              └─> Redis
+                                                          ├─> Razorpay   (payments, refunds)
+                                                          ├─> Shiprocket (bookings, tracking, pincode checks)
+                                                          └─> SMTP       (all emails)
+```
+
+- **Shoppers never call the API directly.** The Next.js server calls it, and forwards the shopper's IP and browser in `X-Forwarded-For`. This matters for deployment (see [section 8](#8-deploying-to-production)).
+- **PostgreSQL** holds everything, including uploaded images and files, which are kept in Postgres for now.
+- **Redis** holds sessions that are revoked, rate limits, short caches and one-time codes. It is required: signed-in pages stop working if it is down.
+- **Each outside service sits behind one interface with a local stand-in:**
+  - payments in `apps/api/src/modules/commerce/payments/provider.ts`
+  - couriers in `.../shipping/provider.ts`
+  - email in `apps/api/src/modules/auth/email.provider.ts`
+  - Switching from stand-in to real is a `.env` change, not a code change.
+- **The API contract is generated.** The web app's types come from `packages/openapi/openapi.json`.
+
+**Background work inside the API process:**
+
+| What | How often | Code |
+|---|---|---|
+| Job queue (refunds, emails), with retries and backoff | every 10 s, plus right after each request | `modules/jobs` |
+| Ask Razorpay about unpaid orders, expire them after 30 min | every 60 s | `payments/sweeper.ts` |
+| Re-check refunds still processing at Razorpay | every 15 min | `payments/sweeper.ts` |
+| Shiprocket tracking updates | every 10 min | `shipping/tracker.ts` |
+| Delete old finished jobs (14 days done, 90 days failed) | every 6 h | `jobs/jobs.worker.ts` |
+
+Refunds and emails are queued in the same database transaction as the change that caused them. They are sent after it commits, at least once, with deduplication. So a refund is never lost, and an email is not sent twice.
+
+## 4. Configuration
+
+Two local files hold settings. Both are git ignored, so each developer and each server has their own.
+
+### `apps/api/.env`
+
+Copy it from [`apps/api/.env.example`](apps/api/.env.example), which lists every setting with a comment. The API checks the file at startup and refuses to start, with a readable message, if something is missing or wrong.
+
+| Setting | Required | Notes |
+|---|---|---|
+| `NODE_ENV` | yes | `development`, `test` or `production`. There is no default. `npm start` sets `production`. The `db:*` and `admin:create` commands read `.env`, so set it there on a server too |
+| `PORT` | no | Default `4000` |
+| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `TEST_DATABASE_URL` | dev only | Wiped on every test run. Never point it at real data |
+| `REDIS_URL` | yes | For example `redis://localhost:6379/5` |
+| `JWT_SECRET` | yes | 32+ random characters: `openssl rand -base64 48` |
+| `PAYMENTS_WEBHOOK_SECRET` | yes | 16+ random characters. Used by the sandbox provider |
+| `WEB_ORIGIN` | yes | The web app's public address, for CORS and links in emails and payments. For example `https://altasgoods.com` |
+| `TRUST_PROXY` | yes in prod | Which hop may name the real client IP. Default `loopback`. See [section 8](#8-deploying-to-production) |
+| `PAYMENTS_PROVIDER` | yes | `sandbox` or `razorpay`. See [section 5](#5-payments-razorpay) |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | with razorpay | From the Razorpay dashboard |
+| `LOGISTICS_PROVIDER` | yes | `simulated` or `shiprocket`. See [section 6](#6-shipping-shiprocket) |
+| `SHIPROCKET_EMAIL`, `SHIPROCKET_PASSWORD`, `SHIPROCKET_PICKUP_LOCATION` | with shiprocket | A Shiprocket API user and the pickup address nickname |
+| `SHIPROCKET_PICKUP_PINCODE` | optional | Turns on Shiprocket's check of each delivery pincode |
+| `SHIPROCKET_WEBHOOK_TOKEN` | optional | For the tracking webhook |
+| `SHIPPING_BOX_CM` | no | Parcel size, default `20x15x10` |
+| `EMAIL_PROVIDER` | yes | `console` (prints emails) or `smtp`. Production refuses `console` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | with smtp | See [section 7](#7-email-smtp) |
+
+### `apps/web/.env.local`
+
+One line: `ALTASGOODS_API_URL=http://localhost:4000`, the address where the web server reaches the API. An old `BLUBUY_API_URL` line, if present, is unused and can be deleted.
+
+## 5. Payments: Razorpay
+
+The code is complete and was tested with Razorpay **test** keys. Going live needs the business's own KYC-verified Razorpay account.
+
+**Switch it on** in `apps/api/.env`:
 
 ```
 PAYMENTS_PROVIDER=razorpay
-RAZORPAY_KEY_ID=rzp_test_...       # Razorpay Dashboard > Account & Settings > API Keys
+RAZORPAY_KEY_ID=rzp_test_...        # Dashboard > Account & Settings > API Keys (rzp_live_... for live)
 RAZORPAY_KEY_SECRET=...
-RAZORPAY_WEBHOOK_SECRET=...        # any long random string; must match the webhook if you add one
+RAZORPAY_WEBHOOK_SECRET=...         # any long random string; must match the webhook below
 ```
 
-- The customer pays in Razorpay Checkout on `/checkout/pay/{id}`. The API verifies the result (signature, then the payment itself with Razorpay) before confirming the order.
-- No webhook is required: every minute the API asks Razorpay about open payments, so a customer who pays and closes the tab is still confirmed. To add one anyway, point it at `/v1/payments/webhooks/razorpay` with events `payment.captured`, `payment.failed` and `order.paid`.
-- Keep automatic capture on (Account & Settings > Payment Capture).
-- Test payments: UPI `success@razorpay` or `failure@razorpay`, or Razorpay's test cards.
-- A payment that arrives after its order expired, or a second payment for an order already paid, is refunded automatically.
+**How a payment works:**
 
-## Shipping (Shiprocket)
+1. At checkout the API creates the order and reserves stock. After the database commits, it creates a Razorpay order. If Razorpay is slow or down, checkout is not held up: the shopper sees "Try again" on the pay page.
+2. The shopper pays in Razorpay Checkout on `/checkout/pay/{id}`.
+3. The browser's result is verified: the signature is checked, then the payment is read back from Razorpay and captured if it is only authorised.
+4. **The webhook is optional.** The API also asks Razorpay about open payments every minute, so a shopper who pays and closes the tab is still confirmed. To add the webhook:
+   - URL: `https://<api-host>/v1/payments/webhooks/razorpay`
+   - Events: `payment.captured`, `payment.failed`, `order.paid`
+   - Secret: the same `RAZORPAY_WEBHOOK_SECRET`
+5. Unpaid orders expire after 30 minutes, and their stock and coupon are released.
+6. A payment that arrives after its order expired, or a second payment for an already-paid order, is refunded automatically.
 
-Set in `apps/api/.env`. `LOGISTICS_PROVIDER=simulated` (the default) hands out a dummy AWB, and in development the admin order page has "Simulate" buttons for courier scans.
+**How refunds work:**
+
+- Every refund goes through one queue. Cancellations, lost parcels, returns, Care Desk and admin goodwill refunds all use it, and one limit stops the same money being refunded twice.
+- The refund row is written first. A job then calls Razorpay with the refund id as the receipt.
+- If Razorpay can't be reached, the job retries with backoff. If the result is still unclear, the refund is marked **Needs attention** with its amount still reserved. Staff check it in Payments and press Retry.
+- Only a definite failure from Razorpay frees the amount.
+- Refunds still processing at Razorpay are re-checked every 15 minutes. There is no refund webhook.
+- Cash-on-delivery refunds are paid by staff outside the system, by UPI or bank transfer, and recorded with **Mark paid** and the transaction reference.
+
+**Testing:** use UPI `success@razorpay` or `failure@razorpay`, or Razorpay's test cards. Keep automatic capture on (Account & Settings > Payment Capture).
+
+**Code:** `apps/api/src/modules/commerce/payments/` (`razorpay.provider.ts`, `payments.service.ts`, `refunds.service.ts`, `sweeper.ts`). Calls time out after 10 seconds.
+
+## 6. Shipping: Shiprocket
+
+The code is complete: forward shipments, labels, tracking, cancellation and pincode serviceability. It has not been switched on yet, because the business's pickup address isn't set up.
+
+**Shiprocket has no test mode.** Every booking is a real shipment charged to the wallet, so cancel test bookings before pickup.
+
+**Switch it on** in `apps/api/.env`:
 
 ```
 LOGISTICS_PROVIDER=shiprocket
-SHIPROCKET_EMAIL=...               # a Shiprocket API user (Settings > API > Create an API User), not the account login
+SHIPROCKET_EMAIL=...                # an API user (Settings > API > Create an API User), not the account login
 SHIPROCKET_PASSWORD=...
-SHIPROCKET_PICKUP_LOCATION=Primary # nickname of the verified pickup address in Shiprocket
-SHIPPING_BOX_CM=20x15x10           # parcel size in cm; weight comes from each product
-SHIPROCKET_WEBHOOK_TOKEN=          # optional
+SHIPROCKET_PICKUP_LOCATION=Primary  # nickname of the verified pickup address in Shiprocket
+SHIPROCKET_PICKUP_PINCODE=560001    # optional: also check each delivery pincode with Shiprocket
+SHIPPING_BOX_CM=20x15x10            # parcel size in cm; weight comes from each product
+SHIPROCKET_WEBHOOK_TOKEN=           # optional, for the tracking webhook
 ```
 
-- When staff mark a packed line **Ready to ship**, the API books it with Shiprocket: order, AWB and courier, pickup request and label. The admin order page then shows the courier, a **Print label** link and tracking. If booking fails (for example an empty wallet) the line stays packed and the reason is shown.
-- One order line ships as one parcel. For cash on delivery, the amount to collect is the line less its coupon share, plus the delivery fee on the order's first parcel.
-- Cancelling a booked line cancels it in Shiprocket.
-- Tracking updates every 10 minutes, on demand with **Refresh tracking**, and optionally by webhook at `/v1/logistics/webhooks/tracking` (header `x-api-key`). Shiprocket rejects webhook URLs that contain "shiprocket", "sr" or "kr", including in the domain.
-- Shiprocket has no test mode: every booking is a real shipment charged to the wallet. Cancel test bookings before pickup.
-- Before switching on, the Shiprocket account needs KYC, a bank account, a verified pickup address and a wallet balance, and products need their real packed weight (`weight_grams` on each offer, 800 g by default).
-- Return pickups are not booked with Shiprocket yet. Staff book the reverse pickup in the Shiprocket panel and record each step on the admin return page with **Update pickup** (out for pickup, picked up, failed, in transit, received, plus the AWB). Low value returns are refunded when the pickup is marked picked up; the rest after the store's check. A failed check is settled with **Accept anyway** or **Reject and send back**.
+**Before switching on,** the Shiprocket account needs KYC, a bank account, a verified pickup address and a wallet balance. Each product needs its real packed weight (800 g by default).
 
-`npm run db:seed` always uses the payment sandbox and the simulated courier, whatever `.env` says, so seeding never charges or ships anything.
+**How shipping works:**
 
-## Reverse proxy and TRUST_PROXY
+- **Booking.** One order line ships as one parcel. When staff mark a packed line **Ready to ship**, the API books it: Shiprocket order, AWB and courier, pickup request, then label. Each step is saved, so a retry resumes rather than booking twice. If booking fails (for example, an empty wallet), the line stays packed and the reason is shown.
+- **Cash on delivery.** The amount to collect is the line minus its coupon share, plus the delivery fee on the order's first parcel.
+- **Cancelling.** Cancelling a booked line cancels it in Shiprocket. Once booking has started, the delivery address can no longer be edited.
+- **Tracking.** It updates every 10 minutes, on demand with **Refresh tracking**, and optionally by webhook:
+  - URL: `/v1/logistics/webhooks/tracking`
+  - Header: `x-api-key` set to `SHIPROCKET_WEBHOOK_TOKEN`
+  - Shiprocket rejects webhook URLs containing "shiprocket", "sr" or "kr", even in the domain.
+- **Lost and damaged.** Shiprocket's `DAMAGED`, `DESTROYED` and `DISPOSED OFF` scans mark a parcel lost, which refunds a prepaid line automatically. Staff can also mark lost or returned-to-store by hand.
+- **Pincode checks.** The admin's Delivery areas rules (Settings) always apply. With `SHIPROCKET_PICKUP_PINCODE` set, Shiprocket is also asked, and answers are cached for 12 hours. If Shiprocket errors, the rules alone decide, so checkout is never blocked by a Shiprocket outage.
+- **Return pickups** are not booked with Shiprocket yet. Staff book the reverse pickup in the Shiprocket panel and record each step on the admin return page with **Update pickup**.
 
-Sign up, sign in and reset code limits count per client IP (10 signups per hour, 30 failed sign ins per 15 minutes). Shoppers never call the API directly: the Next.js server does, and forwards the shopper's address in `X-Forwarded-For`.
+**Verify on first live use:** the serviceability response is parsed by `estimated_delivery_days`, `etd` and `cod`. These field names come from Shiprocket's docs but haven't been checked against a live account. If they're wrong, the code falls back to the admin rules rather than blocking orders.
 
-- In production a reverse proxy in front of Next.js must append the real client IP to `X-Forwarded-For` (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`).
-- `TRUST_PROXY` on the API must match the web to API hop: the address the web server connects from, or a number of hops. Nothing a shopper can reach directly may be listed.
-- Get either wrong and the per IP limits are bypassable (anyone can name their own address) or shared by every visitor (all requests look like the web server).
+**Code:** `apps/api/src/modules/commerce/shipping/` (`shiprocket.provider.ts`, `shipping.service.ts`, `tracker.ts`) and `commerce/serviceability.service.ts`. Calls time out after 15 seconds.
 
-## Before going live
+## 7. Email: SMTP
 
-- [ ] Razorpay account in the business's name with KYC done; live keys in `.env`
-- [ ] Shiprocket account ready (KYC, bank, pickup address, wallet); `LOGISTICS_PROVIDER=shiprocket`, and `SHIPROCKET_PICKUP_PINCODE` set for serviceability checks
-- [ ] On the first live use, check Shiprocket's serviceability field names against the real API. `estimated_delivery_days`, `etd` and `cod` are parsed defensively and were not verified
-- [ ] Real product weights
-- [ ] Titan SMTP mailbox password set, `EMAIL_PROVIDER=smtp`, and SPF and DKIM records on the sending domain (production will not start without SMTP; password reset, staff invites and order emails depend on it)
-- [ ] Company and grievance details filled in AltasGoods Control > Settings. The admin shows a warning until they are set
-- [ ] Legal declarations added to each product
-- [ ] GST rates set (store default, then category or product where they differ)
-- [ ] Delivery areas set in Settings
-- [ ] `NODE_ENV=production` everywhere, including for `db:migrate` and `admin:create` (`db:seed` is never run in production, and refuses to); strong `JWT_SECRET` and `PAYMENTS_WEBHOOK_SECRET`; `WEB_ORIGIN` set to the real site
-- [ ] Reverse proxy in front of Next.js and `TRUST_PROXY` set to match (see above)
-- [ ] Hosting for the API, web app, Postgres and Redis, with backups; run `npm run db:migrate` on each deploy and create the first Super Admin with `node dist/db/create-admin.js`
+All email goes through one SMTP mailbox: password reset codes, email verification, staff invites and customer order emails. The code is complete. What's pending is the mailbox password and the DNS records.
 
-## Known limitations
+```
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.titan.email
+SMTP_PORT=465                       # 465 with SMTP_SECURE=true, or 587 with STARTTLS
+SMTP_SECURE=true
+SMTP_USER=no-reply@<domain>
+SMTP_PASSWORD=...
+EMAIL_FROM="AltasGoods <no-reply@<domain>>"   # Titan rejects a From that is not SMTP_USER or its alias
+```
 
-- Subcategory GST rates are resolved but have no admin field. Category and product rates cover it.
-- There is no GST invoice PDF yet.
-- The per IP limits (10 signups per hour, 30 failed sign ins per 15 minutes per IP) may be tight behind mobile carrier NAT. They are tunable in `apps/api/src/modules/auth/auth.service.ts`.
-- A staff bulk cancel sends one email per line.
-- Return emails link to `/account/returns#<id>`. There is no per return page.
-- Address autofill by pincode was removed from checkout, because it ran on mock data.
+- Add the provider's **SPF and DKIM** records to the sending domain, or mail lands in spam.
+- **Confirm the domain.** `.env.example` uses `altasgoods.in`, but the configured mailbox is on `altasgoods.com`.
+- **Development.** With `EMAIL_PROVIDER=console` the emails print in the API terminal. Password reset codes are also shown on the page, and staff invites show a "Copy invite link" button.
 
-## Tests
+**Customer emails:**
 
-| Where | Command | Covers |
+| Email | Sent when |
+|---|---|
+| Order placed | A cash-on-delivery order is placed, or a prepaid payment is captured |
+| Payment failed | The first failed attempt on an order still waiting for payment |
+| Order not completed | An unpaid order expires |
+| Order cancelled | The customer, staff or the system cancels lines. It states any refund on its way |
+| Shipped / Out for delivery / Delivered | Courier updates. Shipped includes the tracking link |
+| Parcel lost / Parcel returned | Staff or the courier mark it. It states any refund on its way |
+| Refund started | Admin, goodwill, manual, Care Desk or duplicate-payment refunds. The emails above already cover the others |
+| Refund completed | The refund is paid out |
+| Return approved, rejected, picked up, check failed, refunded, replaced | The return reaches that step |
+| Care Desk reply | An agent replies. Internal notes send nothing |
+
+- **Sent once.** Each email is deduplicated, so a repeated webhook or scan never sends it twice.
+- **Never to blocked or deleted customers.**
+- **No staff notes.** They never appear in emails or on the customer's pages.
+- **Pausing.** Store owners can pause all customer emails in **Settings > Customer emails**.
+
+## 8. Deploying to production
+
+No hosting, CI or Docker setup exists yet. Here is what you need, whatever host you choose.
+
+### Components
+
+| Piece | Runs | Notes |
 |---|---|---|
-| `apps/api` | `npm test` | About 360 unit and integration tests against `altasgoods_test`: orders, payments (sandbox and Razorpay), shipping (Shiprocket provider and a fake courier end to end), returns, support, auth (sign up, sign in, password reset, SMTP email), staff, content, refunds, GST, delivery areas, customer emails, catalog admin and CSV import |
-| `apps/web` | `npm test` | Unit tests for the API adapters, pricing and formatting |
-| `apps/web` | `npm run test:e2e` | Playwright journeys (sign up, sign in and password reset, checkout, cancellation, returns, Care Desk, access control, staff invites, content editing, buy again, account deletion, delivery areas) plus crawlers that open every page and press every button. Run with the sandbox and simulated courier; the global setup creates its own accounts with sign up and `admin:create`. Set `E2E_DATABASE_URL` to the API's (throwaway) database to also run `end-to-end.spec.ts`, which reads Postgres to confirm every admin change is stored, shown on the storefront and in the audit log |
+| Web app | `apps/web`: `npm ci && npm run build && npm start` | Next.js 16 server, port 3000. Needs `ALTASGOODS_API_URL` pointing at the API's private address |
+| API | `apps/api`: `npm ci && npm run build && npm start` | Port 4000. `npm start` sets `NODE_ENV=production`. Needs its `.env` |
+| PostgreSQL 16 | managed or self-hosted | `pg_trgm` must be available. Turn on backups: it holds orders, payments and uploaded images |
+| Redis | managed or self-hosted | Required for sign-in. Persistence is not critical |
+| Reverse proxy | nginx, a load balancer, or the host's edge | TLS, and it must pass the real client IP (see below) |
 
-Both apps typecheck in strict mode and lint clean (`npm run typecheck` in the API, `npx tsc --noEmit` and `npm run lint` in web).
+Use Node 22.12 or newer (24 LTS recommended).
 
-## Repository
+### Every deploy
 
-```
-apps/api/                 NestJS 12 API on PostgreSQL (Drizzle ORM) and Redis
-  src/modules/            auth, catalog, commerce (cart, checkout, orders, payments, shipping, returns), support, files, health
-  src/db/                 schema, SQL migrations, demo seed
-  test/                   unit and integration tests
-packages/openapi/         the API contract the web app's types are generated from
-apps/web/                 Next.js 16 app with every workspace
-  src/app/                routes, one folder or route group per workspace
-  src/components/         design system (ui, charts, shell) and area components
-  src/lib/                API client and adapters, state machines, formatting, sample data
-  tests/                  Vitest unit tests and Playwright end to end tests
-docs/
-  research/               marketplace workflows and UI design system research
-  architecture/           system architecture, frontend conventions, design tokens
+```bash
+cd apps/api
+npm ci && npm run build
+NODE_ENV=production node --env-file=.env dist/db/migrate.js   # apply new migrations before starting the new API
+npm start
 ```
 
-After changing an API route or schema, run `npm run openapi` in `apps/api`, then `npm run api:types` in `apps/web`.
+Migrations are plain SQL in `apps/api/src/db/migrations`: 25 so far, `0000` to `0024`. They only add things and are safe on a database with data. Never run `db:seed`, `db:reset` or `db:demo-accounts` in production. Seed and the demo accounts refuse to run there.
 
-## Principles
+### First deploy only: create the first Super Admin
 
-- One design system for every surface: Inter and Plus Jakarta Sans, a cobalt brand blue, marigold only for genuine deals and Buy now, hairline borders, generous whitespace.
-- No em dashes and no emojis anywhere in the product. Icons come from lucide.
-- Indian commerce conventions throughout: rupee formatting with lakh and crore grouping, UPI and cash on delivery, GST, pincode based delivery promises.
-- Money is stored and sent as integer paise.
-- Every order status in every workspace comes from one set of state machines (`apps/api/src/modules/commerce/state.ts` on the server, `apps/web/src/lib/status.ts` for display).
-- Outside services (payments, couriers, SMS, email) sit behind one interface each, with a local stand-in for development.
+```bash
+cd apps/api
+NODE_ENV=production ADMIN_PASSWORD='a-strong-password' node --env-file=.env dist/db/create-admin.js --email owner@yourstore.com --name "Owner Name"
+```
 
-## Next steps
+Then sign in at `https://<site>/login?as=staff` and add the rest of the team under **Staff**.
 
-Roughly in order:
+### Reverse proxy and `TRUST_PROXY` (important)
 
-1. Finish email: set the SMTP password and DNS records, then test password reset, staff invites and order emails end to end.
-2. Switch on Shiprocket with the business's account (pickup address, wallet, real weights, pickup pincode) and run a few real bookings, cancelling before pickup. Verify the serviceability field names.
-3. Production deployment: hosting, a reverse proxy with `TRUST_PROXY`, CI running typecheck, lint and tests, and the go live checklist above.
-4. A GST invoice PDF, with a subcategory GST field in the admin if it is needed.
-5. Shiprocket return pickups (today staff book them by hand).
-6. Product images in object storage instead of Postgres.
-7. A per return page, and grouping for staff bulk cancel emails.
-8. The Flutter customer app described in `docs/architecture/system-architecture.md`, if it is still planned.
+Sign-in, sign-up and reset-code limits are counted per client IP:
+
+- 10 failed sign-ins per email and IP, then 30 per IP, per 15 minutes
+- 10 sign-ups per IP per hour
+
+The API sees the shopper's IP only through the web server's `X-Forwarded-For`. So:
+
+1. **Proxy.** The reverse proxy in front of the web app must append the real client IP. With nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`
+2. **`TRUST_PROXY`.** On the API, it must describe the web-to-API hop: the address or CIDR the web server connects from, or a hop count. Use `loopback` only if both run on one machine.
+3. **Keep the API private.** Don't expose the API to the internet directly, and never trust an address a shopper can reach.
+
+If you get this wrong, either anyone can bypass the limits by naming their own IP, or every shopper shares the web server's IP, and a few failed sign-ins lock everyone out.
+
+### Other production notes
+
+- **Webhook paths.** The only API routes outside callers need are `/v1/payments/webhooks/razorpay` and `/v1/logistics/webhooks/tracking`. You can expose just those, or route them through the proxy.
+- **API docs.** `/docs` (Swagger) is also served in production. Block it at the proxy if you don't want it public.
+- **Health check.** `GET /health` on the API.
+- **Several API instances.** The job queue is safe across instances (`FOR UPDATE SKIP LOCKED`). The payment sweeper and tracking poller run in every instance, which duplicates gateway calls but is harmless. One API instance is simplest to start with.
+- **Settings cache.** Settings are cached for 15 seconds per instance, so changes reach other instances within that time.
+- **Secrets.** Generate fresh `JWT_SECRET` and `PAYMENTS_WEBHOOK_SECRET` values for production. Never reuse development values.
+
+## 9. Go-live checklist
+
+**Accounts and keys**
+- [ ] Razorpay account in the business's name, KYC done, live keys in `.env`, automatic capture on
+- [ ] Shiprocket ready (KYC, bank, verified pickup address, wallet balance), `LOGISTICS_PROVIDER=shiprocket`, `SHIPROCKET_PICKUP_PINCODE` set
+- [ ] Shiprocket serviceability field names checked on the first live calls (section 6)
+- [ ] SMTP mailbox password set, `EMAIL_PROVIDER=smtp`, SPF and DKIM on the sending domain, and the right domain confirmed (section 7)
+
+**Server**
+- [ ] `NODE_ENV=production` everywhere, fresh `JWT_SECRET` and `PAYMENTS_WEBHOOK_SECRET`, `WEB_ORIGIN` set to the real site
+- [ ] Reverse proxy passing the client IP, `TRUST_PROXY` matching, API not public (section 8)
+- [ ] Postgres backups on; migrations run on each deploy
+- [ ] First Super Admin created with `create-admin.js`; no demo accounts on the live database
+
+**Store content (section 10)**
+- [ ] Company and grievance details filled in. The admin shows a warning until they are
+- [ ] Legal declarations on every product, GST rates set, real product weights
+- [ ] Delivery areas set; COD and customer email switches as wanted
+- [ ] Policy pages reviewed in Pages & content
+
+## 10. Setting up the store after deploy
+
+Sign in as the Super Admin and work through **AltasGoods Control**:
+
+| Where | What to set |
+|---|---|
+| Settings > Company and Grievance | Legal name, CIN, GSTIN, registered office, customer care contacts, Grievance Officer. Until set, the site shows "To be added by the store" and the admin shows a warning |
+| Settings > Tax (GST) | Store default GST rate and HSN |
+| Categories, then each product | GST rate and HSN per category, with product overrides where they differ. Prices stay GST-inclusive, and each order line stores its GST |
+| Each product | Legal declarations (manufacturer, packer, importer, consumer care, country of origin), real packed weight |
+| Settings > Delivery | Delivery fee, free delivery threshold, delivery areas (blocked pincodes, no-COD pincodes, extra delivery days) |
+| Settings > Cash on delivery | On or off, and the maximum order value |
+| Settings > Customer emails | On or off |
+| Pages & content | Policies, Help/FAQ, About, Careers, Press, brand spotlights. Written in Markdown with a live preview |
+| Storefront CMS | Homepage hero slides and promo tiles |
+| Staff | Add the team with the right roles |
+
+**Day-to-day work after launch:**
+
+| Task | Where |
+|---|---|
+| Order handling: accept, pack, ready to ship, cancel, edit address before shipping, internal notes, mark lost or returned | Orders |
+| Returns and refunds: goodwill and manual refunds, Mark paid for UPI refunds, Retry for refunds that need attention | Returns, Payments |
+| Product lifecycle: archive (hidden but kept for order history), permanent delete (only if never ordered), URL slug changes (old links redirect) | Catalog |
+| CSV exports of orders, order items (with GST), payments, refunds, customers and the audit log | Each list page |
+| Every admin change is recorded | Audit log |
+
+## 11. Developing
+
+**Repository layout**
+
+```
+apps/api/                NestJS 12 API on PostgreSQL (Drizzle ORM) and Redis
+  src/modules/           auth, admin (settings, staff, audit, exports), catalog, content, commerce
+                         (cart, quote, orders, payments, refunds, shipping, returns, notifications),
+                         support (Care Desk), jobs, files, health
+  src/db/                schema, SQL migrations, seed, admin:create, demo accounts
+  test/                  unit and integration tests (Vitest)
+packages/openapi/        the generated API contract
+apps/web/                Next.js 16 app with every workspace
+  src/app/               routes, one folder or route group per workspace
+  src/components/        design system (ui, charts, shell) and area components
+  src/lib/               API client and adapters, roles, formatting, state labels
+  tests/                 Vitest unit tests and Playwright end-to-end tests
+docs/                    original research and architecture notes
+```
+
+**Rules of the codebase**
+
+- **Next.js 16 is new.** Read `apps/web/AGENTS.md` and the guides in `apps/web/node_modules/next/dist/docs/` before changing web code.
+- **API contract.** After changing an API route or schema, run `npm run openapi` in `apps/api`, then `npm run api:types` in `apps/web`, and commit both outputs.
+- **Database changes.** Edit `apps/api/src/db/schema.ts`, then run `npm run db:generate -- --name <what_changed>` to write the SQL migration. Commit it.
+- **Staff pages.** A new admin page must be added to `AREA_ROLES` in `apps/web/src/lib/api/staff.ts`. Unmapped pages are Super Admin only. API routes use `@StaffOnly(...)`, and Auditor only ever gets GET routes.
+- **Money** is integer paise everywhere.
+- **Order states.** Every order status change goes through `OrderWorkflow.transition` and `commerce/state.ts`.
+- **Product copy.** No em dashes and no emojis. Icons come from lucide.
+
+**Tests**
+
+| Where | Command | Notes |
+|---|---|---|
+| `apps/api` | `npm test` | About 370 tests against `TEST_DATABASE_URL`, which is wiped each run. Always uses the sandbox, simulated courier and console email |
+| `apps/api` | `npm run typecheck` | Strict TypeScript |
+| `apps/web` | `npm test`, `npx tsc --noEmit`, `npm run lint` | Unit tests, types, lint |
+| `apps/web` | `npm run test:e2e` | 61 Playwright journeys plus page and button crawlers |
+
+Run the Playwright suite against a **throwaway** database: the admin specs change settings and products. Start the API on that database with `PAYMENTS_PROVIDER=sandbox LOGISTICS_PROVIDER=simulated EMAIL_PROVIDER=console`, start the web app, then run:
+
+```bash
+E2E_DATABASE_URL=<that db> E2E_BASE_URL=http://localhost:3000 E2E_API_URL=http://localhost:4000 npx playwright test
+```
+
+## 12. Known limitations and next steps
+
+**Known limitations**
+
+- **GST.** There is no GST invoice PDF yet. Subcategory GST rates have no admin field; category and product rates cover it.
+- **Return pickups** are booked by hand in Shiprocket.
+- **Sign-up limits.** The per-IP limits may be tight for many shoppers behind one mobile carrier IP. Tune them in `apps/api/src/modules/auth/auth.service.ts`.
+- **Bulk cancel emails.** A staff bulk cancel sends one email per line.
+- **Return links.** Return emails link to `/account/returns#<id>`; there is no separate page per return.
+- **Address autofill.** Checkout doesn't fill in the city and state from the pincode, and the address book form uses a short built-in pincode list.
+- **Pay page.** Revisiting an old pay link after a partial refund can show the wrong message.
+- **Lost-parcel refunds.** Shiprocket's damaged or destroyed scans refund prepaid lines without staff confirmation. Decide whether that is wanted.
+
+**Next steps, roughly in order**
+
+1. Connect SMTP and test password reset, staff invites and order emails end to end.
+2. Switch on Shiprocket with the business account, run a few real bookings (cancel before pickup), and verify the serviceability fields.
+3. Deploy: hosting, reverse proxy with `TRUST_PROXY`, CI running typecheck, lint and tests, then the go-live checklist.
+4. Switch Razorpay to live keys and do one real low-value payment and refund.
+5. GST invoice PDF.
+6. Shiprocket return pickups.
+7. Product images in object storage instead of Postgres.
+8. The Flutter customer app in `docs/architecture/system-architecture.md`, if it is still planned.

@@ -23,7 +23,7 @@ Razorpay and Shiprocket are switched on in `.env` (`PAYMENTS_PROVIDER`, `LOGISTI
 
 ### Accounts
 
-There are no demo accounts. Shoppers sign up at `/signup` with their name, email and a password. The first Super Admin is made from the command line. After that, a Super Admin adds staff in AltasGoods Control > Staff, either with an emailed one-time link to choose a password (mode `invite`, 72 hours) or with a temporary password changed at first sign in (mode `password`):
+For local development, `npm run db:demo-accounts` creates one sign-in per role, all with the password `Demo@12345` (listed in the root README). It refuses to run when `NODE_ENV=production`. Real shoppers sign up at `/signup` with their name, email and a password. The first Super Admin is made from the command line. After that, a Super Admin adds staff in AltasGoods Control > Staff, either with an emailed one-time link to choose a password (mode `invite`, 72 hours) or with a temporary password changed at first sign in (mode `password`):
 
 ```bash
 npm run admin:create -- --email you@example.com --name "Your Name"                       # Super Admin
@@ -44,6 +44,7 @@ Forgotten passwords are reset with a 6 digit code sent by email. Outside product
 | `npm run build` / `npm start` | Production build to `dist/` and run |
 | `npm run db:generate` | New SQL migration from schema changes in `src/db/schema.ts` |
 | `npm run admin:create` | Creates a staff account, or gives an existing account a staff role |
+| `npm run db:demo-accounts` | Development only: one demo sign-in per role (password `Demo@12345`). Safe to re-run; refuses in production and is left out of the production build |
 | `npm run openapi` | Writes the contract to `packages/openapi/openapi.json`; then run `npm run api:types` in `apps/web` |
 
 Tests load `.env` for `TEST_DATABASE_URL` and `REDIS_URL` (anything already in the environment wins), and always use the payment sandbox, the simulated courier and the console email provider. Their demo accounts (`src/db/seed-demo.ts`) exist only in the test database.
