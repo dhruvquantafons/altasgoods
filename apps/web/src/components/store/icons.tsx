@@ -58,3 +58,6 @@ export function NamedIcon({ name, ...props }: { name: string } & LucideProps) {
   const Icon = ICONS[name] ?? Tag;
   return <Icon aria-hidden="true" strokeWidth={1.8} {...props} />;
 }
+
+/** The names NamedIcon knows, for pickers. */
+export const ICON_NAMES = Object.keys(ICONS);

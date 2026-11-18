@@ -11,7 +11,7 @@ describe("who sees and edits which area", () => {
   });
 
   it("lets an Auditor read every admin area but change nothing", () => {
-    for (const area of ["overview", "orders", "returns", "customers", "catalog", "categories", "brands", "payments", "promotions", "cms", "reviews", "audit", "settings"] as const) {
+    for (const area of ["overview", "orders", "returns", "customers", "catalog", "categories", "brands", "payments", "promotions", "cms", "content", "reviews", "audit", "settings"] as const) {
       expect(canSee(["AUDITOR"], area)).toBe(true);
       expect(canEdit(["AUDITOR"], area)).toBe(false);
     }
@@ -21,7 +21,7 @@ describe("who sees and edits which area", () => {
 
   it("keeps a Catalog Manager to the catalog, storefront and reviews", () => {
     const roles = ["CATALOG_MANAGER"];
-    expect(navFor(roles)).toEqual(["catalog", "categories", "brands", "cms", "reviews"]);
+    expect(navFor(roles)).toEqual(["catalog", "categories", "brands", "cms", "content", "reviews"]);
     expect(canEdit(roles, "catalog")).toBe(true);
     expect(canSee(roles, "orders")).toBe(false);
     expect(canSee(roles, "settings")).toBe(false);

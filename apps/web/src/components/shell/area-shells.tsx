@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import {
   Activity,
   BadgePercent,
+  FileText,
   Image as ImageIcon,
   Inbox,
   IndianRupee,
@@ -62,6 +63,7 @@ export function adminNav(c: Counts = {}, roles: readonly string[] = []): NavGrou
       items: [
         { label: "Coupons and sales", href: "/admin/promotions", icon: BadgePercent },
         { label: "Storefront CMS", href: "/admin/cms", icon: ImageIcon },
+        { label: "Pages and content", href: "/admin/content", icon: FileText },
       ],
     },
     {

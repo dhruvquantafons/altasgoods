@@ -13,7 +13,7 @@ export const STAFF_ROLE_LABEL: Record<string, string> = {
 export const STAFF_ROLE_HINT: Record<string, string> = {
   SUPER_ADMIN: "Everything, including adding and removing staff",
   OPS_ADMIN: "Orders, returns, payments, customers, promotions, settings and shipping",
-  CATALOG_MANAGER: "Products, categories, brands, the storefront CMS and reviews",
+  CATALOG_MANAGER: "Products, categories, brands, the storefront CMS, page content and reviews",
   AUDITOR: "Reads every admin area and the audit log; cannot change anything",
   SUPPORT_AGENT: "Care Desk tickets, with a small refund limit",
   SUPPORT_SPECIALIST: "Care Desk tickets, with a larger refund limit",
@@ -28,7 +28,7 @@ export const roleLabel = (roles: readonly string[], fallback: string) => roles.m
 /* ------------------------------ Areas and roles ------------------------------ */
 
 /** Pages of AltasGoods Control, named by their first path segment under /admin ("overview" is /admin itself). */
-export const ADMIN_AREAS = ["overview", "orders", "returns", "customers", "catalog", "categories", "brands", "payments", "promotions", "cms", "reviews", "audit", "settings", "staff", "account"] as const;
+export const ADMIN_AREAS = ["overview", "orders", "returns", "customers", "catalog", "categories", "brands", "payments", "promotions", "cms", "content", "reviews", "audit", "settings", "staff", "account"] as const;
 export type AdminArea = (typeof ADMIN_AREAS)[number];
 /** Every staff area: the admin pages, Shipping, the workspace launcher and the Care Desk. */
 export type Area = AdminArea | "logistics" | "portals" | "support";
@@ -58,6 +58,7 @@ export const AREA_ROLES: Record<Area, { see: readonly string[]; edit: readonly s
   categories: catalogArea,
   brands: catalogArea,
   cms: catalogArea,
+  content: catalogArea,
   reviews: catalogArea,
   // Super Admin only
   staff: { see: [], edit: [] },
