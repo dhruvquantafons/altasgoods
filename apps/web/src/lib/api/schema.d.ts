@@ -132,6 +132,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffController_list"];
+        put?: never;
+        post: operations["StaffController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StaffController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["StaffController_setRoles"];
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController_disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController_enable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController_resendInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/signup": {
         parameters: {
             query?: never;
@@ -190,6 +270,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AuthController_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/invite/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_acceptInvite"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2512,6 +2608,321 @@ export interface operations {
             };
         };
     };
+    StaffController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    StaffController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Email a one-time link to choose a password
+                     * @enum {string}
+                     */
+                    mode: "invite";
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    /** @description AltasGoods Control roles; Super Admin passes every check */
+                    roles: ("SUPER_ADMIN" | "OPS_ADMIN" | "CATALOG_MANAGER" | "AUDITOR" | "SUPPORT_AGENT" | "SUPPORT_SPECIALIST" | "SUPPORT_SUPERVISOR")[];
+                } | {
+                    /**
+                     * @description Set a temporary password to hand over; it must be changed at first sign in
+                     * @enum {string}
+                     */
+                    mode: "password";
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    /** @description AltasGoods Control roles; Super Admin passes every check */
+                    roles: ("SUPER_ADMIN" | "OPS_ADMIN" | "CATALOG_MANAGER" | "AUDITOR" | "SUPPORT_AGENT" | "SUPPORT_SPECIALIST" | "SUPPORT_SUPERVISOR")[];
+                    tempPassword: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        member: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                            roles: string[];
+                            /**
+                             * @description BLOCKED is disabled: cannot sign in
+                             * @enum {string}
+                             */
+                            status: "ACTIVE" | "BLOCKED";
+                            /** @description Holds a temporary password that has not been changed yet */
+                            mustChangePassword: boolean;
+                            /** @description An invite link was sent and has not been used or expired */
+                            invitePending: boolean;
+                            /**
+                             * Format: date-time
+                             * @description When they last signed in or their session was renewed
+                             */
+                            lastActiveAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                        /** @description Only when no email really goes out (development, or the console email provider): the link to pass on by hand */
+                        inviteLink?: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StaffController_setRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description AltasGoods Control roles; Super Admin passes every check */
+                    roles: ("SUPER_ADMIN" | "OPS_ADMIN" | "CATALOG_MANAGER" | "AUDITOR" | "SUPPORT_AGENT" | "SUPPORT_SPECIALIST" | "SUPPORT_SUPERVISOR")[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_disable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_enable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_resendInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        member: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                            roles: string[];
+                            /**
+                             * @description BLOCKED is disabled: cannot sign in
+                             * @enum {string}
+                             */
+                            status: "ACTIVE" | "BLOCKED";
+                            /** @description Holds a temporary password that has not been changed yet */
+                            mustChangePassword: boolean;
+                            /** @description An invite link was sent and has not been used or expired */
+                            invitePending: boolean;
+                            /**
+                             * Format: date-time
+                             * @description When they last signed in or their session was renewed
+                             */
+                            lastActiveAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                        /** @description Only when no email really goes out */
+                        inviteLink?: string;
+                    };
+                };
+            };
+        };
+    };
     AuthController_signup: {
         parameters: {
             query?: never;
@@ -2549,6 +2960,8 @@ export interface operations {
                             emailVerified: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
                             /**
                              * Format: date-time
                              * @description When the account was created
@@ -2597,6 +3010,8 @@ export interface operations {
                             emailVerified: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
                             /**
                              * Format: date-time
                              * @description When the account was created
@@ -2680,6 +3095,58 @@ export interface operations {
                             emailVerified: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
+                            /**
+                             * Format: date-time
+                             * @description When the account was created
+                             */
+                            createdAt: string;
+                        };
+                        isNewUser: boolean;
+                    };
+                };
+            };
+        };
+    };
+    AuthController_acceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description From the invite link */
+                    token: string;
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accessToken: string;
+                        refreshToken: string;
+                        /** @description Access token lifetime in seconds */
+                        expiresIn: number;
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            name: string | null;
+                            phone: string | null;
+                            emailVerified: boolean;
+                            /** @description AltasGoods Control roles; empty for shoppers */
+                            staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
                             /**
                              * Format: date-time
                              * @description When the account was created
@@ -2767,6 +3234,8 @@ export interface operations {
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                        mustChangePassword: boolean;
                         /**
                          * Format: date-time
                          * @description When the account was created
@@ -2808,6 +3277,8 @@ export interface operations {
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                        mustChangePassword: boolean;
                         /**
                          * Format: date-time
                          * @description When the account was created
@@ -2922,6 +3393,8 @@ export interface operations {
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                        mustChangePassword: boolean;
                         /**
                          * Format: date-time
                          * @description When the account was created

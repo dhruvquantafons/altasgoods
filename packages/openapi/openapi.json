@@ -2271,6 +2271,765 @@
         ]
       }
     },
+    "/v1/admin/staff": {
+      "get": {
+        "operationId": "StaffController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "name": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "roles": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "ACTIVE",
+                          "BLOCKED"
+                        ],
+                        "description": "BLOCKED is disabled: cannot sign in"
+                      },
+                      "mustChangePassword": {
+                        "type": "boolean",
+                        "description": "Holds a temporary password that has not been changed yet"
+                      },
+                      "invitePending": {
+                        "type": "boolean",
+                        "description": "An invite link was sent and has not been used or expired"
+                      },
+                      "lastActiveAt": {
+                        "nullable": true,
+                        "description": "When they last signed in or their session was renewed",
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "email",
+                      "roles",
+                      "status",
+                      "mustChangePassword",
+                      "invitePending",
+                      "lastActiveAt",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin staff"
+        ]
+      },
+      "post": {
+        "operationId": "StaffController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "invite"
+                        ],
+                        "description": "Email a one-time link to choose a password"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 80
+                      },
+                      "email": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      "roles": {
+                        "description": "AltasGoods Control roles; Super Admin passes every check",
+                        "minItems": 1,
+                        "maxItems": 7,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "SUPER_ADMIN",
+                            "OPS_ADMIN",
+                            "CATALOG_MANAGER",
+                            "AUDITOR",
+                            "SUPPORT_AGENT",
+                            "SUPPORT_SPECIALIST",
+                            "SUPPORT_SUPERVISOR"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "name",
+                      "email",
+                      "roles"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "password"
+                        ],
+                        "description": "Set a temporary password to hand over; it must be changed at first sign in"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 80
+                      },
+                      "email": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      "roles": {
+                        "description": "AltasGoods Control roles; Super Admin passes every check",
+                        "minItems": 1,
+                        "maxItems": 7,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "SUPER_ADMIN",
+                            "OPS_ADMIN",
+                            "CATALOG_MANAGER",
+                            "AUDITOR",
+                            "SUPPORT_AGENT",
+                            "SUPPORT_SPECIALIST",
+                            "SUPPORT_SUPERVISOR"
+                          ]
+                        }
+                      },
+                      "tempPassword": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "name",
+                      "email",
+                      "roles",
+                      "tempPassword"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "member": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "roles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "ACTIVE",
+                            "BLOCKED"
+                          ],
+                          "description": "BLOCKED is disabled: cannot sign in"
+                        },
+                        "mustChangePassword": {
+                          "type": "boolean",
+                          "description": "Holds a temporary password that has not been changed yet"
+                        },
+                        "invitePending": {
+                          "type": "boolean",
+                          "description": "An invite link was sent and has not been used or expired"
+                        },
+                        "lastActiveAt": {
+                          "nullable": true,
+                          "description": "When they last signed in or their session was renewed",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "roles",
+                        "status",
+                        "mustChangePassword",
+                        "invitePending",
+                        "lastActiveAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "inviteLink": {
+                      "description": "Only when no email really goes out (development, or the console email provider): the link to pass on by hand",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "member"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin staff"
+        ]
+      }
+    },
+    "/v1/admin/staff/{id}": {
+      "patch": {
+        "operationId": "StaffController_setRoles",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "roles": {
+                    "description": "AltasGoods Control roles; Super Admin passes every check",
+                    "minItems": 1,
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "SUPER_ADMIN",
+                        "OPS_ADMIN",
+                        "CATALOG_MANAGER",
+                        "AUDITOR",
+                        "SUPPORT_AGENT",
+                        "SUPPORT_SPECIALIST",
+                        "SUPPORT_SUPERVISOR"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "roles"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "name": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "BLOCKED"
+                      ],
+                      "description": "BLOCKED is disabled: cannot sign in"
+                    },
+                    "mustChangePassword": {
+                      "type": "boolean",
+                      "description": "Holds a temporary password that has not been changed yet"
+                    },
+                    "invitePending": {
+                      "type": "boolean",
+                      "description": "An invite link was sent and has not been used or expired"
+                    },
+                    "lastActiveAt": {
+                      "nullable": true,
+                      "description": "When they last signed in or their session was renewed",
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "roles",
+                    "status",
+                    "mustChangePassword",
+                    "invitePending",
+                    "lastActiveAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin staff"
+        ]
+      },
+      "delete": {
+        "operationId": "StaffController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin staff"
+        ]
+      }
+    },
+    "/v1/admin/staff/{id}/disable": {
+      "post": {
+        "operationId": "StaffController_disable",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "name": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "BLOCKED"
+                      ],
+                      "description": "BLOCKED is disabled: cannot sign in"
+                    },
+                    "mustChangePassword": {
+                      "type": "boolean",
+                      "description": "Holds a temporary password that has not been changed yet"
+                    },
+                    "invitePending": {
+                      "type": "boolean",
+                      "description": "An invite link was sent and has not been used or expired"
+                    },
+                    "lastActiveAt": {
+                      "nullable": true,
+                      "description": "When they last signed in or their session was renewed",
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "roles",
+                    "status",
+                    "mustChangePassword",
+                    "invitePending",
+                    "lastActiveAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin staff"
+        ]
+      }
+    },
+    "/v1/admin/staff/{id}/enable": {
+      "post": {
+        "operationId": "StaffController_enable",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "name": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "BLOCKED"
+                      ],
+                      "description": "BLOCKED is disabled: cannot sign in"
+                    },
+                    "mustChangePassword": {
+                      "type": "boolean",
+                      "description": "Holds a temporary password that has not been changed yet"
+                    },
+                    "invitePending": {
+                      "type": "boolean",
+                      "description": "An invite link was sent and has not been used or expired"
+                    },
+                    "lastActiveAt": {
+                      "nullable": true,
+                      "description": "When they last signed in or their session was renewed",
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "roles",
+                    "status",
+                    "mustChangePassword",
+                    "invitePending",
+                    "lastActiveAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin staff"
+        ]
+      }
+    },
+    "/v1/admin/staff/{id}/invite": {
+      "post": {
+        "operationId": "StaffController_resendInvite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "member": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "roles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "ACTIVE",
+                            "BLOCKED"
+                          ],
+                          "description": "BLOCKED is disabled: cannot sign in"
+                        },
+                        "mustChangePassword": {
+                          "type": "boolean",
+                          "description": "Holds a temporary password that has not been changed yet"
+                        },
+                        "invitePending": {
+                          "type": "boolean",
+                          "description": "An invite link was sent and has not been used or expired"
+                        },
+                        "lastActiveAt": {
+                          "nullable": true,
+                          "description": "When they last signed in or their session was renewed",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "roles",
+                        "status",
+                        "mustChangePassword",
+                        "invitePending",
+                        "lastActiveAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "inviteLink": {
+                      "description": "Only when no email really goes out",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "member"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin staff"
+        ]
+      }
+    },
     "/v1/auth/signup": {
       "post": {
         "operationId": "AuthController_signup",
@@ -2357,6 +3116,10 @@
                           },
                           "description": "AltasGoods Control roles; empty for shoppers"
                         },
+                        "mustChangePassword": {
+                          "type": "boolean",
+                          "description": "A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time",
@@ -2371,6 +3134,7 @@
                         "phone",
                         "emailVerified",
                         "staffRoles",
+                        "mustChangePassword",
                         "createdAt"
                       ],
                       "additionalProperties": false
@@ -2477,6 +3241,10 @@
                           },
                           "description": "AltasGoods Control roles; empty for shoppers"
                         },
+                        "mustChangePassword": {
+                          "type": "boolean",
+                          "description": "A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time",
@@ -2491,6 +3259,7 @@
                         "phone",
                         "emailVerified",
                         "staffRoles",
+                        "mustChangePassword",
                         "createdAt"
                       ],
                       "additionalProperties": false
@@ -2670,6 +3439,10 @@
                           },
                           "description": "AltasGoods Control roles; empty for shoppers"
                         },
+                        "mustChangePassword": {
+                          "type": "boolean",
+                          "description": "A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time",
@@ -2684,6 +3457,132 @@
                         "phone",
                         "emailVerified",
                         "staffRoles",
+                        "mustChangePassword",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "isNewUser": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "accessToken",
+                    "refreshToken",
+                    "expiresIn",
+                    "user",
+                    "isNewUser"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/invite/accept": {
+      "post": {
+        "operationId": "AuthController_acceptInvite",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 200,
+                    "description": "From the invite link"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "token",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    },
+                    "expiresIn": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Access token lifetime in seconds"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "phone": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "emailVerified": {
+                          "type": "boolean"
+                        },
+                        "staffRoles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "AltasGoods Control roles; empty for shoppers"
+                        },
+                        "mustChangePassword": {
+                          "type": "boolean",
+                          "description": "A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                          "description": "When the account was created"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "email",
+                        "name",
+                        "phone",
+                        "emailVerified",
+                        "staffRoles",
+                        "mustChangePassword",
                         "createdAt"
                       ],
                       "additionalProperties": false
@@ -2840,6 +3739,10 @@
                       },
                       "description": "AltasGoods Control roles; empty for shoppers"
                     },
+                    "mustChangePassword": {
+                      "type": "boolean",
+                      "description": "A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -2854,6 +3757,7 @@
                     "phone",
                     "emailVerified",
                     "staffRoles",
+                    "mustChangePassword",
                     "createdAt"
                   ],
                   "additionalProperties": false
@@ -2930,6 +3834,10 @@
                       },
                       "description": "AltasGoods Control roles; empty for shoppers"
                     },
+                    "mustChangePassword": {
+                      "type": "boolean",
+                      "description": "A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -2944,6 +3852,7 @@
                     "phone",
                     "emailVerified",
                     "staffRoles",
+                    "mustChangePassword",
                     "createdAt"
                   ],
                   "additionalProperties": false
@@ -3156,6 +4065,10 @@
                       },
                       "description": "AltasGoods Control roles; empty for shoppers"
                     },
+                    "mustChangePassword": {
+                      "type": "boolean",
+                      "description": "A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -3170,6 +4083,7 @@
                     "phone",
                     "emailVerified",
                     "staffRoles",
+                    "mustChangePassword",
                     "createdAt"
                   ],
                   "additionalProperties": false

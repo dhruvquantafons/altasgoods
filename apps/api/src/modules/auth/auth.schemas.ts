@@ -24,6 +24,8 @@ export const forgotPasswordResponse = z.object({
 
 export const resetPasswordBody = z.object({ email, code, password });
 
+export const acceptInviteBody = z.object({ token: z.string().min(20).max(200).describe("From the invite link"), password });
+
 export const userSchema = z.object({
   id: z.uuid(),
   email: z.string(),
@@ -31,6 +33,7 @@ export const userSchema = z.object({
   phone: z.string().nullable(),
   emailVerified: z.boolean(),
   staffRoles: z.array(z.string()).describe("AltasGoods Control roles; empty for shoppers"),
+  mustChangePassword: z.boolean().describe("A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password"),
   createdAt: z.iso.datetime().describe("When the account was created"),
 });
 

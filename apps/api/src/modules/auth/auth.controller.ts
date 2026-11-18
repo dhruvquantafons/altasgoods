@@ -5,6 +5,7 @@ import { z } from "zod";
 import { AuthService } from "./auth.service.js";
 import { CurrentUser, Public, type AuthUser } from "./auth.guard.js";
 import {
+  acceptInviteBody,
   changePasswordBody,
   emailOtpBody,
   emailOtpResponse,
@@ -58,6 +59,15 @@ export class AuthController {
   @ApiResponse({ status: 200, standardSchema: sessionResponse })
   resetPassword(@Body({ schema: resetPasswordBody }) body: z.infer<typeof resetPasswordBody>, @Req() req: Request) {
     return this.auth.resetPassword(body, meta(req));
+  }
+
+  /** Sets the password of a newly invited staff member and signs them in. */
+  @Public()
+  @Post("auth/invite/accept")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: sessionResponse })
+  acceptInvite(@Body({ schema: acceptInviteBody }) body: z.infer<typeof acceptInviteBody>, @Req() req: Request) {
+    return this.auth.acceptInvite(body, meta(req));
   }
 
   @Public()

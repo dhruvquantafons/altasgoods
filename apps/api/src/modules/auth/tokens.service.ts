@@ -18,11 +18,14 @@ export interface AccessClaims {
   sid: string;
   /** AltasGoods Control roles; absent for shoppers */
   staff: string[];
+  /** "Password change required": the account has a temporary password, so staff routes refuse it */
+  pwc?: boolean;
 }
 
 /** What a session may act as, re-read from the database on every refresh. */
 export interface Grants {
   staff: string[];
+  pwc?: boolean;
 }
 
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
@@ -47,7 +50,7 @@ export class TokensService {
   }
 
   sign(claims: AccessClaims) {
-    return new SignJWT({ sid: claims.sid, ...(claims.staff.length ? { staff: claims.staff } : {}) })
+    return new SignJWT({ sid: claims.sid, ...(claims.staff.length ? { staff: claims.staff } : {}), ...(claims.pwc ? { pwc: true } : {}) })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject(claims.sub)
       .setIssuer("blubuy-api")
@@ -60,7 +63,7 @@ export class TokensService {
     let claims: AccessClaims;
     try {
       const { payload } = await jwtVerify(token, secret(), { issuer: "blubuy-api" });
-      claims = { sub: String(payload.sub), sid: String(payload.sid), staff: (payload.staff as string[]) ?? [] };
+      claims = { sub: String(payload.sub), sid: String(payload.sid), staff: (payload.staff as string[]) ?? [], pwc: payload.pwc === true };
     } catch {
       throw new ApiError(401, "TOKEN_INVALID", "Your session has expired. Please sign in again.");
     }
@@ -80,7 +83,8 @@ export class TokensService {
     const now = this.clock.now();
     if (!row) throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
     if (row.revokedAt) {
-      await this.db.update(sessions).set({ revokedAt: now }).where(and(eq(sessions.userId, row.userId), isNull(sessions.revokedAt)));
+      // the same path as "sign out everywhere", so access tokens already handed out stop working too
+      await this.revokeAll(row.userId);
       throw new ApiError(401, "REFRESH_REUSED", "This session was ended for your security. Please sign in again.");
     }
     if (row.expiresAt < now) throw new ApiError(401, "REFRESH_EXPIRED", "Please sign in again.");

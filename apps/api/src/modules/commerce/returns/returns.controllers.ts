@@ -93,12 +93,14 @@ export class AdminReturnsController {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get()
   @ApiResponse({ status: 200, standardSchema: z.array(s.returnSchema) })
   list(@Query({ schema: s.returnListQuery }) q: z.infer<typeof s.returnListQuery>) {
     return this.svc.storeReturns(q.status);
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get(":id")
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
   get(@Param("id", returnId) id: string) {
@@ -143,6 +145,7 @@ export class AdminReturnsController {
     return r;
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get(":id/photos/:photoId")
   @ApiProduces("image/png", "image/jpeg")
   async photo(@Param("id", returnId) id: string, @Param("photoId", uuidParam) photoId: string, @Res() res: Response) {

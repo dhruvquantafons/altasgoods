@@ -194,6 +194,8 @@ export const users = pgTable(
       .notNull()
       .$type<StaffRole[]>()
       .default(sql`'{}'::text[]`),
+    /** Set when a Super Admin gave a temporary password; staff work waits until the owner picks their own */
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

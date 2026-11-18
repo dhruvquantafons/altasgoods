@@ -219,12 +219,14 @@ export class AdminOrdersController {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("order-items")
   @ApiResponse({ status: 200, standardSchema: s.fulfilmentItemList })
   list(@Query({ schema: s.fulfilmentItemsQuery }) q: z.infer<typeof s.fulfilmentItemsQuery>) {
     return this.svc.list(q);
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("orders/:id")
   @ApiResponse({ status: 200, standardSchema: s.fulfilmentOrderSchema })
   order(@Param("id") id: string) {
@@ -250,6 +252,7 @@ export class AdminOrdersController {
   }
 
   /** Which courier is connected, and what Shiprocket still needs before it can take over. */
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("logistics/status")
   @ApiResponse({ status: 200, standardSchema: s.logisticsStatusSchema })
   logisticsStatus() {
@@ -281,18 +284,21 @@ export class AdminOrdersController {
 export class AdminInsightsController {
   constructor(@Inject(AdminInsightsService) private readonly svc: AdminInsightsService) {}
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("overview")
   @ApiResponse({ status: 200, standardSchema: s.adminOverviewSchema })
   overview() {
     return this.svc.overview();
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("payments")
   @ApiResponse({ status: 200, standardSchema: s.adminPaymentList })
   payments(@Query({ schema: s.adminPaymentsQuery }) q: z.infer<typeof s.adminPaymentsQuery>) {
     return this.svc.payments(q);
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("refunds")
   @ApiResponse({ status: 200, standardSchema: s.adminRefundList })
   refunds(@Query({ schema: s.adminRefundsQuery }) q: z.infer<typeof s.adminRefundsQuery>) {

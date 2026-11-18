@@ -10,6 +10,7 @@ import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB, EMAIL_PROVIDER, REDIS } from "../../common/tokens.js";
 import type { EmailProvider } from "./email.provider.js";
 import { emailVerificationEmail, passwordChangedEmail, passwordResetEmail } from "./emails.js";
+import { InvitesService } from "./invites.service.js";
 import { decoyHash, hashPassword, verifyPassword } from "./password.js";
 import { TokensService, type Grants } from "./tokens.service.js";
 
@@ -41,6 +42,7 @@ export class AuthService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(EMAIL_PROVIDER) private readonly email: EmailProvider,
     @Inject(TokensService) private readonly tokens: TokensService,
+    @Inject(InvitesService) private readonly invites: InvitesService,
   ) {}
 
   /** Counts a request against a 15 minute window and refuses once it is over the limit. */
@@ -132,7 +134,10 @@ export class AuthService {
     if (user.status === "BLOCKED") throw new ApiError(403, "ACCOUNT_BLOCKED", "This account is blocked. Contact AltasGoods support.");
     await this.redis.del(key, `login:fail:${normalizeEmail(user.email)}`);
     // the code proves the address is theirs
-    await this.db.update(users).set({ passwordHash: await hashPassword(input.password), emailVerifiedAt: this.clock.now() }).where(eq(users.id, user.id));
+    await this.db
+      .update(users)
+      .set({ passwordHash: await hashPassword(input.password), emailVerifiedAt: this.clock.now(), mustChangePassword: false })
+      .where(eq(users.id, user.id));
     await this.tokens.revokeAll(user.id);
     await this.email.send(passwordChangedEmail(user.email)).catch((e: Error) => this.logger.warn(`Password changed notice not sent: ${e.message}`));
     return this.session(user.id, meta, false);
@@ -147,10 +152,35 @@ export class AuthService {
     return this.tokens.revoke(refreshToken);
   }
 
-  /** Staff roles, as carried in the access token. */
+  /**
+   * Staff roles and the "password change required" flag, as carried in the
+   * access token. A blocked account gets no new token, so a refresh fails.
+   */
   async grants(userId: string): Promise<Grants> {
-    const [user] = await this.db.select({ staff: users.staffRoles }).from(users).where(eq(users.id, userId));
-    return { staff: user?.staff ?? [] };
+    const [user] = await this.db.select({ staff: users.staffRoles, status: users.status, pwc: users.mustChangePassword }).from(users).where(eq(users.id, userId));
+    if (!user || user.status === "BLOCKED") throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
+    return { staff: user.staff, pwc: user.pwc };
+  }
+
+  /**
+   * Accepts a staff invite: sets the chosen password and signs in. The link
+   * came to their inbox, so it also confirms the email address.
+   */
+  async acceptInvite(input: { token: string; password: string }, meta: Meta) {
+    const invalid = () => new ApiError(400, "INVITE_INVALID", "This invite link has expired or was already used. Ask a Super Admin to send a new one.");
+    const userId = await this.invites.consume(input.token);
+    if (!userId) throw invalid();
+    const [user] = await this.db.select({ id: users.id, email: users.email, status: users.status, staff: users.staffRoles }).from(users).where(eq(users.id, userId));
+    // removed or disabled since the invite went out
+    if (!user || user.status === "BLOCKED" || !user.staff.length) throw invalid();
+    await this.db
+      .update(users)
+      .set({ passwordHash: await hashPassword(input.password), mustChangePassword: false, emailVerifiedAt: this.clock.now() })
+      .where(eq(users.id, user.id));
+    // any session from before (a shopper made staff, say) ends with the new password
+    await this.tokens.revokeAll(user.id);
+    await this.redis.del(`login:fail:${normalizeEmail(user.email)}`);
+    return this.session(user.id, meta, false);
   }
 
   async me(userId: string) {
@@ -163,6 +193,7 @@ export class AuthService {
       phone: user.phone,
       emailVerified: !!user.emailVerifiedAt,
       staffRoles: user.staffRoles,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt.toISOString(),
     };
   }
@@ -180,7 +211,8 @@ export class AuthService {
       if (count === 1) await this.redis.expire(failures, WINDOW_SECONDS);
       throw new ApiError(400, "PASSWORD_INCORRECT", "Your current password is not right. If you have forgotten it, sign out and use Forgot password.");
     }
-    await this.db.update(users).set({ passwordHash: await hashPassword(input.newPassword) }).where(eq(users.id, userId));
+    // a password of their own replaces a temporary one
+    await this.db.update(users).set({ passwordHash: await hashPassword(input.newPassword), mustChangePassword: false }).where(eq(users.id, userId));
     await this.tokens.revokeOthers(userId, sessionId);
     await this.email.send(passwordChangedEmail(user.email)).catch((e: Error) => this.logger.warn(`Password changed notice not sent: ${e.message}`));
   }

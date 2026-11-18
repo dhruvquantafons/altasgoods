@@ -175,6 +175,15 @@ describe("sessions", () => {
     await t.http.post("/v1/auth/refresh").send({ refreshToken: first.body.refreshToken }).expect(401);
   });
 
+  it("ends the access tokens already handed out when a refresh token is reused", async () => {
+    const { session } = await signUp(t.http, "replayed@example.com");
+    const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${first.body.accessToken}` }).expect(200);
+    await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
+    // the thief may hold the newest access token: it stops working at once, not 15 minutes later
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${first.body.accessToken}` }).expect(401);
+  });
+
   it("logs out by revoking the refresh token", async () => {
     const { session } = await signUp(t.http, "leaver@example.com");
     await t.http.post("/v1/auth/logout").send({ refreshToken: session.refreshToken }).expect(204);

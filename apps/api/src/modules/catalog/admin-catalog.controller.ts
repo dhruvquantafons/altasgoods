@@ -22,6 +22,7 @@ export class AdminCatalogController {
     @Inject(ProductImportService) private readonly importer: ProductImportService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("products")
   @ApiResponse({ status: 200, standardSchema: s.adminProductList })
   products(@Query({ schema: s.adminProductQuery }) q: z.infer<typeof s.adminProductQuery>) {
@@ -51,6 +52,7 @@ export class AdminCatalogController {
     return result;
   }
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("products/:id")
   @ApiResponse({ status: 200, standardSchema: s.adminProduct })
   product(@Param("id", idParam) id: string) {
@@ -75,6 +77,7 @@ export class AdminCatalogController {
     return after;
   }
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("categories")
   @ApiResponse({ status: 200, standardSchema: z.array(s.adminCategory) })
   categories() {
@@ -107,6 +110,7 @@ export class AdminCatalogController {
     await this.audit.log(u, "category.delete", { type: "category", id }, `Deleted category ${before?.name ?? id}`);
   }
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("brands")
   @ApiResponse({ status: 200, standardSchema: z.array(s.adminBrand) })
   brands() {

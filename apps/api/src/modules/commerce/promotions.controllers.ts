@@ -20,12 +20,14 @@ export class AdminPromotionsController {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("sales")
   @ApiResponse({ status: 200, standardSchema: z.array(s.saleSchema) })
   sales() {
     return this.svc.sales();
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("sales/:id")
   @ApiResponse({ status: 200, standardSchema: s.saleSchema })
   sale(@Param("id", saleId) id: string) {
@@ -57,6 +59,7 @@ export class AdminPromotionsController {
     await this.audit.log(u, "sale.delete", { type: "sale", id }, `Deleted sale ${sale.name}`);
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("coupons")
   @ApiResponse({ status: 200, standardSchema: z.array(s.couponSchema) })
   coupons() {
