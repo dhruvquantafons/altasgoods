@@ -503,6 +503,18 @@ describe("lost and returned parcels", () => {
     expect(rows).toEqual([expect.objectContaining({ amountPaise: item.unitPricePaise * item.qty, orderItemId: item.id })]);
   });
 
+  it("refunds the delivery fee too when the order's last parcel is lost or comes back", async () => {
+    for (const to of ["LOST", "RTO_RECEIVED"] as const) {
+      // tea is under the free delivery threshold, so the order paid the fee
+      const { orderId, ids, order: o } = await order(["tea-assam"]);
+      expect(o.deliveryFeePaise).toBeGreaterThan(0);
+      await shipped(ids[0]!);
+      if (to === "RTO_RECEIVED") await scan(ids[0]!, "RTO_IN_TRANSIT");
+      await transition([ids[0]!], to, "Courier confirmed it").expect(200);
+      expect(await refundsOf(orderId)).toEqual([expect.objectContaining({ amountPaise: o.totalPaise, orderItemId: ids[0] })]);
+    }
+  });
+
   it("restocks a returned cash on delivery parcel and refunds nothing", async () => {
     const { orderId, ids, items } = await order(["speaker-boom"], "COD");
     const item = items.find((i) => i.id === ids[0])!;

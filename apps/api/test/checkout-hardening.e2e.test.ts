@@ -7,7 +7,7 @@ import { env } from "../src/config/env.js";
 import { createDb, type Db } from "../src/db/client.js";
 import { jobs as jobRows, offers, orders, payments, refunds } from "../src/db/schema.js";
 import { PaymentsService } from "../src/modules/commerce/payments/payments.service.js";
-import type { ProviderRefund, RefundState } from "../src/modules/commerce/payments/provider.js";
+import { AmbiguousRefundError, type ProviderRefund, type RefundState } from "../src/modules/commerce/payments/provider.js";
 import { RefundsService } from "../src/modules/commerce/payments/refunds.service.js";
 import { SandboxPaymentProvider } from "../src/modules/commerce/payments/sandbox.provider.js";
 import { JOB_MAX_ATTEMPTS, JobsService, retryDelayMs } from "../src/modules/jobs/jobs.service.js";
@@ -18,7 +18,7 @@ class FlakyGateway extends SandboxPaymentProvider {
   sessionHook?: () => Promise<void>;
   refundFailures = 0;
   /** how the failing refunds fail: a timeout (worth retrying) or a refusal (not) */
-  refundError: "timeout" | "refused" = "timeout";
+  refundError: "timeout" | "refused" | "duplicate" = "timeout";
   /** what a receipt lookup answers */
   lookup: "none" | "unreachable" | ProviderRefund = "none";
   lookups: string[] = [];
@@ -35,6 +35,7 @@ class FlakyGateway extends SandboxPaymentProvider {
     this.refundCalls.push({ receipt: input.receipt, amountPaise: input.amountPaise });
     if (this.refundFailures > 0) {
       this.refundFailures--;
+      if (this.refundError === "duplicate") throw new AmbiguousRefundError("receipt already exists");
       if (this.refundError === "refused") throw conflict("NOT_REFUNDABLE", "Razorpay has no captured payment for this order");
       throw new ApiError(504, "PAYMENT_GATEWAY_TIMEOUT", "The payment gateway took too long to answer");
     }
@@ -277,6 +278,19 @@ describe("refunds through the job queue", () => {
     const second = await appDb.transaction((tx) => pay.refundToSource(tx, order.id, 500, "Goodwill"));
     await jobs.runDue();
     expect((await db.select().from(refunds).where(eq(refunds.id, second.id)))[0]).toMatchObject({ status: "PROCESSING", providerRefundId: "rfnd_found" });
+  });
+
+  it("keeps the amount reserved when the gateway says the receipt exists but cannot show it", async () => {
+    const order = await paidOrder("lamp-arc");
+    const pay = t.app.get(PaymentsService);
+    gateway.refundFailures = 1;
+    gateway.refundError = "duplicate";
+    const refund = await appDb.transaction((tx) => pay.refundToSource(tx, order.id, order.totalPaise, "Goodwill"));
+    await jobs.runDue();
+    expect(gateway.refundCalls).toHaveLength(1);
+    // it may well have been made: staff check the gateway, nothing else can be refunded meanwhile
+    expect((await db.select().from(refunds).where(eq(refunds.id, refund.id)))[0]!.status).toBe("NEEDS_ATTENTION");
+    await expect(appDb.transaction((tx) => pay.refundToSource(tx, order.id, 1, "Goodwill, again"))).rejects.toMatchObject({ code: "REFUND_TOO_LARGE" });
   });
 
   it("does not leave a refund pending when its worker died while giving up", async () => {

@@ -3,7 +3,7 @@ import { Logger } from "@nestjs/common";
 import { z } from "zod";
 import { ApiError, conflict } from "../../../common/errors.js";
 import { fetchText, OutboundFailure, parseJson } from "../../../common/outbound.js";
-import type { CheckoutDetails, PaymentProvider, ProviderEvent, ProviderRefund, RefundState } from "./provider.js";
+import { AmbiguousRefundError, type CheckoutDetails, type PaymentProvider, type ProviderEvent, type ProviderRefund, type RefundState } from "./provider.js";
 
 export const RAZORPAY_SIGNATURE_HEADER = "x-razorpay-signature";
 const API = "https://api.razorpay.com/v1";
@@ -56,6 +56,9 @@ class RazorpayError extends ApiError {
     this.transient = upstreamStatus >= 500 || upstreamStatus === 429;
   }
 }
+
+/** How Razorpay words a refund refused because its receipt was used already. */
+const DUPLICATE_RECEIPT = /receipt|duplicate|already exists/i;
 
 const refundState = (status: RazorpayRefund["status"]): RefundState => (status === "processed" ? "COMPLETED" : status === "failed" ? "FAILED" : "PROCESSING");
 
@@ -155,7 +158,8 @@ export class RazorpayPaymentProvider implements PaymentProvider {
    * an earlier attempt whose answer we lost) is returned instead. The caller
    * holds the refund row lock, so two attempts never overlap. If Razorpay
    * rejects the POST with a 400, the receipt is looked up again in case the
-   * refund exists after all.
+   * refund exists after all; a 400 about the receipt itself that the lookup
+   * cannot match is ambiguous (AmbiguousRefundError), never a refusal.
    */
   async refund(input: { providerRef: string; amountPaise: number; receipt: string }): Promise<ProviderRefund> {
     const captured = await this.capturedPayment(input.providerRef);
@@ -173,7 +177,11 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     } catch (e) {
       // a receipt Razorpay has already seen: the refund exists, so report it
       const raced = e instanceof RazorpayError && e.upstreamStatus === 400 ? await this.refundByReceipt(captured.id, input.receipt) : null;
-      if (!raced) throw e;
+      if (!raced) {
+        // Razorpay says the receipt exists but its list does not show it yet: the refund may have been made
+        if (e instanceof RazorpayError && e.upstreamStatus === 400 && DUPLICATE_RECEIPT.test(e.message)) throw new AmbiguousRefundError(e.message);
+        throw e;
+      }
       refund = raced;
     }
     return { providerRefundId: refund.id, status: refundState(refund.status) };

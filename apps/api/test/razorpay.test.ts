@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { isTransientGatewayError } from "../src/modules/commerce/payments/provider.js";
+import { isAmbiguousRefund, isTransientGatewayError } from "../src/modules/commerce/payments/provider.js";
 import { RAZORPAY_SIGNATURE_HEADER, RazorpayPaymentProvider } from "../src/modules/commerce/payments/razorpay.provider.js";
 
 const config = { keyId: "rzp_test_key", keySecret: "key-secret", webhookSecret: "webhook-secret", webOrigin: "http://localhost:3000" };
@@ -89,6 +89,29 @@ describe("Razorpay provider", () => {
       return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
     }) as unknown as typeof fetch;
     expect(await new RazorpayPaymentProvider({ ...config, fetch: raced }).refund({ providerRef: "order_abc", amountPaise: 300, receipt: "refund-1" })).toEqual({ providerRefundId: "rfnd_7", status: "COMPLETED" });
+  });
+
+  it("calls a duplicate receipt it cannot find ambiguous, and any other refusal a refusal", async () => {
+    const answering = (description: string) => {
+      const answers: [number, unknown][] = [
+        [200, { items: [{ id: "pay_1", status: "captured" }] }],
+        [200, { items: [] }],
+        [400, { error: { code: "BAD_REQUEST_ERROR", description } }],
+        // the list Razorpay answers with is stale: the refund it says exists is not in it yet
+        [200, { items: [] }],
+      ];
+      const fetch = vi.fn(async () => {
+        const [status, body] = answers.shift()!;
+        return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+      }) as unknown as typeof globalThis.fetch;
+      return new RazorpayPaymentProvider({ ...config, fetch }).refund({ providerRef: "order_abc", amountPaise: 300, receipt: "refund-1" }).catch((e: unknown) => e);
+    };
+    const duplicate = await answering("receipt already exists");
+    expect(isAmbiguousRefund(duplicate)).toBe(true);
+    expect(isTransientGatewayError(duplicate)).toBe(false);
+    const refused = await answering("The amount must be at most the captured amount");
+    expect(isAmbiguousRefund(refused)).toBe(false);
+    expect(isTransientGatewayError(refused)).toBe(false);
   });
 
   it("finds a refund by its receipt, and knows there is none without a captured payment", async () => {

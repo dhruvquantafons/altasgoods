@@ -8,7 +8,7 @@ import type { Db, Tx } from "../../../db/client.js";
 import { orderItems, orders, payments, refunds, returns, type OrderItemStatus, type PaymentStatus } from "../../../db/schema.js";
 import { JobsService } from "../../jobs/jobs.service.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
-import { isTransientGatewayError, type PaymentProvider, type ProviderRefund, type RefundState } from "./provider.js";
+import { isAmbiguousRefund, isTransientGatewayError, type PaymentProvider, type ProviderRefund, type RefundState } from "./provider.js";
 
 /** Job kind that sends one PENDING refund to the gateway. Payload: { refundId }. */
 export const REFUND_JOB = "refund.execute";
@@ -226,7 +226,8 @@ export class RefundsService implements OnModuleInit {
    * overlap; a refund that is no longer PENDING was handled already. A
    * transient throw (gateway down or slow) leaves it PENDING for the job's
    * retry. A definite refusal fails it at once, but only after the gateway
-   * confirms it holds no refund for this receipt.
+   * confirms it holds no refund for this receipt. A refusal saying the receipt
+   * was used already, that the lookup cannot match, is NEEDS_ATTENTION.
    */
   async execute(refundId: string) {
     await this.db.transaction(async (tx) => {
@@ -239,6 +240,12 @@ export class RefundsService implements OnModuleInit {
         result = await this.provider.refund({ providerRef, amountPaise: refund.amountPaise, receipt: refund.id });
       } catch (e) {
         if (isTransientGatewayError(e)) throw e;
+        if (isAmbiguousRefund(e)) {
+          // the gateway says the receipt was used: keep the amount reserved until staff have checked
+          await tx.update(refunds).set({ status: "NEEDS_ATTENTION" }).where(eq(refunds.id, refund.id));
+          this.logger.error(`Refund ${refund.id} of order ${refund.orderId} needs attention: the gateway says its receipt exists but does not show the refund (${(e as Error).message}). Check the gateway, then retry it.`);
+          return;
+        }
         // a refusal: free the amount only if no refund exists for this receipt (a transient throw here retries)
         result = await this.provider.findRefund({ providerRef, receipt: refund.id });
         if (!result) {

@@ -16,6 +16,8 @@ export type OrderRow = typeof orders.$inferSelect;
 export type OrderItemRow = typeof orderItems.$inferSelect;
 
 const INACTIVE: OrderItemStatus[] = ["CANCELLED", "RTO_IN_TRANSIT", "RTO_RECEIVED", "LOST"];
+/** Lines that will never reach the customer and have been refunded (or are being now); a parcel still on its way back is not one yet. */
+const REFUNDED_AWAY: OrderItemStatus[] = ["CANCELLED", "RTO_RECEIVED", "LOST"];
 
 /** A line that moved in a transition: as it is now, where it came from and its order event. */
 type Moved = { item: OrderItemRow; from: OrderItemStatus; eventId: number };
@@ -106,7 +108,9 @@ export class OrderWorkflow {
     if (args.to === "CANCELLED") refundPaise = await this.refundCancelled(tx, order, all, [...updated.values()], args.actor === "CUSTOMER" ? REFUND_REASON.cancelledByCustomer : REFUND_REASON.cancelledByStore);
     if (args.to === "LOST" || args.to === "RTO_RECEIVED") {
       // the staff note stays on the order event; the refund says what happened
-      refundPaise = await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? REFUND_REASON.lost : REFUND_REASON.returnedToStore, args.actorId);
+      // the order's last line: the delivery fee goes back too, as when the last line is cancelled
+      const nothingLeft = all.every((i) => REFUNDED_AWAY.includes(i.status));
+      refundPaise = await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? REFUND_REASON.lost : REFUND_REASON.returnedToStore, args.actorId, nothingLeft);
     }
     if (args.to === "DELIVERED") await this.markCodCollected(tx, order, all);
     const header = await this.recomputeHeader(tx, order, all, args.actor, args.headerOverride);
@@ -209,13 +213,15 @@ export class OrderWorkflow {
 
   /**
    * Refunds cancelled lines of a paid order: the line amount less its share of
-   * the coupon. When nothing is left active, the remainder (delivery fee
-   * included) is refunded too. The refund is queued in this transaction and
+   * the coupon. When no line is left to deliver (every line cancelled, lost or
+   * back at the store), the remainder (delivery fee included) is refunded too,
+   * the same rule as for a lost or returned parcel. The refund is queued in this transaction and
    * sent by the refund job after commit; refunds still on their way count as
    * refunded, so nothing is refunded twice.
    */
   private async refundCancelled(tx: Tx, order: OrderRow, all: OrderItemRow[], cancelled: OrderItemRow[], reason: string) {
-    const nothingLeft = all.every((i) => INACTIVE.includes(i.status));
+    // a line still on its way back gets its refund (and the remainder) when it reaches the store
+    const nothingLeft = all.every((i) => REFUNDED_AWAY.includes(i.status));
     return this.refundLines(tx, order, cancelled, reason, undefined, nothingLeft);
   }
 

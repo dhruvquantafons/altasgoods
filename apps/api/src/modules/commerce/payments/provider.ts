@@ -33,6 +33,23 @@ export function isTransientGatewayError(e: unknown) {
   return true;
 }
 
+/**
+ * The gateway refused a refund saying one already exists under this receipt,
+ * yet a lookup does not find it (its list can lag). The refund may well have
+ * been made, so it must not be failed (that frees the amount for another
+ * refund); staff check the gateway instead.
+ */
+export class AmbiguousRefundError extends ApiError {
+  readonly transient = false;
+  readonly ambiguous = true;
+
+  constructor(message: string) {
+    super(502, "PAYMENT_GATEWAY_ERROR", message);
+  }
+}
+
+export const isAmbiguousRefund = (e: unknown) => (e as { ambiguous?: unknown } | null)?.ambiguous === true;
+
 export interface ProviderRefund {
   /** the gateway's id for the refund, used to ask about it later */
   providerRefundId: string;
