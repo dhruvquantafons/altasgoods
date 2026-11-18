@@ -134,6 +134,13 @@
       "when": 1794990650479,
       "tag": "0018_product_archive_slug_redirects",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794991281623,
+      "tag": "0019_content_pages",
+      "breakpoints": true
     }
   ]
 }

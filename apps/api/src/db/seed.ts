@@ -11,6 +11,7 @@ import { sql } from "drizzle-orm";
 import { isProduction } from "../config/env.js";
 import { HOUSE_SELLER_ID } from "../common/house.js";
 import { RESERVED_BRAND, RESERVED_CATEGORY } from "../modules/catalog/reserved.js";
+import { insertDefaultContent } from "../modules/content/ensure-defaults.js";
 import { createDb, type Db } from "./client.js";
 import * as t from "./schema.js";
 
@@ -70,6 +71,7 @@ export async function seed(db: Db) {
     support_attachments, support_actions, support_events, support_messages, support_tickets,
     media, files,
     audit_events, store_settings, sales, banners, reviews,
+    content_pages, help_faqs, help_topics, job_roles, press_releases, about_content, brand_spotlights,
     offers, products, seller_members, sellers, brands, categories, sessions, users restart identity cascade`);
   await db.execute(sql`alter sequence order_number_seq restart with 10001`);
   await db.execute(sql`alter sequence support_ticket_seq restart with 60001`);
@@ -170,6 +172,9 @@ export async function seed(db: Db) {
     ...(store.HERO_SLIDES as Slide[]).map((b, i) => ({ placement: "HERO" as const, eyebrow: b.eyebrow, title: b.title, body: b.body, ctaLabel: b.cta ?? "", href: b.href, image: b.image, alt: b.alt, align: b.align, theme: b.theme ?? "dark", position: b.position ?? "center", sortOrder: i })),
     ...(store.PROMO_TILES as Slide[]).map((b, i) => ({ placement: "PROMO" as const, eyebrow: b.eyebrow, title: b.title, body: b.body, href: b.href, image: b.image, alt: b.alt, align: b.align, sortOrder: i })),
   ]);
+
+  // policies, help, careers, press, about and brand spotlights: the same starting content the API adds at startup
+  await insertDefaultContent(db);
 
   return { products: m.products.length };
 }

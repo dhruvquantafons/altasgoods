@@ -404,6 +404,438 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/content/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_pages"];
+        put?: never;
+        post: operations["AdminContentController_createPage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/pages/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderPages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/pages/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removePage"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updatePage"];
+        trace?: never;
+    };
+    "/v1/admin/content/faqs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_faqs"];
+        put?: never;
+        post: operations["AdminContentController_createFaq"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/faqs/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderFaqs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/faqs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeFaq"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateFaq"];
+        trace?: never;
+    };
+    "/v1/admin/content/help-topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_topics"];
+        put?: never;
+        post: operations["AdminContentController_createTopic"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/help-topics/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderTopics"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/help-topics/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeTopic"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateTopic"];
+        trace?: never;
+    };
+    "/v1/admin/content/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_roles"];
+        put?: never;
+        post: operations["AdminContentController_createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/roles/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderRoles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/roles/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeRole"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateRole"];
+        trace?: never;
+    };
+    "/v1/admin/content/press": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_press"];
+        put?: never;
+        post: operations["AdminContentController_createPress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/press/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderPress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/press/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removePress"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updatePress"];
+        trace?: never;
+    };
+    "/v1/admin/content/about": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_about"];
+        put: operations["AdminContentController_saveAbout"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/spotlights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_spotlights"];
+        put?: never;
+        post: operations["AdminContentController_createSpotlight"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/spotlights/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderSpotlights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/spotlights/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeSpotlight"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateSpotlight"];
+        trace?: never;
+    };
+    "/v1/storefront/content/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_policies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/policies/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_policy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/help": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_help"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/careers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_careers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/careers/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_role"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/press": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_press"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/about": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_about"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/brand-spotlights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_spotlights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/categories": {
         parameters: {
             query?: never;
@@ -3449,6 +3881,1539 @@ export interface operations {
                          */
                         createdAt: string;
                     };
+                };
+            };
+        };
+    };
+    AdminContentController_pages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slug: string;
+                    /**
+                     * @default policy
+                     * @enum {string}
+                     */
+                    kind?: "policy" | "page";
+                    title: string;
+                    nav: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    sections?: {
+                        /** @description Anchor of the section; made from the heading when left out */
+                        id?: string;
+                        heading: string;
+                        /** @description Markdown. Raw HTML is not shown. */
+                        body: string;
+                    }[];
+                    /** @default [] */
+                    related?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderPages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slugs: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removePage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updatePage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    nav?: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    sections?: {
+                        /** @description Anchor of the section; made from the heading when left out */
+                        id?: string;
+                        heading: string;
+                        /** @description Markdown. Raw HTML is not shown. */
+                        body: string;
+                    }[];
+                    /** @default [] */
+                    related?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_faqs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createFaq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    group: string;
+                    q: string;
+                    /** @description Markdown */
+                    a: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderFaqs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeFaq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateFaq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    group?: string;
+                    q?: string;
+                    /** @description Markdown */
+                    a?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_topics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    /** @default  */
+                    body?: string;
+                    icon: string;
+                    href: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderTopics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    /** @default  */
+                    body?: string;
+                    icon?: string;
+                    href?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slug: string;
+                    title: string;
+                    team: string;
+                    location: string;
+                    /**
+                     * @default Full time
+                     * @enum {string}
+                     */
+                    type?: "Full time" | "Contract";
+                    /** @default  */
+                    experience?: string;
+                    posted: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    responsibilities?: string[];
+                    /** @default [] */
+                    requirements?: string[];
+                    /** @default [] */
+                    niceToHave?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slugs: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    team?: string;
+                    location?: string;
+                    /**
+                     * @default Full time
+                     * @enum {string}
+                     */
+                    type?: "Full time" | "Contract";
+                    /** @default  */
+                    experience?: string;
+                    posted?: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    responsibilities?: string[];
+                    /** @default [] */
+                    requirements?: string[];
+                    /** @default [] */
+                    niceToHave?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_press: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createPress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slug: string;
+                    date: string;
+                    title: string;
+                    /** @default  */
+                    summary?: string;
+                    category: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderPress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slugs: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removePress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updatePress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    date?: string;
+                    title?: string;
+                    /** @default  */
+                    summary?: string;
+                    category?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_about: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        numbers: {
+                            value: string;
+                            label: string;
+                        }[];
+                        principles: {
+                            title: string;
+                            body: string;
+                        }[];
+                        milestones: {
+                            date: string;
+                            title: string;
+                            body: string;
+                        }[];
+                        offices: {
+                            city: string;
+                            /** @default  */
+                            note: string;
+                            address: string;
+                        }[];
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_saveAbout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    numbers: {
+                        value: string;
+                        label: string;
+                    }[];
+                    principles: {
+                        title: string;
+                        body: string;
+                    }[];
+                    milestones: {
+                        date: string;
+                        title: string;
+                        body: string;
+                    }[];
+                    offices: {
+                        city: string;
+                        /** @default  */
+                        note?: string;
+                        address: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        numbers: {
+                            value: string;
+                            label: string;
+                        }[];
+                        principles: {
+                            title: string;
+                            body: string;
+                        }[];
+                        milestones: {
+                            date: string;
+                            title: string;
+                            body: string;
+                        }[];
+                        offices: {
+                            city: string;
+                            /** @default  */
+                            note: string;
+                            address: string;
+                        }[];
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_spotlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createSpotlight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    brand: string;
+                    /** @default  */
+                    tagline?: string;
+                    /** @description A product of this brand; the spotlight links to its brand store */
+                    productId: string | null;
+                    /** @default #f1efea */
+                    tone?: string;
+                    image: string;
+                    /** @default true */
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderSpotlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeSpotlight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateSpotlight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    brand?: string;
+                    /** @default  */
+                    tagline?: string;
+                    /** @description A product of this brand; the spotlight links to its brand store */
+                    productId?: string | null;
+                    /** @default #f1efea */
+                    tone?: string;
+                    image?: string;
+                    /** @default true */
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_policies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontContentController_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: {
+                            slug: string;
+                            title: string;
+                            nav: string;
+                            summary: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_help: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        topics: {
+                            title: string;
+                            /** @default  */
+                            body: string;
+                            icon: string;
+                            href: string;
+                            id: string;
+                        }[];
+                        faqs: {
+                            group: string;
+                            q: string;
+                            /** @description Markdown */
+                            a: string;
+                            id: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_careers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontContentController_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_press: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontContentController_about: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        numbers: {
+                            value: string;
+                            label: string;
+                        }[];
+                        principles: {
+                            title: string;
+                            body: string;
+                        }[];
+                        milestones: {
+                            date: string;
+                            title: string;
+                            body: string;
+                        }[];
+                        offices: {
+                            city: string;
+                            /** @default  */
+                            note: string;
+                            address: string;
+                        }[];
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_spotlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        brand: string;
+                        tagline: string;
+                        tone: string;
+                        image: string;
+                        brandSlug: string;
+                        productSlug: string;
+                    }[];
                 };
             };
         };

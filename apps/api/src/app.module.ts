@@ -3,6 +3,7 @@ import { InfraModule } from "./common/infra.module.js";
 import { AdminModule } from "./modules/admin/admin.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { CatalogModule } from "./modules/catalog/catalog.module.js";
+import { ContentModule } from "./modules/content/content.module.js";
 import { CommerceModule } from "./modules/commerce/commerce.module.js";
 import { HealthController } from "./modules/health/health.controller.js";
 import { FilesModule } from "./modules/files/files.module.js";
@@ -10,7 +11,7 @@ import { JobsModule } from "./modules/jobs/jobs.module.js";
 import { SupportModule } from "./modules/support/support.module.js";
 
 @Module({
-  imports: [InfraModule, JobsModule, AdminModule, FilesModule, AuthModule, CatalogModule, CommerceModule, SupportModule],
+  imports: [InfraModule, JobsModule, AdminModule, ContentModule, FilesModule, AuthModule, CatalogModule, CommerceModule, SupportModule],
   controllers: [HealthController],
 })
 export class AppModule {}

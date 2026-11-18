@@ -986,3 +986,110 @@ export const reviews = pgTable(
     check("reviews_rating_ck", sql`${t.rating} between 1 and 5`),
   ],
 );
+
+/* --------------------------- Editable storefront content --------------------------- */
+
+/** One section of a content page. The body is Markdown (no raw HTML). */
+export type ContentSection = { id: string; heading: string; body: string };
+
+/** Policies and other pages written in sections. Edited in AltasGoods Control, Content. */
+export const contentPages = pgTable("content_pages", {
+  slug: text("slug").primaryKey(),
+  kind: text("kind").notNull().default("policy").$type<"policy" | "page">(),
+  title: text("title").notNull(),
+  /** short label for navigation */
+  nav: text("nav").notNull(),
+  summary: text("summary").notNull().default(""),
+  sections: jsonb("sections").notNull().$type<ContentSection[]>().default([]),
+  /** slugs of other pages shown under "Related" */
+  related: text("related")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  published: boolean("published").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: updatedAt(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export const helpFaqs = pgTable("help_faqs", {
+  id: text("id").primaryKey(),
+  group: text("group").notNull(),
+  q: text("q").notNull(),
+  /** Markdown */
+  a: text("a").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const helpTopics = pgTable("help_topics", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  /** a lucide icon name, drawn by the storefront's NamedIcon */
+  icon: text("icon").notNull(),
+  href: text("href").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const jobRoles = pgTable("job_roles", {
+  slug: text("slug").primaryKey(),
+  title: text("title").notNull(),
+  team: text("team").notNull(),
+  location: text("location").notNull(),
+  type: text("type").notNull().default("Full time"),
+  experience: text("experience").notNull().default(""),
+  /** YYYY-MM-DD */
+  posted: text("posted").notNull(),
+  summary: text("summary").notNull().default(""),
+  responsibilities: text("responsibilities")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  requirements: text("requirements")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  niceToHave: text("nice_to_have")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  published: boolean("published").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const pressReleases = pgTable("press_releases", {
+  slug: text("slug").primaryKey(),
+  /** YYYY-MM-DD */
+  date: text("date").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull().default(""),
+  category: text("category").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+/** The numbers, principles, milestones and offices of the About page: one row, id "about". */
+export type AboutDoc = {
+  numbers: { value: string; label: string }[];
+  principles: { title: string; body: string }[];
+  milestones: { date: string; title: string; body: string }[];
+  offices: { city: string; note: string; address: string }[];
+};
+export const aboutContent = pgTable("about_content", {
+  id: text("id").primaryKey(),
+  doc: jsonb("doc").notNull().$type<AboutDoc>(),
+  updatedAt: updatedAt(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+/** "Brands in the spotlight" on the homepage. Hidden while the product is missing or not LIVE. */
+export const brandSpotlights = pgTable("brand_spotlights", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  brand: text("brand").notNull(),
+  tagline: text("tagline").notNull().default(""),
+  productId: text("product_id").references(() => products.id, { onDelete: "set null" }),
+  /** background colour of the card, as #rrggbb */
+  tone: text("tone").notNull().default("#f1efea"),
+  image: text("image").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+});
