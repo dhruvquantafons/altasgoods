@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { env } from "../src/config/env.js";
 import { EMAIL_PROVIDER } from "../src/common/tokens.js";
 import { createDb } from "../src/db/client.js";
-import { users } from "../src/db/schema.js";
+import { sessions, users } from "../src/db/schema.js";
 import type { EmailMessage, EmailProvider } from "../src/modules/auth/email.provider.js";
 import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, testIp, type TestContext } from "./helpers.js";
 
@@ -334,6 +334,18 @@ describe("sessions", () => {
     expect(again.body.refreshToken).toBe(first.body.refreshToken);
     const claims = JSON.parse(Buffer.from(again.body.accessToken.split(".")[1], "base64url").toString("utf8"));
     expect(claims.staff).toEqual(["CATALOG_MANAGER"]);
+  });
+
+  it("records the client the web server names on a refreshed session", async () => {
+    const { session } = await signUp(t.http, "named.client@example.com");
+    const r = await t.http
+      .post("/v1/auth/refresh")
+      .set({ "X-Forwarded-For": "198.51.100.23", "User-Agent": "Mozilla/5.0 (Android 15) Firefox/140" })
+      .send({ refreshToken: session.refreshToken })
+      .expect(200);
+    const sid = JSON.parse(Buffer.from(r.body.accessToken.split(".")[1], "base64url").toString("utf8")).sid;
+    const [row] = await db.select({ ip: sessions.ip, userAgent: sessions.userAgent }).from(sessions).where(eq(sessions.id, sid));
+    expect(row).toEqual({ ip: "198.51.100.23", userAgent: "Mozilla/5.0 (Android 15) Firefox/140" });
   });
 
   it("logs out by revoking the refresh token", async () => {
