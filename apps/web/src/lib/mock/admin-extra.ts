@@ -1,11 +1,11 @@
 /**
  * Extra mock data for AltasGoods Control (the admin console). Everything here is
- * deterministic and anchored to NOW so server and client renders agree.
+ * deterministic and anchored to MOCK_EPOCH so server and client renders agree.
  * Derived from the shared mock files; it never mutates them.
  */
 import type { Order, Seller } from "../types";
 import type { NdrReason, OrderStatus, PaymentMethod, RefundStatus, SettlementStatus, ShipmentStatus } from "../status";
-import { between, istHour, istMinuteOfDay, NOW, pick, seeded } from "../utils";
+import { between, istHour, istMinuteOfDay, MOCK_EPOCH, pick, seeded } from "../utils";
 import { platformDaily, SALE_EVENT } from "./analytics";
 import { brands, categories, products } from "./catalog";
 import { allSettlements } from "./finance";
@@ -17,8 +17,8 @@ import { reviews } from "./engagement";
 /* ------------------------------- Helpers ------------------------------ */
 
 const MIN = 60_000;
-const ago = (mins: number) => new Date(NOW.getTime() - mins * MIN).toISOString();
-const ahead = (mins: number) => new Date(NOW.getTime() + mins * MIN).toISOString();
+const ago = (mins: number) => new Date(MOCK_EPOCH.getTime() - mins * MIN).toISOString();
+const ahead = (mins: number) => new Date(MOCK_EPOCH.getTime() + mins * MIN).toISOString();
 const H = 60;
 const D = 1440;
 
@@ -69,7 +69,7 @@ export const hourlyOrdersYesterday = (() => {
 })();
 
 /** Orders per minute right now (today so far divided by elapsed minutes). */
-export const ordersPerMinute = Math.round(platformDaily.at(-1)!.orders / istMinuteOfDay(NOW));
+export const ordersPerMinute = Math.round(platformDaily.at(-1)!.orders / istMinuteOfDay(MOCK_EPOCH));
 
 export const CATALOG_QUEUE_TOTAL = 212;
 
@@ -1034,7 +1034,7 @@ export const gatewayStats: GatewayStat[] = [
 /** Payment failure rate (percent of attempts) for the last 24 completed hours. */
 export const failureRateHourly = (() => {
   const r = seeded(5150);
-  const endHour = istHour(NOW); // the current hour is still in progress
+  const endHour = istHour(MOCK_EPOCH); // the current hour is still in progress
   return Array.from({ length: 24 }, (_, i) => {
     const h = (endHour - 24 + i + 24) % 24;
     const evening = h >= 19 && h <= 23 ? 0.6 : 0;
@@ -1455,7 +1455,7 @@ export const payoutRun = {
 
 /* --------------------------- Ops snapshot ----------------------------- */
 
-/** Platform-wide operating metrics for the overview (live, as of NOW). */
+/** Platform-wide operating metrics for the overview (live, as of MOCK_EPOCH). */
 export const opsSnapshot = {
   slaBreaches: 1284,
   dispatchAtRisk: 3920,

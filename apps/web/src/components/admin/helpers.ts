@@ -2,7 +2,6 @@
  * Small pure helpers shared by AltasGoods Control pages. No mock imports here so
  * client components can use them without bundling the data layer.
  */
-import { NOW } from "@/lib/utils";
 
 export type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -24,9 +23,9 @@ export function pctChange(a: number, b: number) {
   return b ? ((a - b) / b) * 100 : 0;
 }
 
-/** Minutes between NOW and a timestamp; positive when the time is in the future. */
-export function minutesUntil(iso: string) {
-  return Math.round((new Date(iso).getTime() - NOW.getTime()) / 60_000);
+/** Minutes between `now` (default: the real clock) and a timestamp; positive when the time is in the future. */
+export function minutesUntil(iso: string, now: number = Date.now()) {
+  return Math.round((new Date(iso).getTime() - now) / 60_000);
 }
 
 /** "3 h", "2 d", "45 min" for a duration in minutes. */

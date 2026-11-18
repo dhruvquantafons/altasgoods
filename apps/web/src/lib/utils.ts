@@ -5,8 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Fixed "now" for the mock data so server and client renders always agree. */
-export const NOW = new Date("2026-10-01T10:30:00+05:30");
+/** Fixed epoch for the sample data in lib/mock only, so its renders are deterministic. Live UI uses the real clock (useNow / Date.now()). */
+export const MOCK_EPOCH = new Date("2026-10-01T10:30:00+05:30");
 
 const inr = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -108,9 +108,8 @@ export function addDays(d: Date | string, days: number) {
   return x;
 }
 
-/** "5 min ago", "3 h ago", "2 d ago", relative to NOW. */
-/** "3 h ago". The sample data is anchored to NOW; pass `now` for live data from the API. */
-export function timeAgo(d: string | Date, now: number = NOW.getTime()) {
+/** "5 min ago", "3 h ago", "2 d ago". Client components should pass `useNow()` so hydration matches. */
+export function timeAgo(d: string | Date, now: number = Date.now()) {
   const diff = (now - new Date(d).getTime()) / 1000;
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;

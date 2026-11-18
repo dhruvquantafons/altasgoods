@@ -9,6 +9,7 @@ import { Logo } from "@/components/brand/logo";
 import { Avatar, Kbd } from "@/components/ui/misc";
 import { Popover } from "@/components/ui/interactive";
 import type { Notification } from "@/lib/types";
+import { useNow } from "@/components/now-provider";
 import { cn, timeAgo } from "@/lib/utils";
 import { signOut } from "@/app/actions/auth";
 import { WORKSPACES, type Workspace } from "./workspaces";
@@ -145,6 +146,7 @@ function WorkspaceSwitcher({ current }: { current: Workspace }) {
 }
 
 function Notifications({ items }: { items: Notification[] }) {
+  const now = useNow(60_000);
   const unread = items.filter((n) => !n.read).length;
   return (
     <Popover
@@ -170,7 +172,7 @@ function Notifications({ items }: { items: Notification[] }) {
                   <span className="min-w-0">
                     <span className="block text-[13px] font-medium text-ink-900">{n.title}</span>
                     <span className="mt-0.5 block text-xs text-ink-500">{n.body}</span>
-                    <span className="mt-1 block text-[11px] text-ink-400">{timeAgo(n.at)}</span>
+                    <span className="mt-1 block text-[11px] text-ink-400">{timeAgo(n.at, now)}</span>
                   </span>
                 </>
               );

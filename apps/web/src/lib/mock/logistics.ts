@@ -1,6 +1,6 @@
 import type { DeliveryAssociate, Hub, Shipment } from "../types";
 import type { NdrReason, ShipmentStatus } from "../status";
-import { addDays, between, istHour, istMinuteOfDay, NOW, pick, seeded } from "../utils";
+import { addDays, between, istHour, istMinuteOfDay, MOCK_EPOCH, pick, seeded } from "../utils";
 import { orders } from "./orders";
 import { sellers } from "./people";
 
@@ -82,11 +82,11 @@ export const shipments: Shipment[] = Array.from({ length: 160 }, (_, i) => {
     weightKg: Math.round((0.2 + dr() * 6) * 10) / 10,
     cod,
     codAmount: cod ? order.total : 0,
-    promisedBy: addDays(NOW, between(dr, 0, 2)).toISOString(),
+    promisedBy: addDays(MOCK_EPOCH, between(dr, 0, 2)).toISOString(),
     attempts: status === "ndr" ? between(dr, 1, 2) : status.startsWith("rto") ? 3 : status === "delivered" ? 1 : 0,
     ndrReason: status === "ndr" || status.startsWith("rto") ? pick(dr, ndrReasons) : undefined,
     associateId: ["out_for_delivery", "delivered", "ndr"].includes(status) && onRoute.length ? pick(dr, onRoute).id : undefined,
-    lastUpdate: new Date(NOW.getTime() - between(dr, 5, 600) * 60_000).toISOString(),
+    lastUpdate: new Date(MOCK_EPOCH.getTime() - between(dr, 5, 600) * 60_000).toISOString(),
   };
 });
 
@@ -105,7 +105,7 @@ export const hourlyDeliveries = Array.from({ length: 14 }, (_, i) => {
   const shape = Math.sin(((hour - 8) / 13) * Math.PI);
   // completed hours are full; the running hour (10 AM at 10:30) holds only what is delivered so far
   const full = Math.round(18 + shape * 70 + r * 10);
-  const nowHour = istHour(NOW);
-  const done = hour < nowHour ? full : hour === nowHour ? Math.round((full * (istMinuteOfDay(NOW) % 60)) / 60) : 0;
+  const nowHour = istHour(MOCK_EPOCH);
+  const done = hour < nowHour ? full : hour === nowHour ? Math.round((full * (istMinuteOfDay(MOCK_EPOCH) % 60)) / 60) : 0;
   return { hour: `${hour > 12 ? hour - 12 : hour} ${hour >= 12 ? "PM" : "AM"}`, delivered: done, planned: Math.round(20 + shape * 75) };
 });

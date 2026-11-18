@@ -86,7 +86,7 @@ const pin = lookupPincode(DEFAULT_PINCODE);
 
 function derived(p: Product) {
   const o = featuredOffer(p);
-  return { price: o.price, off: percentOff(o.price, o.mrp), days: promiseDays(o.deliveryDays, pin), cod: o.codAvailable, available: inStock(p) };
+  return { price: o.price, off: percentOff(o.price, o.mrp), days: promiseDays(o.deliveryDays, pin, Date.now()), cod: o.codAvailable, available: inStock(p) };
 }
 
 type Facet = "cat" | "sub" | "brands" | "price" | "rating" | "discount" | "assured" | "delivery" | "cod" | "avail";

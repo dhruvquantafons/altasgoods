@@ -273,7 +273,7 @@ function DeliveryModule() {
             <Truck size={16} className="mt-px shrink-0 text-ink-600" aria-hidden="true" />
             <span className="text-ink-700">
               <span className="font-semibold text-ink-900">
-                {free ? "Free delivery" : `${formatINR(DELIVERY_FEE)} delivery`} {days <= 1 ? promiseLabel(days) : `by ${formatPromise(new Date(now + days * 86400_000))}`}
+                {free ? "Free delivery" : `${formatINR(DELIVERY_FEE)} delivery`} {days <= 1 ? promiseLabel(days, now) : `by ${formatPromise(new Date(now + days * 86400_000))}`}
               </span>{" "}
               <CutoffNote />
               {info && info.zone === "special" && <span className="block text-ink-500">Remote area, allow a little extra time</span>}

@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Tone } from "@/lib/status";
-import { cn, NOW } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 /* ------------------------------ Time ------------------------------ */
 
@@ -27,9 +27,9 @@ export function formatDay(d: string | Date) {
   return dayFmt.format(new Date(d));
 }
 
-function dayDiff(d: string | Date) {
+export function dayDiff(d: string | Date, now: number = Date.now()) {
   const a = new Date(keyFmt.format(new Date(d))).getTime();
-  const b = new Date(keyFmt.format(NOW)).getTime();
+  const b = new Date(keyFmt.format(now)).getTime();
   return Math.round((a - b) / 86_400_000);
 }
 
@@ -64,9 +64,9 @@ export function durationLabel(mins: number) {
   return h ? `${d} d ${h} h` : `${d} d`;
 }
 
-/** Minutes from NOW until a timestamp (negative when in the past). */
-export function minsUntil(d: string | Date) {
-  return Math.round((new Date(d).getTime() - NOW.getTime()) / 60_000);
+/** Minutes from `now` until a timestamp (negative when in the past). */
+export function minsUntil(d: string | Date, now: number = Date.now()) {
+  return Math.round((new Date(d).getTime() - now) / 60_000);
 }
 
 /** "in 2 h 10 min" or "2 h 10 min overdue". */

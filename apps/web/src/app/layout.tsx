@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { serverNow } from "@/lib/clock";
+import { NowProvider } from "@/components/now-provider";
 
 // The rupee sign only ships in the latin-ext subset, so every face loads it.
 const ui = Inter({
@@ -36,10 +39,13 @@ export const viewport: Viewport = {
   themeColor: "#2358e0",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Every page reads the real clock, so render per request instead of freezing build time into static HTML.
+  await connection();
+  const now = serverNow();
   return (
     <html lang="en-IN" className={`${ui.variable} ${heading.variable} ${code.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><NowProvider now={now}>{children}</NowProvider></body>
     </html>
   );
 }

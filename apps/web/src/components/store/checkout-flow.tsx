@@ -31,6 +31,7 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/input";
 import { Stepper } from "@/components/ui/misc";
 import { cn, formatINR } from "@/lib/utils";
 import { useCart } from "./cart-context";
+import { useNow } from "@/components/now-provider";
 import { daysFromNow, formatPromise, INDIAN_STATES, isValidPincode, lookupPincode, promiseDays } from "./delivery";
 import { useDeliveryRules } from "./store-settings";
 import { PriceDetails } from "./price-details";
@@ -61,6 +62,7 @@ export function CheckoutFlow({
   const COD_LIMIT = rules.codLimit;
   const lines = useMemo(() => (buyNow ? [buyNow] : cart.active), [buyNow, cart.active]);
 
+  const now = useNow(60_000);
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState(initialAddresses);
   const [addressId, setAddressId] = useState(initialAddresses.find((a) => a.isDefault)?.id ?? initialAddresses[0]?.id ?? "");
@@ -125,14 +127,14 @@ export function CheckoutFlow({
 
   /* ----- delivery: everything ships together from the store ----- */
   const deliveryInfo = () => {
-    const days = promiseDays(totals.deliveryDays, info);
+    const days = promiseDays(totals.deliveryDays, info, now);
     const large = totals.lines.some((l) => l.product.large);
     const picked: Choice = choice ?? (large ? "slot1" : "standard");
     const slots = [
-      { key: "slot1" as const, label: `${formatPromise(daysFromNow(days))}, 9 am to 1 pm` },
-      { key: "slot2" as const, label: `${formatPromise(daysFromNow(days + 1))}, 2 pm to 6 pm` },
+      { key: "slot1" as const, label: `${formatPromise(daysFromNow(days, now))}, 9 am to 1 pm` },
+      { key: "slot2" as const, label: `${formatPromise(daysFromNow(days + 1, now))}, 2 pm to 6 pm` },
     ];
-    const date = picked === "slot2" ? daysFromNow(days + 1) : daysFromNow(days);
+    const date = picked === "slot2" ? daysFromNow(days + 1, now) : daysFromNow(days, now);
     const optionLabel = large ? `Scheduled, ${slots.find((s) => s.key === picked)?.label}` : "Standard";
     return { days, large, choice: picked, slots, date, optionLabel };
   };
@@ -336,7 +338,7 @@ export function CheckoutFlow({
                 const fee = totals.delivery ? formatINR(totals.delivery) : "Free";
                 const opts: { key: Choice; title: string; sub: string; price: string }[] = d.large
                   ? d.slots.map((s) => ({ key: s.key, title: s.label, sub: "Scheduled delivery, our team calls 1 hour before", price: fee }))
-                  : [{ key: "standard", title: `Delivery by ${formatPromise(daysFromNow(d.days))}`, sub: "Standard delivery", price: fee }];
+                  : [{ key: "standard", title: `Delivery by ${formatPromise(daysFromNow(d.days, now))}`, sub: "Standard delivery", price: fee }];
                 return (
                   <div className="rounded-xl border border-line">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">

@@ -11,10 +11,12 @@ import { useDeliveryRules } from "./store-settings";
 import { PriceDetails } from "./price-details";
 import { computeTotals, couponBlocker, couponValue, priceLines, type PricedLine } from "./pricing";
 import { percentOff } from "./price";
+import { useNow } from "@/components/now-provider";
 import type { CartCatalog, CouponLite } from "./types";
 
 export function CartView({ catalog, coupons: all, children }: { catalog: CartCatalog; coupons: CouponLite[]; children?: ReactNode }) {
   const cart = useCart();
+  const now = useNow(60_000);
   const { pincode } = usePincode();
   const info = lookupPincode(pincode);
   // The cart cannot see order history, so a first-order coupon (BLUFIRST) was always blocked here, even on a first order.
@@ -61,7 +63,7 @@ export function CartView({ catalog, coupons: all, children }: { catalog: CartCat
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
           <div className="flex min-w-0 flex-col gap-5">
             {(() => {
-              const days = promiseDays(totals.deliveryDays, info);
+              const days = promiseDays(totals.deliveryDays, info, now);
               const short = rules.freeFrom - totals.priceTotal;
               return (
                 <section aria-label="Items in your cart" className="overflow-hidden rounded-2xl border border-line">
@@ -73,7 +75,7 @@ export function CartView({ catalog, coupons: all, children }: { catalog: CartCat
                     <p className="flex items-center gap-1.5 text-[13px] text-ink-700">
                       <Truck size={15} className="text-ink-500" aria-hidden="true" />
                       <span>
-                        Delivery by <span className="font-semibold text-ink-900">{formatPromise(daysFromNow(days))}</span>
+                        Delivery by <span className="font-semibold text-ink-900">{formatPromise(daysFromNow(days, now))}</span>
                         <span className="text-ink-500">{totals.delivery ? `, ${formatINR(totals.delivery)}` : ", free"}</span>
                       </span>
                     </p>

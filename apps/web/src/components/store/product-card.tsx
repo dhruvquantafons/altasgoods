@@ -26,8 +26,10 @@ export function cardBadge(p: Product, deal?: boolean): { label: string; classNam
 /** "Free delivery by Sat, 3 Oct" for the default pincode. */
 export function deliveryLine(p: Product) {
   const offer = featuredOffer(p);
-  const days = promiseDays(offer.deliveryDays, defaultPin);
-  return { price: offer.price, when: promiseLabel(days), days };
+  // only rendered on the server (never imported by a client component), so Date.now() is request time
+  const now = Date.now();
+  const days = promiseDays(offer.deliveryDays, defaultPin, now);
+  return { price: offer.price, when: promiseLabel(days, now), days };
 }
 
 function variantSummary(p: Product) {

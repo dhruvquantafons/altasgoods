@@ -1,6 +1,6 @@
 import type { Address, Customer, Seller, StaffMember } from "../types";
 import type { SellerStatus } from "../status";
-import { addDays, between, NOW, pick, seeded } from "../utils";
+import { addDays, between, MOCK_EPOCH, pick, seeded } from "../utils";
 
 /* ------------------------------- Sellers ------------------------------ */
 
@@ -62,7 +62,7 @@ export const sellers: Seller[] = sellerSeeds.map(([id, displayName, legalName, o
     city,
     state,
     pincode,
-    joinedAt: addDays(NOW, active ? -between(rand, 120, 1400) : -between(rand, 1, 12)).toISOString(),
+    joinedAt: addDays(MOCK_EPOCH, active ? -between(rand, 120, 1400) : -between(rand, 1, 12)).toISOString(),
     status,
     tier,
     rating: active ? Math.round((3.9 + rand() * 0.9) * 10) / 10 : 0,
@@ -116,7 +116,7 @@ export const customers: Customer[] = Array.from({ length: 60 }, (_, i) => {
     phone: `+91 ${pick(rand, ["98", "99", "97", "88", "70", "63"])}${between(rand, 10000000, 99999999)}`,
     city,
     state,
-    joinedAt: addDays(NOW, -between(rand, 10, 1900)).toISOString(),
+    joinedAt: addDays(MOCK_EPOCH, -between(rand, 10, 1900)).toISOString(),
     orders,
     lifetimeValue: orders * between(rand, 900, 6400),
     status: risk > 80 ? "flagged" : i % 29 === 13 ? "blocked" : "active",
@@ -138,14 +138,14 @@ export const customerAddresses: Address[] = [
 /* -------------------------------- Staff ------------------------------- */
 
 export const staff: StaffMember[] = [
-  { id: "u-1", name: "Rawahul Islam", email: "rawahul@altasgoods.in", role: "Super Admin", team: "Leadership", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-2", name: "Aparna Krishnan", email: "aparna@altasgoods.in", role: "Catalog Manager", team: "Catalog", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-3", name: "Dev Malhotra", email: "dev@altasgoods.in", role: "Seller Onboarding Lead", team: "Seller Success", lastActive: addDays(NOW, -1).toISOString(), status: "active" },
-  { id: "u-4", name: "Fatima Sheikh", email: "fatima@altasgoods.in", role: "Finance Controller", team: "Finance", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-5", name: "Kunal Bhatia", email: "kunal@altasgoods.in", role: "Marketing Manager", team: "Growth", lastActive: addDays(NOW, -2).toISOString(), status: "active" },
-  { id: "u-6", name: "Revathi Subramanian", email: "revathi@altasgoods.in", role: "Support Team Lead", team: "Customer Experience", lastActive: addDays(NOW, 0).toISOString(), status: "active" },
-  { id: "u-7", name: "Manoj Tiwari", email: "manoj@altasgoods.in", role: "Logistics Manager", team: "Operations", lastActive: addDays(NOW, -1).toISOString(), status: "active" },
-  { id: "u-8", name: "Elena D'Souza", email: "elena@altasgoods.in", role: "Risk Analyst", team: "Trust and Safety", lastActive: addDays(NOW, -3).toISOString(), status: "active" },
-  { id: "u-9", name: "Harsh Vardhan", email: "harsh@altasgoods.in", role: "Catalog Associate", team: "Catalog", lastActive: addDays(NOW, -12).toISOString(), status: "invited" },
-  { id: "u-10", name: "Nikita Rao", email: "nikita@altasgoods.in", role: "Support Agent", team: "Customer Experience", lastActive: addDays(NOW, -40).toISOString(), status: "disabled" },
+  { id: "u-1", name: "Rawahul Islam", email: "rawahul@altasgoods.in", role: "Super Admin", team: "Leadership", lastActive: addDays(MOCK_EPOCH, 0).toISOString(), status: "active" },
+  { id: "u-2", name: "Aparna Krishnan", email: "aparna@altasgoods.in", role: "Catalog Manager", team: "Catalog", lastActive: addDays(MOCK_EPOCH, 0).toISOString(), status: "active" },
+  { id: "u-3", name: "Dev Malhotra", email: "dev@altasgoods.in", role: "Seller Onboarding Lead", team: "Seller Success", lastActive: addDays(MOCK_EPOCH, -1).toISOString(), status: "active" },
+  { id: "u-4", name: "Fatima Sheikh", email: "fatima@altasgoods.in", role: "Finance Controller", team: "Finance", lastActive: addDays(MOCK_EPOCH, 0).toISOString(), status: "active" },
+  { id: "u-5", name: "Kunal Bhatia", email: "kunal@altasgoods.in", role: "Marketing Manager", team: "Growth", lastActive: addDays(MOCK_EPOCH, -2).toISOString(), status: "active" },
+  { id: "u-6", name: "Revathi Subramanian", email: "revathi@altasgoods.in", role: "Support Team Lead", team: "Customer Experience", lastActive: addDays(MOCK_EPOCH, 0).toISOString(), status: "active" },
+  { id: "u-7", name: "Manoj Tiwari", email: "manoj@altasgoods.in", role: "Logistics Manager", team: "Operations", lastActive: addDays(MOCK_EPOCH, -1).toISOString(), status: "active" },
+  { id: "u-8", name: "Elena D'Souza", email: "elena@altasgoods.in", role: "Risk Analyst", team: "Trust and Safety", lastActive: addDays(MOCK_EPOCH, -3).toISOString(), status: "active" },
+  { id: "u-9", name: "Harsh Vardhan", email: "harsh@altasgoods.in", role: "Catalog Associate", team: "Catalog", lastActive: addDays(MOCK_EPOCH, -12).toISOString(), status: "invited" },
+  { id: "u-10", name: "Nikita Rao", email: "nikita@altasgoods.in", role: "Support Agent", team: "Customer Experience", lastActive: addDays(MOCK_EPOCH, -40).toISOString(), status: "disabled" },
 ];

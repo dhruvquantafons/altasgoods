@@ -5,7 +5,7 @@
  * client components receive plain snapshots built at the bottom of this file.
  */
 import type { Brand, Category, Product, Seller } from "../types";
-import { addDays, NOW, seeded, slugify } from "../utils";
+import { addDays, MOCK_EPOCH, seeded, slugify } from "../utils";
 import { coupons } from "./engagement";
 import type { BankOffer, CartProduct, CouponLite, NavCategory, Suggestion, WalletLite } from "@/components/store/types";
 
@@ -141,7 +141,7 @@ export interface DealSlot {
 }
 
 const endOfToday = "2026-10-01T23:59:00+05:30";
-const hoursFromNow = (h: number) => new Date(NOW.getTime() + h * 3600_000).toISOString();
+const hoursFromNow = (h: number) => new Date(MOCK_EPOCH.getTime() + h * 3600_000).toISOString();
 
 export const DEALS_OF_THE_DAY: DealSlot[] = [
   { productId: "p-headphones-studio", kind: "deal_of_the_day", startsAt: "2026-10-01T00:00:00+05:30", endsAt: endOfToday, claimedPct: 64 },
@@ -454,14 +454,14 @@ export function questionsFor(p: Product): Question[] {
     id: `q-${p.slug}-${i}`,
     question: q,
     askedBy: askers[Math.floor(r() * askers.length)]!,
-    askedAt: addDays(NOW, -Math.floor(10 + r() * 120)).toISOString(),
+    askedAt: addDays(MOCK_EPOCH, -Math.floor(10 + r() * 120)).toISOString(),
     votes: Math.floor(4 + r() * 80),
     answers: [
       {
         by: role === "brand" ? `${brand} (brand)` : role === "seller" ? "AltasGoods" : buyerNames[i % buyerNames.length]!,
         role,
         body: a,
-        at: addDays(NOW, -Math.floor(2 + r() * 9)).toISOString(),
+        at: addDays(MOCK_EPOCH, -Math.floor(2 + r() * 9)).toISOString(),
         helpful: Math.floor(r() * 60),
       },
     ],

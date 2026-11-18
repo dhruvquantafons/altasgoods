@@ -3,10 +3,7 @@
  * serviceability and Indian date formats. No mock imports here so client
  * components can use them without pulling the data layer into the bundle.
  */
-import { NOW } from "@/lib/utils";
-
 export const IST = "Asia/Kolkata";
-export const NOW_MS = NOW.getTime();
 
 /** Orders confirmed before 14:00 local time count as day 0 (spec 10.3). */
 export const ORDER_CUTOFF_HOUR = 14;
@@ -38,15 +35,15 @@ export function formatDayMonthYear(d: Date | string | number) {
   return dayMonthYearFmt.format(new Date(d));
 }
 
-/** A delivery date from today. Uses the real clock, since orders placed today are promised against it (unlike the sample data's fixed NOW). */
-export function daysFromNow(days: number) {
-  return new Date(Date.now() + days * 86400_000);
+/** A delivery date `days` after `nowMs`. */
+export function daysFromNow(days: number, nowMs: number) {
+  return new Date(nowMs + days * 86400_000);
 }
 
 /** Relative label used in promise lines: "Tomorrow", "Sat, 3 Oct". */
-export function promiseLabel(days: number) {
+export function promiseLabel(days: number, nowMs: number) {
   if (days <= 1) return "tomorrow";
-  return formatPromise(daysFromNow(days));
+  return formatPromise(daysFromNow(days, nowMs));
 }
 
 /* ------------------------------ Pincodes ------------------------------ */
@@ -142,7 +139,7 @@ export function lookupPincode(pin: string): PincodeInfo | null {
 }
 
 /** Days until delivery for an offer to a pincode, honouring the 14:00 cutoff. */
-export function promiseDays(baseDays: number, info: PincodeInfo | null, nowMs = NOW_MS) {
+export function promiseDays(baseDays: number, info: PincodeInfo | null, nowMs: number) {
   const hourIst = new Date(nowMs + 5.5 * 3600_000).getUTCHours();
   const afterCutoff = hourIst >= ORDER_CUTOFF_HOUR ? 1 : 0;
   return Math.max(1, baseDays + (info?.extraDays ?? 0) + afterCutoff);
