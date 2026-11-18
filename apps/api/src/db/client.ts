@@ -10,7 +10,11 @@ export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0] | Db;
 // bigint columns hold paise and fit comfortably in a JS number
 pg.types.setTypeParser(20, (v) => Number(v));
 
-export function createDb(url = databaseUrl()) {
-  const pool = new pg.Pool({ connectionString: url, max: 10 });
+/**
+ * `connectionTimeoutMillis`: when every connection is busy, a request waits at
+ * most this long for one and then fails, rather than hanging the API.
+ */
+export function createDb(url = databaseUrl(), options: { max?: number; connectionTimeoutMillis?: number } = {}) {
+  const pool = new pg.Pool({ connectionString: url, max: options.max ?? 10, connectionTimeoutMillis: options.connectionTimeoutMillis ?? 10_000 });
   return { db: drizzle(pool, { schema }), pool };
 }

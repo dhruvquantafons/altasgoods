@@ -51,7 +51,7 @@ export class NotificationsService {
   async notify<K extends NotificationKind>(tx: Tx, kind: K, input: { userId: string | null; key: string; data: NotificationData[K] } & NotificationRefs) {
     const { userId, key, data, ...refs } = input;
     if (!userId) return null;
-    if (!(await this.settings.get()).notifications.customerEmails) return null;
+    if (!(await this.settings.get(tx)).notifications.customerEmails) return null;
     const dedupeKey = `${DEDUPE_PREFIX[kind]}:${key}`;
     const [sent] = await tx.select({ key: emailLog.dedupeKey }).from(emailLog).where(eq(emailLog.dedupeKey, dedupeKey));
     if (sent) return null;

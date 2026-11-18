@@ -122,7 +122,7 @@ export class OrdersService {
 
         // GST is inside the price: each line records the rate it was sold at and the tax in its
         // amount after its share of the coupon (the same net figure refunds use). Delivery is not taxed here.
-        const tax = (await this.settings.get()).tax;
+        const tax = (await this.settings.get(tx)).tax;
         const gst = await resolveProductGst(tx, [...new Set(q.lines.map((l) => l.productId))], tax);
         await tx.insert(orderItems).values(
           q.lines.map((l) => {

@@ -53,7 +53,7 @@ export class QuoteService {
 
   async build(tx: Tx, input: QuoteInput) {
     const now = this.clock.now();
-    const [settings, live] = await Promise.all([this.settings.get(), this.sales.live(now, tx)]);
+    const [settings, live] = await Promise.all([this.settings.get(tx), this.sales.live(now, tx)]);
     // the price the customer pays: any live sale applied, exactly as the catalog shows it
     const priceOf = (p: { product: { id: string; categoryId: string }; offer: { pricePaise: number } }) => this.sales.priceFor(live, p.product, p.offer.pricePaise).pricePaise;
     const ids = [...new Set(input.lines.map((l) => l.offerId))];
