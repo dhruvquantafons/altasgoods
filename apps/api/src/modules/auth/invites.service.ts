@@ -14,38 +14,48 @@ const byToken = (hash: string) => `staff-invite:${hash}`;
 const byUser = (userId: string) => `staff-invite-user:${userId}`;
 
 /**
- * One-time links that let a new staff member choose their password. Each
- * person has at most one live link: issuing a new one cancels the last.
+ * Deletes KEYS[1] (the user's current-link pointer) only when it still names
+ * ARGV[1] (this link's hash). Returns 1 when it did: this link was the latest.
+ */
+const TAKE_IF_CURRENT = `if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) else return 0 end`;
+
+/**
+ * One-time links that let a new staff member choose their password. Only the
+ * latest link of a person works: the per-user pointer names it, and consume()
+ * accepts a link only while the pointer still does. So a link orphaned by two
+ * resends racing (or a resend racing an accept) cannot be used, and nothing
+ * revives it later, even if the same person is added again within 72 hours.
  */
 @Injectable()
 export class InvitesService {
   constructor(@Inject(REDIS) private readonly redis: Redis) {}
 
-  /** A fresh link for the user, replacing any earlier one. */
+  /** A fresh link for the user. The pointer moves to it, so any earlier link stops working. */
   async issue(userId: string) {
-    await this.revoke(userId);
     const token = randomBytes(32).toString("base64url");
     const hash = sha256(token);
+    const previous = await this.redis.get(byUser(userId));
     await this.redis.multi().set(byToken(hash), userId, "EX", TTL_SECONDS).set(byUser(userId), hash, "EX", TTL_SECONDS).exec();
+    // tidy only: the pointer check in consume() is what makes the old link useless
+    if (previous && previous !== hash) await this.redis.del(byToken(previous));
     return { token, link: `${env().WEB_ORIGIN}/set-password?token=${token}` };
   }
 
-  /** Cancels the user's link, if any. */
+  /** Cancels the user's link, if any: with no pointer, no link of theirs is accepted. */
   async revoke(userId: string) {
     const hash = await this.redis.get(byUser(userId));
-    if (hash) await this.redis.del(byToken(hash));
     await this.redis.del(byUser(userId));
+    if (hash) await this.redis.del(byToken(hash));
   }
 
-  /** Uses up a link and returns whose it was, or null when it is unknown, expired or already used. */
+  /** Uses up a link and returns whose it was, or null when it is unknown, expired, used or no longer the latest. */
   async consume(token: string) {
     const hash = sha256(token);
-    const userId = await this.redis.get(byToken(hash));
+    // GETDEL: of two tabs using the same link, only one gets the user id
+    const userId = await this.redis.getdel(byToken(hash));
     if (!userId) return null;
-    // whoever deletes the key first owns the link, so two tabs cannot both use it
-    if ((await this.redis.del(byToken(hash))) === 0) return null;
-    await this.redis.del(byUser(userId));
-    return userId;
+    const current = (await this.redis.eval(TAKE_IF_CURRENT, 1, byUser(userId), hash)) as number;
+    return current === 1 ? userId : null;
   }
 
   /** Which of these users have a link waiting. */

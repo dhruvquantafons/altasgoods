@@ -1,17 +1,21 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
-import { DB, EMAIL_PROVIDER } from "../src/common/tokens.js";
+import { DB, EMAIL_PROVIDER, REDIS } from "../src/common/tokens.js";
 import { createDb, type Db } from "../src/db/client.js";
 import { users } from "../src/db/schema.js";
 import type { EmailMessage, EmailProvider } from "../src/modules/auth/email.provider.js";
 import { StaffService } from "../src/modules/admin/staff.service.js";
+import { InvitesService } from "../src/modules/auth/invites.service.js";
 import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
 
 /** Keeps every email the app sends, so tests can follow the links in them. */
 class OutboxEmailProvider implements EmailProvider {
   sent: EmailMessage[] = [];
+  /** Addresses whose emails fail, as an SMTP outage would */
+  failFor = new Set<string>();
   async send(message: EmailMessage) {
+    if (this.failFor.has(message.to)) throw new Error("421 Service not available");
     this.sent.push(message);
   }
   inviteTokenFor(to: string) {
@@ -50,6 +54,7 @@ afterAll(async () => {
 });
 beforeEach(() => {
   outbox.sent = [];
+  outbox.failFor.clear();
 });
 
 describe("staff list", () => {
@@ -142,6 +147,34 @@ describe("adding staff", () => {
     await t.http.post("/v1/auth/login").send({ email: "reset.staff@example.com", password: "shopper-password-1" }).expect(401);
     await t.http.post("/v1/auth/refresh").send({ refreshToken: shopper.session.refreshToken }).expect(401);
     await signIn(t.http, "reset.staff@example.com", "temporary-pass-1");
+  });
+
+  it("records the role grant in the audit log even when the invite email fails", async () => {
+    const shopper = await signUp(t.http, "invite.fails@example.com", "Invite Fails", "shopper-password-1");
+    outbox.failFor.add("invite.fails@example.com");
+    const r = await t.http.post(S).set(admin).send({ name: "Invite Fails", email: "invite.fails@example.com", roles: ["OPS_ADMIN"], mode: "invite" }).expect(502);
+    expect(r.body.code).toBe("INVITE_NOT_SENT");
+    // the roles were granted, and the log says so
+    const audit = await t.http.get("/v1/admin/audit").set(admin).query({ entityType: "staff", entityId: shopper.session.user.id }).expect(200);
+    expect(audit.body.items.map((e: { action: string }) => e.action)).toContain("staff.create");
+    // and the admin can send it again once email works
+    outbox.failFor.clear();
+    await t.http.post(`${S}/${shopper.session.user.id}/invite`).set(admin).expect(200);
+    expect(outbox.inviteTokenFor("invite.fails@example.com")).toBeTruthy();
+  });
+
+  it("promotes a shopper once when two admins add them at the same moment", async () => {
+    const shopper = await signUp(t.http, "double.add@example.com", "Double Add");
+    const svc = t.app.get(StaffService);
+    const input = { name: "Double Add", email: "double.add@example.com", roles: ["OPS_ADMIN" as const], mode: "invite" as const };
+    // open a few pooled connections first, so the two really overlap
+    const appDb = t.app.get<symbol, Db>(DB);
+    await Promise.all([1, 2, 3, 4].map(() => appDb.execute(sql`select pg_sleep(0.05)`)));
+    const results = await Promise.allSettled([svc.create(adminId, input), svc.create(adminId, input)]);
+    expect(results.filter((x) => x.status === "fulfilled")).toHaveLength(1);
+    expect((results.find((x) => x.status === "rejected") as PromiseRejectedResult).reason).toMatchObject({ code: "STAFF_EXISTS" });
+    const [row] = await db.select({ roles: users.staffRoles }).from(users).where(eq(users.id, shopper.session.user.id));
+    expect(row!.roles).toEqual(["OPS_ADMIN"]);
   });
 
   it("refuses an email that is already staff, an empty role list and a missing temporary password", async () => {
@@ -277,11 +310,54 @@ describe("Auditor", () => {
   });
 });
 
+describe("invite links", () => {
+  it("accepts only the latest link, even when links are left behind by a race", async () => {
+    const created = await t.http.post(S).set(admin).send({ name: "Race Invite", email: "race.invite@altasgoods.in", roles: ["AUDITOR"], mode: "password", tempPassword: "temporary-pass-1" }).expect(201);
+    const id = created.body.member.id as string;
+    const invites = t.app.get(InvitesService);
+    const redis = t.app.get<symbol, import("ioredis").Redis>(REDIS);
+
+    // two resends at once: exactly one of the two links works
+    const [a, b] = await Promise.all([invites.issue(id), invites.issue(id)]);
+    const used = await Promise.all([invites.consume(a.token), invites.consume(b.token)]);
+    expect(used.filter((u) => u === id)).toHaveLength(1);
+
+    // a link whose token key survived a race, but that is no longer the latest, is refused
+    const old = await invites.issue(id);
+    const latest = await invites.issue(id);
+    const hash = (await redis.get(`staff-invite-user:${id}`))!;
+    const { createHash } = await import("node:crypto");
+    await redis.set(`staff-invite:${createHash("sha256").update(old.token).digest("hex")}`, id, "EX", 60);
+    expect(hash).toBe(createHash("sha256").update(latest.token).digest("hex"));
+    expect(await invites.consume(old.token)).toBeNull();
+    expect(await invites.consume(latest.token)).toBe(id);
+
+    // and after a cancel, a leftover token key revives nothing
+    const left = await invites.issue(id);
+    await invites.revoke(id);
+    await redis.set(`staff-invite:${createHash("sha256").update(left.token).digest("hex")}`, id, "EX", 60);
+    expect(await invites.consume(left.token)).toBeNull();
+  });
+
+  it("lets two tabs use the same link only once", async () => {
+    const created = await t.http.post(S).set(admin).send({ name: "Two Tabs", email: "two.tabs@altasgoods.in", roles: ["AUDITOR"], mode: "invite" }).expect(201);
+    const token = outbox.inviteTokenFor("two.tabs@altasgoods.in")!;
+    const [x, y] = await Promise.all([
+      t.http.post("/v1/auth/invite/accept").send({ token, password: "two-tabs-pass-1" }),
+      t.http.post("/v1/auth/invite/accept").send({ token, password: "two-tabs-pass-2" }),
+    ]);
+    expect([x.status, y.status].sort()).toEqual([200, 400]);
+    expect(created.body.member.id).toBeTruthy();
+  });
+});
+
 describe("the last Super Admin", () => {
   let other: Awaited<ReturnType<typeof staffWith>>;
+  let bystander: Awaited<ReturnType<typeof staffWith>>;
 
   it("cannot be demoted, even by two Super Admins demoting each other at once", async () => {
     other = await staffWith("second.super@altasgoods.in", ["SUPER_ADMIN"]);
+    bystander = await staffWith("bystander@altasgoods.in", ["CATALOG_MANAGER"]);
     // straight to the service, so both changes really overlap (over HTTP the first one's sign out can win the race)
     const svc = t.app.get(StaffService);
     // open a few pooled connections first, so neither change waits on a connect while the other finishes
@@ -290,18 +366,27 @@ describe("the last Super Admin", () => {
     const results = await Promise.allSettled([svc.setRoles(adminId, other.id, ["OPS_ADMIN"]), svc.setRoles(other.id, adminId, ["OPS_ADMIN"])]);
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
     const lost = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
-    expect(lost.reason).toMatchObject({ code: "LAST_SUPER_ADMIN" });
+    // whoever goes second is no longer a Super Admin by the time the lock is theirs
+    expect(lost.reason).toMatchObject({ code: "FORBIDDEN" });
     const rows = await db.select({ roles: users.staffRoles, status: users.status }).from(users);
     expect(rows.filter((u) => u.roles.includes("SUPER_ADMIN") && u.status === "ACTIVE")).toHaveLength(1);
   });
 
-  it("cannot be demoted, disabled or removed by someone whose Super Admin role was just taken", async () => {
+  it("lets nobody whose Super Admin role was just taken change any staff", async () => {
     const rows = await db.select({ id: users.id, roles: users.staffRoles }).from(users);
     const last = rows.find((u) => u.roles.includes("SUPER_ADMIN"))!;
     const demoted = last.id === adminId ? other.id : adminId;
     const svc = t.app.get(StaffService);
-    for (const attempt of [() => svc.setRoles(demoted, last.id, ["OPS_ADMIN"]), () => svc.setStatus(demoted, last.id, "BLOCKED"), () => svc.remove(demoted, last.id)]) {
-      await expect(attempt()).rejects.toMatchObject({ code: "LAST_SUPER_ADMIN" });
+    for (const attempt of [
+      () => svc.setRoles(demoted, last.id, ["OPS_ADMIN"]),
+      () => svc.setStatus(demoted, last.id, "BLOCKED"),
+      () => svc.remove(demoted, last.id),
+      // not only changes that could drop a Super Admin
+      () => svc.setRoles(demoted, bystander.id, ["SUPER_ADMIN"]),
+      () => svc.setStatus(demoted, bystander.id, "ACTIVE"),
+      () => svc.create(demoted, { name: "Sneaky", email: "sneaky.add@altasgoods.in", roles: ["SUPER_ADMIN"], mode: "invite" }),
+    ]) {
+      await expect(attempt()).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
   });
 });

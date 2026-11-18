@@ -34,12 +34,15 @@ export class StaffController {
   @Post()
   @ApiResponse({ status: 201, standardSchema: s.staffCreateResponse })
   async create(@CurrentUser() u: AuthUser, @Body({ schema: s.staffCreateBody }) body: z.infer<typeof s.staffCreateBody>) {
-    const out = await this.svc.create(body);
-    const how = body.mode === "invite" ? "sent an invite" : "set a temporary password";
-    await this.audit.log(u, "staff.create", { type: "staff", id: out.member.id }, `Added ${who(out.member)} as staff (${sorted(out.member.roles).join(", ")}) and ${how}`, {
-      roles: [[], sorted(out.member.roles)],
+    const member = await this.svc.create(u.id, body);
+    // recorded before the invite goes out: a failed email must not leave a role grant out of the log
+    const how = body.mode === "invite" ? "an invite by email" : "a temporary password";
+    await this.audit.log(u, "staff.create", { type: "staff", id: member.id }, `Added ${who(member)} as staff (${sorted(member.roles).join(", ")}) with ${how}`, {
+      roles: [[], sorted(member.roles)],
     });
-    return out;
+    if (body.mode === "password") return { member };
+    const inviteLink = await this.svc.invite(member.id);
+    return { member: await this.svc.member(member.id), inviteLink };
   }
 
   @Patch(":id")

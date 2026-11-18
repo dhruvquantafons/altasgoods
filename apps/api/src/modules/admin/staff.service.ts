@@ -51,55 +51,59 @@ export class StaffService {
 
   /**
    * Adds a staff member. An existing shopper account with the email gets the
-   * roles and keeps its password, unless a temporary one is set.
+   * roles and keeps its password, unless a temporary one is set. Sends no
+   * email itself: the caller records the grant in the audit log first, then
+   * calls invite(), so a failed email never leaves a grant unrecorded.
    */
-  async create(input: z.infer<typeof staffCreateBody>) {
+  async create(actorId: string, input: z.infer<typeof staffCreateBody>) {
     const email = input.email.trim().toLowerCase();
     const temp = input.mode === "password" ? await hashPassword(input.tempPassword) : undefined;
-    const [existing] = await this.db.select().from(users).where(sameEmail(email));
-    if (existing?.staffRoles.length) throw conflict("STAFF_EXISTS", "This email already belongs to a staff member. Edit their roles instead.");
-    if (existing?.status === "BLOCKED") throw conflict("ACCOUNT_BLOCKED", "This email belongs to a blocked shopper account. Unblock it in Customers first.");
-
-    let id: string;
-    if (existing) {
-      id = existing.id;
-      await this.db
-        .update(users)
-        .set({ staffRoles: input.roles, ...(temp ? { passwordHash: temp, mustChangePassword: true } : {}) })
-        .where(and(eq(users.id, id), sql`cardinality(${users.staffRoles}) = 0`));
-      if (temp) {
-        // their old password no longer works, so neither do their sessions
-        await this.tokens.revokeAll(id);
-        await this.email.send(passwordChangedEmail(existing.email)).catch((e: Error) => this.logger.warn(`Password changed notice not sent: ${e.message}`));
+    const taken = () => conflict("STAFF_EXISTS", "This email already belongs to a staff member. Edit their roles instead.");
+    const { id, existing } = await this.locked(actorId, async (tx) => {
+      const [existing] = await tx.select().from(users).where(sameEmail(email));
+      if (existing?.staffRoles.length) throw taken();
+      if (existing?.status === "BLOCKED") throw conflict("ACCOUNT_BLOCKED", "This email belongs to a blocked shopper account. Unblock it in Customers first.");
+      if (existing) {
+        const updated = await tx
+          .update(users)
+          .set({ staffRoles: input.roles, ...(temp ? { passwordHash: temp, mustChangePassword: true } : {}) })
+          .where(and(eq(users.id, existing.id), sql`cardinality(${users.staffRoles}) = 0`))
+          .returning({ id: users.id });
+        // promoted a moment ago by someone else (the admin:create script does not take this lock)
+        if (!updated.length) throw taken();
+        return { id: existing.id, existing };
       }
-    } else {
-      const [row] = await this.db
+      const [row] = await tx
         .insert(users)
         .values({ email, name: input.name, staffRoles: input.roles, passwordHash: temp ?? null, mustChangePassword: !!temp })
         .returning({ id: users.id })
         .catch((e: unknown) => {
           throw isUniqueViolation(e) ? conflict("STAFF_EXISTS", "An account with this email was just created. Refresh and try again.") : e;
         });
-      id = row!.id;
+      return { id: row!.id, existing: undefined };
+    });
+    if (existing && temp) {
+      // their old password no longer works, so neither do their sessions
+      await this.tokens.revokeAll(id);
+      await this.email.send(passwordChangedEmail(existing.email)).catch((e: Error) => this.logger.warn(`Password changed notice not sent: ${e.message}`));
     }
-    const inviteLink = input.mode === "invite" ? await this.sendInvite(id) : undefined;
-    return { member: await this.member(id), inviteLink };
+    return this.member(id);
   }
 
   /** Emails a new invite link, cancelling the earlier one. */
   async resendInvite(id: string) {
     const member = await this.member(id);
     if (member.status === "BLOCKED") throw conflict("STAFF_DISABLED", "Enable this staff member before sending them an invite.");
-    const inviteLink = await this.sendInvite(id);
+    const inviteLink = await this.invite(id);
     return { member: await this.member(id), inviteLink };
   }
 
   async setRoles(actorId: string, id: string, roles: StaffRole[]) {
-    const { before, after } = await this.locked(async (tx) => {
+    const { before, after } = await this.locked(actorId, async (tx) => {
       const target = await this.target(tx, id);
       const demoting = target.staffRoles.includes("SUPER_ADMIN") && !roles.includes("SUPER_ADMIN");
       if (demoting && target.id === actorId) throw selfError();
-      if (demoting) await this.guardLastSuper(tx, target, actorId);
+      if (demoting) await this.guardLastSuper(tx, target);
       await tx.update(users).set({ staffRoles: roles }).where(eq(users.id, id));
       return { before: target, after: { ...target, staffRoles: roles } };
     });
@@ -111,11 +115,11 @@ export class StaffService {
 
   /** BLOCKED is disabled: they cannot sign in, and every session ends at once. */
   async setStatus(actorId: string, id: string, status: "ACTIVE" | "BLOCKED") {
-    const before = await this.locked(async (tx) => {
+    const before = await this.locked(actorId, async (tx) => {
       const target = await this.target(tx, id);
       if (status === "BLOCKED") {
         if (target.id === actorId) throw selfError();
-        await this.guardLastSuper(tx, target, actorId);
+        await this.guardLastSuper(tx, target);
       }
       await tx.update(users).set({ status }).where(eq(users.id, id));
       return target;
@@ -126,10 +130,10 @@ export class StaffService {
 
   /** Takes away every staff role and ends their sessions. The account stays, so the audit log still names them. */
   async remove(actorId: string, id: string) {
-    const before = await this.locked(async (tx) => {
+    const before = await this.locked(actorId, async (tx) => {
       const target = await this.target(tx, id);
       if (target.id === actorId) throw selfError();
-      await this.guardLastSuper(tx, target, actorId);
+      await this.guardLastSuper(tx, target);
       await tx.update(users).set({ staffRoles: [] }).where(eq(users.id, id));
       return target;
     });
@@ -138,10 +142,16 @@ export class StaffService {
     return before;
   }
 
-  private locked<T>(fn: (tx: Tx) => Promise<T>) {
+  /**
+   * Runs a staff change under one lock, held until commit, after checking the
+   * one asking is still an active Super Admin: their token may predate another
+   * admin taking that role away a moment ago.
+   */
+  private locked<T>(actorId: string, fn: (tx: Tx) => Promise<T>) {
     return this.db.transaction(async (tx) => {
-      // one lock for every staff change, held until commit
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext('altasgoods:staff-roles'))`);
+      const [actor] = await tx.select().from(users).where(eq(users.id, actorId));
+      if (!actor || !activeSuper(actor)) throw forbidden("Only an active Super Admin can change staff.");
       return fn(tx);
     });
   }
@@ -153,11 +163,11 @@ export class StaffService {
   }
 
   /**
-   * Runs under the lock. Refuses to take away the last active Super Admin, then
-   * checks the one asking is still an active Super Admin: their token may
-   * predate another admin taking that role away a moment ago.
+   * Runs under the lock. Refuses to take away the last active Super Admin.
+   * The actor check in locked() already keeps one active Super Admin (the one
+   * asking) besides the target, so this is defence in depth.
    */
-  private async guardLastSuper(tx: Tx, target: Row, actorId: string) {
+  private async guardLastSuper(tx: Tx, target: Row) {
     if (activeSuper(target)) {
       const others = await tx
         .select({ id: users.id })
@@ -166,11 +176,13 @@ export class StaffService {
         .limit(1);
       if (!others.length) throw lastError();
     }
-    const [actor] = await tx.select().from(users).where(eq(users.id, actorId));
-    if (!actor || !activeSuper(actor)) throw forbidden("Only an active Super Admin can change staff.");
   }
 
-  private async sendInvite(id: string) {
+  /**
+   * Emails a fresh invite link (the earlier one stops working). Returns the
+   * link only when no email really goes out (see InvitesService.showLink).
+   */
+  async invite(id: string) {
     const [row] = await this.db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, id));
     const { link } = await this.invites.issue(id);
     try {

@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import type { AddressInfo } from "node:net";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { Redis } from "ioredis";
@@ -54,8 +55,12 @@ export async function createTestApp(overrides: { provide: symbol; useValue: unkn
   for (const o of overrides) builder = builder.overrideProvider(o.provide).useValue(o.useValue);
   const moduleRef = await builder.compile();
   const app = configureApp(moduleRef.createNestApplication({ rawBody: true, logger: false }));
-  await app.init();
-  return { app, http: request(app.getHttpServer()), clock, close: () => app.close() };
+  // Listen on loopback ourselves. Handing supertest the bare server makes it listen(0) on [::] per
+  // request and connect to 127.0.0.1:<port>, which can reach another local process bound to that
+  // loopback port instead of this app: the cause of rare, random failures across the suite.
+  await app.listen(0, "127.0.0.1");
+  const { port } = app.getHttpServer().address() as AddressInfo;
+  return { app, http: request(`http://127.0.0.1:${port}`), clock, close: () => app.close() };
 }
 
 /**
