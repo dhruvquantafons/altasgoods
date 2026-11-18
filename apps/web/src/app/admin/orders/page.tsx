@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
 import { loadAdminItems } from "@/lib/api/admin-fulfilment";
+import { canEditArea } from "@/lib/api/server";
 import type { ApiOrderItemStatus } from "@/lib/api/types";
 
 export const metadata = { title: "Orders" };
@@ -32,7 +33,7 @@ export default async function OrdersPage(props: PageProps<"/admin/orders">) {
   const q = sp(params, "q")?.trim() ?? "";
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
 
-  const data = await loadAdminItems({ status: view.statuses, q, page, pageSize: PAGE_SIZE });
+  const [data, edit] = await Promise.all([loadAdminItems({ status: view.statuses, q, page, pageSize: PAGE_SIZE }), canEditArea("orders")]);
   const count = (statuses: ApiOrderItemStatus[]) =>
     statuses.length ? statuses.reduce((n, s) => n + (data.counts[s] ?? 0), 0) : Object.values(data.counts).reduce((n, c) => n + c, 0);
   const current = { view: view.key === VIEWS[0]!.key ? undefined : view.key, q: q || undefined };
@@ -58,7 +59,7 @@ export default async function OrdersPage(props: PageProps<"/admin/orders">) {
           <EmptyState icon={PackageSearch} title={q ? "No orders match this search" : "Nothing here right now"} description={q ? "Try a different order ID or product name." : "New lines show up here as customers order."} />
         ) : (
           // eslint-disable-next-line react-hooks/purity -- request time, read once per render on the server
-          <QueueTable items={data.items} now={Date.now()} />
+          <QueueTable items={data.items} now={Date.now()} canEdit={edit} />
         )}
         <Pager path="/admin/orders" params={current} label="lines" page={data.page} pages={pages} from={from} to={Math.min(data.page * PAGE_SIZE, data.total)} total={data.total} />
       </Card>

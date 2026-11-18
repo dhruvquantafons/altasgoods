@@ -323,9 +323,13 @@ export function EmailButton({ email, verified }: { email: string; verified: bool
   );
 }
 
-/** Change the password with the current one. Other devices are signed out. */
-export function ChangePasswordButton() {
-  const [open, setOpen] = useState(false);
+/**
+ * Change the password with the current one. Other devices are signed out.
+ * With `required` (a temporary password from a Super Admin) the form opens at
+ * once and, once changed, goes on to `then`: the staff areas open again.
+ */
+export function ChangePasswordButton({ required = false, then }: { required?: boolean; then?: string } = {}) {
+  const [open, setOpen] = useState(required);
   const [f, setF] = useState({ current: "", next: "" });
   const [errors, setErrors] = useState<{ current?: string; next?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
@@ -343,6 +347,8 @@ export function ChangePasswordButton() {
     setBusy(false);
     if (!r.ok) return setErrors(r.code === "PASSWORD_INCORRECT" ? { current: r.error } : { form: r.error });
     setOpen(false);
+    // a full load, so the session is renewed without the "change required" flag
+    if (required && then) return window.location.assign(then);
     t.show("Password changed. Other devices were signed out");
   };
 
@@ -363,14 +369,14 @@ export function ChangePasswordButton() {
       <FormModal
         open={open}
         onClose={() => setOpen(false)}
-        title="Change your password"
-        description="You stay signed in here. Every other device is signed out."
+        title={required ? "Choose your own password" : "Change your password"}
+        description={required ? "You signed in with a temporary password. Choose your own to start working in AltasGoods." : "You stay signed in here. Every other device is signed out."}
         saveLabel="Change password"
         busy={busy}
         onSave={save}
       >
         <div className="flex flex-col gap-4">
-          <Field label="Current password" htmlFor="pw-current" error={errors.current}>
+          <Field label={required ? "Temporary password" : "Current password"} htmlFor="pw-current" error={errors.current}>
             <Input id="pw-current" type="password" autoComplete="current-password" autoFocus value={f.current} onChange={(e) => setF({ ...f, current: e.target.value })} aria-invalid={Boolean(errors.current)} />
           </Field>
           <Field label="New password" htmlFor="pw-new" error={errors.next} hint="At least 8 characters">

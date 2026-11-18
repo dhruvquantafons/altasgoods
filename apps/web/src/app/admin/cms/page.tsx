@@ -3,11 +3,12 @@ import { ArrowUpRight } from "lucide-react";
 import { BannerStudio } from "@/components/admin/banner-studio";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadBanners } from "@/lib/api/admin-system";
+import { canEditArea } from "@/lib/api/server";
 
 export const metadata = { title: "Storefront CMS" };
 
 export default async function CmsPage() {
-  const banners = await loadBanners();
+  const [banners, edit] = await Promise.all([loadBanners(), canEditArea("cms")]);
   return (
     <>
       <PageHeader
@@ -19,7 +20,7 @@ export default async function CmsPage() {
           </Link>
         }
       />
-      <BannerStudio banners={banners} />
+      <BannerStudio banners={banners} canEdit={edit} />
     </>
   );
 }

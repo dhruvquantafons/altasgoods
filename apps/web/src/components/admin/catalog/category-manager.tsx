@@ -15,7 +15,7 @@ type Draft = { id: string | null; name: string; icon: string; subcategories: str
 const blank: Draft = { id: null, name: "", icon: "", subcategories: "" };
 
 /** Categories and their subcategories, as shown in the store's menus and filters. */
-export function CategoryManager({ categories }: { categories: AdminCategory[] }) {
+export function CategoryManager({ categories, canEdit = true }: { categories: AdminCategory[]; canEdit?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -58,11 +58,13 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
-        <Button size="sm" icon={Plus} onClick={() => open(blank)}>
-          Add category
-        </Button>
-      </div>
+      {canEdit && (
+        <div className="mb-4 flex justify-end">
+          <Button size="sm" icon={Plus} onClick={() => open(blank)}>
+            Add category
+          </Button>
+        </div>
+      )}
       {categories.length === 0 ? (
         <Card>
           <EmptyState icon={Layers} title="No categories yet" description="Add a category, then its subcategories, before adding products." />
@@ -76,7 +78,7 @@ export function CategoryManager({ categories }: { categories: AdminCategory[] })
                   <h3 className="text-[15px] font-semibold text-ink-900">{c.name}</h3>
                   <p className="font-mono text-xs text-ink-500">/c/{c.slug}</p>
                 </div>
-                <div className="flex shrink-0 gap-1">
+                <div className={canEdit ? "flex shrink-0 gap-1" : "hidden"}>
                   <Button
                     size="icon-sm"
                     variant="ghost"

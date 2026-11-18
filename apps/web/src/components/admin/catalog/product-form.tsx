@@ -27,7 +27,8 @@ const rupees = (paise?: number) => (paise ? String(paise / 100) : "");
 const toPaise = (v: string) => Math.round(Number(v || 0) * 100);
 
 /** Create or edit a product, its price and stock, images, specifications and variants. */
-export function ProductForm({ product, categories, brands }: { product?: AdminProduct; categories: AdminCategory[]; brands: AdminBrand[] }) {
+/** With canEdit false (an Auditor) every field is read only and there is no save button. */
+export function ProductForm({ product, categories, brands, canEdit = true }: { product?: AdminProduct; categories: AdminCategory[]; brands: AdminBrand[]; canEdit?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -137,250 +138,252 @@ export function ProductForm({ product, categories, brands }: { product?: AdminPr
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-5 lg:grid-cols-3" noValidate>
-      <div className="space-y-5 lg:col-span-2">
-        <Card>
-          <CardHeader title="Basics" />
-          <CardBody className="space-y-4">
-            <Field label="Title" htmlFor="pf-title" required error={errors.title} hint="Brand, product, key detail: for example Hearth Brass Table Lamp, Warm White">
-              <Input id="pf-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} aria-invalid={!!errors.title} />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="SKU" htmlFor="pf-sku" required error={errors.sku} hint="Your own stock code">
-                <Input id="pf-sku" value={sku} maxLength={64} onChange={(e) => setSku(e.target.value)} aria-invalid={!!errors.sku} />
+    <form onSubmit={submit} noValidate>
+      {/* a disabled fieldset turns every input and button in it off at once */}
+      <fieldset disabled={!canEdit} className="grid min-w-0 gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <Card>
+            <CardHeader title="Basics" />
+            <CardBody className="space-y-4">
+              <Field label="Title" htmlFor="pf-title" required error={errors.title} hint="Brand, product, key detail: for example Hearth Brass Table Lamp, Warm White">
+                <Input id="pf-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} aria-invalid={!!errors.title} />
               </Field>
-              {product && (
-                <Field label="Store address" htmlFor="pf-slug" hint="Set when the product was created">
-                  <Input id="pf-slug" value={`/p/${product.slug}`} readOnly disabled />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="SKU" htmlFor="pf-sku" required error={errors.sku} hint="Your own stock code">
+                  <Input id="pf-sku" value={sku} maxLength={64} onChange={(e) => setSku(e.target.value)} aria-invalid={!!errors.sku} />
                 </Field>
-              )}
-            </div>
-            <Field label="Description" htmlFor="pf-desc" error={errors.description}>
-              <Textarea id="pf-desc" rows={5} value={description} maxLength={5000} onChange={(e) => setDescription(e.target.value)} />
-            </Field>
-            <Field label="Highlights" htmlFor="pf-hl" hint="One per line, up to 10. Shown as bullet points next to the photos." error={errors.highlights}>
-              <Textarea id="pf-hl" rows={4} value={highlights} onChange={(e) => setHighlights(e.target.value)} />
-            </Field>
-          </CardBody>
-        </Card>
+                {product && (
+                  <Field label="Store address" htmlFor="pf-slug" hint="Set when the product was created">
+                    <Input id="pf-slug" value={`/p/${product.slug}`} readOnly disabled />
+                  </Field>
+                )}
+              </div>
+              <Field label="Description" htmlFor="pf-desc" error={errors.description}>
+                <Textarea id="pf-desc" rows={5} value={description} maxLength={5000} onChange={(e) => setDescription(e.target.value)} />
+              </Field>
+              <Field label="Highlights" htmlFor="pf-hl" hint="One per line, up to 10. Shown as bullet points next to the photos." error={errors.highlights}>
+                <Textarea id="pf-hl" rows={4} value={highlights} onChange={(e) => setHighlights(e.target.value)} />
+              </Field>
+            </CardBody>
+          </Card>
 
-        <Card>
-          <CardHeader title="Images" description="The first image is the main photo. PNG, JPG or WebP, up to 4 MB each, at most 8." />
-          <CardBody>
-            {errors.images && <p className="mb-3 text-xs text-danger-600">{errors.images}</p>}
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {images.map((src, i) => (
-                <li key={src} className="group relative">
-                  <ProductImage src={src} alt={`Image ${i + 1}`} rounded="lg" sizes="160px" />
-                  {i === 0 && (
-                    <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded bg-ink-900/80 px-1.5 py-0.5 text-[11px] font-medium text-white">
-                      <Star size={11} aria-hidden="true" /> Main
-                    </span>
-                  )}
-                  <div className="mt-1.5 flex justify-center gap-1">
-                    <Button type="button" size="icon-sm" variant="ghost" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move image ${i + 1} earlier`}>
-                      <ArrowUp size={15} />
-                    </Button>
-                    <Button type="button" size="icon-sm" variant="ghost" disabled={i === images.length - 1} onClick={() => move(i, 1)} aria-label={`Move image ${i + 1} later`}>
-                      <ArrowDown size={15} />
-                    </Button>
-                    <Button type="button" size="icon-sm" variant="ghost" onClick={() => setImages((cur) => cur.filter((x) => x !== src))} aria-label={`Remove image ${i + 1}`}>
+          <Card>
+            <CardHeader title="Images" description="The first image is the main photo. PNG, JPG or WebP, up to 4 MB each, at most 8." />
+            <CardBody>
+              {errors.images && <p className="mb-3 text-xs text-danger-600">{errors.images}</p>}
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {images.map((src, i) => (
+                  <li key={src} className="group relative">
+                    <ProductImage src={src} alt={`Image ${i + 1}`} rounded="lg" sizes="160px" />
+                    {i === 0 && (
+                      <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded bg-ink-900/80 px-1.5 py-0.5 text-[11px] font-medium text-white">
+                        <Star size={11} aria-hidden="true" /> Main
+                      </span>
+                    )}
+                    <div className="mt-1.5 flex justify-center gap-1">
+                      <Button type="button" size="icon-sm" variant="ghost" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move image ${i + 1} earlier`}>
+                        <ArrowUp size={15} />
+                      </Button>
+                      <Button type="button" size="icon-sm" variant="ghost" disabled={i === images.length - 1} onClick={() => move(i, 1)} aria-label={`Move image ${i + 1} later`}>
+                        <ArrowDown size={15} />
+                      </Button>
+                      <Button type="button" size="icon-sm" variant="ghost" onClick={() => setImages((cur) => cur.filter((x) => x !== src))} aria-label={`Remove image ${i + 1}`}>
+                        <Trash2 size={15} />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+                {images.length < 8 && (
+                  <li>
+                    <label
+                      className={cn(
+                        "flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-line-strong text-[13px] text-ink-500 hover:border-brand-300 hover:text-brand-700",
+                        uploading && "pointer-events-none opacity-60",
+                      )}
+                    >
+                      {uploading ? <Loader2 size={20} className="animate-spin" aria-hidden="true" /> : <ImagePlus size={20} aria-hidden="true" />}
+                      {uploading ? "Uploading" : "Add images"}
+                      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" multiple className="sr-only" onChange={(e) => upload(e.target.files)} aria-label="Add product images" />
+                    </label>
+                  </li>
+                )}
+              </ul>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Specifications"
+              description="Grouped key facts shown in the product details table."
+              action={
+                <Button type="button" size="sm" variant="secondary" icon={Plus} onClick={() => setSpecs((s) => [...s, { group: "General", items: [{ label: "", value: "" }] }])}>
+                  Add group
+                </Button>
+              }
+            />
+            <CardBody className="space-y-4">
+              {specs.length === 0 && <p className="text-[13px] text-ink-500">No specifications yet.</p>}
+              {specs.map((g, gi) => (
+                <div key={gi} className="rounded-lg border border-line p-3">
+                  <div className="flex items-center gap-2">
+                    <Input aria-label="Group name" inputSize="sm" value={g.group} placeholder="Group, for example Dimensions" onChange={(e) => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, group: e.target.value } : x)))} />
+                    <Button type="button" size="icon-sm" variant="ghost" onClick={() => setSpecs((s) => s.filter((_, i) => i !== gi))} aria-label={`Remove group ${g.group || gi + 1}`}>
                       <Trash2 size={15} />
                     </Button>
                   </div>
-                </li>
+                  <div className="mt-2 space-y-2">
+                    {g.items.map((it, ii) => (
+                      <div key={ii} className="grid grid-cols-[1fr_1.4fr_auto] gap-2">
+                        <Input aria-label="Label" inputSize="sm" placeholder="Label" value={it.label} onChange={(e) => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: x.items.map((y, j) => (j === ii ? { ...y, label: e.target.value } : y)) } : x)))} />
+                        <Input aria-label="Value" inputSize="sm" placeholder="Value" value={it.value} onChange={(e) => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: x.items.map((y, j) => (j === ii ? { ...y, value: e.target.value } : y)) } : x)))} />
+                        <Button type="button" size="icon-sm" variant="ghost" onClick={() => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: x.items.filter((_, j) => j !== ii) } : x)))} aria-label="Remove row">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button type="button" size="xs" variant="ghost" icon={Plus} onClick={() => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: [...x.items, { label: "", value: "" }] } : x)))}>
+                      Add row
+                    </Button>
+                  </div>
+                </div>
               ))}
-              {images.length < 8 && (
-                <li>
-                  <label
-                    className={cn(
-                      "flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-line-strong text-[13px] text-ink-500 hover:border-brand-300 hover:text-brand-700",
-                      uploading && "pointer-events-none opacity-60",
-                    )}
-                  >
-                    {uploading ? <Loader2 size={20} className="animate-spin" aria-hidden="true" /> : <ImagePlus size={20} aria-hidden="true" />}
-                    {uploading ? "Uploading" : "Add images"}
-                    <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" multiple className="sr-only" onChange={(e) => upload(e.target.files)} aria-label="Add product images" />
-                  </label>
-                </li>
-              )}
-            </ul>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
 
-        <Card>
-          <CardHeader
-            title="Specifications"
-            description="Grouped key facts shown in the product details table."
-            action={
-              <Button type="button" size="sm" variant="secondary" icon={Plus} onClick={() => setSpecs((s) => [...s, { group: "General", items: [{ label: "", value: "" }] }])}>
-                Add group
-              </Button>
-            }
-          />
-          <CardBody className="space-y-4">
-            {specs.length === 0 && <p className="text-[13px] text-ink-500">No specifications yet.</p>}
-            {specs.map((g, gi) => (
-              <div key={gi} className="rounded-lg border border-line p-3">
-                <div className="flex items-center gap-2">
-                  <Input aria-label="Group name" inputSize="sm" value={g.group} placeholder="Group, for example Dimensions" onChange={(e) => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, group: e.target.value } : x)))} />
-                  <Button type="button" size="icon-sm" variant="ghost" onClick={() => setSpecs((s) => s.filter((_, i) => i !== gi))} aria-label={`Remove group ${g.group || gi + 1}`}>
-                    <Trash2 size={15} />
+          <Card>
+            <CardHeader
+              title="Variants"
+              description="Options a shopper picks, such as Colour or Size. Separate values with commas."
+              action={
+                variants.length < 3 && (
+                  <Button type="button" size="sm" variant="secondary" icon={Plus} onClick={() => setVariants((v) => [...v, { name: "", values: "" }])}>
+                    Add option
                   </Button>
-                </div>
-                <div className="mt-2 space-y-2">
-                  {g.items.map((it, ii) => (
-                    <div key={ii} className="grid grid-cols-[1fr_1.4fr_auto] gap-2">
-                      <Input aria-label="Label" inputSize="sm" placeholder="Label" value={it.label} onChange={(e) => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: x.items.map((y, j) => (j === ii ? { ...y, label: e.target.value } : y)) } : x)))} />
-                      <Input aria-label="Value" inputSize="sm" placeholder="Value" value={it.value} onChange={(e) => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: x.items.map((y, j) => (j === ii ? { ...y, value: e.target.value } : y)) } : x)))} />
-                      <Button type="button" size="icon-sm" variant="ghost" onClick={() => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: x.items.filter((_, j) => j !== ii) } : x)))} aria-label="Remove row">
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button type="button" size="xs" variant="ghost" icon={Plus} onClick={() => setSpecs((s) => s.map((x, i) => (i === gi ? { ...x, items: [...x.items, { label: "", value: "" }] } : x)))}>
-                    Add row
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader
-            title="Variants"
-            description="Options a shopper picks, such as Colour or Size. Separate values with commas."
-            action={
-              variants.length < 3 && (
-                <Button type="button" size="sm" variant="secondary" icon={Plus} onClick={() => setVariants((v) => [...v, { name: "", values: "" }])}>
-                  Add option
-                </Button>
-              )
-            }
-          />
-          <CardBody className="space-y-2">
-            {variants.length === 0 && <p className="text-[13px] text-ink-500">This product comes in one version.</p>}
-            {variants.map((v, vi) => (
-              <div key={vi} className="grid grid-cols-[1fr_2fr_auto] gap-2">
-                <Input aria-label="Option name" inputSize="sm" placeholder="Colour" value={v.name} onChange={(e) => setVariants((s) => s.map((x, i) => (i === vi ? { ...x, name: e.target.value } : x)))} />
-                <Input aria-label="Option values" inputSize="sm" placeholder="Black, White, Sage" value={v.values} onChange={(e) => setVariants((s) => s.map((x, i) => (i === vi ? { ...x, values: e.target.value } : x)))} />
-                <Button type="button" size="icon-sm" variant="ghost" onClick={() => setVariants((s) => s.filter((_, i) => i !== vi))} aria-label={`Remove option ${v.name || vi + 1}`}>
-                  <Trash2 size={14} />
-                </Button>
-              </div>
-            ))}
-          </CardBody>
-        </Card>
-      </div>
-
-      <div className="space-y-5">
-        <Card>
-          <CardHeader title="Status" />
-          <CardBody>
-            <Switch checked={active} onChange={setActive} label="On sale" description={active ? "Shown in the store and can be ordered" : "Hidden from the store; existing orders are not affected"} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title="Price and stock" />
-          <CardBody className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Selling price" htmlFor="pf-price" required error={errors.pricePaise ?? (priceTooHigh ? "More than the MRP" : undefined)}>
-                <Input id="pf-price" type="number" min="1" step="0.01" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} suffix="₹" aria-invalid={priceTooHigh || !!errors.pricePaise} />
-              </Field>
-              <Field label="MRP" htmlFor="pf-mrp" required error={errors.mrpPaise}>
-                <Input id="pf-mrp" type="number" min="1" step="0.01" inputMode="decimal" value={mrp} onChange={(e) => setMrp(e.target.value)} suffix="₹" />
-              </Field>
-            </div>
-            {pricePaise > 0 && !priceTooHigh && (
-              <p className="text-[13px] text-ink-600">
-                Shoppers see {formatINR(pricePaise / 100)}
-                {off > 0 && <span className="font-medium text-success-700"> ({off}% off {formatINR(mrpPaise / 100)})</span>}, inclusive of GST.
-              </p>
-            )}
-            <Field label="Units in stock" htmlFor="pf-stock" error={errors.stock} hint={Number(stock) === 0 ? "Shown as out of stock" : undefined}>
-              <Input id="pf-stock" type="number" min="0" step="1" value={stock} onChange={(e) => setStock(e.target.value)} />
-            </Field>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title="Where it appears" />
-          <CardBody className="space-y-4">
-            <Field label="Category" htmlFor="pf-cat" required error={errors.categoryId}>
-              <Select
-                id="pf-cat"
-                value={categoryId}
-                onChange={(e) => {
-                  setCategoryId(e.target.value);
-                  setSubcategory("");
-                }}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field
-              label="Subcategory"
-              htmlFor="pf-sub"
-              required
-              error={errors.subcategory}
-              hint={
-                subs.length ? undefined : (
-                  <>
-                    Add subcategories on the{" "}
-                    <Link href="/admin/categories" className="font-medium text-brand-700 hover:underline">
-                      Categories
-                    </Link>{" "}
-                    page.
-                  </>
                 )
               }
-            >
-              {subs.length ? (
-                <Select id="pf-sub" value={subcategory || subs[0]!.name} onChange={(e) => setSubcategory(e.target.value)}>
-                  {subs.map((s) => (
-                    <option key={s.id}>{s.name}</option>
+            />
+            <CardBody className="space-y-2">
+              {variants.length === 0 && <p className="text-[13px] text-ink-500">This product comes in one version.</p>}
+              {variants.map((v, vi) => (
+                <div key={vi} className="grid grid-cols-[1fr_2fr_auto] gap-2">
+                  <Input aria-label="Option name" inputSize="sm" placeholder="Colour" value={v.name} onChange={(e) => setVariants((s) => s.map((x, i) => (i === vi ? { ...x, name: e.target.value } : x)))} />
+                  <Input aria-label="Option values" inputSize="sm" placeholder="Black, White, Sage" value={v.values} onChange={(e) => setVariants((s) => s.map((x, i) => (i === vi ? { ...x, values: e.target.value } : x)))} />
+                  <Button type="button" size="icon-sm" variant="ghost" onClick={() => setVariants((s) => s.filter((_, i) => i !== vi))} aria-label={`Remove option ${v.name || vi + 1}`}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+        </div>
+
+        <div className="space-y-5">
+          <Card>
+            <CardHeader title="Status" />
+            <CardBody>
+              <Switch checked={active} onChange={setActive} label="On sale" description={active ? "Shown in the store and can be ordered" : "Hidden from the store; existing orders are not affected"} />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader title="Price and stock" />
+            <CardBody className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Selling price" htmlFor="pf-price" required error={errors.pricePaise ?? (priceTooHigh ? "More than the MRP" : undefined)}>
+                  <Input id="pf-price" type="number" min="1" step="0.01" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} suffix="₹" aria-invalid={priceTooHigh || !!errors.pricePaise} />
+                </Field>
+                <Field label="MRP" htmlFor="pf-mrp" required error={errors.mrpPaise}>
+                  <Input id="pf-mrp" type="number" min="1" step="0.01" inputMode="decimal" value={mrp} onChange={(e) => setMrp(e.target.value)} suffix="₹" />
+                </Field>
+              </div>
+              {pricePaise > 0 && !priceTooHigh && (
+                <p className="text-[13px] text-ink-600">
+                  Shoppers see {formatINR(pricePaise / 100)}
+                  {off > 0 && <span className="font-medium text-success-700"> ({off}% off {formatINR(mrpPaise / 100)})</span>}, inclusive of GST.
+                </p>
+              )}
+              <Field label="Units in stock" htmlFor="pf-stock" error={errors.stock} hint={Number(stock) === 0 ? "Shown as out of stock" : undefined}>
+                <Input id="pf-stock" type="number" min="0" step="1" value={stock} onChange={(e) => setStock(e.target.value)} />
+              </Field>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader title="Where it appears" />
+            <CardBody className="space-y-4">
+              <Field label="Category" htmlFor="pf-cat" required error={errors.categoryId}>
+                <Select
+                  id="pf-cat"
+                  value={categoryId}
+                  onChange={(e) => {
+                    setCategoryId(e.target.value);
+                    setSubcategory("");
+                  }}
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </Select>
-              ) : (
-                <Input id="pf-sub" value={subcategory} onChange={(e) => setSubcategory(e.target.value)} />
-              )}
-            </Field>
-            <Field
-              label="Brand"
-              htmlFor="pf-brand"
-              required
-              error={errors.brandId}
-              hint={
-                <>
-                  Missing one?{" "}
-                  <Link href="/admin/brands" className="font-medium text-brand-700 hover:underline">
-                    Add a brand
-                  </Link>
-                </>
-              }
-            >
-              <Select id="pf-brand" value={brandId} onChange={(e) => setBrandId(e.target.value)} aria-invalid={!!errors.brandId}>
-                <option value="">Choose a brand</option>
-                {brands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <fieldset>
-              <legend className="mb-2 text-[13px] font-medium text-ink-700">Tags</legend>
-              <div className="grid grid-cols-2 gap-2">
-                {TAGS.map((t) => (
-                  <Checkbox key={t.key} label={t.label} checked={tags.includes(t.key)} onChange={(e) => setTags((cur) => (e.target.checked ? [...cur, t.key] : cur.filter((x) => x !== t.key)))} />
-                ))}
-              </div>
+              </Field>
+              <Field
+                label="Subcategory"
+                htmlFor="pf-sub"
+                required
+                error={errors.subcategory}
+                hint={
+                  subs.length ? undefined : (
+                    <>
+                      Add subcategories on the{" "}
+                      <Link href="/admin/categories" className="font-medium text-brand-700 hover:underline">
+                        Categories
+                      </Link>{" "}
+                      page.
+                    </>
+                  )
+                }
+              >
+                {subs.length ? (
+                  <Select id="pf-sub" value={subcategory || subs[0]!.name} onChange={(e) => setSubcategory(e.target.value)}>
+                    {subs.map((s) => (
+                      <option key={s.id}>{s.name}</option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input id="pf-sub" value={subcategory} onChange={(e) => setSubcategory(e.target.value)} />
+                )}
+              </Field>
+              <Field
+                label="Brand"
+                htmlFor="pf-brand"
+                required
+                error={errors.brandId}
+                hint={
+                  <>
+                    Missing one?{" "}
+                    <Link href="/admin/brands" className="font-medium text-brand-700 hover:underline">
+                      Add a brand
+                    </Link>
+                  </>
+                }
+              >
+                <Select id="pf-brand" value={brandId} onChange={(e) => setBrandId(e.target.value)} aria-invalid={!!errors.brandId}>
+                  <option value="">Choose a brand</option>
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <fieldset>
+                <legend className="mb-2 text-[13px] font-medium text-ink-700">Tags</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {TAGS.map((t) => (
+                    <Checkbox key={t.key} label={t.label} checked={tags.includes(t.key)} onChange={(e) => setTags((cur) => (e.target.checked ? [...cur, t.key] : cur.filter((x) => x !== t.key)))} />
+                  ))}
+                </div>
             </fieldset>
           </CardBody>
         </Card>
@@ -406,9 +409,11 @@ export function ProductForm({ product, categories, brands }: { product?: AdminPr
           </p>
         )}
         <div className="flex gap-2">
-          <Button type="submit" disabled={saving || uploading || priceTooHigh} className="flex-1">
-            {saving ? "Saving" : product ? "Save changes" : "Add product"}
-          </Button>
+          {canEdit && (
+            <Button type="submit" disabled={saving || uploading || priceTooHigh} className="flex-1">
+              {saving ? "Saving" : product ? "Save changes" : "Add product"}
+            </Button>
+          )}
           {product && active && (
             <Link href={`/p/${product.slug}`} target="_blank" className="inline-flex h-10 items-center rounded-lg border border-line-strong px-4 text-sm font-medium text-ink-800 hover:bg-ink-50">
               View in store
@@ -416,6 +421,7 @@ export function ProductForm({ product, categories, brands }: { product?: AdminPr
           )}
         </div>
       </div>
+      </fieldset>
       {toast.node}
     </form>
   );

@@ -28,6 +28,7 @@ const AREAS = [
   { value: "banner", label: "Storefront CMS" },
   { value: "review", label: "Reviews" },
   { value: "settings", label: "Settings" },
+  { value: "staff", label: "Staff" },
 ];
 
 /** Where an entry's subject lives in the console, when it has a page. */
@@ -45,6 +46,7 @@ function hrefFor(type: string, id: string | null) {
     coupon: "/admin/promotions?tab=coupons",
     banner: "/admin/cms",
     review: "/admin/reviews",
+    staff: "/admin/staff",
   };
   return map[type] ?? null;
 }

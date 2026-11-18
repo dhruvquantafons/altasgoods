@@ -61,6 +61,16 @@ export async function resetPassword(input: { email: string; code: string; passwo
   }
 }
 
+/** Accepts a staff invite: sets the chosen password, then signs in. */
+export async function acceptInvite(input: { token: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
+  try {
+    const r = await publicApi().POST("/v1/auth/invite/accept", { body: input });
+    return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not set your password");
+  } catch {
+    return unreachable;
+  }
+}
+
 /** Ends the session everywhere it can, then redirects. */
 export async function signOut(next = "/") {
   const refreshToken = (await cookies()).get(REFRESH_COOKIE)?.value;

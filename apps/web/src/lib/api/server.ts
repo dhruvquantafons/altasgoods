@@ -6,6 +6,7 @@ import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import type { Problem, User } from "./types";
 import { ACCESS_COOKIE, apiUrl, peekClaims } from "./session";
+import { canEdit, type Area } from "./staff";
 
 /** Error carrying the API's problem details. */
 export class ApiRequestError extends Error {
@@ -83,4 +84,14 @@ export async function apiAvailable() {
   } catch {
     return false;
   }
+}
+
+/**
+ * Whether the signed-in staff member may change things in this area (see
+ * AREA_ROLES in lib/api/staff.ts). Server pages pass it to their client
+ * components as `canEdit`, so an Auditor sees no buttons that would fail.
+ */
+export async function canEditArea(area: Area) {
+  const user = await currentUser();
+  return !!user && canEdit(user.staffRoles, area);
 }

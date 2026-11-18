@@ -34,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       notifications={notifications}
       user={user ? { name: user.name ?? user.email, role: roleLabel(user.staffRoles, "AltasGoods Control") } : undefined}
       counts={counts}
+      roles={user?.staffRoles ?? []}
     >
       {children}
     </AdminShell>

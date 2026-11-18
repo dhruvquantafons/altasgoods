@@ -12,6 +12,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { loadAdminCustomer } from "@/lib/api/admin-system";
 import { paise, uiOrderStatus, uiPaymentMethod } from "@/lib/api/format";
+import { currentUser } from "@/lib/api/server";
+import { canEdit, canSee } from "@/lib/api/staff";
 import { ORDER_STATUS, PAYMENT_METHOD } from "@/lib/status";
 import { formatDate, formatNumber } from "@/lib/utils";
 
@@ -22,7 +24,8 @@ export const metadata = { title: "Customer" };
 export default async function AdminCustomerPage(props: PageProps<"/admin/customers/[id]">) {
   const { id } = await props.params;
   if (!UUID.test(id)) notFound();
-  const c = await loadAdminCustomer(id);
+  const [c, user] = await Promise.all([loadAdminCustomer(id), currentUser()]);
+  const roles = user?.staffRoles ?? [];
   const name = c.name ?? c.email;
 
   return (
@@ -47,10 +50,12 @@ export default async function AdminCustomerPage(props: PageProps<"/admin/custome
         }
         actions={
           <>
-            <ButtonLink href={`/support/customers/${c.id}`} variant="secondary">
-              Open in Care Desk
-            </ButtonLink>
-            <CustomerStatusButton id={c.id} name={name} status={c.status} />
+            {canSee(roles, "support") && (
+              <ButtonLink href={`/support/customers/${c.id}`} variant="secondary">
+                Open in Care Desk
+              </ButtonLink>
+            )}
+            {canEdit(roles, "customers") && <CustomerStatusButton id={c.id} name={name} status={c.status} />}
           </>
         }
       />

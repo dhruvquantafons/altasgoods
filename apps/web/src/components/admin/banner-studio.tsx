@@ -204,7 +204,7 @@ function BannerEditor({ placement, banner, onClose, onSaved }: { placement: Plac
   );
 }
 
-function Lane({ placement, title, description, items }: { placement: Placement; title: string; description: string; items: AdminBanner[] }) {
+function Lane({ placement, title, description, items, canEdit }: { placement: Placement; title: string; description: string; items: AdminBanner[]; canEdit: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = useState<AdminBanner | "new" | null>(null);
@@ -232,9 +232,11 @@ function Lane({ placement, title, description, items }: { placement: Placement; 
           <h2 className="text-[15px] font-semibold text-ink-900">{title}</h2>
           <p className="text-xs text-ink-500">{description}</p>
         </div>
-        <Button size="sm" icon={Plus} onClick={() => setEditing("new")}>
-          Add {placement === "HERO" ? "slide" : "tile"}
-        </Button>
+        {canEdit && (
+          <Button size="sm" icon={Plus} onClick={() => setEditing("new")}>
+            Add {placement === "HERO" ? "slide" : "tile"}
+          </Button>
+        )}
       </div>
       {items.length === 0 ? (
         <p className="px-5 py-6 text-[13px] text-ink-500">None yet. Until you add one, the homepage shows its built-in {placement === "HERO" ? "slides" : "tiles"}.</p>
@@ -256,7 +258,7 @@ function Lane({ placement, title, description, items }: { placement: Placement; 
                     {st.label}
                   </Badge>
                 </div>
-                <div className="flex flex-wrap items-center gap-1">
+                <div className={canEdit ? "flex flex-wrap items-center gap-1" : "hidden"}>
                   <Button size="xs" variant="ghost" icon={ArrowUp} disabled={busy || i === 0} onClick={() => move(i, -1)} aria-label={`Move ${b.title} up`} />
                   <Button size="xs" variant="ghost" icon={ArrowDown} disabled={busy || i === items.length - 1} onClick={() => move(i, 1)} aria-label={`Move ${b.title} down`} />
                   <Button size="xs" variant="ghost" icon={b.active ? EyeOff : Eye} disabled={busy} onClick={() => run(() => setBannerActive(b.id, !b.active), b.active ? "Hidden from the homepage" : "Showing on the homepage")}>
@@ -307,12 +309,12 @@ function Lane({ placement, title, description, items }: { placement: Placement; 
   );
 }
 
-/** Storefront CMS: what the homepage shows, in order, with schedules. */
-export function BannerStudio({ banners }: { banners: AdminBanner[] }) {
+/** Storefront CMS: what the homepage shows, in order, with schedules. Read only when canEdit is false. */
+export function BannerStudio({ banners, canEdit = true }: { banners: AdminBanner[]; canEdit?: boolean }) {
   return (
     <div className="flex flex-col gap-6">
-      <Lane placement="HERO" title="Hero slides" description="Rotate every 6 seconds at the top of the homepage, in this order" items={banners.filter((b) => b.placement === "HERO")} />
-      <Lane placement="PROMO" title="Promo tiles" description="The image tiles further down the homepage; the first two showing are used" items={banners.filter((b) => b.placement === "PROMO")} />
+      <Lane placement="HERO" title="Hero slides" description="Rotate every 6 seconds at the top of the homepage, in this order" items={banners.filter((b) => b.placement === "HERO")} canEdit={canEdit} />
+      <Lane placement="PROMO" title="Promo tiles" description="The image tiles further down the homepage; the first two showing are used" items={banners.filter((b) => b.placement === "PROMO")} canEdit={canEdit} />
     </div>
   );
 }

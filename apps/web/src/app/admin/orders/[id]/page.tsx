@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { DescriptionList, Timeline } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadAdminOrder } from "@/lib/api/admin-fulfilment";
+import { canEditArea } from "@/lib/api/server";
 import { paise, uiItemStatus, uiOrderStatus, uiPaymentMethod, uiPaymentStatus } from "@/lib/api/format";
 import type { AdminOrderItem } from "@/lib/api/types";
 import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/status";
@@ -21,12 +22,12 @@ const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g
 
 export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id]">) {
   const { id } = await props.params;
-  const order = await loadAdminOrder(id);
+  const [order, edit] = await Promise.all([loadAdminOrder(id), canEditArea("orders")]);
 
   // lines in the same status can be moved together from the header
   const groups = new Map<string, AdminOrderItem[]>();
   for (const i of order.items) groups.set(i.status, [...(groups.get(i.status) ?? []), i]);
-  const bulk = [...groups.values()].filter((g) => g.length > 1 && g[0]!.allowedActions.length);
+  const bulk = edit ? [...groups.values()].filter((g) => g.length > 1 && g[0]!.allowedActions.length) : [];
   const titleOf = new Map(order.items.map((i) => [i.id, i.title]));
   const a = order.address;
 
@@ -82,10 +83,12 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
                       <span>Promised {formatDateShort(i.promisedBy)}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-start gap-2 sm:items-end">
-                    <LineActions orderId={order.id} itemIds={[i.id]} status={i.status} allowed={i.allowedActions} />
-                    {i.simulated ? <CourierSimulator orderId={order.id} itemId={i.id} status={i.status} /> : i.awb && <TrackingRefresh orderId={order.id} itemId={i.id} />}
-                  </div>
+                  {edit && (
+                    <div className="flex flex-col items-start gap-2 sm:items-end">
+                      <LineActions orderId={order.id} itemIds={[i.id]} status={i.status} allowed={i.allowedActions} />
+                      {i.simulated ? <CourierSimulator orderId={order.id} itemId={i.id} status={i.status} /> : i.awb && <TrackingRefresh orderId={order.id} itemId={i.id} />}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

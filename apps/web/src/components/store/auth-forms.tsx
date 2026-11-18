@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Code2, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
-import { forgotPassword, resetPassword, signIn, signUp } from "@/app/actions/auth";
+import { acceptInvite, forgotPassword, resetPassword, signIn, signUp } from "@/app/actions/auth";
+import { staffHome } from "@/lib/api/staff";
 import type { PasswordResetChallenge } from "@/lib/api/types";
 import { Field, Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,8 @@ const OTP_LENGTH = 6;
 const MIN_PASSWORD = 8;
 
 const minutesUntil = (iso: string) => Math.max(1, Math.round((new Date(iso).getTime() - Date.now()) / 60_000));
+
+const CHANGE_PASSWORD = "/account/profile?change=1";
 
 /** Full navigation after sign in, so the header and cart render with the new session. */
 const go = (to: string) => window.location.assign(to);
@@ -209,7 +212,8 @@ export function LoginForm({ next, audience = "shopper", denied = false, signedIn
         if (Object.keys(errs).length) return;
         setBusy(true);
         const r = await signIn({ email: f.email.trim(), password: f.password });
-        if (r.ok) return go(next);
+        // a temporary password from a Super Admin is changed before anything else
+        if (r.ok) return go(r.data.user.mustChangePassword && r.data.user.staffRoles.length ? CHANGE_PASSWORD : next);
         setBusy(false);
         setError(r.error);
       }}
@@ -459,6 +463,67 @@ export function ForgotPasswordForm({ next, initialEmail = "", audience = "shoppe
         <EmailField id="forgot-email" value={email} onChange={setEmail} error={emailError} autoFocus />
       </div>
       <Submit busy={busy} idle="Email me a code" working="Sending code" />
+    </form>
+  );
+}
+
+/* ------------------------------ Staff invite ----------------------------- */
+
+/** Sets the password of a newly invited staff member from the emailed link, then opens their workspace. */
+export function SetPasswordForm({ token }: { token: string }) {
+  const [f, setF] = useState({ password: "", confirm: "" });
+  const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (!token) {
+    return (
+      <div>
+        <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink-900">This link is incomplete</h1>
+        <p className="mt-2 text-[15px] text-ink-600">Open the link from your invite email again, or ask a Super Admin to send a new invite.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      noValidate
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const errs: typeof errors = {};
+        const problem = passwordProblem(f.password);
+        if (problem) errs.password = problem;
+        else if (f.confirm !== f.password) errs.confirm = "The passwords do not match";
+        setErrors(errs);
+        setError(null);
+        if (Object.keys(errs).length) return;
+        setBusy(true);
+        const r = await acceptInvite({ token, password: f.password });
+        if (r.ok) return go(staffHome(r.data.user.staffRoles));
+        setBusy(false);
+        setError(r.error);
+      }}
+    >
+      <p className="flex items-center gap-2 text-sm font-medium text-brand-700">
+        <ShieldCheck size={16} aria-hidden="true" /> AltasGoods Control
+      </p>
+      <h1 className="mt-2 text-[28px] leading-tight font-semibold tracking-tight text-ink-900">Choose your password</h1>
+      <p className="mt-2 text-[15px] text-ink-600">You were invited to the AltasGoods staff. Pick a password to finish setting up your account; you will be signed in straight away.</p>
+      <FormError error={error} />
+      <div className="mt-8 flex flex-col gap-4">
+        <PasswordField
+          id="invite-password"
+          label="New password"
+          autoComplete="new-password"
+          autoFocus
+          hint={`At least ${MIN_PASSWORD} characters`}
+          value={f.password}
+          onChange={(password) => setF((x) => ({ ...x, password }))}
+          error={errors.password}
+        />
+        <PasswordField id="invite-confirm" label="Type it again" autoComplete="new-password" value={f.confirm} onChange={(confirm) => setF((x) => ({ ...x, confirm }))} error={errors.confirm} />
+      </div>
+      <Submit busy={busy} idle="Set password and sign in" working="Setting up" />
     </form>
   );
 }

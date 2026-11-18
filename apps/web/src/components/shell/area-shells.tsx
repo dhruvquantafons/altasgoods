@@ -15,8 +15,10 @@ import {
   ShoppingCart,
   Star,
   Tags,
+  UserCog,
   Users,
 } from "lucide-react";
+import { canSeePath } from "@/lib/api/staff";
 import type { Notification } from "@/lib/types";
 import { DashboardShell, WorkspaceSwitcher, type NavGroup } from "./dashboard-shell";
 import { WORKSPACES } from "./workspaces";
@@ -31,8 +33,9 @@ interface AreaShellProps {
 
 /* ------------------------------ Admin Console -------------------------- */
 
-export function adminNav(c: Counts = {}): NavGroup[] {
-  return [
+/** The AltasGoods Control sidebar, showing only what these roles can open (see AREA_ROLES in lib/api/staff.ts). */
+export function adminNav(c: Counts = {}, roles: readonly string[] = []): NavGroup[] {
+  const groups: NavGroup[] = [
     { items: [{ label: "Overview", href: "/admin", icon: LayoutDashboard, exact: true }] },
     {
       label: "Commerce",
@@ -70,16 +73,24 @@ export function adminNav(c: Counts = {}): NavGroup[] {
       items: [
         { label: "Audit log", href: "/admin/audit", icon: Activity },
         { label: "Settings", href: "/admin/settings", icon: Settings },
+        { label: "Staff", href: "/admin/staff", icon: UserCog },
       ],
     },
   ];
+  return groups.map((g) => ({ ...g, items: g.items.filter((i) => canSeePath(i.href, roles)) })).filter((g) => g.items.length);
 }
 
-export function AdminShell({ children, notifications, counts, user = { name: "AltasGoods staff", role: "AltasGoods Control" } }: AreaShellProps & { user?: { name: string; role: string } }) {
+export function AdminShell({
+  children,
+  notifications,
+  counts,
+  roles = [],
+  user = { name: "AltasGoods staff", role: "AltasGoods Control" },
+}: AreaShellProps & { roles?: readonly string[]; user?: { name: string; role: string } }) {
   return (
     <DashboardShell
       workspace="admin"
-      nav={adminNav(counts)}
+      nav={adminNav(counts, roles)}
       user={user}
       notifications={notifications}
       searchPlaceholder="Search orders, customers, AWB"

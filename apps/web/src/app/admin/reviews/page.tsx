@@ -11,6 +11,7 @@ import { EmptyState, Stars } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
 import { loadAdminReviews } from "@/lib/api/admin-system";
+import { canEditArea } from "@/lib/api/server";
 import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "Reviews" };
@@ -29,7 +30,7 @@ export default async function ReviewsPage(props: PageProps<"/admin/reviews">) {
   const q = sp(params, "q")?.trim() ?? "";
   const rating = sp(params, "rating") ?? "all";
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
-  const first = await loadAdminReviews({ pageSize: 1 });
+  const [first, edit] = await Promise.all([loadAdminReviews({ pageSize: 1 }), canEditArea("reviews")]);
   // open on the approval queue when there is one
   const tab = TABS.find((t) => t.key === sp(params, "status"))?.key ?? (first.counts.PENDING ? "PENDING" : "all");
   const data = await loadAdminReviews({ status: tab === "all" ? undefined : tab, rating: rating === "all" ? undefined : Number(rating), q: q || undefined, page, pageSize: PAGE_SIZE });
@@ -87,9 +88,11 @@ export default async function ReviewsPage(props: PageProps<"/admin/reviews">) {
                   {r.reply && <p className="mt-2 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-700">Your reply: {r.reply}</p>}
                   {r.adminNote && <p className="mt-1 text-xs text-ink-500">Team note: {r.adminNote}</p>}
                 </div>
-                <div className="flex shrink-0 flex-wrap items-start gap-1 lg:justify-end">
-                  <ReviewModeration id={r.id} slug={r.product.slug} status={r.status} reply={r.reply} adminNote={r.adminNote} />
-                </div>
+                {edit && (
+                  <div className="flex shrink-0 flex-wrap items-start gap-1 lg:justify-end">
+                    <ReviewModeration id={r.id} slug={r.product.slug} status={r.status} reply={r.reply} adminNote={r.adminNote} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabLinks } from "@/components/ui/tabs";
 import { loadCoupons, loadSales } from "@/lib/api/admin-system";
+import { canEditArea } from "@/lib/api/server";
 import { paise } from "@/lib/api/format";
 import type { Tone } from "@/lib/status";
 import { getStoreCatalog } from "@/lib/store-catalog";
@@ -26,7 +27,7 @@ const STATE: Record<string, { label: string; tone: Tone }> = {
 export default async function PromotionsPage(props: PageProps<"/admin/promotions">) {
   const params = await props.searchParams;
   const tab = sp(params, "tab") === "coupons" ? "coupons" : "sales";
-  const [sales, coupons, catalog] = await Promise.all([loadSales(), loadCoupons(), getStoreCatalog()]);
+  const [sales, coupons, catalog, edit] = await Promise.all([loadSales(), loadCoupons(), getStoreCatalog(), canEditArea("promotions")]);
   const categories = catalog.categories.map((c) => ({ id: c.id, name: c.name }));
   const products = catalog.products.map((p) => ({ id: p.id, name: p.title })).sort((a, b) => a.name.localeCompare(b.name));
   const categoryName = new Map(categories.map((c) => [c.id, c.name]));
@@ -46,7 +47,7 @@ export default async function PromotionsPage(props: PageProps<"/admin/promotions
       <PageHeader
         title="Coupons and sales"
         description="Sales cut prices for everything they cover while they run; coupons take money off an order when a customer enters the code. Both apply at checkout."
-        actions={tab === "coupons" ? <CouponEditor /> : <SaleEditor categories={categories} products={products} />}
+        actions={edit && (tab === "coupons" ? <CouponEditor /> : <SaleEditor categories={categories} products={products} />)}
       />
 
       <TabLinks
@@ -95,10 +96,12 @@ export default async function PromotionsPage(props: PageProps<"/admin/promotions
                         </Badge>
                       </TD>
                       <TD align="right">
-                        <div className="flex flex-wrap justify-end gap-1">
-                          <SaleEditor sale={s} categories={categories} products={products} />
-                          <SaleActions sale={s} />
-                        </div>
+                        {edit && (
+                          <div className="flex flex-wrap justify-end gap-1">
+                            <SaleEditor sale={s} categories={categories} products={products} />
+                            <SaleActions sale={s} />
+                          </div>
+                        )}
                       </TD>
                     </TR>
                   ))}
@@ -148,10 +151,12 @@ export default async function PromotionsPage(props: PageProps<"/admin/promotions
                       </Badge>
                     </TD>
                     <TD align="right">
-                      <div className="flex flex-wrap justify-end gap-1">
-                        <CouponEditor coupon={c} />
-                        <CouponActions coupon={c} />
-                      </div>
+                      {edit && (
+                        <div className="flex flex-wrap justify-end gap-1">
+                          <CouponEditor coupon={c} />
+                          <CouponActions coupon={c} />
+                        </div>
+                      )}
                     </TD>
                   </TR>
                 ))}

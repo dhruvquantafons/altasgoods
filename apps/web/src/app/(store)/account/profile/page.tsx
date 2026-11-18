@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileLock2, KeyRound, Mail, Phone, ShieldCheck } from "lucide-react";
+import { FileLock2, KeyRound, Mail, Phone, ShieldAlert, ShieldCheck } from "lucide-react";
 import { dateLabel } from "@/components/account/lib";
 import { ChangePasswordButton, EditNameButton, EditPhoneButton, EmailButton, SignOutOthersButton } from "@/components/account/profile-forms";
 import { Panel } from "@/components/account/ui";
@@ -8,18 +8,39 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { currentUser } from "@/lib/api/server";
+import { staffHome } from "@/lib/api/staff";
 import { formatPhone } from "@/lib/utils";
 
 export const metadata = { title: "Profile and security" };
 
-export default async function ProfilePage() {
-  const user = await currentUser();
+export default async function ProfilePage(props: PageProps<"/account/profile">) {
+  const [user, sp] = await Promise.all([currentUser(), props.searchParams]);
   if (!user) redirect("/login?next=/account/profile");
   const name = user.name ?? user.email;
+  // staff signed in with a temporary password land here (?change=1) until they choose their own
+  const mustChange = user.mustChangePassword && user.staffRoles.length > 0;
+  const prompt = mustChange || sp.change === "1";
 
   return (
     <>
       <PageHeader title="Profile and security" description="Your details and how you sign in." />
+
+      {prompt && (
+        <div role="alert" className="mb-6 flex flex-col gap-4 rounded-2xl border border-warning-100 bg-warning-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <ShieldAlert size={20} className="mt-0.5 shrink-0 text-warning-700" aria-hidden="true" />
+            <div>
+              <p className="text-[14px] font-semibold text-ink-900">{mustChange ? "Choose your own password" : "Change your password"}</p>
+              <p className="mt-0.5 text-[13px] text-ink-700">
+                {mustChange
+                  ? "A Super Admin gave you a temporary password. AltasGoods Control and the Care Desk open once you replace it with one only you know."
+                  : "Pick a new password only you know. Every other device is signed out."}
+              </p>
+            </div>
+          </div>
+          <ChangePasswordButton required={mustChange} then={mustChange ? staffHome(user.staffRoles) : undefined} />
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="Profile" action={<EditNameButton name={user.name ?? ""} />}>

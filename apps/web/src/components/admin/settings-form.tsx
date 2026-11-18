@@ -9,6 +9,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { areasToText, parseAreas, type AreasText } from "./delivery-areas";
 import { Switch, useToast } from "@/components/ui/interactive";
+import { cn } from "@/lib/utils";
 
 /** Amounts are edited in rupees and saved in paise. */
 const toRupees = (p: number) => String(p / 100);
@@ -46,7 +47,8 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 /** Store-wide settings. Saving takes effect on the storefront and at checkout straight away. */
-export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; savedNote?: string }) {
+/** With canEdit false (an Auditor) the settings show read only, with no save bar. */
+export function SettingsForm({ initial, savedNote, canEdit = true }: { initial: SettingsInput; savedNote?: string; canEdit?: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState<Form>(() => fromSettings(initial));
   const [saved, setSaved] = useState(() => JSON.stringify(fromSettings(initial)));
@@ -124,7 +126,8 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
+    // a disabled fieldset turns every field in it off at once
+    <fieldset disabled={!canEdit} className="flex min-w-0 flex-col gap-6 pb-24">
       <Section title="Delivery" description="What customers pay for delivery. Checked again at checkout.">
         {money("delivery", "fee", "delivery.feePaise", "Delivery fee", "Charged on orders below the free delivery amount")}
         {money("delivery", "freeFrom", "delivery.freeFromPaise", "Free delivery from", "Orders at or above this amount ship free")}
@@ -185,7 +188,7 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
         {text("grievance", "resolutionDays", "Resolve complaints within (days)", { type: "number" })}
       </Section>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur lg:left-64">
+      <div className={cn("fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur lg:left-64", !canEdit && "hidden")}>
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <p className="text-[13px] text-ink-500">{dirty ? "You have unsaved changes." : (savedNote ?? "All changes saved.")}</p>
           <div className="flex gap-2">
@@ -201,6 +204,6 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
         </div>
       </div>
       {toast.node}
-    </div>
+    </fieldset>
   );
 }

@@ -5,6 +5,7 @@ import { FilterBar } from "@/components/admin/filter-bar";
 import { hrefWith, sp } from "@/components/admin/helpers";
 import { Pager } from "@/components/admin/pager";
 import { ProductImage } from "@/components/commerce/product-image";
+import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
@@ -13,6 +14,7 @@ import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui
 import { TabLinks } from "@/components/ui/tabs";
 import { loadAdminCategories, loadAdminProducts } from "@/lib/api/admin-catalog";
 import { paise } from "@/lib/api/format";
+import { canEditArea } from "@/lib/api/server";
 import { cn, formatDateShort } from "@/lib/utils";
 
 export const metadata = { title: "Products" };
@@ -33,7 +35,7 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
   const category = sp(params, "category") ?? "all";
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
 
-  const [data, categories] = await Promise.all([
+  const [data, categories, edit] = await Promise.all([
     loadAdminProducts({
       q,
       category: category === "all" ? undefined : category,
@@ -43,6 +45,7 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
       pageSize: PAGE_SIZE,
     }),
     loadAdminCategories(),
+    canEditArea("catalog"),
   ]);
   const current = { view: view === "all" ? undefined : view, q: q || undefined, category: category === "all" ? undefined : category };
   const pages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
@@ -54,14 +57,16 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
         title="Products"
         description="Everything the store sells. Changes here show in the store straight away."
         actions={
-          <>
-            <ButtonLink href="/admin/catalog/import" variant="secondary" size="sm" icon={FileUp}>
-              Import CSV
-            </ButtonLink>
-            <ButtonLink href="/admin/catalog/new" size="sm" icon={Plus}>
-              Add product
-            </ButtonLink>
-          </>
+          edit && (
+            <>
+              <ButtonLink href="/admin/catalog/import" variant="secondary" size="sm" icon={FileUp}>
+                Import CSV
+              </ButtonLink>
+              <ButtonLink href="/admin/catalog/new" size="sm" icon={Plus}>
+                Add product
+              </ButtonLink>
+            </>
+          )
         }
       />
       <TabLinks className="mb-5" active={view} items={VIEWS.map((v) => ({ key: v.key, label: v.label, href: hrefWith("/admin/catalog", { ...current, page: undefined, view: v.key === "all" ? undefined : v.key }) }))} />
@@ -123,7 +128,13 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
                     </TD>
                     <TD className="hidden text-[13px] text-ink-600 lg:table-cell">{formatDateShort(p.updatedAt)}</TD>
                     <TD>
-                      <ActiveToggle id={p.id} title={p.title} active={p.active} />
+                      {edit ? (
+                        <ActiveToggle id={p.id} title={p.title} active={p.active} />
+                      ) : (
+                        <Badge size="sm" tone={p.active ? "success" : "neutral"}>
+                          {p.active ? "On sale" : "Off"}
+                        </Badge>
+                      )}
                     </TD>
                   </TR>
                 ))}

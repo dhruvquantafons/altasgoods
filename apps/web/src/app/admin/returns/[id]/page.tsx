@@ -7,6 +7,7 @@ import { DescriptionList, Timeline } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadAdminReturn, nextStep } from "@/lib/api/admin-fulfilment";
 import { paise } from "@/lib/api/format";
+import { canEditArea } from "@/lib/api/server";
 import { UI_STATUS } from "@/lib/api/returns";
 import { RETURN_STATUS } from "@/lib/status";
 import { formatDateShort, formatDateTime } from "@/lib/utils";
@@ -23,7 +24,7 @@ const REFUND_TO = { SOURCE: "Original payment method", CREDITS: "AltasGoods Cred
 
 export default async function AdminReturnPage(props: PageProps<"/admin/returns/[id]">) {
   const { id } = await props.params;
-  const r = await loadAdminReturn(id);
+  const [r, edit] = await Promise.all([loadAdminReturn(id), canEditArea("returns")]);
   const next = nextStep(r);
 
   return (
@@ -34,11 +35,13 @@ export default async function AdminReturnPage(props: PageProps<"/admin/returns/[
         description={`Requested by ${r.customerName} on ${formatDateTime(r.createdAt)}${next ? `. ${next}.` : ""}`}
         meta={<StatusBadge meta={RETURN_STATUS[UI_STATUS[r.status]]} />}
         actions={
-          <>
-            <ReturnScanSimulator id={r.id} status={r.status} />
-            <ReturnPickupUpdate id={r.id} status={r.status} awb={r.awb} />
-            <ReturnActions id={r.id} status={r.status} />
-          </>
+          edit && (
+            <>
+              <ReturnScanSimulator id={r.id} status={r.status} />
+              <ReturnPickupUpdate id={r.id} status={r.status} awb={r.awb} />
+              <ReturnActions id={r.id} status={r.status} />
+            </>
+          )
         }
       />
 
