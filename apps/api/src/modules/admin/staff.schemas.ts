@@ -17,6 +17,7 @@ export const staffMember = z.object({
   status: z.enum(["ACTIVE", "BLOCKED"]).describe("BLOCKED is disabled: cannot sign in"),
   mustChangePassword: z.boolean().describe("Holds a temporary password that has not been changed yet"),
   invitePending: z.boolean().describe("An invite link was sent and has not been used or expired"),
+  inviteNotSent: z.boolean().describe("The latest invite email could not be sent, so no link is waiting; resend it"),
   lastActiveAt: z.iso.datetime().nullable().describe("When they last signed in or their session was renewed"),
   createdAt: z.iso.datetime(),
 });

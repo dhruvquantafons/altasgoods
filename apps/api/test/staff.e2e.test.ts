@@ -157,9 +157,16 @@ describe("adding staff", () => {
     // the roles were granted, and the log says so
     const audit = await t.http.get("/v1/admin/audit").set(admin).query({ entityType: "staff", entityId: shopper.session.user.id }).expect(200);
     expect(audit.body.items.map((e: { action: string }) => e.action)).toContain("staff.create");
+    // the list does not claim an invite went out
+    const member = async () => (await t.http.get(S).set(admin).expect(200)).body.find((m: { id: string }) => m.id === shopper.session.user.id);
+    expect(await member()).toMatchObject({ invitePending: false, inviteNotSent: true });
+    // a resend that fails again still says so
+    await t.http.post(`${S}/${shopper.session.user.id}/invite`).set(admin).expect(502);
+    expect(await member()).toMatchObject({ invitePending: false, inviteNotSent: true });
     // and the admin can send it again once email works
     outbox.failFor.clear();
-    await t.http.post(`${S}/${shopper.session.user.id}/invite`).set(admin).expect(200);
+    const sent = await t.http.post(`${S}/${shopper.session.user.id}/invite`).set(admin).expect(200);
+    expect(sent.body.member).toMatchObject({ invitePending: true, inviteNotSent: false });
     expect(outbox.inviteTokenFor("invite.fails@example.com")).toBeTruthy();
   });
 

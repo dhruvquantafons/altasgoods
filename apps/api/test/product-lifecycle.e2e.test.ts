@@ -184,6 +184,17 @@ describe("category and brand delete", () => {
     expect(live.body.code).toBe("PLACEMENT_RESERVED");
     await t.http.patch(`${A}/products/${p.id}`).set(staff).send({ categoryId: "cat-home", subcategory: "Lighting", brandId: "br-hearth", active: true }).expect(200);
   });
+
+  it("refuses to create a live product in a reserved category or brand, and allows a switched off one", async () => {
+    const img = await t.http.post(`${A}/media`).set(staff).attach("file", sampleSignaturePng("reserved"), "x.png").expect(201);
+    const body = { title: "Reserved Row Lamp", sku: "AG-LC-RES", images: [img.body.url], categoryId: "cat-home", subcategory: "Lighting", brandId: "br-hearth", pricePaise: 100_000, mrpPaise: 120_000, stock: 5 };
+    const inCategory = await t.http.post(`${A}/products`).set(staff).send({ ...body, categoryId: "cat-uncategorised", subcategory: "Misc" }).expect(422);
+    expect(inCategory.body.code).toBe("PLACEMENT_RESERVED");
+    const inBrand = await t.http.post(`${A}/products`).set(staff).send({ ...body, brandId: "br-unbranded" }).expect(422);
+    expect(inBrand.body.code).toBe("PLACEMENT_RESERVED");
+    const off = await t.http.post(`${A}/products`).set(staff).send({ ...body, brandId: "br-unbranded", active: false }).expect(201);
+    expect(off.body).toMatchObject({ brandId: "br-unbranded", active: false });
+  });
 });
 
 describe("slug change", () => {

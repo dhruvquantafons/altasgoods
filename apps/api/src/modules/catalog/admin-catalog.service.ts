@@ -116,7 +116,8 @@ export class AdminCatalogService {
 
   async createProduct(input: ProductInput) {
     const id = await this.db.transaction(async (tx) => {
-      const names = await this.checkPlacement(tx, input.categoryId, input.subcategory, input.brandId, false);
+      // a product created live must be in a real category and brand, as when one is switched on later
+      const names = await this.checkPlacement(tx, input.categoryId, input.subcategory, input.brandId, input.active);
       const slug = input.slug ?? (await uniqueSlug(tx, slugify(input.title)));
       const [taken] = await tx.select({ id: products.id }).from(products).where(or(eq(products.slug, slug), eq(products.id, `p-${slug}`)));
       if (taken) throw slugTaken(slug);

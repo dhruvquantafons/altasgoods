@@ -3271,6 +3271,8 @@ export interface operations {
                         mustChangePassword: boolean;
                         /** @description An invite link was sent and has not been used or expired */
                         invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
                         /**
                          * Format: date-time
                          * @description When they last signed in or their session was renewed
@@ -3340,6 +3342,8 @@ export interface operations {
                             mustChangePassword: boolean;
                             /** @description An invite link was sent and has not been used or expired */
                             invitePending: boolean;
+                            /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                            inviteNotSent: boolean;
                             /**
                              * Format: date-time
                              * @description When they last signed in or their session was renewed
@@ -3412,6 +3416,8 @@ export interface operations {
                         mustChangePassword: boolean;
                         /** @description An invite link was sent and has not been used or expired */
                         invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
                         /**
                          * Format: date-time
                          * @description When they last signed in or their session was renewed
@@ -3455,6 +3461,8 @@ export interface operations {
                         mustChangePassword: boolean;
                         /** @description An invite link was sent and has not been used or expired */
                         invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
                         /**
                          * Format: date-time
                          * @description When they last signed in or their session was renewed
@@ -3498,6 +3506,8 @@ export interface operations {
                         mustChangePassword: boolean;
                         /** @description An invite link was sent and has not been used or expired */
                         invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
                         /**
                          * Format: date-time
                          * @description When they last signed in or their session was renewed
@@ -3542,6 +3552,8 @@ export interface operations {
                             mustChangePassword: boolean;
                             /** @description An invite link was sent and has not been used or expired */
                             invitePending: boolean;
+                            /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                            inviteNotSent: boolean;
                             /**
                              * Format: date-time
                              * @description When they last signed in or their session was renewed

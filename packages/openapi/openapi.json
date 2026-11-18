@@ -2464,6 +2464,10 @@
                         "type": "boolean",
                         "description": "An invite link was sent and has not been used or expired"
                       },
+                      "inviteNotSent": {
+                        "type": "boolean",
+                        "description": "The latest invite email could not be sent, so no link is waiting; resend it"
+                      },
                       "lastActiveAt": {
                         "nullable": true,
                         "description": "When they last signed in or their session was renewed",
@@ -2485,6 +2489,7 @@
                       "status",
                       "mustChangePassword",
                       "invitePending",
+                      "inviteNotSent",
                       "lastActiveAt",
                       "createdAt"
                     ],
@@ -2663,6 +2668,10 @@
                           "type": "boolean",
                           "description": "An invite link was sent and has not been used or expired"
                         },
+                        "inviteNotSent": {
+                          "type": "boolean",
+                          "description": "The latest invite email could not be sent, so no link is waiting; resend it"
+                        },
                         "lastActiveAt": {
                           "nullable": true,
                           "description": "When they last signed in or their session was renewed",
@@ -2684,6 +2693,7 @@
                         "status",
                         "mustChangePassword",
                         "invitePending",
+                        "inviteNotSent",
                         "lastActiveAt",
                         "createdAt"
                       ],
@@ -2803,6 +2813,10 @@
                       "type": "boolean",
                       "description": "An invite link was sent and has not been used or expired"
                     },
+                    "inviteNotSent": {
+                      "type": "boolean",
+                      "description": "The latest invite email could not be sent, so no link is waiting; resend it"
+                    },
                     "lastActiveAt": {
                       "nullable": true,
                       "description": "When they last signed in or their session was renewed",
@@ -2824,6 +2838,7 @@
                     "status",
                     "mustChangePassword",
                     "invitePending",
+                    "inviteNotSent",
                     "lastActiveAt",
                     "createdAt"
                   ],
@@ -2928,6 +2943,10 @@
                       "type": "boolean",
                       "description": "An invite link was sent and has not been used or expired"
                     },
+                    "inviteNotSent": {
+                      "type": "boolean",
+                      "description": "The latest invite email could not be sent, so no link is waiting; resend it"
+                    },
                     "lastActiveAt": {
                       "nullable": true,
                       "description": "When they last signed in or their session was renewed",
@@ -2949,6 +2968,7 @@
                     "status",
                     "mustChangePassword",
                     "invitePending",
+                    "inviteNotSent",
                     "lastActiveAt",
                     "createdAt"
                   ],
@@ -3025,6 +3045,10 @@
                       "type": "boolean",
                       "description": "An invite link was sent and has not been used or expired"
                     },
+                    "inviteNotSent": {
+                      "type": "boolean",
+                      "description": "The latest invite email could not be sent, so no link is waiting; resend it"
+                    },
                     "lastActiveAt": {
                       "nullable": true,
                       "description": "When they last signed in or their session was renewed",
@@ -3046,6 +3070,7 @@
                     "status",
                     "mustChangePassword",
                     "invitePending",
+                    "inviteNotSent",
                     "lastActiveAt",
                     "createdAt"
                   ],
@@ -3125,6 +3150,10 @@
                           "type": "boolean",
                           "description": "An invite link was sent and has not been used or expired"
                         },
+                        "inviteNotSent": {
+                          "type": "boolean",
+                          "description": "The latest invite email could not be sent, so no link is waiting; resend it"
+                        },
                         "lastActiveAt": {
                           "nullable": true,
                           "description": "When they last signed in or their session was renewed",
@@ -3146,6 +3175,7 @@
                         "status",
                         "mustChangePassword",
                         "invitePending",
+                        "inviteNotSent",
                         "lastActiveAt",
                         "createdAt"
                       ],

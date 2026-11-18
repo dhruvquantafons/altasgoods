@@ -87,6 +87,12 @@ function AddStaffButton({ onHandover, toast }: { onHandover: (h: Handover) => vo
     const base = { name: f.name.trim(), email: f.email.trim(), roles: f.roles as StaffRoles };
     const r = await addStaff(f.mode === "invite" ? { ...base, mode: "invite" } : { ...base, mode: "password", tempPassword: f.tempPassword });
     setBusy(false);
+    if (!r.ok && r.code === "INVITE_NOT_SENT") {
+      // the staff member is saved; the list shows the invite as not sent, with Resend invite
+      setOpen(false);
+      router.refresh();
+      return toast(r.error);
+    }
     if (!r.ok) return setErrors({ ...(r.fields ?? {}), form: r.error });
     setOpen(false);
     router.refresh();
@@ -282,6 +288,11 @@ export function StaffManager({ members, meId }: { members: StaffMember[]; meId: 
                               Invite sent
                             </Badge>
                           )}
+                          {m.inviteNotSent && (
+                            <Badge size="sm" tone="danger" icon={Mail}>
+                              Invite not sent, resend
+                            </Badge>
+                          )}
                           {m.mustChangePassword && (
                             <Badge size="sm" tone="warning" icon={KeyRound}>
                               Must change password
@@ -305,7 +316,7 @@ export function StaffManager({ members, meId }: { members: StaffMember[]; meId: 
                               </MenuItem>
                               {m.status === "ACTIVE" && (
                                 <MenuItem icon={<Mail size={15} aria-hidden="true" />} onClick={() => (closeMenu(), resend(m))}>
-                                  {m.invitePending ? "Resend invite" : "Send a set password link"}
+                                  {m.invitePending || m.inviteNotSent ? "Resend invite" : "Send a set password link"}
                                 </MenuItem>
                               )}
                               {!me &&

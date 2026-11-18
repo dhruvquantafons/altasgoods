@@ -189,15 +189,18 @@ export class StaffService {
       await this.email.send(staffInviteEmail(row!.email, row!.name, link, INVITE_TTL_HOURS));
     } catch (e) {
       this.logger.error(`Invite not sent to ${row!.email}: ${(e as Error).message}`);
+      await this.invites.markUnsent(id);
       throw new ApiError(502, "INVITE_NOT_SENT", "The invite email could not be sent. The staff member is saved; try Resend invite in a moment.");
     }
+    await this.invites.markSent(id);
     return InvitesService.showLink() ? link : undefined;
   }
 
   private async present(rows: Row[]) {
     const ids = rows.map((r) => r.id);
-    const [pending, activity] = await Promise.all([
+    const [pending, unsent, activity] = await Promise.all([
       this.invites.pending(ids),
+      this.invites.unsent(ids),
       // every sign in and every refresh starts a session row
       ids.length ? this.db.select({ userId: sessions.userId, at: max(sessions.createdAt) }).from(sessions).where(inArray(sessions.userId, ids)).groupBy(sessions.userId) : [],
     ]);
@@ -210,6 +213,7 @@ export class StaffService {
       status: r.status,
       mustChangePassword: r.mustChangePassword,
       invitePending: pending.has(r.id),
+      inviteNotSent: unsent.has(r.id),
       lastActiveAt: lastActive.get(r.id)?.toISOString() ?? null,
       createdAt: r.createdAt.toISOString(),
     }));

@@ -12,6 +12,8 @@ const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 const byToken = (hash: string) => `staff-invite:${hash}`;
 /** user id -> token hash, so a resend or a removal can cancel the earlier link */
 const byUser = (userId: string) => `staff-invite-user:${userId}`;
+/** set while the latest invite email of a user could not be sent */
+const unsentKey = (userId: string) => `staff-invite-unsent:${userId}`;
 
 /**
  * Deletes KEYS[1] (the user's current-link pointer) only when it still names
@@ -44,8 +46,21 @@ export class InvitesService {
   /** Cancels the user's link, if any: with no pointer, no link of theirs is accepted. */
   async revoke(userId: string) {
     const hash = await this.redis.get(byUser(userId));
-    await this.redis.del(byUser(userId));
+    await this.redis.del(byUser(userId), unsentKey(userId));
     if (hash) await this.redis.del(byToken(hash));
+  }
+
+  /**
+   * The invite email could not be sent: the link nobody received is cancelled,
+   * and the staff list shows the invite as not sent until one goes out.
+   */
+  async markUnsent(userId: string) {
+    await this.revoke(userId);
+    await this.redis.set(unsentKey(userId), "1", "EX", TTL_SECONDS);
+  }
+
+  async markSent(userId: string) {
+    await this.redis.del(unsentKey(userId));
   }
 
   /** Uses up a link and returns whose it was, or null when it is unknown, expired, used or no longer the latest. */
@@ -63,6 +78,13 @@ export class InvitesService {
     if (!userIds.length) return new Set<string>();
     const hashes = await this.redis.mget(...userIds.map(byUser));
     return new Set(userIds.filter((_, i) => hashes[i]));
+  }
+
+  /** Which of these users' latest invite email could not be sent. */
+  async unsent(userIds: string[]) {
+    if (!userIds.length) return new Set<string>();
+    const flags = await this.redis.mget(...userIds.map(unsentKey));
+    return new Set(userIds.filter((_, i) => flags[i]));
   }
 
   /**
