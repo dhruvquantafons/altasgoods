@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { audited, closeDb, DATABASE_URL, row } from "./db";
-import { ACCOUNTS, API, apiAs, apiSession, deliver, E2E_PASSWORD, paidOrder, signedIn, signInWithForm, watchErrors } from "./support";
+import { ACCOUNTS, API, apiAs, resetRateLimits, apiSession, deliver, E2E_PASSWORD, paidOrder, signedIn, signInWithForm, watchErrors } from "./support";
 
 /**
  * Every admin change, end to end: made in AltasGoods Control or the Care Desk,
@@ -21,6 +21,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 /** A brand new shopper with an address, so one test's account never affects another's. */
 async function newShopper(name: string) {
   const email = `e2e.e2e.${stamp()}.${Math.floor(Math.random() * 1e6)}@altasgoods.test`;
+  await resetRateLimits();
   const r = await fetch(`${API}/v1/auth/signup`, {
     method: "POST",
     headers: { "content-type": "application/json" },

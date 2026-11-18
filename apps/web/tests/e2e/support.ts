@@ -17,6 +17,23 @@ export const ACCOUNTS = {
 
 type Json = Record<string, unknown>;
 
+/** Sign up allows 10 accounts an hour per address, so specs that sign people up clear the counters first (development API only). */
+export async function resetRateLimits() {
+  const r = await fetch(`${API}/v1/dev/rate-limits/reset`, { method: "POST" });
+  if (!r.ok) throw new Error(`Could not reset rate limits: ${r.status}`);
+}
+
+/** A brand new shopper made through the API, with an address in Bengaluru unless told otherwise. */
+export async function newShopperByApi(name: string, address: Json = {}) {
+  await resetRateLimits();
+  const email = `e2e.new.${Date.now().toString(36)}.${Math.floor(Math.random() * 1e6)}@altasgoods.test`;
+  const r = await fetch(`${API}/v1/auth/signup`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email, password: E2E_PASSWORD }) });
+  if (!r.ok) throw new Error(`signup ${r.status}: ${await r.text()}`);
+  const shopper = apiAs(await apiSession(email));
+  const created = await shopper.post<{ id: string }>("/v1/me/addresses", { name, phone: "9845098450", line1: "7, Church Street", city: "Bengaluru", state: "Karnataka", pincode: "560001", type: "HOME", isDefault: true, ...address });
+  return { email, shopper, addressId: created.id };
+}
+
 type Session = { accessToken: string; refreshToken: string; user: { id: string } };
 const sessionCache = new Map<string, { at: number; session: Promise<Session> }>();
 

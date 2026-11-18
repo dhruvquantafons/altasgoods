@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { ACCOUNTS, signInWithForm, watchErrors } from "./support";
+import { ACCOUNTS, resetRateLimits, signInWithForm, watchErrors } from "./support";
+
+test.beforeEach(resetRateLimits);
 
 /** Sign up, sign in and password resets, through the real forms. */
 
