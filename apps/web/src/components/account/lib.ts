@@ -283,7 +283,7 @@ export function paymentLabel(method: PaymentMethod) {
     case "netbanking":
       return "Net banking";
     case "wallet":
-      return "AltasGoods Credits";
+      return "Wallet balance";
     case "paylater":
       return "Pay Later";
     case "giftcard":
@@ -307,6 +307,11 @@ export function refundTiming(method: PaymentMethod) {
   }
 }
 
+/** Where a cancelled order's money can go: back to the payment it came from. AltasGoods Credits are not offered. */
+export function refundOptionsFor(order: Order): { key: "original"; label: string; detail: string }[] {
+  const m = order.payment.method;
+  return [{ key: "original", label: paymentLabel(m), detail: `Usually ${refundTiming(m).toLowerCase()} after the refund starts` }];
+}
 
 export function shortTitle(title: string) {
   return title.split(/[,(]/)[0]!.trim();

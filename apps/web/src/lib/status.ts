@@ -129,7 +129,7 @@ export const PAYMENT_METHOD: Record<PaymentMethod, string> = {
   upi: "UPI",
   card: "Credit / Debit card",
   netbanking: "Net banking",
-  wallet: "AltasGoods Credits",
+  wallet: "Wallet balance",
   emi: "EMI",
   paylater: "AltasGoods Pay Later",
   cod: "Cash on delivery",

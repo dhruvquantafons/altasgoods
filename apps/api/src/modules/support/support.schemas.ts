@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, TICKET_ACTION_KINDS, TICKET_CATEGORIES, TICKET_CHANNELS, TICKET_PRIORITIES, TICKET_STATUSES } from "../../db/schema.js";
 import { fulfilmentOrderSchema } from "../commerce/commerce.schemas.js";
+import { upiId } from "../commerce/returns/returns.schemas.js";
 
 const status = z.enum(TICKET_STATUSES);
 const priority = z.enum(TICKET_PRIORITIES);
@@ -33,12 +34,15 @@ export const messageBody = z.object({
 });
 
 export const actionBody = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("REFUND"),
-    amountPaise: z.number().int().positive(),
-    destination: z.enum(["SOURCE", "CREDITS"]),
-    reason: z.enum(["damaged", "not_delivered", "wrong", "late", "goodwill"]),
-  }),
+  z
+    .object({
+      kind: z.literal("REFUND"),
+      amountPaise: z.number().int().positive(),
+      destination: z.enum(["SOURCE", "BANK"]).describe("SOURCE goes back to the payment method; BANK is paid by hand to the UPI id"),
+      upi: upiId.optional().describe("Required for BANK"),
+      reason: z.enum(["damaged", "not_delivered", "wrong", "late", "goodwill"]),
+    })
+    .refine((v) => v.destination !== "BANK" || !!v.upi, { message: "Enter the UPI ID for the refund", path: ["upi"] }),
   z.object({ kind: z.literal("REPLACEMENT"), itemId: z.string().min(1).max(60), reason: z.enum(["damaged", "defective", "wrong", "missing"]), collectOriginal: z.boolean() }),
   z.object({ kind: z.literal("GUARANTEE_CLAIM"), claimType: z.enum(["not_delivered", "damaged", "wrong", "different"]) }),
 ]);

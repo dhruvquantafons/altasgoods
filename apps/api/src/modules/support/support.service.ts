@@ -331,7 +331,7 @@ export class SupportService {
         const needsApproval = input.amountPaise > limitPaise;
         const [action] = await tx
           .insert(supportActions)
-          .values({ ...base, status: needsApproval ? "PENDING_APPROVAL" : "INITIATED", amountPaise: input.amountPaise, details: { destination: input.destination, reason: input.reason } })
+          .values({ ...base, status: needsApproval ? "PENDING_APPROVAL" : "INITIATED", amountPaise: input.amountPaise, details: { destination: input.destination, reason: input.reason, ...(input.destination === "BANK" ? { upi: input.upi } : {}) } })
           .returning();
         if (needsApproval) note = `Refund of ${rupees(input.amountPaise)} requested by ${me.name}, above their ${rupees(limitPaise)} limit. Waiting for supervisor approval.`;
         else {
@@ -363,23 +363,31 @@ export class SupportService {
 
   /**
    * Online payments of orders in this database are refunded through the
-   * payment provider straight away. A cash on delivery order is refunded to
-   * the customer's bank account by hand: the refund goes on the order's ledger
-   * as a manual payout waiting to be paid (capped by what was collected), and
-   * Operations records it paid with its reference on the Payments page.
-   * Refunds to AltasGoods Credits and for imported history stay INITIATED.
+   * payment provider straight away. A cash on delivery order, and any refund
+   * to a bank (UPI) account, is paid by hand: the refund goes on the order's
+   * ledger as a manual payout waiting to be paid (capped by what was
+   * collected), and Operations records it paid with its reference on the
+   * Payments page. Refunds on imported history stay INITIATED.
+   * Credits are no longer a destination; old actions that chose it only read.
    */
   private async executeRefund(tx: Tx, action: typeof supportActions.$inferSelect, t: Ticket) {
-    const destination = (action.details as { destination?: string }).destination;
+    const { destination, upi } = action.details as { destination?: string; upi?: string };
     const [order] = await tx.select({ id: orders.id, method: orders.paymentMethod }).from(orders).where(eq(orders.id, t.orderId!));
-    const to = destination === "CREDITS" ? "AltasGoods Credits" : t.orderSnapshot?.cod ? "your bank account" : t.orderSnapshot?.paymentLabel ?? "your payment method";
-    if (destination === "SOURCE" && order) {
+    const toBank = destination === "BANK" || !!t.orderSnapshot?.cod;
+    const to = toBank ? "your bank account" : t.orderSnapshot?.paymentLabel ?? "your payment method";
+    if (order && (destination === "SOURCE" || destination === "BANK")) {
       const reason = `Care Desk ticket ${t.id}`;
       const by = { createdBy: action.createdById };
       const refund =
-        order.method !== "COD"
+        destination === "SOURCE" && order.method !== "COD"
           ? await this.payments.refundToSource(tx, order.id, action.amountPaise!, reason, by)
-          : await this.payments.refundManually(tx, order.id, { amountPaise: action.amountPaise!, reason, paid: false, note: `Pay to the customer's bank account or UPI; the details are on ticket ${t.id}`, ...by });
+          : await this.payments.refundManually(tx, order.id, {
+              amountPaise: action.amountPaise!,
+              reason,
+              paid: false,
+              note: upi ? `Pay to UPI ${upi}; ticket ${t.id}` : `Pay to the customer's bank account or UPI; the details are on ticket ${t.id}`,
+              ...by,
+            });
       await tx.update(supportActions).set({ status: refund.status === "COMPLETED" ? "COMPLETED" : "PROCESSING", details: { ...action.details, refundId: refund.id } }).where(eq(supportActions.id, action.id));
     }
     await this.system(tx, t.id, `We have initiated a refund of ${rupees(action.amountPaise ?? 0)} to ${to}.`, true);

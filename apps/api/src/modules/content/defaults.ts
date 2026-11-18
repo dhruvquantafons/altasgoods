@@ -37,7 +37,7 @@ export const DEFAULT_PAGES: DefaultPage[] = [
       {
         "id": "refunds",
         "heading": "Refund timelines",
-        "body": "Refunds start as soon as your item passes the doorstep check, or after it reaches the seller for categories that need inspection. You can follow every step on the order page.\n\n| Refund to | Time after refund starts |\n| --- | --- |\n| AltasGoods Credits | Within 2 hours |\n| UPI | 1 to 2 business days |\n| Credit or debit card, net banking | 3 to 5 business days |\n| AltasGoods Pay Later | Adjusted in your next statement |\n| Cash on delivery orders | To AltasGoods Credits instantly, or to your bank account in 1 to 3 business days |"
+        "body": "Refunds start as soon as your item passes the doorstep check, or after it reaches the seller for categories that need inspection. You can follow every step on the order page.\n\n| Refund to | Time after refund starts |\n| --- | --- |\n| UPI | 1 to 2 business days |\n| Credit or debit card, net banking | 3 to 5 business days |\n| AltasGoods Pay Later | Adjusted in your next statement |\n| Cash on delivery orders | To your bank account by UPI, in 1 to 3 business days after you give your UPI ID |"
       },
       {
         "id": "not-returnable",
@@ -102,7 +102,7 @@ export const DEFAULT_PAGES: DefaultPage[] = [
       {
         "id": "before",
         "heading": "Before your item ships",
-        "body": "Open Your orders and select Cancel on any item that has not shipped yet. You get a full refund and there is no cancellation fee. Coupons and AltasGoods Credits used on the item are restored immediately."
+        "body": "Open Your orders and select Cancel on any item that has not shipped yet. You get a full refund and there is no cancellation fee. Coupons used on the item are restored immediately."
       },
       {
         "id": "after",
@@ -136,7 +136,7 @@ export const DEFAULT_PAGES: DefaultPage[] = [
       {
         "id": "methods",
         "heading": "Ways to pay",
-        "body": "- UPI, by UPI ID or QR code\n- Credit and debit cards, including RuPay\n- Net banking with major Indian banks\n- No cost and standard EMI on eligible cards\n- AltasGoods Pay Later, offered with a regulated lending partner\n- AltasGoods Credits and AltasGoods Gift Cards\n- Cash on delivery, paid in cash or by UPI at your door"
+        "body": "- UPI, by UPI ID or QR code\n- Credit and debit cards, including RuPay\n- Net banking with major Indian banks\n- No cost and standard EMI on eligible cards\n- AltasGoods Pay Later, offered with a regulated lending partner\n- Cash on delivery, paid in cash or by UPI at your door"
       },
       {
         "id": "cod",
@@ -246,12 +246,12 @@ export const DEFAULT_PAGES: DefaultPage[] = [
       {
         "id": "choices",
         "heading": "Your choices and rights",
-        "body": "- Download a copy of your data from Account, then Privacy and data\n- Correct or update your details at any time\n- Withdraw consent for promotional messages on any channel\n- Ask us to delete your account and data, subject to legal retention periods"
+        "body": "- Ask AltasGoods Care for a copy of your data and we will send it to you\n- Correct or update your details at any time from Account, then Profile\n- Withdraw consent for promotional messages on any channel\n- Delete your account yourself from Account, then Profile. Your name, email, phone, saved addresses and cart are erased, and your orders stay only as anonymous records"
       },
       {
         "id": "retention",
         "heading": "Retention and security",
-        "body": "We keep order and tax records for 8 years as Indian law requires, and delete other data when it is no longer needed. Data is encrypted in transit and at rest and stored in India."
+        "body": "We keep order and tax records for 8 years as Indian law requires. When you delete your account, those records stay without your name, phone or street address, and we delete other data when it is no longer needed. Data is encrypted in transit and at rest and stored in India."
       }
     ]
   },
@@ -336,7 +336,7 @@ export const DEFAULT_HELP_TOPICS: { icon: string; title: string; body: string; h
   {
     "icon": "UserRound",
     "title": "Account and privacy",
-    "body": "Login, mobile number, data and consent",
+    "body": "Login, mobile number, deleting your account and consent",
     "href": "/policies/account-security"
   }
 ];
@@ -358,7 +358,7 @@ export const DEFAULT_FAQS: { id: string; group: string; q: string; a: string }[]
     "id": "refund-time",
     "group": "Returns and refunds",
     "q": "When will I get my refund?",
-    "a": "Refunds to AltasGoods Credits arrive within 2 hours. UPI refunds take 1 to 2 business days, cards and net banking 3 to 5 business days. Cash on delivery orders are refunded to AltasGoods Credits or your bank account via IMPS or UPI."
+    "a": "UPI refunds take 1 to 2 business days, cards and net banking 3 to 5 business days. Cash on delivery orders are refunded to your bank account by UPI once you give us your UPI ID."
   },
   {
     "id": "payments",
@@ -382,7 +382,7 @@ export const DEFAULT_FAQS: { id: string; group: string; q: string; a: string }[]
     "id": "account",
     "group": "Account and privacy",
     "q": "How do I download or delete my data?",
-    "a": "Go to Account, then Privacy and data. You can download a copy of your data, withdraw consent for promotional messages or request deletion of your account. Open orders or refunds must be completed before deletion."
+    "a": "You can delete your account yourself: go to Account, then Profile, and choose Delete account. Your name, contact details, saved addresses and cart are erased, and past orders are kept without your personal details because tax law requires the records. You cannot delete while an order or return is still in progress. To get a copy of your data, contact AltasGoods Care and we will send it to you."
   }
 ];
 

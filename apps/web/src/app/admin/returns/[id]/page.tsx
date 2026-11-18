@@ -21,7 +21,7 @@ export async function generateMetadata(props: PageProps<"/admin/returns/[id]">) 
 const ACTOR: Record<string, string> = { CUSTOMER: "Customer", STAFF: "Store", SELLER: "Store", SYSTEM: "System", LOGISTICS: "Courier" };
 const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 const RESOLUTION = { REFUND: "Refund", REPLACEMENT: "Replacement", EXCHANGE: "Exchange" } as const;
-const REFUND_TO = { SOURCE: "Original payment method", CREDITS: "AltasGoods Credits", BANK: "Bank account (UPI)" } as const;
+const REFUND_TO = { SOURCE: "Original payment method", CREDITS: "AltasGoods Credits (old, not offered now)", BANK: "Bank account (UPI)" } as const;
 /** Refund statuses as staff read them; the customer sees one needing attention as processing. */
 const REFUND_STATE: Record<string, string> = {
   INITIATED: "Waiting for the store's payout",

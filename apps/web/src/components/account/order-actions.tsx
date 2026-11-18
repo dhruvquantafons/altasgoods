@@ -20,7 +20,7 @@ export interface CancelItem {
 }
 
 export interface RefundOption {
-  key: "original" | "credits";
+  key: "original";
   label: string;
   detail: string;
 }
@@ -222,7 +222,7 @@ export function CancelOrderButton({
                   </div>
                 </div>
               )}
-              <p className="mt-3 text-xs text-ink-500">AltasGoods never charges a cancellation fee. Any AltasGoods Credits you used are restored right away.</p>
+              <p className="mt-3 text-xs text-ink-500">AltasGoods never charges a cancellation fee. Any coupon you used is restored right away.</p>
             </fieldset>
           </div>
         )}

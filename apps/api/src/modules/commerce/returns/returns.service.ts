@@ -124,7 +124,7 @@ export class ReturnsService {
    * a manual refund waiting for its payout (INITIATED until marked paid), so
    * the amount counts against the order's cap and cannot be refunded twice.
    * If the cap cannot cover it, the step that resolves the return fails and
-   * says why. Credits refunds stay INITIATED with no ledger row.
+   * says why. Old Credits refunds (no longer offered) stay INITIATED with no ledger row.
    */
   private async resolve(tx: Tx, r: Return) {
     let next = r;
@@ -137,7 +137,7 @@ export class ReturnsService {
         const refund = await this.reservePayout(tx, r);
         [next] = (await tx.update(returns).set({ refundStatus: "INITIATED", refundId: refund.id }).where(eq(returns.id, r.id)).returning()) as [Return];
       } else {
-        // AltasGoods Credits are left as they were
+        // Credits cannot be chosen any more; a return that chose them before stays as it was
         [next] = (await tx.update(returns).set({ refundStatus: "INITIATED" }).where(eq(returns.id, r.id)).returning()) as [Return];
       }
     }

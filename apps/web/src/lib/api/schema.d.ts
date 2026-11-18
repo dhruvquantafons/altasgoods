@@ -10103,7 +10103,7 @@ export interface operations {
                     resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
                     exchangeSize?: string;
                     /** @enum {string} */
-                    refundTo?: "SOURCE" | "CREDITS" | "BANK";
+                    refundTo?: "SOURCE" | "BANK";
                     refundUpi?: string;
                     pickupDate: string;
                     pickupSlot: string;
@@ -12266,8 +12266,13 @@ export interface operations {
                     /** @enum {string} */
                     kind: "REFUND";
                     amountPaise: number;
-                    /** @enum {string} */
-                    destination: "SOURCE" | "CREDITS";
+                    /**
+                     * @description SOURCE goes back to the payment method; BANK is paid by hand to the UPI id
+                     * @enum {string}
+                     */
+                    destination: "SOURCE" | "BANK";
+                    /** @description Required for BANK */
+                    upi?: string;
                     /** @enum {string} */
                     reason: "damaged" | "not_delivered" | "wrong" | "late" | "goodwill";
                 } | {

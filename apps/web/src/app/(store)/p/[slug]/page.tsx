@@ -306,7 +306,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <p className="mt-2 text-sm font-medium text-ink-900">{policy.short}</p>
           <p className="mt-1 text-sm leading-relaxed text-ink-600">{policy.detail}</p>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-            Damaged, defective or wrong items can always be reported within the window or 7 days, whichever is longer. Refunds to AltasGoods Credits arrive within 2 hours.
+            Damaged, defective or wrong items can always be reported within the window or 7 days, whichever is longer. Refunds go back to your original payment method.
           </p>
           <Link href="/policies/returns" className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-700 hover:underline">
             Returns policy <ChevronRight size={14} aria-hidden="true" />

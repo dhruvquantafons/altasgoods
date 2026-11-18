@@ -25,7 +25,7 @@ export default async function ReturnsPage(props: PageProps<"/account/returns">) 
   const { returns: apiReturns, refunds: accountRefunds } = await loadMyReturns();
   const accountReturns = apiReturns.map((r) => toAccountReturn(r, "your original payment method"));
   const open = accountReturns.filter(OPEN);
-  // refunds still to be paid by Finance (Credits, cash on delivery) show with returns
+  // refunds still to be paid by Finance (bank refunds, cash on delivery) show with returns
   const inProgress = [...accountRefunds.filter((r) => r.status !== "completed" && r.status !== "failed"), ...accountReturns.filter((r) => r.refund && r.refund.status !== "completed" && r.status === "completed").map((r) => r.refund!)];
   const refunded90 = accountRefunds.filter((r) => r.status === "completed" && now - new Date(r.completedAt ?? r.initiatedAt).getTime() < 90 * 86400_000);
   const slots = pickupSlots(4, now).map((s) => ({ key: s.date, label: dayLabel(s.date), windows: s.windows }));

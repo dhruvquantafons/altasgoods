@@ -23833,7 +23833,6 @@
                     "type": "string",
                     "enum": [
                       "SOURCE",
-                      "CREDITS",
                       "BANK"
                     ]
                   },
@@ -32073,8 +32072,14 @@
                         "type": "string",
                         "enum": [
                           "SOURCE",
-                          "CREDITS"
-                        ]
+                          "BANK"
+                        ],
+                        "description": "SOURCE goes back to the payment method; BANK is paid by hand to the UPI id"
+                      },
+                      "upi": {
+                        "description": "Required for BANK",
+                        "type": "string",
+                        "pattern": "^[\\w.-]{2,}@[a-z]{2,}$"
                       },
                       "reason": {
                         "type": "string",

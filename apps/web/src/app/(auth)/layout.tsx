@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <ul className="mt-6 flex flex-col gap-3 text-[15px] text-brand-100">
             {[
               { icon: Truck, t: "Real delivery dates for your pincode" },
-              { icon: Undo2, t: "Free doorstep returns, refunds in 2 hours to AltasGoods Credits" },
+              { icon: Undo2, t: "Free doorstep pickup on returns, refunds to your original payment method" },
               { icon: BadgeCheck, t: "Every product sold and shipped by AltasGoods" },
             ].map((x) => (
               <li key={x.t} className="flex items-center gap-3">

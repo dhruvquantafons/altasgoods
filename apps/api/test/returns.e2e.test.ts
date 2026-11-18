@@ -231,4 +231,11 @@ describe("returns", () => {
     await t.http.get("/v1/me/returns").expect(401);
     await t.http.get("/v1/admin/returns").set(shopper).expect(403);
   });
+
+  it("does not accept Credits as the place a refund goes", async () => {
+    const { itemId } = await deliveredLine("backpack-urban");
+    await t.http.post("/v1/me/returns").set(shopper).send(request(itemId, { refundTo: "CREDITS" })).expect(422);
+    const bank = await t.http.post("/v1/me/returns").set(shopper).send(request(itemId, { refundTo: "BANK", refundUpi: "ananya@okbank" })).expect(201);
+    expect(bank.body.refundTo).toBe("BANK");
+  });
 });

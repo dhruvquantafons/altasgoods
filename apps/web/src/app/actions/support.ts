@@ -10,7 +10,7 @@ import type { CustomerTicket, TicketDetail } from "@/lib/api/types";
 type Result<T> = { ok: true; data: T } | { ok: false; error: string; code?: string };
 type Attachment = { id: string; name: string; mimeType: string; sizeBytes: number };
 type ActionInput =
-  | { kind: "REFUND"; amountPaise: number; destination: "SOURCE" | "CREDITS"; reason: "damaged" | "not_delivered" | "wrong" | "late" | "goodwill" }
+  | { kind: "REFUND"; amountPaise: number; destination: "SOURCE" | "BANK"; upi?: string; reason: "damaged" | "not_delivered" | "wrong" | "late" | "goodwill" }
   | { kind: "REPLACEMENT"; itemId: string; reason: "damaged" | "defective" | "wrong" | "missing"; collectOriginal: boolean }
   | { kind: "GUARANTEE_CLAIM"; claimType: "not_delivered" | "damaged" | "wrong" | "different" };
 

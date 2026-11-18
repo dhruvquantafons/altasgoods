@@ -211,7 +211,7 @@ export default async function HomePage() {
         <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line lg:grid-cols-4">
           {[
             { icon: Lock, title: "Secure payments", body: "UPI, cards and EMI through RBI regulated partners. We never store card numbers." },
-            { icon: Undo2, title: "Easy returns", body: "Free doorstep pickup. Refunds to AltasGoods Credits within 2 hours." },
+            { icon: Undo2, title: "Easy returns", body: "Free doorstep pickup. Refunds go back to your original payment method." },
             { icon: BadgeCheck, title: "AltasGoods Assured", body: "Extra quality checks, faster delivery and simpler returns." },
             { icon: Wallet, title: "Pay on delivery", body: "Cash or UPI at your door, with no extra charge, ever." },
           ].map((t) => (

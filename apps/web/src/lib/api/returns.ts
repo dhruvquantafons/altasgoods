@@ -34,7 +34,7 @@ export function toAccountReturn(r: ReturnRequest, paymentLabel: string): Account
   const order = ["REQUESTED", "APPROVED", "PICKUP_SCHEDULED", "PICKED_UP", "RECEIVED", "QC_PASSED", "COMPLETED"] as const;
   const reached = (s: ApiReturnStatus) => r.events.some((e) => e.toStatus === s) || order.indexOf(s as (typeof order)[number]) <= order.indexOf(r.status as (typeof order)[number]);
   const closed = r.status === "CANCELLED" || r.status === "REJECTED";
-  const destination = r.refundTo === "CREDITS" ? "AltasGoods Credits" : r.refundTo === "BANK" ? "your UPI ID" : paymentLabel;
+  const destination = r.refundTo === "CREDITS" ? "AltasGoods Credits (earlier request)" : r.refundTo === "BANK" ? "your UPI ID" : paymentLabel;
   return {
     id: r.id,
     orderId: r.orderId,

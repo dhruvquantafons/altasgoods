@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
 import { samplePdf } from "../src/db/sample-files.js";
-import { orders, supportTickets, users } from "../src/db/schema.js";
+import { orders, refunds, supportTickets, users } from "../src/db/schema.js";
 import { DEMO_SUPERVISOR_EMAIL, careAgentEmail } from "../src/db/demo.js";
 import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, runJobs, signIn, type TestContext } from "./helpers.js";
 
@@ -242,5 +242,26 @@ describe("customer and order lookup", () => {
     const theirs = await t.http.get(`${S}/tickets`).query({ view: "all", customerId: ananya!.id }).set(revathi).expect(200);
     expect(theirs.body.items.map((i: { id: string }) => i.id)).toContain(created.body.id);
     expect(theirs.body.items.every((i: { customerId: string }) => i.customerId === ananya!.id)).toBe(true);
+  });
+});
+
+describe("Care Desk refunds go to the payment method or a bank (UPI), never Credits", () => {
+  const ticketFor = async (order: string, subject: string) => (await t.http.post(`${ME}/tickets`).set(shopper).send({ subject, category: "Product quality", orderId: order, body: "The item is faulty." }).expect(201)).body.id as string;
+
+  it("rejects Credits as a destination", async () => {
+    const id = await ticketFor(orderId, "Credits refund asked for");
+    await t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "REFUND", amountPaise: 10_000, destination: "CREDITS", reason: "goodwill" }).expect(422);
+  });
+
+  it("needs a valid UPI id for a bank refund, then sets a manual payout aside", async () => {
+    const order = await paidOrder(1);
+    const id = await ticketFor(order, "Refund to my bank please");
+    const refund = (upi?: string) => t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "REFUND", amountPaise: 20_000, destination: "BANK", reason: "damaged", ...(upi ? { upi } : {}) });
+    await refund().expect(422);
+    await refund("not a upi id").expect(422);
+    const ok = await refund("ananya@okbank").expect(200);
+    expect(ok.body.actions.find((a: { kind: string }) => a.kind === "REFUND").status).not.toBe("COMPLETED");
+    const rows = await db.select({ method: refunds.method, status: refunds.status, amountPaise: refunds.amountPaise }).from(refunds).where(eq(refunds.orderId, order));
+    expect(rows).toEqual([{ method: "MANUAL", status: "PENDING", amountPaise: 20_000 }]);
   });
 });
