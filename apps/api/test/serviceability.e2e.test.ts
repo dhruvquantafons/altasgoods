@@ -157,9 +157,12 @@ describe("Shiprocket check", () => {
     const offerId = await offerOf("tea-assam");
     const addressId = await addressIn("600001");
     const q = await t.http.post("/v1/checkout/quote").set(shopper).send({ addressId, lines: [{ offerId, qty: 1, variant: "" }] }).expect(200);
-    const days = (new Date(q.body.promisedBy).getTime() - t.clock.now().getTime()) / 86_400_000;
-    expect(days).toBeGreaterThan(11);
-    expect(days).toBeLessThan(13);
+    // whole IST calendar days, so the answer does not depend on the time of day; an order after 2 pm counts from tomorrow
+    const ist = (d: Date) => new Date(d.getTime() + 5.5 * 3_600_000);
+    const day = (d: Date) => Math.floor(ist(d).getTime() / 86_400_000);
+    const now = t.clock.now();
+    const afterCutoff = ist(now).getUTCHours() >= 14 ? 1 : 0;
+    expect(day(new Date(q.body.promisedBy)) - day(now)).toBe(12 + afterCutoff);
   });
 
   it("keys the cache by pickup pincode, and caches a well-formed unserviceable answer", async () => {
