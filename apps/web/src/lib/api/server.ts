@@ -1,10 +1,11 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import type { Problem, User } from "./types";
+import { forwardingHeaders } from "./forwarded";
 import { ACCESS_COOKIE, apiUrl, peekClaims } from "./session";
 import { canEdit, canSee, type Area } from "./staff";
 
@@ -49,6 +50,16 @@ export async function proxyFile(path: string) {
 
 /** Anonymous client for public catalog reads. */
 export const publicApi = () => createClient<paths>({ baseUrl: apiUrl(), cache: "no-store" });
+
+/**
+ * Anonymous client for calls made on the visitor's behalf (sign in, sign up,
+ * password reset, invites): passes on their address and browser (see
+ * lib/api/forwarded.ts), so the API's limits count the visitor, not this
+ * server, and new sessions record where they came from.
+ */
+export async function clientApi() {
+  return createClient<paths>({ baseUrl: apiUrl(), cache: "no-store", headers: forwardingHeaders(await headers()) });
+}
 
 /**
  * Unwraps an openapi-fetch result: returns data, throws ApiRequestError on

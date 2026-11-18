@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { proxy } from "@/proxy";
 
 /** An access token as the proxy reads it: only the payload matters, the API checks the signature. */
@@ -44,5 +44,25 @@ describe("staff areas in the proxy", () => {
     expect(await visit("/admin/catalog", { staff: ["CATALOG_MANAGER"], pwc: true })).toBe("/account/profile?change=1");
     expect(await visit("/support", { staff: ["SUPPORT_AGENT"], pwc: true })).toBe("/account/profile?change=1");
     expect(await visit("/account/profile", { staff: ["CATALOG_MANAGER"], pwc: true })).toBeNull();
+  });
+});
+
+describe("refreshing in the proxy", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("tells the API who the visitor is, so the session records the real client", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ accessToken: token({}), refreshToken: "rt-2", expiresIn: 900 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const req = new NextRequest(new URL("/account", "http://localhost:3000"), {
+      headers: { cookie: "bb_rt=rt-1", "x-forwarded-for": "198.51.100.1, 203.0.113.7", "user-agent": "Mozilla/5.0 Firefox" },
+    });
+    const res = await proxy(req);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toMatch(/\/v1\/auth\/refresh$/);
+    expect(new Headers(init.headers).get("x-forwarded-for")).toBe("198.51.100.1, 203.0.113.7");
+    expect(new Headers(init.headers).get("user-agent")).toBe("Mozilla/5.0 Firefox");
+    expect(JSON.parse(String(init.body))).toEqual({ refreshToken: "rt-1" });
+    expect(res.cookies.get("bb_rt")?.value).toBe("rt-2");
   });
 });

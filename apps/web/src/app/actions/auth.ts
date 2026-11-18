@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { publicApi } from "@/lib/api/server";
+import { clientApi, publicApi } from "@/lib/api/server";
 import { clearSession, REFRESH_COOKIE, setSession } from "@/lib/api/session";
 import type { PasswordResetChallenge, Session, User } from "@/lib/api/types";
 
@@ -25,7 +25,7 @@ async function startSession(session: Session) {
 
 export async function signUp(input: { name: string; email: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
   try {
-    const r = await publicApi().POST("/v1/auth/signup", { body: input });
+    const r = await (await clientApi()).POST("/v1/auth/signup", { body: input });
     return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not create your account");
   } catch {
     return unreachable;
@@ -34,7 +34,7 @@ export async function signUp(input: { name: string; email: string; password: str
 
 export async function signIn(input: { email: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
   try {
-    const r = await publicApi().POST("/v1/auth/login", { body: input });
+    const r = await (await clientApi()).POST("/v1/auth/login", { body: input });
     return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not sign you in");
   } catch {
     return unreachable;
@@ -44,7 +44,7 @@ export async function signIn(input: { email: string; password: string }): Promis
 /** Emails a reset code. Outside production the code is returned for convenience. */
 export async function forgotPassword(email: string): Promise<Result<PasswordResetChallenge>> {
   try {
-    const r = await publicApi().POST("/v1/auth/password/forgot", { body: { email } });
+    const r = await (await clientApi()).POST("/v1/auth/password/forgot", { body: { email } });
     return r.data ? { ok: true, data: r.data } : failure(r.error, "Could not send the code");
   } catch {
     return unreachable;
@@ -54,7 +54,7 @@ export async function forgotPassword(email: string): Promise<Result<PasswordRese
 /** Sets a new password with the emailed code, then signs in. */
 export async function resetPassword(input: { email: string; code: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
   try {
-    const r = await publicApi().POST("/v1/auth/password/reset", { body: input });
+    const r = await (await clientApi()).POST("/v1/auth/password/reset", { body: input });
     return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not reset your password");
   } catch {
     return unreachable;
@@ -64,7 +64,7 @@ export async function resetPassword(input: { email: string; code: string; passwo
 /** Accepts a staff invite: sets the chosen password, then signs in. */
 export async function acceptInvite(input: { token: string; password: string }): Promise<Result<{ user: User; isNewUser: boolean }>> {
   try {
-    const r = await publicApi().POST("/v1/auth/invite/accept", { body: input });
+    const r = await (await clientApi()).POST("/v1/auth/invite/accept", { body: input });
     return r.data ? { ok: true, data: await startSession(r.data) } : failure(r.error, "Could not set your password");
   } catch {
     return unreachable;

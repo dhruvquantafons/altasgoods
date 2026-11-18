@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { forwardingHeaders } from "@/lib/api/forwarded";
 import { adminHome, canSeePath } from "@/lib/api/staff";
 
 /**
@@ -50,7 +51,8 @@ export async function proxy(req: NextRequest) {
     try {
       const r = await fetch(`${apiUrl()}/v1/auth/refresh`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        // the session records the visitor's browser and address, not this server's
+        headers: { ...forwardingHeaders(req.headers), "content-type": "application/json" },
         body: JSON.stringify({ refreshToken: refresh }),
         signal: AbortSignal.timeout(3000),
       });
