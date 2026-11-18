@@ -445,7 +445,6 @@ export function SignOutOthersButton() {
 
 /** The danger zone's button: asks for the password, deletes the account and goes to the goodbye page. */
 export function DeleteAccountButton() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -460,8 +459,7 @@ export function DeleteAccountButton() {
       setBusy(false);
       return setError(r.error);
     }
-    // the cookies are gone; this page is outside the account area, so nothing signed in renders again
-    router.replace("/signed-out?deleted=1");
+    // on success the action redirects to the goodbye page, so there is nothing left to do here
   };
 
   return (
