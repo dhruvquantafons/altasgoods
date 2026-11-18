@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { DB } from "../src/common/tokens.js";
 import type { Db } from "../src/db/client.js";
-import { jobs } from "../src/db/schema.js";
+import { emailLog, jobs } from "../src/db/schema.js";
 import { JOB_MAX_ATTEMPTS, JOB_STALE_MS, JobsService, retryDelayMs } from "../src/modules/jobs/jobs.service.js";
 import { createTestApp, type TestContext } from "./helpers.js";
 
@@ -199,5 +199,31 @@ describe("jobs", () => {
       svc.autoKick = false;
       await svc.runDue();
     }
+  });
+
+  it("deletes finished jobs once they are old, in batches, and keeps the email log", async () => {
+    const k = kind();
+    const now = t.clock.now().getTime();
+    const DAY = 86_400_000;
+    const at = (days: number) => new Date(now - days * DAY);
+    const rows = await db
+      .insert(jobs)
+      .values([
+        ...Array.from({ length: 5 }, () => ({ kind: k, payload: {}, status: "DONE" as const, updatedAt: at(15) })),
+        { kind: k, payload: { keep: "recent done" }, status: "DONE" as const, updatedAt: at(13) },
+        { kind: k, payload: { gone: "old failed" }, status: "FAILED" as const, updatedAt: at(91) },
+        { kind: k, payload: { keep: "failed under 90 days" }, status: "FAILED" as const, updatedAt: at(30) },
+        { kind: k, payload: { keep: "still queued" }, status: "QUEUED" as const, updatedAt: at(200), runAfter: at(200) },
+      ])
+      .returning({ id: jobs.id });
+    await db.insert(emailLog).values({ dedupeKey: `${k}:sent`, kind: "TEST", sentAt: at(400) });
+
+    // a batch of 2 still deletes all six, over several statements
+    expect(await svc.prune(2)).toBe(6);
+    const left = await db.select({ payload: jobs.payload }).from(jobs).where(inArray(jobs.id, rows.map((r) => r.id)));
+    expect(left.map((r) => (r.payload as { keep?: string }).keep).sort()).toEqual(["failed under 90 days", "recent done", "still queued"]);
+    expect(await db.select().from(emailLog).where(eq(emailLog.dedupeKey, `${k}:sent`))).toHaveLength(1);
+    // tidy up the queued row, which has no handler
+    await db.delete(jobs).where(eq(jobs.kind, k));
   });
 });

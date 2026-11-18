@@ -15,6 +15,10 @@ export const JOB_MAX_ATTEMPTS = 8;
  * died, and another worker may take it over.
  */
 export const JOB_STALE_MS = 15 * 60_000;
+/** Finished jobs are kept this long (by when they last changed), then deleted. Emails stay in email_log, their dedupe record, for good. */
+export const JOB_KEEP_DONE_MS = 14 * 86_400_000;
+export const JOB_KEEP_FAILED_MS = 90 * 86_400_000;
+const PRUNE_BATCH = 1_000;
 /** Wait before run `attempts + 1`: 30s, 1m, 2m, 4m ... capped at an hour. */
 export const retryDelayMs = (attempts: number) => Math.min(30_000 * 2 ** Math.max(attempts - 1, 0), 3_600_000);
 
@@ -150,6 +154,30 @@ export class JobsService {
   /** Resolves when the run in progress (if any) has finished. */
   idle() {
     return this.chain.then(() => undefined);
+  }
+
+  /**
+   * Deletes DONE jobs older than JOB_KEEP_DONE_MS and FAILED ones older than
+   * JOB_KEEP_FAILED_MS, a batch at a time so no statement holds many rows.
+   * Returns how many went. Safe with several instances.
+   */
+  async prune(batch = PRUNE_BATCH): Promise<number> {
+    const now = this.clock.now().getTime();
+    let total = 0;
+    for (const [status, keep] of [["DONE", JOB_KEEP_DONE_MS], ["FAILED", JOB_KEEP_FAILED_MS]] as const) {
+      for (;;) {
+        const old = this.db
+          .select({ id: jobs.id })
+          .from(jobs)
+          .where(and(eq(jobs.status, status), lt(jobs.updatedAt, new Date(now - keep))))
+          .limit(batch)
+          .for("update", { skipLocked: true });
+        const gone = await this.db.delete(jobs).where(inArray(jobs.id, old)).returning({ id: jobs.id });
+        total += gone.length;
+        if (gone.length < batch) break;
+      }
+    }
+    return total;
   }
 
   private async runBatch(limit: number) {
