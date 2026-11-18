@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { HelpCircle, Package, Smartphone } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
-import { AccountMenu, CartButton, DeliverTo, MobileNav, SearchBox, SearchBoxFallback, WishlistLink } from "./header-client";
+import { AccountMenu, CartButton, DeliverTo, MobileNav, SearchBox, SearchBoxFallback, WishlistLink, type StaffLink } from "./header-client";
 import { MegaMenu } from "./mega-menu";
 import type { AddressLite, NavCategory, Suggestion } from "./types";
 
@@ -17,7 +17,7 @@ export function StoreHeader({
   categories: NavCategory[];
   suggestions: Suggestion[];
   addresses: AddressLite[];
-  customer: { signedIn: boolean; firstName: string };
+  customer: { signedIn: boolean; firstName: string; workspaces?: StaffLink[] };
 }) {
   const cats = categories.map((c) => ({ slug: c.slug, name: c.name }));
   return (

@@ -114,3 +114,18 @@ export function adminHome(roles: readonly string[]) {
 
 /** Where a staff member starts work: AltasGoods Control, else the Care Desk, else the storefront. */
 export const staffHome = (roles: readonly string[]) => adminHome(roles) ?? (canSee(roles, "support") ? "/support" : "/");
+
+/**
+ * The staff workspaces these roles may open, for the storefront's account menu. Empty for shoppers.
+ * AltasGoods Control links to the person's own first area, so a Catalog Manager lands on the catalog.
+ */
+export function staffWorkspaceLinks(roles: readonly string[]): { key: "admin" | "logistics" | "support" | "portals"; href: string }[] {
+  if (!roles.length) return [];
+  const admin = adminHome(roles);
+  return [
+    ...(admin ? [{ key: "admin" as const, href: admin }] : []),
+    ...(canSee(roles, "logistics") ? [{ key: "logistics" as const, href: "/logistics" }] : []),
+    ...(canSee(roles, "support") ? [{ key: "support" as const, href: "/support" }] : []),
+    ...(canSee(roles, "portals") ? [{ key: "portals" as const, href: "/portals" }] : []),
+  ];
+}

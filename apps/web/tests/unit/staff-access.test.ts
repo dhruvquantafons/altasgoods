@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adminHome, areaForPath, canEdit, canSee, canSeePath, navFor } from "@/lib/api/staff";
+import { adminHome, areaForPath, canEdit, canSee, canSeePath, navFor, staffWorkspaceLinks } from "@/lib/api/staff";
 
 describe("who sees and edits which area", () => {
   it("lets a Super Admin see and edit everything, staff included", () => {
@@ -72,5 +72,29 @@ describe("paths", () => {
     expect(canSeePath("/admin/catalog/new", ["CATALOG_MANAGER"])).toBe(true);
     expect(canSeePath("/admin/account", ["AUDITOR"])).toBe(true);
     expect(canSeePath("/", [])).toBe(true);
+  });
+});
+
+describe("workspace links in the storefront account menu", () => {
+  const keys = (roles: string[]) => staffWorkspaceLinks(roles).map((l) => l.key);
+
+  it("shows nothing to shoppers", () => {
+    expect(staffWorkspaceLinks([])).toEqual([]);
+  });
+
+  it("gives a Super Admin every workspace and the launcher", () => {
+    expect(staffWorkspaceLinks(["SUPER_ADMIN"])).toEqual([
+      { key: "admin", href: "/admin" },
+      { key: "logistics", href: "/logistics" },
+      { key: "support", href: "/support" },
+      { key: "portals", href: "/portals" },
+    ]);
+  });
+
+  it("only lists what each role may open", () => {
+    expect(keys(["OPS_ADMIN"])).toEqual(["admin", "logistics", "portals"]);
+    expect(keys(["SUPPORT_AGENT"])).toEqual(["support"]);
+    expect(staffWorkspaceLinks(["CATALOG_MANAGER"])).toEqual([{ key: "admin", href: adminHome(["CATALOG_MANAGER"]) }]);
+    for (const link of staffWorkspaceLinks(["CATALOG_MANAGER"])) expect(canSeePath(link.href, ["CATALOG_MANAGER"])).toBe(true);
   });
 });

@@ -8,6 +8,7 @@ import { StoreSettingsProvider } from "@/components/store/store-settings";
 import { navCategories, searchSuggestions } from "@/lib/mock/store-extra";
 import { getStoreCatalog } from "@/lib/store-catalog";
 import { getStoreSettings } from "@/lib/store-settings";
+import { staffWorkspaceLinks } from "@/lib/api/staff";
 
 export const metadata: Metadata = {
   title: {
@@ -42,6 +43,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
             customer={{
               signedIn: !!user,
               firstName: user?.name?.split(" ")[0] ?? (user ? "there" : ""),
+              workspaces: staffWorkspaceLinks(user?.staffRoles ?? []),
             }}
           />
           <main id="main" className="flex-1">
