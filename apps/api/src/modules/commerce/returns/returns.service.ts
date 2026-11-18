@@ -424,6 +424,9 @@ export class ReturnsService {
    */
   async markRefundPaid(id: string, actorId: string, reference: string, note?: string) {
     await this.db.transaction(async (tx) => {
+      // the refund row before the return, the order the Payments page takes them in (RefundsService.markPaid), so the two never deadlock
+      const [peek] = await tx.select({ refundId: returns.refundId }).from(returns).where(eq(returns.id, id));
+      if (peek?.refundId) await tx.select({ id: refunds.id }).from(refunds).where(eq(refunds.id, peek.refundId)).for("update");
       const r = await this.lock(tx, id);
       if (r.resolution !== "REFUND" || r.refundTo === "CREDITS" || r.refundStatus !== "INITIATED") {
         throw conflict("NOT_AWAITING_PAYOUT", "This return has no bank refund waiting to be paid");

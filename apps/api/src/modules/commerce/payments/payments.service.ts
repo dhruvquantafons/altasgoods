@@ -134,13 +134,16 @@ export class PaymentsService {
   /** Idempotent: an event id that was already processed is acknowledged and ignored. */
   async process(event: ProviderEvent) {
     return this.db.transaction(async (tx) => {
+      // the order row first, then the payment: the order refunds take them in (RefundsService.settle), so the two never deadlock
+      const [owner] = await tx.select({ orderId: payments.orderId }).from(payments).where(eq(payments.providerRef, event.providerRef));
+      if (!owner) throw notFound("Payment");
+      const { order } = await this.workflow.lockOrder(tx, owner.orderId);
       const [payment] = await tx.select().from(payments).where(eq(payments.providerRef, event.providerRef)).for("update");
       if (!payment) throw notFound("Payment");
       const inserted = await tx.insert(paymentEvents).values({ id: event.id, paymentId: payment.id, type: event.type, payload: event }).onConflictDoNothing().returning({ id: paymentEvents.id });
       if (!inserted.length) return { duplicate: true, status: payment.status };
 
       const now = this.clock.now();
-      const { order } = await this.workflow.lockOrder(tx, payment.orderId);
 
       if (event.type === "payment.captured") {
         if (payment.status === "CAPTURED" || payment.status === "REFUNDED" || payment.status === "PARTIALLY_REFUNDED") return { duplicate: false, status: payment.status };

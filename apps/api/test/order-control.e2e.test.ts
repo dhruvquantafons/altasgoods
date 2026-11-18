@@ -256,6 +256,29 @@ describe("bank refunds paid by hand", () => {
     expect(await refundsOf(full.orderId)).toHaveLength(1);
   });
 
+  it("marks a return's bank refund paid from both pages at once: one wins, the other is refused, nothing errors", async () => {
+    for (const slug of ["speaker-boom", "speaker-boom", "speaker-boom"]) {
+      const { orderId, ids } = await order([slug], "COD");
+      await delivered(ids[0]!);
+      const r = (
+        await t.http
+          .post("/v1/me/returns")
+          .set(shopper)
+          .send({ orderItemId: ids[0], qty: 1, reasonCode: "DEFECTIVE", reasonLabel: "Item is defective or not working", fault: "STORE", resolution: "REFUND", refundTo: "BANK", refundUpi: "shopper@okbank", pickupDate: today(), pickupSlot: "10 AM to 1 PM" })
+          .expect(201)
+      ).body;
+      await t.http.post(`${A}/returns/${r.id}/pickup`).set(staff).send({ to: "RECEIVED" }).expect(200);
+      const [pending] = await refundsOf(orderId);
+      const both = await Promise.all([
+        t.http.post(`${A}/returns/${r.id}/refund/mark-paid`).set(staff).send({ reference: "UTR10203040" }),
+        t.http.post(`${A}/refunds/${pending!.id}/mark-paid`).set(staff).send({ reference: "UTR10203040" }),
+      ]);
+      expect(both.map((x) => x.status).sort()).toEqual([200, 409]);
+      expect(await refundsOf(orderId)).toEqual([expect.objectContaining({ id: pending!.id, status: "COMPLETED", reference: "UTR10203040" })]);
+      expect((await t.http.get(`${A}/returns/${r.id}`).set(staff).expect(200)).body.refundStatus).toBe("COMPLETED");
+    }
+  });
+
   it("puts a Care Desk refund on a cash on delivery order on the ledger for a manual payout", async () => {
     const { orderId, ids } = await order(["speaker-boom"], "COD");
     await delivered(ids[0]!);
