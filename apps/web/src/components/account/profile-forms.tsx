@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { CircleCheck, Code2, KeyRound, LogOut, Pencil } from "lucide-react";
-import { changePassword, requestEmailCode, signOutOtherDevices, updateProfile, verifyEmailCode } from "@/app/actions/account";
+import { CircleCheck, Code2, KeyRound, LogOut, Pencil, Trash2 } from "lucide-react";
+import { changePassword, deleteAccount, requestEmailCode, signOutOtherDevices, updateProfile, verifyEmailCode } from "@/app/actions/account";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
@@ -439,6 +439,75 @@ export function SignOutOthersButton() {
         {err && <p className="text-sm text-danger-600">{err}</p>}
       </Modal>
       {t.node}
+    </>
+  );
+}
+
+/** The danger zone's button: asks for the password, deletes the account and goes to the goodbye page. */
+export function DeleteAccountButton() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    if (!password) return setError("Enter your password to confirm.");
+    setBusy(true);
+    setError("");
+    const r = await deleteAccount(password);
+    if (!r.ok) {
+      setBusy(false);
+      return setError(r.error);
+    }
+    // the cookies are gone; this page is outside the account area, so nothing signed in renders again
+    router.replace("/signed-out?deleted=1");
+  };
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="danger"
+        icon={Trash2}
+        onClick={() => {
+          setPassword("");
+          setError("");
+          setOpen(true);
+        }}
+      >
+        Delete account
+      </Button>
+      <Modal
+        open={open}
+        onClose={() => !busy && setOpen(false)}
+        size="sm"
+        title="Delete your account?"
+        description="This cannot be undone. You will be signed out everywhere and will not be able to sign in with this email again unless you create a new account."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>
+              Keep my account
+            </Button>
+            <Button variant="danger" onClick={confirm} disabled={busy}>
+              {busy ? "Deleting" : "Delete my account"}
+            </Button>
+          </>
+        }
+      >
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            void confirm();
+          }}
+          className="flex flex-col gap-4"
+        >
+          <Field label="Your password" htmlFor="delete-password" error={error || undefined}>
+            <Input id="delete-password" type="password" autoComplete="current-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={Boolean(error)} />
+          </Field>
+        </form>
+      </Modal>
     </>
   );
 }

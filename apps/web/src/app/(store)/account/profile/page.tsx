@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FileLock2, KeyRound, Mail, Phone, ShieldAlert, ShieldCheck } from "lucide-react";
 import { dateLabel } from "@/components/account/lib";
-import { ChangePasswordButton, EditNameButton, EditPhoneButton, EmailButton, SignOutOthersButton } from "@/components/account/profile-forms";
+import { ChangePasswordButton, DeleteAccountButton, EditNameButton, EditPhoneButton, EmailButton, SignOutOthersButton } from "@/components/account/profile-forms";
 import { Panel } from "@/components/account/ui";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/misc";
@@ -109,14 +109,31 @@ export default async function ProfilePage(props: PageProps<"/account/profile">) 
           <p className="flex items-start gap-2.5 text-[13px] leading-relaxed text-ink-600">
             <FileLock2 size={16} className="mt-0.5 shrink-0 text-ink-400" aria-hidden="true" />
             <span>
-              To get a copy of your data or close your account under the Digital Personal Data Protection Act, 2023,{" "}
+              For a copy of your data under the Digital Personal Data Protection Act, 2023,{" "}
               <Link href="/account/support" className="font-medium text-brand-700 hover:underline">
                 contact AltasGoods Care
               </Link>
-              . We reply within 7 days.
+              . We reply within 7 days. You can also delete your account yourself, below.
             </span>
           </p>
         </Panel>
+
+        {!user.staffRoles.length && (
+          <Panel title="Delete account" className="border-danger-100 xl:col-span-2">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-2xl text-[13px] leading-relaxed text-ink-600">
+                <p>
+                  Deleting your account erases your name, email, mobile number, saved addresses, cart and wishlist, and signs you out everywhere. This cannot be undone.
+                </p>
+                <p className="mt-2">
+                  Your past orders and returns are kept without your name, phone or street address, because tax law requires us to keep those records. Your reviews stay, shown as
+                  Anonymous. You can delete once your orders and returns are finished.
+                </p>
+              </div>
+              <DeleteAccountButton />
+            </div>
+          </Panel>
+        )}
       </div>
     </>
   );
