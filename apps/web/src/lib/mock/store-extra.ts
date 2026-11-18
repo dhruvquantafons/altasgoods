@@ -279,13 +279,6 @@ export const recommendedForYou = (products: Product[]) => {
   return [...picked, ...more].slice(0, 12);
 };
 
-export const BRAND_SPOTLIGHTS = [
-  { brand: "Kestrel", tagline: "Laptops engineered in Bengaluru", productKey: "laptop-air", tone: "bg-[#eef1f6]" },
-  { brand: "Auralis", tagline: "Sound, with nothing in the way", productKey: "headphones-studio", tone: "bg-[#f1efea]" },
-  { brand: "Kiln & Co", tagline: "Handmade stoneware from Khurja", productKey: "vase-ceramic", tone: "bg-[#f4efe8]" },
-  { brand: "Linen & Loom", tagline: "Everyday cotton, honestly made", productKey: "tee-classic", tone: "bg-[#eef0ee]" },
-].map((b) => ({ ...b, slug: slugify(b.brand), image: `/images/products/${b.productKey}.jpg` }));
-
 export function similarProducts(products: Product[], p: Product, n = 10) {
   const sameSub = products.filter((x) => x.id !== p.id && x.subcategory === p.subcategory && isBrowsable(x));
   const sameCat = products.filter((x) => x.id !== p.id && x.categoryId === p.categoryId && x.subcategory !== p.subcategory && isBrowsable(x));
@@ -528,29 +521,6 @@ export function sellerAddress(s: Seller) {
 export function sellerGrievance(s: Seller) {
   return { name: s.ownerName, email: `grievance@${s.slug}.in`, phone: s.phone };
 }
-
-/* ------------------------------- Help -------------------------------- */
-
-export const HELP_TOPICS = [
-  { icon: "Package", title: "Orders and delivery", body: "Track, change address, delivery OTP and missed deliveries", href: "/account/orders" },
-  { icon: "Undo2", title: "Returns and refunds", body: "Return windows, pickup, refund timelines and status", href: "/policies/returns" },
-  { icon: "XCircle", title: "Cancellations", body: "Cancel before dispatch for a full refund, no fees", href: "/policies/cancellation" },
-  { icon: "CreditCard", title: "Payments and EMI", body: "UPI, cards, EMI, Pay Later and failed payments", href: "/policies/payments" },
-  { icon: "Wallet", title: "AltasGoods Credits and gift cards", body: "Balance, expiry and using credits at checkout", href: "/policies/credits" },
-  { icon: "ShieldCheck", title: "AltasGoods Guarantee", body: "Item not received or not as described", href: "/policies/guarantee" },
-  { icon: "UserRound", title: "Account and privacy", body: "Login, mobile number, data and consent", href: "/policies/account-security" },
-];
-
-export const HELP_FAQS: { id: string; group: string; q: string; a: string }[] = [
-  { id: "cancellation", group: "Cancellations", q: "How do I cancel an order?", a: "Open Your orders, choose the item and select Cancel. Items can be cancelled any time before they are shipped, with a full refund and no cancellation fee. After shipping you can request cancellation and the parcel will return to the seller, or simply refuse it at the door." },
-  { id: "returns", group: "Returns and refunds", q: "What is the return window for my item?", a: "Return windows are counted from the delivery date: 10 days for fashion and furniture, 7 days for home, electronics, mobiles (replacement), books, toys and sports, 7 days for beauty if unopened, and 2 days for grocery. The exact window is shown on the product page and in your order." },
-  { id: "refund-time", group: "Returns and refunds", q: "When will I get my refund?", a: "Refunds to AltasGoods Credits arrive within 2 hours. UPI refunds take 1 to 2 business days, cards and net banking 3 to 5 business days. Cash on delivery orders are refunded to AltasGoods Credits or your bank account via IMPS or UPI." },
-  { id: "payments", group: "Payments", q: "Money was debited but my order failed. What happens now?", a: "If a payment fails after your money is debited, AltasGoods reverses it automatically within 1 business day as required by RBI rules. You do not need to raise a request. If you do not see the reversal, contact us with the transaction reference." },
-  { id: "cod", group: "Payments", q: "Is there an extra charge for cash on delivery?", a: "No. AltasGoods never charges a fee for cash on delivery, a payment handling fee or a platform fee. Pay on delivery is available for orders up to ₹50,000 on serviceable pincodes, and you can pay by cash or UPI QR at the door." },
-  { id: "credits", group: "AltasGoods Credits", q: "Do AltasGoods Credits expire?", a: "Credits from refunds never expire and can be moved back to your bank on request. Goodwill credits expire after 1 year. Gift card balances keep the gift card's 1 year validity." },
-  { id: "guarantee", group: "AltasGoods Guarantee", q: "What does the AltasGoods Guarantee cover?", a: "If an item was not delivered, arrived materially different from its listing, or a refund was not issued, contact the seller first. If it is not resolved in 48 hours, file an AltasGoods Guarantee claim from the order page within 90 days of the latest delivery date." },
-  { id: "account", group: "Account and privacy", q: "How do I download or delete my data?", a: "Go to Account, then Privacy and data. You can download a copy of your data, withdraw consent for promotional messages or request deletion of your account. Open orders or refunds must be completed before deletion." },
-];
 
 /* --------------------------- Sell on AltasGoods --------------------------- */
 

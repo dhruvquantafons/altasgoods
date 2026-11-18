@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ArrowRight, Clock, GraduationCap, HeartPulse, Home, MapPin, Sprout, Wallet } from "lucide-react";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
-import { ROLES } from "@/lib/mock/company";
+import { getCareers } from "@/lib/store-content";
 import { cn, timeAgo } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Careers" };
@@ -22,8 +22,9 @@ const steps = ["Application review within 7 days", "A conversation with the hiri
 export default async function CareersPage(props: PageProps<"/careers">) {
   const sp = await props.searchParams;
   const team = typeof sp.team === "string" ? sp.team : "All";
-  const teams = ["All", ...Array.from(new Set(ROLES.map((r) => r.team)))];
-  const roles = team === "All" ? ROLES : ROLES.filter((r) => r.team === team);
+  const all = await getCareers();
+  const teams = ["All", ...Array.from(new Set(all.map((r) => r.team)))];
+  const roles = team === "All" ? all : all.filter((r) => r.team === team);
 
   return (
     <div className="pb-16 lg:pb-24">
@@ -34,7 +35,7 @@ export default async function CareersPage(props: PageProps<"/careers">) {
         description="We are a small team doing work that reaches millions of homes and thousands of small businesses. If you care about craft and about people, we would love to hear from you."
       >
         <a href="#open-roles" className="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-brand-600 px-5 text-sm font-medium text-white hover:bg-brand-700">
-          See {ROLES.length} open roles
+          See {all.length} open {all.length === 1 ? "role" : "roles"}
           <ArrowRight size={16} aria-hidden="true" />
         </a>
       </InfoHero>

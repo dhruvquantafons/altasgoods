@@ -8,9 +8,10 @@ import { Rail, RailItem } from "@/components/store/rail";
 import { Section, SectionTitle } from "@/components/store/section";
 import { SaleCountdown } from "@/components/store/countdown";
 import { formatPromise, formatTime } from "@/components/store/delivery";
-import { bestSellers, BRAND_SPOTLIGHTS, isBrowsable, recommendedForYou } from "@/lib/mock/store-extra";
+import { bestSellers, isBrowsable, recommendedForYou } from "@/lib/mock/store-extra";
 import { getStoreBanners } from "@/lib/store-banners";
 import { getStoreCatalog } from "@/lib/store-catalog";
+import { getBrandSpotlights } from "@/lib/store-content";
 import { getLiveSales, getStoreCoupons } from "@/lib/store-promotions";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +20,7 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  const [catalog, liveSales, coupons, banners] = await Promise.all([getStoreCatalog(), getLiveSales(), getStoreCoupons(), getStoreBanners()]);
+  const [catalog, liveSales, coupons, banners, spotlights] = await Promise.all([getStoreCatalog(), getLiveSales(), getStoreCoupons(), getStoreBanners(), getBrandSpotlights()]);
   const sale = liveSales[0];
   // products in a live sale that can be bought now, biggest discount first
   const deals = catalog.products
@@ -30,7 +31,6 @@ export default async function HomePage() {
   const best = bestSellers(catalog.products);
   const recommended = recommendedForYou(catalog.products);
   const categories = catalog.categories.filter((c) => c.image);
-  const spotlights = BRAND_SPOTLIGHTS.filter((b) => catalog.brand(b.slug));
 
   return (
     <div className="pb-16 lg:pb-24">
@@ -182,7 +182,7 @@ export default async function HomePage() {
           <SectionTitle id="home-brands" title="Brands in the spotlight" description="Verified brand stores on AltasGoods" />
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
             {spotlights.map((b) => (
-              <Link key={b.slug} href={`/s?brand=${b.slug}`} className={cn("group relative flex flex-col overflow-hidden rounded-2xl p-5 lg:p-6", b.tone)}>
+              <Link key={b.id} href={`/s?brand=${b.brandSlug}`} style={{ backgroundColor: b.tone }} className="group relative flex flex-col overflow-hidden rounded-2xl p-5 lg:p-6">
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-600">
                   <BadgeCheck size={14} className="text-brand-600" aria-hidden="true" /> Verified brand
                 </span>

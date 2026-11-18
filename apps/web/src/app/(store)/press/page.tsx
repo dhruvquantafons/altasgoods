@@ -4,13 +4,14 @@ import { Download, Mail } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
-import { ABOUT_NUMBERS, PRESS_RELEASES } from "@/lib/mock/company";
+import { getAbout, getPress } from "@/lib/store-content";
 import { cn, formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Press" };
 
-export default function PressPage() {
-  const [lead, ...rest] = PRESS_RELEASES;
+export default async function PressPage() {
+  const [releases, about] = await Promise.all([getPress(), getAbout()]);
+  const [lead, ...rest] = releases;
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero
@@ -77,7 +78,7 @@ export default function PressPage() {
           <section className="rounded-2xl border border-line bg-white p-6">
             <h2 className="text-base font-semibold text-ink-900">AltasGoods at a glance</h2>
             <dl className="mt-4 grid grid-cols-2 gap-4">
-              {ABOUT_NUMBERS.map((n) => (
+              {about.numbers.map((n) => (
                 <div key={n.label}>
                   <dd className="font-display text-xl font-semibold text-ink-900">{n.value}</dd>
                   <dt className="text-xs text-ink-500">{n.label}</dt>
