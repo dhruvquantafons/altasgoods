@@ -24,6 +24,7 @@ const VIEWS = [
   { key: "all", label: "All" },
   { key: "active", label: "On sale" },
   { key: "inactive", label: "Off sale" },
+  { key: "archived", label: "Archived" },
   { key: "low", label: "Low stock" },
   { key: "out", label: "Out of stock" },
 ] as const;
@@ -39,7 +40,7 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
     loadAdminProducts({
       q,
       category: category === "all" ? undefined : category,
-      status: view === "active" || view === "inactive" ? view : "all",
+      status: view === "active" || view === "inactive" || view === "archived" ? view : "all",
       stock: view === "low" || view === "out" ? view : "all",
       page,
       pageSize: PAGE_SIZE,
@@ -128,7 +129,11 @@ export default async function ProductsPage(props: PageProps<"/admin/catalog">) {
                     </TD>
                     <TD className="hidden text-[13px] text-ink-600 lg:table-cell">{formatDateShort(p.updatedAt)}</TD>
                     <TD>
-                      {edit ? (
+                      {p.status === "ARCHIVED" ? (
+                        <Badge size="sm" tone="warning">
+                          Archived
+                        </Badge>
+                      ) : edit ? (
                         <ActiveToggle id={p.id} title={p.title} active={p.active} />
                       ) : (
                         <Badge size="sm" tone={p.active ? "success" : "neutral"}>

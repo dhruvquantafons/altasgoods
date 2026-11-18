@@ -87,17 +87,19 @@ export function CategoryManager({ categories, canEdit = true }: { categories: Ad
                   >
                     <Pencil size={15} />
                   </Button>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={`Delete ${c.name}`}
-                    onClick={() => {
-                      setError(null);
-                      setRemoving(c);
-                    }}
-                  >
-                    <Trash2 size={15} />
-                  </Button>
+                  {c.id !== "cat-uncategorised" && (
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={`Delete ${c.name}`}
+                      onClick={() => {
+                        setError(null);
+                        setRemoving(c);
+                      }}
+                    >
+                      <Trash2 size={15} />
+                    </Button>
+                  )}
                 </div>
               </div>
               <p className="mt-2 text-[13px] text-ink-600">
@@ -155,7 +157,7 @@ export function CategoryManager({ categories, canEdit = true }: { categories: Ad
         open={!!removing}
         onClose={() => setRemoving(null)}
         title={`Delete ${removing?.name ?? "category"}?`}
-        description="Its subcategories are deleted with it. Categories that still have products cannot be deleted."
+        description="Its subcategories are deleted with it. Archived products move to Uncategorised. A category with live or inactive products cannot be deleted: move or archive them first."
         size="sm"
         footer={
           <>

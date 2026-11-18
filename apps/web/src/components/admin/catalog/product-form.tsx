@@ -11,6 +11,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Switch, useToast } from "@/components/ui/interactive";
 import type { AdminBrand, AdminCategory, AdminProduct } from "@/lib/api/types";
+import { slugProblem } from "@/lib/product-slug";
 import { cn, formatINR } from "@/lib/utils";
 
 type Spec = { group: string; items: { label: string; value: string }[] };
@@ -35,6 +36,7 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
 
   const [title, setTitle] = useState(product?.title ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
+  const [slug, setSlug] = useState(product?.slug ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [highlights, setHighlights] = useState((product?.highlights ?? []).join("\n"));
   const [images, setImages] = useState<string[]>(product?.images ?? []);
@@ -57,6 +59,9 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
+  const archived = product?.status === "ARCHIVED";
+  const slugChanged = !!product && slug !== product.slug;
+  const slugError = slugChanged ? slugProblem(slug) : null;
   const category = categories.find((c) => c.id === categoryId);
   const subs = category?.subcategories ?? [];
   const pricePaise = toPaise(price);
@@ -90,7 +95,9 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
     e.preventDefault();
     setError(null);
     setErrors({});
+    if (slugError) return setErrors({ slug: slugError });
     const input: ProductInput = {
+      ...(slugChanged ? { slug } : {}),
       title: title.trim(),
       sku: sku.trim(),
       description: description.trim(),
@@ -124,6 +131,8 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
             .map((label) => ({ label, available: true })),
         })),
     };
+    // an archived product is restored first; the switch is not sent for it
+    if (archived) delete (input as { active?: boolean }).active;
     setSaving(true);
     const r = await saveProduct(product?.id ?? null, input);
     setSaving(false);
@@ -153,8 +162,8 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
                   <Input id="pf-sku" value={sku} maxLength={64} onChange={(e) => setSku(e.target.value)} aria-invalid={!!errors.sku} />
                 </Field>
                 {product && (
-                  <Field label="Store address" htmlFor="pf-slug" hint="Set when the product was created">
-                    <Input id="pf-slug" value={`/p/${product.slug}`} readOnly disabled />
+                  <Field label="Store address" htmlFor="pf-slug" error={errors.slug ?? slugError ?? undefined} hint={slugChanged ? "The old address will keep working and lead to the new one" : `Shown as /p/${slug || "address"}. Lowercase letters, numbers and hyphens, 3 to 80 characters`}>
+                    <Input id="pf-slug" value={slug} maxLength={80} onChange={(e) => setSlug(e.target.value.trim().toLowerCase())} aria-invalid={!!(errors.slug ?? slugError)} />
                   </Field>
                 )}
               </div>
@@ -281,7 +290,11 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
           <Card>
             <CardHeader title="Status" />
             <CardBody>
-              <Switch checked={active} onChange={setActive} label="On sale" description={active ? "Shown in the store and can be ordered" : "Hidden from the store; existing orders are not affected"} />
+              {archived ? (
+                <p className="text-[13px] text-ink-600">Archived: hidden from the store. Restore it below to put it back on sale.</p>
+              ) : (
+                <Switch checked={active} onChange={setActive} label="On sale" description={active ? "Shown in the store and can be ordered" : "Hidden from the store; existing orders are not affected"} />
+              )}
             </CardBody>
           </Card>
 
@@ -410,11 +423,11 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
         )}
         <div className="flex gap-2">
           {canEdit && (
-            <Button type="submit" disabled={saving || uploading || priceTooHigh} className="flex-1">
+            <Button type="submit" disabled={saving || uploading || priceTooHigh || !!slugError} className="flex-1">
               {saving ? "Saving" : product ? "Save changes" : "Add product"}
             </Button>
           )}
-          {product && active && (
+          {product && active && !archived && (
             <Link href={`/p/${product.slug}`} target="_blank" className="inline-flex h-10 items-center rounded-lg border border-line-strong px-4 text-sm font-medium text-ink-800 hover:bg-ink-50">
               View in store
             </Link>

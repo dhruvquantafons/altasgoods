@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Building2, Check, ChevronRight, Globe, ShieldCheck, Undo2, Wrench } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/page-header";
 import { formatDayMonthYear } from "@/components/store/delivery";
@@ -15,7 +15,7 @@ import { ReviewsSection } from "@/components/store/reviews";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { Stars } from "@/components/ui/misc";
 import { api, currentUser } from "@/lib/api/server";
-import { getStoreCatalog } from "@/lib/store-catalog";
+import { getStoreCatalog, redirectedSlug } from "@/lib/store-catalog";
 import { getStoreCoupons } from "@/lib/store-promotions";
 import { getStoreSettings } from "@/lib/store-settings";
 import {
@@ -66,7 +66,12 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const { slug } = await props.params;
   const catalog = await getStoreCatalog();
   const p = catalog.product(slug);
-  if (!p) notFound();
+  if (!p) {
+    // a product whose address was changed: send old links to the new one
+    const moved = catalog.available ? await redirectedSlug(slug) : null;
+    if (moved && moved !== slug) permanentRedirect(`/p/${moved}`);
+    notFound();
+  }
 
   const brand = { name: p.brandName, slug: p.brandSlug };
   const cat = { name: p.categoryName, slug: p.categorySlug };

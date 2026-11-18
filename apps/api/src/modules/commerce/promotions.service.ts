@@ -58,16 +58,20 @@ export class PromotionsService {
   }
 
   /** Categories must be top-level ones and products must exist; unknown ids are refused, not ignored. */
-  private async checkScope(categoryIds: string[] | undefined, productIds: string[] | undefined) {
+  private async checkScope(categoryIds: string[] | undefined, productIds: string[] | undefined, alreadyIn: string[] = []) {
     if (categoryIds?.length) {
       const found = await this.db.select({ id: categories.id }).from(categories).where(and(inArray(categories.id, categoryIds), isNull(categories.parentId)));
       const missing = categoryIds.filter((id) => !found.some((f) => f.id === id));
       if (missing.length) throw unprocessable("UNKNOWN_CATEGORY", `These categories do not exist: ${missing.join(", ")}`);
     }
     if (productIds?.length) {
-      const found = await this.db.select({ id: products.id }).from(products).where(inArray(products.id, productIds));
-      const missing = productIds.filter((id) => !found.some((f) => f.id === id));
-      if (missing.length) throw unprocessable("UNKNOWN_PRODUCT", `These products do not exist: ${missing.join(", ")}`);
+      const found = await this.db.select({ id: products.id, status: products.listingStatus }).from(products).where(inArray(products.id, productIds));
+      // an archived product cannot be added to a sale, but one already in it does not block editing the sale
+      const missing = productIds.filter((id) => {
+        const f = found.find((x) => x.id === id);
+        return !f || (f.status === "ARCHIVED" && !alreadyIn.includes(id));
+      });
+      if (missing.length) throw unprocessable("UNKNOWN_PRODUCT", `These products do not exist or are archived: ${missing.join(", ")}`);
     }
   }
 
@@ -108,7 +112,7 @@ export class PromotionsService {
     const startsAt = patch.startsAt ? new Date(patch.startsAt) : before.startsAt;
     const endsAt = patch.endsAt ? new Date(patch.endsAt) : before.endsAt;
     if (endsAt <= startsAt) throw unprocessable("BAD_WINDOW", "The end has to be after the start");
-    await this.checkScope(scope === "CATEGORIES" ? categoryIds : undefined, scope === "PRODUCTS" ? productIds : undefined);
+    await this.checkScope(scope === "CATEGORIES" ? categoryIds : undefined, scope === "PRODUCTS" ? productIds : undefined, before.productIds);
     const [s] = await this.db
       .update(sales)
       .set({ ...patch, scope, categoryIds, productIds, startsAt, endsAt, ...(patch.name && patch.name !== before.name ? { slug: await this.uniqueSlug(patch.name, id) } : {}) })

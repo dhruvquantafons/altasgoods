@@ -303,7 +303,8 @@ export const products = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
     assured: boolean("assured").notNull().default(false),
-    listingStatus: text("listing_status").notNull().default("LIVE"),
+    /** LIVE and INACTIVE are the admin's on/off switch; ARCHIVED hides the product everywhere and can be restored. */
+    listingStatus: text("listing_status").notNull().default("LIVE").$type<"LIVE" | "INACTIVE" | "ARCHIVED">(),
     soldLast30d: integer("sold_last_30d").notNull().default(0),
     /** title, brand, category and subcategory, maintained by the catalog service */
     searchText: text("search_text").notNull().default(""),
@@ -318,6 +319,15 @@ export const products = pgTable(
     index("products_search_trgm_idx").using("gin", sql`${t.searchText} gin_trgm_ops`),
   ],
 );
+
+/** Old product addresses after a slug change. Each points at the product id, so chains of renames keep working. */
+export const productSlugRedirects = pgTable("product_slug_redirects", {
+  oldSlug: text("old_slug").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  createdAt: createdAt(),
+});
 
 export const offers = pgTable(
   "offers",

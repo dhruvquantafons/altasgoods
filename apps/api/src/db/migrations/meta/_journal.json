@@ -127,6 +127,13 @@
       "when": 1794988543306,
       "tag": "0017_staff_management",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794990650479,
+      "tag": "0018_product_archive_slug_redirects",
+      "breakpoints": true
     }
   ]
 }

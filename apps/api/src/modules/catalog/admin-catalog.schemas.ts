@@ -69,16 +69,19 @@ export const productInput = productFields.refine(priceWithinMrp, priceMessage);
 /**
  * Every field optional, built from the fields without defaults: a patch that
  * only changes the stock must leave the description, specs, variants and the
- * rest as they are. The slug and id never change after creation.
+ * rest as they are. The id never changes; the slug can, and the old one then redirects.
  */
-export const productPatch = productBase.omit({ slug: true }).partial().refine(priceWithinMrp, priceMessage);
+export const productPatch = productBase
+  .extend({ slug: slug.min(3, "Use at least 3 characters").describe("Changing it keeps the old address working as a redirect") })
+  .partial()
+  .refine(priceWithinMrp, priceMessage);
 export type ProductInput = z.infer<typeof productInput>;
 export type ProductPatch = z.infer<typeof productPatch>;
 
 export const adminProductQuery = z.object({
   q: z.string().trim().max(100).optional(),
   category: z.string().optional().describe("Category id"),
-  status: z.enum(["active", "inactive", "all"]).default("all"),
+  status: z.enum(["active", "inactive", "archived", "all"]).default("all").describe("all leaves out archived products; inactive is switched off, not archived"),
   stock: z.enum(["out", "low", "all"]).default("all").describe("low is 10 or fewer"),
   ...pageQuery,
 });
@@ -98,12 +101,14 @@ export const adminProductRow = z.object({
   mrpPaise: z.number().int(),
   stock: z.number().int(),
   active: z.boolean(),
+  status: z.enum(["LIVE", "INACTIVE", "ARCHIVED"]),
   updatedAt: z.iso.datetime(),
 });
 export const adminProductList = paginated(adminProductRow);
 
 export const adminProduct = productFields.required().extend({
   id: z.string(),
+  status: z.enum(["LIVE", "INACTIVE", "ARCHIVED"]),
   slug: z.string(),
   rating: z.number(),
   ratingCount: z.number().int(),
@@ -172,3 +177,5 @@ export const importResult = z.object({
     }),
   ),
 });
+
+export const slugRedirect = z.object({ slug: z.string() });

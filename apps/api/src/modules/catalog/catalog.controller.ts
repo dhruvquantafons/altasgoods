@@ -2,6 +2,7 @@ import { Controller, Get, Inject, Param, Query } from "@nestjs/common";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import { z } from "zod";
 import { Public } from "../auth/auth.guard.js";
+import { slugRedirect } from "./admin-catalog.schemas.js";
 import { categoryNode, productDetail, productList, productQuery, storefrontCatalog, type ProductQuery } from "./catalog.schemas.js";
 import { CatalogService } from "./catalog.service.js";
 
@@ -21,6 +22,13 @@ export class CatalogController {
   @ApiResponse({ status: 200, standardSchema: storefrontCatalog })
   storefront() {
     return this.catalog.storefront();
+  }
+
+  /** Where an old product address now lives. 404 when the address is not a redirect or its product is not on sale. */
+  @Get("storefront/products/redirect/:slug")
+  @ApiResponse({ status: 200, standardSchema: slugRedirect })
+  redirect(@Param("slug") slug: string) {
+    return this.catalog.redirectFor(slug);
   }
 
   @Get("products")

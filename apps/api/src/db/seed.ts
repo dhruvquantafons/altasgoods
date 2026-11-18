@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { sql } from "drizzle-orm";
 import { isProduction } from "../config/env.js";
 import { HOUSE_SELLER_ID } from "../common/house.js";
+import { RESERVED_BRAND, RESERVED_CATEGORY } from "../modules/catalog/reserved.js";
 import { createDb, type Db } from "./client.js";
 import * as t from "./schema.js";
 
@@ -81,6 +82,9 @@ export async function seed(db: Db) {
     ]),
   );
   await db.insert(t.brands).values(m.brands.map((b) => ({ id: b.id, slug: b.slug, name: b.name, verified: b.verified })));
+  // where archived products go when their category or brand is deleted
+  await db.insert(t.categories).values({ ...RESERVED_CATEGORY, sortOrder: 9999 });
+  await db.insert(t.brands).values({ ...RESERVED_BRAND });
 
   await db.insert(t.sellers).values({
     id: HOUSE_SELLER_ID,
@@ -116,7 +120,7 @@ export async function seed(db: Db) {
       reviewCount: p.reviewCount,
       tags: p.tags,
       assured: p.assured,
-      listingStatus: p.listingStatus === "suppressed" ? "SUPPRESSED" : "LIVE",
+      listingStatus: p.listingStatus === "suppressed" ? ("INACTIVE" as const) : ("LIVE" as const),
       soldLast30d: p.soldLast30d,
       searchText: `${p.title} ${brandName.get(p.brandId) ?? ""} ${categoryName.get(p.categoryId) ?? ""} ${p.subcategory}`,
       createdAt: new Date(p.createdAt),

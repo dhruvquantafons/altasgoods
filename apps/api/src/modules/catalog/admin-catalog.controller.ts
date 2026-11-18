@@ -77,6 +77,32 @@ export class AdminCatalogController {
     return after;
   }
 
+  /** Takes the product off the storefront and pauses its offer. Orders and reviews are kept. */
+  @Post("products/:id/archive")
+  @ApiResponse({ status: 201, standardSchema: s.adminProduct })
+  async archiveProduct(@CurrentUser() u: AuthUser, @Param("id", idParam) id: string) {
+    const p = await this.svc.archiveProduct(id);
+    await this.audit.log(u, "product.archive", { type: "product", id }, `Archived product ${p.title}`);
+    return p;
+  }
+
+  /** Brings an archived product back switched off. */
+  @Post("products/:id/restore")
+  @ApiResponse({ status: 201, standardSchema: s.adminProduct })
+  async restoreProduct(@CurrentUser() u: AuthUser, @Param("id", idParam) id: string) {
+    const p = await this.svc.restoreProduct(id);
+    await this.audit.log(u, "product.restore", { type: "product", id }, `Restored product ${p.title}`);
+    return p;
+  }
+
+  /** Permanently deletes a product that was never ordered; 409 PRODUCT_HAS_ORDERS otherwise (archive it instead). */
+  @Delete("products/:id")
+  @HttpCode(204)
+  async deleteProduct(@CurrentUser() u: AuthUser, @Param("id", idParam) id: string) {
+    const gone = await this.svc.deleteProduct(id);
+    await this.audit.log(u, "product.delete", { type: "product", id }, `Deleted product ${gone.title} (/p/${gone.slug})`);
+  }
+
   @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("categories")
   @ApiResponse({ status: 200, standardSchema: z.array(s.adminCategory) })

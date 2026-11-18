@@ -436,6 +436,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/storefront/products/redirect/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_redirect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/products": {
         parameters: {
             query?: never;
@@ -510,10 +526,42 @@ export interface paths {
         get: operations["AdminCatalogController_product"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["AdminCatalogController_deleteProduct"];
         options?: never;
         head?: never;
         patch: operations["AdminCatalogController_updateProduct"];
+        trace?: never;
+    };
+    "/v1/admin/products/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminCatalogController_archiveProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/products/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminCatalogController_restoreProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/admin/categories": {
@@ -3531,6 +3579,29 @@ export interface operations {
             };
         };
     };
+    CatalogController_redirect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                    };
+                };
+            };
+        };
+    };
     CatalogController_list: {
         parameters: {
             query?: {
@@ -3719,7 +3790,8 @@ export interface operations {
                 q?: string;
                 /** @description Category id */
                 category?: string;
-                status?: "active" | "inactive" | "all";
+                /** @description all leaves out archived products; inactive is switched off, not archived */
+                status?: "active" | "inactive" | "archived" | "all";
                 /** @description low is 10 or fewer */
                 stock?: "out" | "low" | "all";
                 page?: number;
@@ -3756,6 +3828,8 @@ export interface operations {
                             mrpPaise: number;
                             stock: number;
                             active: boolean;
+                            /** @enum {string} */
+                            status: "LIVE" | "INACTIVE" | "ARCHIVED";
                             /** Format: date-time */
                             updatedAt: string;
                         }[];
@@ -3873,6 +3947,8 @@ export interface operations {
                         /** @default true */
                         active: boolean;
                         id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
                         rating: number;
                         ratingCount: number;
                         soldLast30d: number;
@@ -4001,6 +4077,8 @@ export interface operations {
                         /** @default true */
                         active: boolean;
                         id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
                         rating: number;
                         ratingCount: number;
                         soldLast30d: number;
@@ -4010,6 +4088,25 @@ export interface operations {
                         updatedAt: string;
                     };
                 };
+            };
+        };
+    };
+    AdminCatalogController_deleteProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4026,6 +4123,8 @@ export interface operations {
             content: {
                 "application/json": {
                     title?: string;
+                    /** @description Changing it keeps the old address working as a redirect */
+                    slug?: string;
                     sku?: string;
                     description?: string;
                     highlights?: string[];
@@ -4110,6 +4209,156 @@ export interface operations {
                         /** @default true */
                         active: boolean;
                         id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
+                        rating: number;
+                        ratingCount: number;
+                        soldLast30d: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_archiveProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        slug: string;
+                        sku: string;
+                        /** @default  */
+                        description: string;
+                        /** @default [] */
+                        highlights: string[];
+                        /** @default [] */
+                        specs: {
+                            group: string;
+                            items: {
+                                label: string;
+                                value: string;
+                            }[];
+                        }[];
+                        /** @default [] */
+                        variants: {
+                            name: string;
+                            values: {
+                                label: string;
+                                swatch?: string;
+                                /** @default true */
+                                available: boolean;
+                            }[];
+                        }[];
+                        images: string[];
+                        categoryId: string;
+                        subcategory: string;
+                        brandId: string;
+                        /** @default [] */
+                        tags: ("bestseller" | "new" | "deal" | "limited")[];
+                        pricePaise: number;
+                        mrpPaise: number;
+                        stock: number;
+                        /** @default 3 */
+                        deliveryDays: number;
+                        /** @default true */
+                        codAvailable: boolean;
+                        /** @default 7 */
+                        returnWindowDays: number;
+                        /** @default true */
+                        active: boolean;
+                        id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
+                        rating: number;
+                        ratingCount: number;
+                        soldLast30d: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_restoreProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        slug: string;
+                        sku: string;
+                        /** @default  */
+                        description: string;
+                        /** @default [] */
+                        highlights: string[];
+                        /** @default [] */
+                        specs: {
+                            group: string;
+                            items: {
+                                label: string;
+                                value: string;
+                            }[];
+                        }[];
+                        /** @default [] */
+                        variants: {
+                            name: string;
+                            values: {
+                                label: string;
+                                swatch?: string;
+                                /** @default true */
+                                available: boolean;
+                            }[];
+                        }[];
+                        images: string[];
+                        categoryId: string;
+                        subcategory: string;
+                        brandId: string;
+                        /** @default [] */
+                        tags: ("bestseller" | "new" | "deal" | "limited")[];
+                        pricePaise: number;
+                        mrpPaise: number;
+                        stock: number;
+                        /** @default 3 */
+                        deliveryDays: number;
+                        /** @default true */
+                        codAvailable: boolean;
+                        /** @default 7 */
+                        returnWindowDays: number;
+                        /** @default true */
+                        active: boolean;
+                        id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
                         rating: number;
                         ratingCount: number;
                         soldLast30d: number;

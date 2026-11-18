@@ -101,17 +101,19 @@ export function BrandManager({ brands, canEdit = true }: { brands: AdminBrand[];
                       >
                         <Pencil size={15} />
                       </Button>
-                      <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={`Delete ${b.name}`}
-                        onClick={() => {
-                          setError(null);
-                          setRemoving(b);
-                        }}
-                      >
-                        <Trash2 size={15} />
-                      </Button>
+                      {b.id !== "br-unbranded" && (
+                        <Button
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Delete ${b.name}`}
+                          onClick={() => {
+                            setError(null);
+                            setRemoving(b);
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </Button>
+                      )}
                     </TD>
                   </TR>
                 ))}
@@ -148,7 +150,7 @@ export function BrandManager({ brands, canEdit = true }: { brands: AdminBrand[];
         open={!!removing}
         onClose={() => setRemoving(null)}
         title={`Delete ${removing?.name ?? "brand"}?`}
-        description="Brands that products still use cannot be deleted."
+        description="Archived products move to Unbranded. A brand with live or inactive products cannot be deleted: change their brand or archive them first."
         size="sm"
         footer={
           <>
