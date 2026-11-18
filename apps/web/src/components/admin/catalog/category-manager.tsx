@@ -9,10 +9,12 @@ import { Card } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { Modal, useToast } from "@/components/ui/interactive";
 import { EmptyState } from "@/components/ui/misc";
+import { gstDraft, GstFields, gstFromDraft, inheritHints, type GstDraft } from "@/components/admin/gst-fields";
+import { gstLabel } from "@/lib/gst";
 import type { AdminCategory } from "@/lib/api/types";
 
-type Draft = { id: string | null; name: string; icon: string; subcategories: string };
-const blank: Draft = { id: null, name: "", icon: "", subcategories: "" };
+type Draft = { id: string | null; name: string; icon: string; subcategories: string; gst: GstDraft; inherited: AdminCategory["inheritedGst"] | null };
+const blank: Draft = { id: null, name: "", icon: "", subcategories: "", gst: { rate: "", hsn: "" }, inherited: null };
 
 /** Categories and their subcategories, as shown in the store's menus and filters. */
 export function CategoryManager({ categories, canEdit = true }: { categories: AdminCategory[]; canEdit?: boolean }) {
@@ -36,7 +38,12 @@ export function CategoryManager({ categories, canEdit = true }: { categories: Ad
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
-    const r = await saveCategory(draft.id, { name: draft.name.trim(), icon: draft.icon.trim() || null, subcategories });
+    const gst = gstFromDraft(draft.gst, { allowInherit: true });
+    if (!gst.ok) {
+      setBusy(false);
+      return setError(gst.error);
+    }
+    const r = await saveCategory(draft.id, { name: draft.name.trim(), icon: draft.icon.trim() || null, subcategories, gstRateBp: gst.gstRateBp, hsn: gst.hsn });
     setBusy(false);
     if (!r.ok) return setError(r.error);
     setDraft(null);
@@ -83,7 +90,7 @@ export function CategoryManager({ categories, canEdit = true }: { categories: Ad
                     size="icon-sm"
                     variant="ghost"
                     aria-label={`Edit ${c.name}`}
-                    onClick={() => open({ id: c.id, name: c.name, icon: c.icon ?? "", subcategories: c.subcategories.map((s) => s.name).join("\n") })}
+                    onClick={() => open({ id: c.id, name: c.name, icon: c.icon ?? "", subcategories: c.subcategories.map((s) => s.name).join("\n"), gst: gstDraft(c.gstRateBp, c.hsn), inherited: c.inheritedGst })}
                   >
                     <Pencil size={15} />
                   </Button>
@@ -104,6 +111,9 @@ export function CategoryManager({ categories, canEdit = true }: { categories: Ad
               </div>
               <p className="mt-2 text-[13px] text-ink-600">
                 {c.productCount} {c.productCount === 1 ? "product" : "products"}
+                <span className="text-ink-400"> · </span>
+                GST {gstLabel(c.gstRateBp ?? c.inheritedGst.gstRateBp)}
+                {c.gstRateBp === null && <span className="text-ink-500"> (store default)</span>}
               </p>
               <ul className="mt-3 flex flex-wrap gap-1.5">
                 {c.subcategories.map((s) => (
@@ -146,6 +156,14 @@ export function CategoryManager({ categories, canEdit = true }: { categories: Ad
             <Field label="Menu icon" htmlFor="cat-icon" hint="Optional icon name from lucide.dev, for example Sofa or Shirt">
               <Input id="cat-icon" value={draft.icon} maxLength={40} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} />
             </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <GstFields
+                idPrefix="cat"
+                value={draft.gst}
+                onChange={(gst) => setDraft({ ...draft, gst })}
+                inherit={draft.inherited ?? categories[0]?.inheritedGst ? inheritHints((draft.inherited ?? categories[0]?.inheritedGst)!) : { rate: "Uses the store default rate", hsn: "Uses the store default HSN code, if any" }}
+              />
+            </div>
             <Field label="Subcategories" htmlFor="cat-subs" hint="One per line, in menu order. A subcategory that products use cannot be removed until they move.">
               <Textarea id="cat-subs" rows={7} value={draft.subcategories} onChange={(e) => setDraft({ ...draft, subcategories: e.target.value })} />
             </Field>

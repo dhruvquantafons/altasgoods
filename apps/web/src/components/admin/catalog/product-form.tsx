@@ -11,6 +11,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Switch, useToast } from "@/components/ui/interactive";
 import type { AdminBrand, AdminCategory, AdminProduct } from "@/lib/api/types";
+import { gstDraft, GstFields, gstFromDraft, inheritHints, type GstDraft } from "@/components/admin/gst-fields";
 import { slugProblem } from "@/lib/product-slug";
 import { cn, formatINR } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
   const [deliveryDays, setDeliveryDays] = useState(String(product?.deliveryDays ?? 3));
   const [returnDays, setReturnDays] = useState(String(product?.returnWindowDays ?? 7));
   const [cod, setCod] = useState(product?.codAvailable ?? true);
+  const [gst, setGst] = useState<GstDraft>(() => gstDraft(product?.gstRateBp ?? null, product?.hsn ?? null));
   const [tags, setTags] = useState<string[]>(product?.tags ?? []);
   const [active, setActive] = useState(product?.active ?? true);
   const [specs, setSpecs] = useState<Spec[]>(product?.specs ?? []);
@@ -64,6 +66,17 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
   const slugError = slugChanged ? slugProblem(slug) : null;
   const category = categories.find((c) => c.id === categoryId);
   const subs = category?.subcategories ?? [];
+  // what the product is taxed at when it sets nothing itself: the server's answer for the saved placement, the category's otherwise
+  const inherited = (() => {
+    if (product && categoryId === product.categoryId && (subcategory || subs[0]?.name || "") === product.subcategory) return product.inheritedGst;
+    if (!category) return null;
+    return {
+      gstRateBp: category.gstRateBp ?? category.inheritedGst.gstRateBp,
+      rateFrom: category.gstRateBp !== null ? category.name : category.inheritedGst.rateFrom,
+      hsn: category.hsn ?? category.inheritedGst.hsn,
+      hsnFrom: category.hsn !== null ? category.name : category.inheritedGst.hsnFrom,
+    };
+  })();
   const pricePaise = toPaise(price);
   const mrpPaise = toPaise(mrp);
   const off = mrpPaise > pricePaise && pricePaise > 0 ? Math.floor(((mrpPaise - pricePaise) / mrpPaise) * 100) : 0;
@@ -96,7 +109,11 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
     setError(null);
     setErrors({});
     if (slugError) return setErrors({ slug: slugError });
+    const taxes = gstFromDraft(gst, { allowInherit: true });
+    if (!taxes.ok) return setErrors({ gstRateBp: taxes.error });
     const input: ProductInput = {
+      gstRateBp: taxes.gstRateBp,
+      hsn: taxes.hsn,
       ...(slugChanged ? { slug } : {}),
       title: title.trim(),
       sku: sku.trim(),
@@ -413,6 +430,13 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
               </Field>
             </div>
             <Checkbox label="Pay on delivery available" checked={cod} onChange={(e) => setCod(e.target.checked)} />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title="GST" description="Prices include GST. Leave both empty to use the category's rate and code." />
+          <CardBody className="space-y-4">
+            <GstFields idPrefix="pf" value={gst} onChange={setGst} inherit={inherited ? inheritHints(inherited) : { rate: "Inherits the category's rate", hsn: "Inherits the category's HSN code" }} rateError={errors.gstRateBp} hsnError={errors.hsn} />
           </CardBody>
         </Card>
 

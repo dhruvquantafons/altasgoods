@@ -125,7 +125,9 @@ export class QuoteService {
 
     const total = subtotal - couponDiscountPaise + delivery;
     const codBlocker = priced.find((p) => !p.offer.codAvailable);
-    const cod = codBlocker
+    const cod = !settings.cod.enabled
+      ? { available: false, reason: "Cash on delivery is switched off" }
+      : codBlocker
       ? { available: false, reason: `Pay on delivery is not available for ${codBlocker.product.title}` }
       : dest && !dest.area.codAvailable
         ? { available: false, reason: `Pay on delivery is not available at ${dest.pincode}` }

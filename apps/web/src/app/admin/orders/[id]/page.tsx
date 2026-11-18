@@ -9,7 +9,8 @@ import { DescriptionList, Timeline } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadAdminOrder, loadOrderNotes } from "@/lib/api/admin-fulfilment";
 import { canEditArea } from "@/lib/api/server";
-import { paise, uiItemStatus, uiOrderStatus, uiPaymentMethod, uiPaymentStatus } from "@/lib/api/format";
+import { gstLabel } from "@/lib/gst";
+import { paise, paiseExact, uiItemStatus, uiOrderStatus, uiPaymentMethod, uiPaymentStatus } from "@/lib/api/format";
 import type { AdminOrderItem } from "@/lib/api/types";
 import { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/status";
 import { formatDateShort, formatDateTime } from "@/lib/utils";
@@ -70,6 +71,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
                     <p className="text-xs text-ink-500">
                       Qty {i.qty}
                       {i.variant ? `, ${i.variant}` : ""}, {paise(i.unitPricePaise * i.qty)}
+                      <span className="text-ink-400"> · </span>GST {gstLabel(i.gstRateBp)}{i.hsn ? `, HSN ${i.hsn}` : ""}, {paiseExact(i.taxPaise)} included
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-500">
                       <StatusBadge meta={ORDER_STATUS[uiItemStatus(i.status)]} size="sm" />
@@ -156,6 +158,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
                   { label: "Method", value: PAYMENT_METHOD[uiPaymentMethod(order.paymentMethod)] },
                   { label: "Status", value: PAYMENT_STATUS[uiPaymentStatus(order.paymentStatus)].label },
                   { label: "Order total", value: paise(order.totalPaise) },
+                  { label: "Includes GST", value: paiseExact(order.gstIncludedPaise) },
                 ]}
               />
               {order.refunds.length > 0 && (

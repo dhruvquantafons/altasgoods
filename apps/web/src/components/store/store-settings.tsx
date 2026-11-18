@@ -7,10 +7,12 @@ export interface DeliveryRules {
   fee: number;
   freeFrom: number;
   codLimit: number;
+  /** false while cash on delivery is switched off for the whole store */
+  codEnabled: boolean;
 }
 
 /** Today's defaults, for anything rendered outside a provider. */
-export const DEFAULT_RULES: DeliveryRules = { fee: 40, freeFrom: 499, codLimit: 50_000 };
+export const DEFAULT_RULES: DeliveryRules = { fee: 40, freeFrom: 499, codLimit: 50_000, codEnabled: true };
 
 const Ctx = createContext<DeliveryRules>(DEFAULT_RULES);
 

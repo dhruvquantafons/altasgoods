@@ -26,6 +26,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { loadAccountOrder } from "@/lib/api/account-orders";
 import { PAYMENT_STATUS } from "@/lib/status";
 import type { Order, OrderItem } from "@/lib/types";
+import { paiseExact } from "@/lib/api/format";
 import { formatINR, productSlug } from "@/lib/utils";
 
 export async function generateMetadata(props: PageProps<"/account/orders/[id]">) {
@@ -204,7 +205,7 @@ export default async function OrderDetailPage(props: PageProps<"/account/orders/
               <KeyValue label="Platform fee" value={formatINR(order.platformFee)} />
               <div className="my-1 h-px bg-line" />
               <KeyValue label="Order total" value={formatINR(order.total)} strong />
-              <p className="text-xs text-ink-500">Inclusive of all taxes</p>
+              <p className="text-xs text-ink-500">{order.gstIncludedPaise ? `Includes GST ${paiseExact(order.gstIncludedPaise)}` : "Inclusive of all taxes"}</p>
             </dl>
             {saved > 0 && !cancelled && (
               <p className="mt-4 rounded-lg bg-success-50 px-3 py-2 text-[13px] font-medium text-success-700">You saved {formatINR(saved)} on this order</p>

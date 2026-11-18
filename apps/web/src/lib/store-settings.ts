@@ -11,7 +11,7 @@ export const SETTINGS_TAG = "settings";
 /** What the store ran with before Settings existed; used only while the API is unreachable. */
 const FALLBACK: StorefrontSettings = {
   delivery: { feePaise: 4_000, freeFromPaise: 49_900 },
-  cod: { maxOrderPaise: 5_000_000 },
+  cod: { enabled: true, maxOrderPaise: 5_000_000 },
   notice: { enabled: false, message: "" },
   company: {
     legalName: "AltasGoods Commerce Private Limited",

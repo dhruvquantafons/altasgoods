@@ -148,6 +148,13 @@
       "when": 1794992803461,
       "tag": "0020_refunds_manual_order_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794995381872,
+      "tag": "0021_gst_and_cod_switch",
+      "breakpoints": true
     }
   ]
 }

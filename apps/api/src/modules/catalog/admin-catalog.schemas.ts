@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { pageQuery, paginated } from "../../common/http.js";
+import { gstRateBpSchema, hsnSchema } from "./gst.js";
 
 /** Lowercase words joined by hyphens, as used in storefront URLs. */
 const slug = z
@@ -39,6 +40,8 @@ const productBase = z.object({
   categoryId: z.string().min(1),
   subcategory: text(60).min(1),
   brandId: z.string().min(1),
+  gstRateBp: gstRateBpSchema.nullable().describe("Overrides the category's GST rate; null inherits it"),
+  hsn: hsnSchema.nullable().describe("Overrides the category's HSN code; null inherits it"),
   tags: z.array(z.enum(PRODUCT_TAGS)).max(4),
   pricePaise: z.number().int().positive(),
   mrpPaise: z.number().int().positive(),
@@ -56,6 +59,8 @@ const productFields = productBase.extend({
   specs: specs.default([]),
   variants: variants.default([]),
   tags: productBase.shape.tags.default([]),
+  gstRateBp: productBase.shape.gstRateBp.default(null),
+  hsn: productBase.shape.hsn.default(null),
   deliveryDays: productBase.shape.deliveryDays.default(3),
   codAvailable: productBase.shape.codAvailable.default(true),
   returnWindowDays: productBase.shape.returnWindowDays.default(7),
@@ -106,7 +111,16 @@ export const adminProductRow = z.object({
 });
 export const adminProductList = paginated(adminProductRow);
 
+/** What a product or category is taxed at when it sets nothing itself, and where that comes from. */
+export const inheritedGstSchema = z.object({
+  gstRateBp: z.number().int(),
+  rateFrom: z.string().describe("The category it comes from, or the store default"),
+  hsn: z.string().nullable(),
+  hsnFrom: z.string().nullable(),
+});
+
 export const adminProduct = productFields.required().extend({
+  inheritedGst: inheritedGstSchema,
   id: z.string(),
   status: z.enum(["LIVE", "INACTIVE", "ARCHIVED"]),
   slug: z.string(),
@@ -123,6 +137,8 @@ export const categoryInput = z.object({
   icon: text(40).nullable().optional().describe("Lucide icon name for menus"),
   image: imagePath.nullable().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
+  gstRateBp: gstRateBpSchema.nullable().optional().describe("GST rate for the category's products; null inherits the store default"),
+  hsn: hsnSchema.nullable().optional(),
   /** subcategory names; products pick one of these */
   subcategories: z.array(text(60).min(1)).max(40).optional(),
 });
@@ -135,6 +151,9 @@ export const adminCategory = z.object({
   icon: z.string().nullable(),
   image: z.string().nullable(),
   sortOrder: z.number().int(),
+  gstRateBp: z.number().int().nullable(),
+  hsn: z.string().nullable(),
+  inheritedGst: inheritedGstSchema.describe("What its products are taxed at when it sets nothing: the store default"),
   subcategories: z.array(z.object({ id: z.string(), name: z.string(), productCount: z.number().int() })),
   productCount: z.number().int(),
 });

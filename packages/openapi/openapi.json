@@ -358,6 +358,10 @@
                     "cod": {
                       "type": "object",
                       "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Off stops cash on delivery for every order"
+                        },
                         "maxOrderPaise": {
                           "type": "integer",
                           "minimum": 0,
@@ -366,7 +370,30 @@
                         }
                       },
                       "required": [
+                        "enabled",
                         "maxOrderPaise"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "tax": {
+                      "type": "object",
+                      "properties": {
+                        "defaultGstRateBp": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 4000,
+                          "description": "GST rate in basis points for products whose category and own settings have none"
+                        },
+                        "defaultHsn": {
+                          "nullable": true,
+                          "description": "HSN code for products whose category and own settings have none",
+                          "type": "string",
+                          "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                        }
+                      },
+                      "required": [
+                        "defaultGstRateBp",
+                        "defaultHsn"
                       ],
                       "additionalProperties": false
                     },
@@ -519,6 +546,7 @@
                   "required": [
                     "delivery",
                     "cod",
+                    "tax",
                     "reviews",
                     "notice",
                     "company",
@@ -631,6 +659,10 @@
                   "cod": {
                     "type": "object",
                     "properties": {
+                      "enabled": {
+                        "type": "boolean",
+                        "description": "Off stops cash on delivery for every order"
+                      },
                       "maxOrderPaise": {
                         "type": "integer",
                         "minimum": 0,
@@ -639,7 +671,29 @@
                       }
                     },
                     "required": [
+                      "enabled",
                       "maxOrderPaise"
+                    ]
+                  },
+                  "tax": {
+                    "type": "object",
+                    "properties": {
+                      "defaultGstRateBp": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4000,
+                        "description": "GST rate in basis points for products whose category and own settings have none"
+                      },
+                      "defaultHsn": {
+                        "nullable": true,
+                        "description": "HSN code for products whose category and own settings have none",
+                        "type": "string",
+                        "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                      }
+                    },
+                    "required": [
+                      "defaultGstRateBp",
+                      "defaultHsn"
                     ]
                   },
                   "reviews": {
@@ -777,6 +831,7 @@
                 "required": [
                   "delivery",
                   "cod",
+                  "tax",
                   "reviews",
                   "notice",
                   "company",
@@ -878,6 +933,10 @@
                     "cod": {
                       "type": "object",
                       "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Off stops cash on delivery for every order"
+                        },
                         "maxOrderPaise": {
                           "type": "integer",
                           "minimum": 0,
@@ -886,7 +945,30 @@
                         }
                       },
                       "required": [
+                        "enabled",
                         "maxOrderPaise"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "tax": {
+                      "type": "object",
+                      "properties": {
+                        "defaultGstRateBp": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 4000,
+                          "description": "GST rate in basis points for products whose category and own settings have none"
+                        },
+                        "defaultHsn": {
+                          "nullable": true,
+                          "description": "HSN code for products whose category and own settings have none",
+                          "type": "string",
+                          "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                        }
+                      },
+                      "required": [
+                        "defaultGstRateBp",
+                        "defaultHsn"
                       ],
                       "additionalProperties": false
                     },
@@ -1039,6 +1121,7 @@
                   "required": [
                     "delivery",
                     "cod",
+                    "tax",
                     "reviews",
                     "notice",
                     "company",
@@ -1099,6 +1182,10 @@
                     "cod": {
                       "type": "object",
                       "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Off stops cash on delivery for every order"
+                        },
                         "maxOrderPaise": {
                           "type": "integer",
                           "minimum": 0,
@@ -1107,6 +1194,7 @@
                         }
                       },
                       "required": [
+                        "enabled",
                         "maxOrderPaise"
                       ],
                       "additionalProperties": false
@@ -10235,6 +10323,21 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "gstRateBp": {
+                    "default": null,
+                    "nullable": true,
+                    "description": "Overrides the category's GST rate; null inherits it",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4000
+                  },
+                  "hsn": {
+                    "default": null,
+                    "nullable": true,
+                    "description": "Overrides the category's HSN code; null inherits it",
+                    "type": "string",
+                    "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                  },
                   "tags": {
                     "default": [],
                     "maxItems": 4,
@@ -10453,6 +10556,21 @@
                       "type": "string",
                       "minLength": 1
                     },
+                    "gstRateBp": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's GST rate; null inherits it",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4000
+                    },
+                    "hsn": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's HSN code; null inherits it",
+                      "type": "string",
+                      "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -10504,6 +10622,35 @@
                       "default": true,
                       "type": "boolean"
                     },
+                    "inheritedGst": {
+                      "type": "object",
+                      "properties": {
+                        "gstRateBp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rateFrom": {
+                          "type": "string",
+                          "description": "The category it comes from, or the store default"
+                        },
+                        "hsn": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hsnFrom": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "gstRateBp",
+                        "rateFrom",
+                        "hsn",
+                        "hsnFrom"
+                      ],
+                      "additionalProperties": false
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -10551,6 +10698,8 @@
                     "categoryId",
                     "subcategory",
                     "brandId",
+                    "gstRateBp",
+                    "hsn",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -10559,6 +10708,7 @@
                     "codAvailable",
                     "returnWindowDays",
                     "active",
+                    "inheritedGst",
                     "id",
                     "status",
                     "rating",
@@ -10959,6 +11109,21 @@
                       "type": "string",
                       "minLength": 1
                     },
+                    "gstRateBp": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's GST rate; null inherits it",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4000
+                    },
+                    "hsn": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's HSN code; null inherits it",
+                      "type": "string",
+                      "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -11010,6 +11175,35 @@
                       "default": true,
                       "type": "boolean"
                     },
+                    "inheritedGst": {
+                      "type": "object",
+                      "properties": {
+                        "gstRateBp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rateFrom": {
+                          "type": "string",
+                          "description": "The category it comes from, or the store default"
+                        },
+                        "hsn": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hsnFrom": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "gstRateBp",
+                        "rateFrom",
+                        "hsn",
+                        "hsnFrom"
+                      ],
+                      "additionalProperties": false
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -11057,6 +11251,8 @@
                     "categoryId",
                     "subcategory",
                     "brandId",
+                    "gstRateBp",
+                    "hsn",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -11065,6 +11261,7 @@
                     "codAvailable",
                     "returnWindowDays",
                     "active",
+                    "inheritedGst",
                     "id",
                     "status",
                     "rating",
@@ -11246,6 +11443,19 @@
                   "brandId": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "gstRateBp": {
+                    "nullable": true,
+                    "description": "Overrides the category's GST rate; null inherits it",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4000
+                  },
+                  "hsn": {
+                    "nullable": true,
+                    "description": "Overrides the category's HSN code; null inherits it",
+                    "type": "string",
+                    "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
                   },
                   "tags": {
                     "maxItems": 4,
@@ -11449,6 +11659,21 @@
                       "type": "string",
                       "minLength": 1
                     },
+                    "gstRateBp": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's GST rate; null inherits it",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4000
+                    },
+                    "hsn": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's HSN code; null inherits it",
+                      "type": "string",
+                      "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -11500,6 +11725,35 @@
                       "default": true,
                       "type": "boolean"
                     },
+                    "inheritedGst": {
+                      "type": "object",
+                      "properties": {
+                        "gstRateBp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rateFrom": {
+                          "type": "string",
+                          "description": "The category it comes from, or the store default"
+                        },
+                        "hsn": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hsnFrom": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "gstRateBp",
+                        "rateFrom",
+                        "hsn",
+                        "hsnFrom"
+                      ],
+                      "additionalProperties": false
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -11547,6 +11801,8 @@
                     "categoryId",
                     "subcategory",
                     "brandId",
+                    "gstRateBp",
+                    "hsn",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -11555,6 +11811,7 @@
                     "codAvailable",
                     "returnWindowDays",
                     "active",
+                    "inheritedGst",
                     "id",
                     "status",
                     "rating",
@@ -11773,6 +12030,21 @@
                       "type": "string",
                       "minLength": 1
                     },
+                    "gstRateBp": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's GST rate; null inherits it",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4000
+                    },
+                    "hsn": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's HSN code; null inherits it",
+                      "type": "string",
+                      "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -11824,6 +12096,35 @@
                       "default": true,
                       "type": "boolean"
                     },
+                    "inheritedGst": {
+                      "type": "object",
+                      "properties": {
+                        "gstRateBp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rateFrom": {
+                          "type": "string",
+                          "description": "The category it comes from, or the store default"
+                        },
+                        "hsn": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hsnFrom": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "gstRateBp",
+                        "rateFrom",
+                        "hsn",
+                        "hsnFrom"
+                      ],
+                      "additionalProperties": false
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -11871,6 +12172,8 @@
                     "categoryId",
                     "subcategory",
                     "brandId",
+                    "gstRateBp",
+                    "hsn",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -11879,6 +12182,7 @@
                     "codAvailable",
                     "returnWindowDays",
                     "active",
+                    "inheritedGst",
                     "id",
                     "status",
                     "rating",
@@ -12069,6 +12373,21 @@
                       "type": "string",
                       "minLength": 1
                     },
+                    "gstRateBp": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's GST rate; null inherits it",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4000
+                    },
+                    "hsn": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Overrides the category's HSN code; null inherits it",
+                      "type": "string",
+                      "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -12120,6 +12439,35 @@
                       "default": true,
                       "type": "boolean"
                     },
+                    "inheritedGst": {
+                      "type": "object",
+                      "properties": {
+                        "gstRateBp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rateFrom": {
+                          "type": "string",
+                          "description": "The category it comes from, or the store default"
+                        },
+                        "hsn": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hsnFrom": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "gstRateBp",
+                        "rateFrom",
+                        "hsn",
+                        "hsnFrom"
+                      ],
+                      "additionalProperties": false
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -12167,6 +12515,8 @@
                     "categoryId",
                     "subcategory",
                     "brandId",
+                    "gstRateBp",
+                    "hsn",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -12175,6 +12525,7 @@
                     "codAvailable",
                     "returnWindowDays",
                     "active",
+                    "inheritedGst",
                     "id",
                     "status",
                     "rating",
@@ -12235,6 +12586,46 @@
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991
                       },
+                      "gstRateBp": {
+                        "nullable": true,
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "hsn": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "inheritedGst": {
+                        "type": "object",
+                        "properties": {
+                          "gstRateBp": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "rateFrom": {
+                            "type": "string",
+                            "description": "The category it comes from, or the store default"
+                          },
+                          "hsn": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "hsnFrom": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "gstRateBp",
+                          "rateFrom",
+                          "hsn",
+                          "hsnFrom"
+                        ],
+                        "additionalProperties": false,
+                        "description": "What its products are taxed at when it sets nothing: the store default"
+                      },
                       "subcategories": {
                         "type": "array",
                         "items": {
@@ -12273,6 +12664,9 @@
                       "icon",
                       "image",
                       "sortOrder",
+                      "gstRateBp",
+                      "hsn",
+                      "inheritedGst",
                       "subcategories",
                       "productCount"
                     ],
@@ -12329,6 +12723,18 @@
                     "minimum": 0,
                     "maximum": 1000
                   },
+                  "gstRateBp": {
+                    "description": "GST rate for the category's products; null inherits the store default",
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4000
+                  },
+                  "hsn": {
+                    "nullable": true,
+                    "type": "string",
+                    "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                  },
                   "subcategories": {
                     "maxItems": 40,
                     "type": "array",
@@ -12376,6 +12782,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "gstRateBp": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "hsn": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inheritedGst": {
+                      "type": "object",
+                      "properties": {
+                        "gstRateBp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rateFrom": {
+                          "type": "string",
+                          "description": "The category it comes from, or the store default"
+                        },
+                        "hsn": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hsnFrom": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "gstRateBp",
+                        "rateFrom",
+                        "hsn",
+                        "hsnFrom"
+                      ],
+                      "additionalProperties": false,
+                      "description": "What its products are taxed at when it sets nothing: the store default"
+                    },
                     "subcategories": {
                       "type": "array",
                       "items": {
@@ -12414,6 +12860,9 @@
                     "icon",
                     "image",
                     "sortOrder",
+                    "gstRateBp",
+                    "hsn",
+                    "inheritedGst",
                     "subcategories",
                     "productCount"
                   ],
@@ -12482,6 +12931,18 @@
                     "minimum": 0,
                     "maximum": 1000
                   },
+                  "gstRateBp": {
+                    "description": "GST rate for the category's products; null inherits the store default",
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4000
+                  },
+                  "hsn": {
+                    "nullable": true,
+                    "type": "string",
+                    "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                  },
                   "subcategories": {
                     "maxItems": 40,
                     "type": "array",
@@ -12526,6 +12987,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "gstRateBp": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "hsn": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inheritedGst": {
+                      "type": "object",
+                      "properties": {
+                        "gstRateBp": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "rateFrom": {
+                          "type": "string",
+                          "description": "The category it comes from, or the store default"
+                        },
+                        "hsn": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hsnFrom": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "gstRateBp",
+                        "rateFrom",
+                        "hsn",
+                        "hsnFrom"
+                      ],
+                      "additionalProperties": false,
+                      "description": "What its products are taxed at when it sets nothing: the store default"
+                    },
                     "subcategories": {
                       "type": "array",
                       "items": {
@@ -12564,6 +13065,9 @@
                     "icon",
                     "image",
                     "sortOrder",
+                    "gstRateBp",
+                    "hsn",
+                    "inheritedGst",
                     "subcategories",
                     "productCount"
                   ],
@@ -16091,6 +16595,12 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "gstIncludedPaise": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "GST included in the prices of the lines that are not cancelled; the delivery fee carries none"
+                        },
                         "items": {
                           "type": "array",
                           "items": {
@@ -16127,6 +16637,18 @@
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "gstRateBp": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "GST rate the line was sold at, in basis points"
+                              },
+                              "taxPaise": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "The GST included in the line's price, after its share of any coupon"
                               },
                               "status": {
                                 "type": "string",
@@ -16203,6 +16725,8 @@
                               "qty",
                               "unitPricePaise",
                               "mrpPaise",
+                              "gstRateBp",
+                              "taxPaise",
                               "status",
                               "promisedBy",
                               "shippedAt",
@@ -16363,6 +16887,7 @@
                         "couponDiscountPaise",
                         "deliveryFeePaise",
                         "totalPaise",
+                        "gstIncludedPaise",
                         "items",
                         "payments",
                         "refunds",
@@ -16835,6 +17360,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "gstIncludedPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "GST included in the prices of the lines that are not cancelled; the delivery fee carries none"
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -16871,6 +17402,18 @@
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
+                          },
+                          "gstRateBp": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "GST rate the line was sold at, in basis points"
+                          },
+                          "taxPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The GST included in the line's price, after its share of any coupon"
                           },
                           "status": {
                             "type": "string",
@@ -16947,6 +17490,8 @@
                           "qty",
                           "unitPricePaise",
                           "mrpPaise",
+                          "gstRateBp",
+                          "taxPaise",
                           "status",
                           "promisedBy",
                           "shippedAt",
@@ -17107,6 +17652,7 @@
                     "couponDiscountPaise",
                     "deliveryFeePaise",
                     "totalPaise",
+                    "gstIncludedPaise",
                     "items",
                     "payments",
                     "refunds",
@@ -17308,6 +17854,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "gstIncludedPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "GST included in the prices of the lines that are not cancelled; the delivery fee carries none"
+                    },
                     "items": {
                       "type": "array",
                       "items": {
@@ -17344,6 +17896,18 @@
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
+                          },
+                          "gstRateBp": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "GST rate the line was sold at, in basis points"
+                          },
+                          "taxPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The GST included in the line's price, after its share of any coupon"
                           },
                           "status": {
                             "type": "string",
@@ -17420,6 +17984,8 @@
                           "qty",
                           "unitPricePaise",
                           "mrpPaise",
+                          "gstRateBp",
+                          "taxPaise",
                           "status",
                           "promisedBy",
                           "shippedAt",
@@ -17580,6 +18146,7 @@
                     "couponDiscountPaise",
                     "deliveryFeePaise",
                     "totalPaise",
+                    "gstIncludedPaise",
                     "items",
                     "payments",
                     "refunds",
@@ -18330,6 +18897,20 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "gstRateBp": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "hsn": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "taxPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -18435,6 +19016,9 @@
                           "variant",
                           "qty",
                           "unitPricePaise",
+                          "gstRateBp",
+                          "hsn",
+                          "taxPaise",
                           "status",
                           "paymentMethod",
                           "shipTo",
@@ -18575,6 +19159,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "gstIncludedPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "GST included in the prices of the lines that are not cancelled"
+                    },
                     "shipTo": {
                       "type": "object",
                       "properties": {
@@ -18678,6 +19268,20 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "gstRateBp": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "hsn": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "taxPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -18776,6 +19380,9 @@
                           "variant",
                           "qty",
                           "unitPricePaise",
+                          "gstRateBp",
+                          "hsn",
+                          "taxPaise",
                           "status",
                           "dispatchBy",
                           "promisedBy",
@@ -18942,6 +19549,7 @@
                     "paymentMethod",
                     "paymentStatus",
                     "totalPaise",
+                    "gstIncludedPaise",
                     "shipTo",
                     "address",
                     "items",
@@ -19233,6 +19841,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "gstIncludedPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "GST included in the prices of the lines that are not cancelled"
+                    },
                     "shipTo": {
                       "type": "object",
                       "properties": {
@@ -19336,6 +19950,20 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "gstRateBp": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "hsn": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "taxPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -19434,6 +20062,9 @@
                           "variant",
                           "qty",
                           "unitPricePaise",
+                          "gstRateBp",
+                          "hsn",
+                          "taxPaise",
                           "status",
                           "dispatchBy",
                           "promisedBy",
@@ -19600,6 +20231,7 @@
                     "paymentMethod",
                     "paymentStatus",
                     "totalPaise",
+                    "gstIncludedPaise",
                     "shipTo",
                     "address",
                     "items",
@@ -28409,6 +29041,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "gstIncludedPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "GST included in the prices of the lines that are not cancelled"
+                    },
                     "shipTo": {
                       "type": "object",
                       "properties": {
@@ -28512,6 +29150,20 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "gstRateBp": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "hsn": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "taxPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -28584,6 +29236,9 @@
                           "variant",
                           "qty",
                           "unitPricePaise",
+                          "gstRateBp",
+                          "hsn",
+                          "taxPaise",
                           "status",
                           "dispatchBy",
                           "promisedBy",
@@ -28777,6 +29432,7 @@
                     "paymentMethod",
                     "paymentStatus",
                     "totalPaise",
+                    "gstIncludedPaise",
                     "shipTo",
                     "address",
                     "items",

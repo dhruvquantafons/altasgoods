@@ -25,6 +25,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         fee: settings.delivery.feePaise / 100,
         freeFrom: settings.delivery.freeFromPaise / 100,
         codLimit: settings.cod.maxOrderPaise / 100,
+        codEnabled: settings.cod.enabled,
       }}
     >
       <CartProvider signedIn={!!user}>

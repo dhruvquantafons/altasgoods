@@ -16,8 +16,8 @@ const A = "/v1/admin";
 const KINDS = ["orders", "order-items", "payments", "refunds", "customers", "audit"] as const;
 
 const HEADERS: Record<(typeof KINDS)[number], string[]> = {
-  orders: ["Order ID", "Placed at", "Customer name", "Customer email", "Phone", "Status", "Payment method", "Payment status", "Items", "Subtotal", "Discount", "Delivery fee", "Total", "Refunded", "Pincode", "City", "State", "Coupon code"],
-  "order-items": ["Order ID", "Item ID", "Product", "SKU", "Variant", "Qty", "Unit price", "Line total", "Status", "AWB", "Courier", "Delivered at"],
+  orders: ["Order ID", "Placed at", "Customer name", "Customer email", "Phone", "Status", "Payment method", "Payment status", "Items", "Subtotal", "Discount", "Delivery fee", "Total", "GST total", "Refunded", "Pincode", "City", "State", "Coupon code"],
+  "order-items": ["Order ID", "Item ID", "Product", "SKU", "Variant", "Qty", "Unit price", "Line total", "GST rate %", "HSN", "Taxable value", "GST amount", "Status", "AWB", "Courier", "Delivered at"],
   payments: ["Payment ID", "Order ID", "Created at", "Method", "Provider", "Provider ref", "Status", "Amount"],
   refunds: ["Refund ID", "Order ID", "Payment ID", "Created at", "Completed at", "Amount", "Status", "Method", "Reference", "Reason", "Created by"],
   customers: ["ID", "Name", "Email", "Phone", "Status", "Joined at", "Orders", "Total spent"],

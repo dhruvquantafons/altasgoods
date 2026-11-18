@@ -10,6 +10,7 @@ import type { Db } from "../../db/client.js";
 import { auditEvents, orderItems, orders, payments, products, refunds, users } from "../../db/schema.js";
 import { csvRow, type CsvValue } from "../catalog/csv.js";
 import { paymentFilters, refundFilters } from "../commerce/admin-insights.service.js";
+import { lineNetPaise } from "../commerce/payments/refunds.service.js";
 import { itemFilters } from "../commerce/fulfilment.service.js";
 import { customerFilters, PLACED, SPENT } from "../support/support-lookup.service.js";
 import { auditFilters, type AuditActor } from "./audit.service.js";
@@ -55,7 +56,7 @@ function within(col: Parameters<typeof gte>[0], q: { from?: string; to?: string 
 
 /* ------------------------------- columns -------------------------------- */
 
-type OrderRow = { o: typeof orders.$inferSelect; name: string | null; email: string; phone: string | null; items: number; refunded: number };
+type OrderRow = { o: typeof orders.$inferSelect; name: string | null; email: string; phone: string | null; items: number; refunded: number; gst: number };
 export const ORDER_COLUMNS: Column<OrderRow>[] = [
   { header: "Order ID", value: (r) => r.o.id },
   { header: "Placed at", value: (r) => dateCsv(r.o.placedAt) },
@@ -70,6 +71,7 @@ export const ORDER_COLUMNS: Column<OrderRow>[] = [
   { header: "Discount", value: (r) => money(r.o.couponDiscountPaise) },
   { header: "Delivery fee", value: (r) => money(r.o.deliveryFeePaise) },
   { header: "Total", value: (r) => money(r.o.totalPaise) },
+  { header: "GST total", value: (r) => money(r.gst) },
   { header: "Refunded", value: (r) => money(r.refunded) },
   { header: "Pincode", value: (r) => r.o.address.pincode },
   { header: "City", value: (r) => r.o.address.city },
@@ -77,7 +79,7 @@ export const ORDER_COLUMNS: Column<OrderRow>[] = [
   { header: "Coupon code", value: (r) => r.o.couponCode },
 ];
 
-type ItemRow = { item: typeof orderItems.$inferSelect; sku: string };
+type ItemRow = { item: typeof orderItems.$inferSelect; sku: string; orderSubtotal: number; orderDiscount: number };
 export const ORDER_ITEM_COLUMNS: Column<ItemRow>[] = [
   { header: "Order ID", value: (r) => r.item.orderId },
   { header: "Item ID", value: (r) => r.item.id },
@@ -87,6 +89,10 @@ export const ORDER_ITEM_COLUMNS: Column<ItemRow>[] = [
   { header: "Qty", value: (r) => r.item.qty },
   { header: "Unit price", value: (r) => money(r.item.unitPricePaise) },
   { header: "Line total", value: (r) => money(r.item.unitPricePaise * r.item.qty) },
+  { header: "GST rate %", value: (r) => r.item.gstRateBp / 100 },
+  { header: "HSN", value: (r) => r.item.hsn },
+  { header: "Taxable value", value: (r) => money(lineNetPaise({ subtotalPaise: r.orderSubtotal, couponDiscountPaise: r.orderDiscount }, r.item) - r.item.taxPaise) },
+  { header: "GST amount", value: (r) => money(r.item.taxPaise) },
   { header: "Status", value: (r) => r.item.status },
   { header: "AWB", value: (r) => r.item.awb },
   { header: "Courier", value: (r) => r.item.courier },
@@ -245,6 +251,7 @@ export class ExportsService {
             email: users.email,
             phone: users.phone,
             items: sql<number>`(select count(*) from order_items where order_items.order_id = orders.id)::int`,
+            gst: sql<number>`coalesce((select sum(order_items.tax_paise) from order_items where order_items.order_id = orders.id and order_items.status <> 'CANCELLED'), 0)::bigint`.mapWith(Number),
             refunded: sql<number>`coalesce((select sum(refunds.amount_paise) from refunds where refunds.order_id = orders.id and refunds.status = 'COMPLETED'), 0)::bigint`.mapWith(Number),
           })
           .from(orders)
@@ -264,7 +271,7 @@ export class ExportsService {
       async () => (await this.db.select({ n: sql<number>`count(*)::int` }).from(orderItems).innerJoin(orders, eq(orders.id, orderItems.orderId)).where(where))[0]?.n ?? 0,
       (offset, limit) =>
         this.db
-          .select({ item: orderItems, sku: products.sku })
+          .select({ item: orderItems, sku: products.sku, orderSubtotal: orders.subtotalPaise, orderDiscount: orders.couponDiscountPaise })
           .from(orderItems)
           .innerJoin(orders, eq(orders.id, orderItems.orderId))
           .innerJoin(products, eq(products.id, orderItems.productId))

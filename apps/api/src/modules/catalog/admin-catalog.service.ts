@@ -6,6 +6,8 @@ import { HOUSE_SELLER_ID } from "../../common/house.js";
 import { DB, FILE_STORE } from "../../common/tokens.js";
 import type { Db, Tx } from "../../db/client.js";
 import { brands, categories, files, media, offers, orderItems, productSlugRedirects, products } from "../../db/schema.js";
+import { SettingsService } from "../admin/settings.service.js";
+import { inheritedGst, inheritedView, resolveFrom, type ResolvedGst } from "./gst.js";
 import { sniffMime, type FileStore } from "../files/file-store.js";
 import { RESERVED_BRAND, RESERVED_CATEGORY } from "./reserved.js";
 import type { adminProductQuery, brandInput, brandPatch, categoryInput, categoryPatch, ProductInput, ProductPatch } from "./admin-catalog.schemas.js";
@@ -39,6 +41,7 @@ export class AdminCatalogService {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(FILE_STORE) private readonly files: FileStore,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   /* ------------------------------ Products ------------------------------ */
@@ -106,7 +109,8 @@ export class AdminCatalogService {
       .innerJoin(offers, and(eq(offers.productId, products.id), eq(offers.sellerId, HOUSE_SELLER_ID)))
       .where(eq(products.id, id));
     if (!row) throw notFound("Product");
-    return toAdminProduct(row.product, row.offer);
+    const inherited = await inheritedGst(this.db, row.product, (await this.settings.get()).tax);
+    return toAdminProduct(row.product, row.offer, inherited);
   }
 
   async createProduct(input: ProductInput) {
@@ -127,6 +131,8 @@ export class AdminCatalogService {
           brandId: input.brandId,
           categoryId: input.categoryId,
           subcategory: input.subcategory,
+          gstRateBp: input.gstRateBp,
+          hsn: input.hsn,
           description: input.description,
           highlights: input.highlights,
           specs: input.specs,
@@ -205,7 +211,7 @@ export class AdminCatalogService {
       await tx
         .update(products)
         .set({
-          ...pick(patch, ["sku", "title", "description", "highlights", "specs", "variants", "images", "tags"]),
+          ...pick(patch, ["sku", "title", "description", "highlights", "specs", "variants", "images", "tags", "gstRateBp", "hsn"]),
           ...next,
           ...(slug ? { slug } : {}),
           ...(patch.active !== undefined ? { listingStatus: patch.active ? "LIVE" : "INACTIVE" } : {}),
@@ -305,6 +311,7 @@ export class AdminCatalogService {
   /* ----------------------------- Categories ----------------------------- */
 
   async categories() {
+    const defaults = (await this.settings.get()).tax;
     const [rows, counts] = await Promise.all([
       this.db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.name)),
       this.db.select({ categoryId: products.categoryId, subcategory: products.subcategory, n: count() }).from(products).groupBy(products.categoryId, products.subcategory),
@@ -320,6 +327,9 @@ export class AdminCatalogService {
           icon: c.icon,
           image: c.image,
           sortOrder: c.sortOrder,
+          gstRateBp: c.gstRateBp,
+          hsn: c.hsn,
+          inheritedGst: inheritedView(resolveFrom([], defaults)),
           subcategories: rows
             .filter((x) => x.parentId === c.id)
             .map((x) => ({ id: x.id, name: x.name, productCount: Number(mine.find((n) => n.subcategory === x.name)?.n ?? 0) })),
@@ -341,7 +351,7 @@ export class AdminCatalogService {
       const [taken] = await tx.select({ id: categories.id }).from(categories).where(or(eq(categories.id, id), eq(categories.slug, slug)));
       if (taken) throw conflict("SLUG_TAKEN", `A category already uses the address /c/${slug}`);
       const [{ last }] = (await tx.select({ last: sql<number>`coalesce(max(${categories.sortOrder}), -1)::int` }).from(categories).where(isNull(categories.parentId))) as [{ last: number }];
-      await tx.insert(categories).values({ id, slug, name: input.name, icon: input.icon ?? null, image: input.image ?? null, sortOrder: input.sortOrder ?? last + 1 });
+      await tx.insert(categories).values({ id, slug, name: input.name, icon: input.icon ?? null, image: input.image ?? null, gstRateBp: input.gstRateBp ?? null, hsn: input.hsn ?? null, sortOrder: input.sortOrder ?? last + 1 });
       await this.syncSubcategories(tx, { id, slug, name: input.name }, input.subcategories ?? []);
     });
     return this.category(id);
@@ -355,7 +365,7 @@ export class AdminCatalogService {
         const [taken] = await tx.select({ id: categories.id }).from(categories).where(eq(categories.slug, patch.slug));
         if (taken) throw conflict("SLUG_TAKEN", `A category already uses the address /c/${patch.slug}`);
       }
-      const fields = pick(patch, ["name", "slug", "icon", "image", "sortOrder"]);
+      const fields = pick(patch, ["name", "slug", "icon", "image", "sortOrder", "gstRateBp", "hsn"]);
       if (Object.keys(fields).length) await tx.update(categories).set(fields).where(eq(categories.id, id));
       if (patch.subcategories) await this.syncSubcategories(tx, { id, slug: patch.slug ?? c.slug, name: patch.name ?? c.name }, patch.subcategories);
       if (patch.name && patch.name !== c.name) await refreshSearchText(tx, eq(products.categoryId, id));
@@ -484,7 +494,7 @@ const isActive = (p: Product, o: Offer) => p.listingStatus === "LIVE" && o.statu
 const statusOf = (p: Product, o: Offer) => (p.listingStatus === "ARCHIVED" ? ("ARCHIVED" as const) : isActive(p, o) ? ("LIVE" as const) : ("INACTIVE" as const));
 const hasOrders = () => conflict("PRODUCT_HAS_ORDERS", "This product has orders. Archive it instead.");
 
-function toAdminProduct(p: Product, o: Offer) {
+function toAdminProduct(p: Product, o: Offer, inherited: ResolvedGst) {
   return {
     id: p.id,
     slug: p.slug,
@@ -498,6 +508,9 @@ function toAdminProduct(p: Product, o: Offer) {
     categoryId: p.categoryId,
     subcategory: p.subcategory,
     brandId: p.brandId,
+    gstRateBp: p.gstRateBp,
+    hsn: p.hsn,
+    inheritedGst: inheritedView(inherited),
     tags: p.tags as ("bestseller" | "new" | "deal" | "limited")[],
     pricePaise: o.pricePaise,
     mrpPaise: o.mrpPaise,

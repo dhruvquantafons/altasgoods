@@ -9,11 +9,13 @@ import { ApiError, conflict, notFound, unprocessable } from "../../common/errors
 import type { Clock } from "../../common/infra.module.js";
 import { istStamp } from "../../common/time.js";
 import { CLOCK, DB } from "../../common/tokens.js";
+import { SettingsService } from "../admin/settings.service.js";
+import { gstIncluded, resolveProductGst, taxIncludedPaise } from "../catalog/gst.js";
 import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
 import { cancelBody, orderListQuery, placeOrderBody, quoteBody } from "./commerce.schemas.js";
 import { PaymentsService } from "./payments/payments.service.js";
-import { customerRefundStatus } from "./payments/refunds.service.js";
+import { customerRefundStatus, lineNetPaise } from "./payments/refunds.service.js";
 import { PAYMENT_WINDOW_MS } from "./pricing.js";
 import { publicQuote, QuoteService } from "./quote.service.js";
 import { CUSTOMER_CANCELLABLE } from "./state.js";
@@ -38,6 +40,7 @@ export class OrdersService {
     @Inject(PaymentsService) private readonly payments: PaymentsService,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
     @Inject(ShippingService) private readonly shipping: ShippingService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   async quote(userId: string, body: z.infer<typeof quoteBody>) {
@@ -61,6 +64,9 @@ export class OrdersService {
     if (!idempotencyKey || idempotencyKey.length < 8 || idempotencyKey.length > 100) throw unprocessable("IDEMPOTENCY_KEY_REQUIRED", "Send a unique Idempotency-Key header with every order");
     const existing = await this.db.select({ id: orders.id }).from(orders).where(and(eq(orders.userId, userId), eq(orders.idempotencyKey, idempotencyKey)));
     if (existing[0]) return this.placedResponse(userId, existing[0].id);
+
+    // the store-wide switch is a plain refusal; the per-area and per-item reasons come from the quote
+    if (body.paymentMethod === "COD" && !(await this.settings.get()).cod.enabled) throw unprocessable("COD_UNAVAILABLE", "Cash on delivery is switched off");
 
     const address = await this.addresses.get(userId, body.addressId);
     const fromCart = !body.lines;
@@ -114,21 +120,31 @@ export class OrdersService {
           })
           .returning();
 
+        // GST is inside the price: each line records the rate it was sold at and the tax in its
+        // amount after its share of the coupon (the same net figure refunds use). Delivery is not taxed here.
+        const tax = (await this.settings.get()).tax;
+        const gst = await resolveProductGst(tx, [...new Set(q.lines.map((l) => l.productId))], tax);
         await tx.insert(orderItems).values(
-          q.lines.map((l) => ({
-            orderId: id,
-            productId: l.productId,
-            offerId: l.offerId,
-            sellerId: HOUSE_SELLER_ID,
-            title: l.title,
-            image: l.image,
-            variant: l.variant,
-            qty: l.qty,
-            unitPricePaise: l.unitPricePaise,
-            mrpPaise: l.mrpPaise,
-            status: "PENDING" as const,
-            promisedBy: new Date(q.promisedBy),
-          })),
+          q.lines.map((l) => {
+            const g = gst.get(l.productId)!;
+            return {
+              orderId: id,
+              productId: l.productId,
+              offerId: l.offerId,
+              sellerId: HOUSE_SELLER_ID,
+              title: l.title,
+              image: l.image,
+              variant: l.variant,
+              qty: l.qty,
+              unitPricePaise: l.unitPricePaise,
+              mrpPaise: l.mrpPaise,
+              status: "PENDING" as const,
+              promisedBy: new Date(q.promisedBy),
+              gstRateBp: g.rateBp,
+              hsn: g.hsn,
+              taxPaise: taxIncludedPaise(lineNetPaise(q, l), g.rateBp),
+            };
+          }),
         );
         await tx.insert(orderEvents).values({ orderId: id, toStatus: order!.status, actor: "CUSTOMER", actorId: userId, note: cod ? "Order placed, pay on delivery" : "Order placed, awaiting payment" });
         if (couponApplied) await tx.update(coupons).set({ usageCount: sql`${coupons.usageCount} + 1` }).where(eq(coupons.code, couponApplied));
@@ -225,6 +241,7 @@ export class OrdersService {
       couponDiscountPaise: order.couponDiscountPaise,
       deliveryFeePaise: order.deliveryFeePaise,
       totalPaise: order.totalPaise,
+      gstIncludedPaise: gstIncluded(items),
       items: items.map((item) => ({
         id: item.id,
         productId: item.productId,
@@ -234,6 +251,8 @@ export class OrdersService {
         qty: item.qty,
         unitPricePaise: item.unitPricePaise,
         mrpPaise: item.mrpPaise,
+        gstRateBp: item.gstRateBp,
+        taxPaise: item.taxPaise,
         status: item.status,
         promisedBy: item.promisedBy.toISOString(),
         shippedAt: iso(item.shippedAt),

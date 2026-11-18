@@ -7,6 +7,7 @@ import { saveSettings, type SettingsInput } from "@/app/actions/admin-system";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/input";
+import { gstDraft, GstFields, gstFromDraft, type GstDraft } from "./gst-fields";
 import { areasToText, parseAreas, type AreasText } from "./delivery-areas";
 import { Switch, useToast } from "@/components/ui/interactive";
 import { cn } from "@/lib/utils";
@@ -15,25 +16,27 @@ import { cn } from "@/lib/utils";
 const toRupees = (p: number) => String(p / 100);
 const toPaise = (r: string) => Math.round(Number(r || 0) * 100);
 
-type Form = Omit<SettingsInput, "delivery" | "cod"> & { delivery: { fee: string; freeFrom: string }; areas: AreasText; cod: { maxOrder: string } };
+type Form = Omit<SettingsInput, "delivery" | "cod" | "tax"> & { delivery: { fee: string; freeFrom: string }; areas: AreasText; cod: { enabled: boolean; maxOrder: string }; tax: GstDraft };
 
 function fromSettings(s: SettingsInput): Form {
   return {
     ...s,
     delivery: { fee: toRupees(s.delivery.feePaise), freeFrom: toRupees(s.delivery.freeFromPaise) },
     areas: areasToText(s.delivery.areas),
-    cod: { maxOrder: toRupees(s.cod.maxOrderPaise) },
+    cod: { enabled: s.cod.enabled, maxOrder: toRupees(s.cod.maxOrderPaise) },
+    tax: gstDraft(s.tax.defaultGstRateBp, s.tax.defaultHsn),
   };
 }
 
-function toSettings(f: Form, areas: SettingsInput["delivery"]["areas"]): SettingsInput {
+function toSettings(f: Form, areas: SettingsInput["delivery"]["areas"], tax: { gstRateBp: number | null; hsn: string | null }): SettingsInput {
   return {
     company: f.company,
     grievance: f.grievance,
     reviews: f.reviews,
     notice: f.notice,
     delivery: { feePaise: toPaise(f.delivery.fee), freeFromPaise: toPaise(f.delivery.freeFrom), areas },
-    cod: { maxOrderPaise: toPaise(f.cod.maxOrder) },
+    cod: { enabled: f.cod.enabled, maxOrderPaise: toPaise(f.cod.maxOrder) },
+    tax: { defaultGstRateBp: tax.gstRateBp ?? 1800, defaultHsn: tax.hsn },
   };
 }
 
@@ -110,8 +113,13 @@ export function SettingsForm({ initial, savedNote, canEdit = true }: { initial: 
       setErrors(Object.fromEntries(Object.entries(parsed.errors).map(([k, v]) => [`delivery.areas.${k}`, v])));
       return toast.show("Fix the delivery areas first");
     }
+    const tax = gstFromDraft(form.tax, { allowInherit: false });
+    if (!tax.ok) {
+      setErrors({ "tax.defaultGstRateBp": tax.error });
+      return toast.show(tax.error);
+    }
     setBusy(true);
-    const r = await saveSettings(toSettings(form, parsed.areas));
+    const r = await saveSettings(toSettings(form, parsed.areas, tax));
     setBusy(false);
     if (!r.ok) {
       setErrors(r.fields ?? {});
@@ -142,8 +150,23 @@ export function SettingsForm({ initial, savedNote, canEdit = true }: { initial: 
         {areaField("extraDays", "Extra delivery days", "6825 3\n79 4", "Prefix, a space and the days to add (0 to 15). The longest matching prefix wins.")}
       </Section>
 
-      <Section title="Cash on delivery">
+      <Section title="Cash on delivery" description="Switching it off stops cash on delivery for every order at once. Prepaid orders are not affected.">
+        <div className="sm:col-span-2">
+          <Switch
+            checked={form.cod.enabled}
+            onChange={(v) => set("cod", "enabled", v)}
+            label="Accept cash on delivery"
+            description="When off, checkout hides the option and says it is switched off."
+          />
+        </div>
         {money("cod", "maxOrder", "cod.maxOrderPaise", "Largest cash on delivery order", "Above this total, customers must pay online")}
+      </Section>
+
+      <Section
+        title="Tax (GST)"
+        description="Prices include GST. A product uses its own rate, else its category's, else this one. Each order line keeps the rate it was sold at. Delivery fees are not taxed here."
+      >
+        <GstFields idPrefix="st-tax" value={form.tax} onChange={(tax) => setForm((f) => ({ ...f, tax }))} rateError={err("tax.defaultGstRateBp")} hsnError={err("tax.defaultHsn")} />
       </Section>
 
       <Section title="Reviews">

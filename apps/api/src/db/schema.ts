@@ -239,6 +239,9 @@ export const categories = pgTable("categories", {
   icon: text("icon"),
   image: text("image"),
   sortOrder: integer("sort_order").notNull().default(0),
+  /** GST rate in basis points (1800 = 18%); null inherits from the parent category, then the store default */
+  gstRateBp: integer("gst_rate_bp"),
+  hsn: text("hsn"),
 });
 
 export const brands = pgTable("brands", {
@@ -298,6 +301,9 @@ export const products = pgTable(
       .notNull()
       .references(() => categories.id),
     subcategory: text("subcategory").notNull(),
+    /** GST override in basis points and HSN; null inherits from the category, then the store default */
+    gstRateBp: integer("gst_rate_bp"),
+    hsn: text("hsn"),
     description: text("description").notNull().default(""),
     highlights: jsonb("highlights").notNull().$type<string[]>().default([]),
     specs: jsonb("specs").notNull().$type<{ group: string; items: { label: string; value: string }[] }[]>().default([]),
@@ -542,6 +548,10 @@ export const orderItems = pgTable(
     qty: integer("qty").notNull(),
     unitPricePaise: paise("unit_price_paise").notNull(),
     mrpPaise: paise("mrp_paise").notNull(),
+    /** the GST rate the line was sold at, in basis points, with its HSN and the GST its price includes */
+    gstRateBp: integer("gst_rate_bp").notNull().default(0),
+    hsn: text("hsn"),
+    taxPaise: integer("tax_paise").notNull().default(0),
     status: text("status").notNull().$type<OrderItemStatus>(),
     dispatchBy: ts("dispatch_by"),
     promisedBy: ts("promised_by").notNull(),

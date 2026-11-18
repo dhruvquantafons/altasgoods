@@ -72,6 +72,7 @@ export function toUiOrder(o: Order): UiOrder {
     couponCode: o.couponCode ?? undefined,
     shippingFee: o.deliveryFeePaise / 100,
     platformFee: 0,
+    gstIncludedPaise: o.gstIncludedPaise,
     total: o.totalPaise / 100,
     promisedBy: promised,
     deliveredAt: delivered,

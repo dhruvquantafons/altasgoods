@@ -9,6 +9,7 @@ import { offers, products } from "../../db/schema.js";
 import { imagePath, PRODUCT_TAGS, productInput, productPatch, type importResult, type ProductInput, type ProductPatch } from "./admin-catalog.schemas.js";
 import { AdminCatalogService, slugify } from "./admin-catalog.service.js";
 import { parseCsv } from "./csv.js";
+import { percentToBp } from "./gst.js";
 import { downloadImage } from "./remote-image.js";
 
 export const MAX_IMPORT_ROWS = 1000;
@@ -39,6 +40,8 @@ const FIELDS = {
   deliveryDays: ["delivery days", "delivery time", "shipping days", "dispatch days"],
   codAvailable: ["cod", "cod available", "cash on delivery"],
   returnWindowDays: ["return days", "return window", "return window days", "returns"],
+  gstRate: ["gst rate", "gst", "gst percent", "gst %", "gst rate %", "tax rate", "gst percentage"],
+  hsn: ["hsn", "hsn code", "hsn sac", "hsn sac code"],
   active: ["active", "status", "on sale", "published", "visible", "enabled"],
 } as const;
 type Field = keyof typeof FIELDS;
@@ -59,6 +62,8 @@ const LABELS: Record<string, string> = {
   deliveryDays: "Delivery days",
   codAvailable: "COD",
   returnWindowDays: "Return days",
+  gstRateBp: "GST rate",
+  hsn: "HSN",
 };
 
 type Column =
@@ -341,6 +346,14 @@ export class ProductImportService {
         if (b === undefined) errors.push(`${label} "${v}" should be yes or no`);
         else fields[f] = b;
       }
+
+      const gst = get("gstRate");
+      if (gst) {
+        const bp = percentToBp(gst);
+        if (bp === null || bp > 4000) errors.push(`GST rate "${gst}" should be a percentage from 0 to 40, for example 18`);
+        else fields.gstRateBp = bp;
+      }
+      if (get("hsn")) fields.hsn = get("hsn");
 
       if (get("description")) fields.description = get("description");
       if (get("highlights")) fields.highlights = splitList(get("highlights"));

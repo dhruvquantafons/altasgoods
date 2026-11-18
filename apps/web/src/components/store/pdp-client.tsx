@@ -198,9 +198,11 @@ function DeliveryModule() {
   const { info, loading } = usePincodeInfo(pincode);
   const o = data.offer;
   const days = promiseDays(o.deliveryDays, info, now);
-  const { freeFrom: FREE_DELIVERY_THRESHOLD, fee: DELIVERY_FEE, codLimit: COD_LIMIT } = useDeliveryRules();
+  const { freeFrom: FREE_DELIVERY_THRESHOLD, fee: DELIVERY_FEE, codLimit: COD_LIMIT, codEnabled: COD_ENABLED } = useDeliveryRules();
   const free = price * qty >= FREE_DELIVERY_THRESHOLD;
-  const codReason = !o.codAvailable
+  const codReason = !COD_ENABLED
+    ? "Cash on delivery is switched off"
+    : !o.codAvailable
     ? "Pay on delivery is not offered for this item"
     : info && !info.codAvailable
       ? `Pay on delivery is not available for ${pincode}`

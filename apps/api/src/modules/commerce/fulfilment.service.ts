@@ -6,6 +6,7 @@ import { orderEvents, orderItems, orders, refunds, type OrderItemStatus } from "
 import { ApiError, notFound } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import { fulfilmentItemsQuery, transitionBody } from "./commerce.schemas.js";
+import { gstIncluded } from "../catalog/gst.js";
 import { addressEditable, refundView } from "./order-admin.service.js";
 import { RefundsService } from "./payments/refunds.service.js";
 import { ITEM_TRANSITIONS } from "./state.js";
@@ -77,6 +78,9 @@ export class FulfilmentService {
         variant: item.variant,
         qty: item.qty,
         unitPricePaise: item.unitPricePaise,
+        gstRateBp: item.gstRateBp,
+        hsn: item.hsn,
+        taxPaise: item.taxPaise,
         status: item.status,
         paymentMethod: order.paymentMethod,
         shipTo: { name: order.address.name, city: order.address.city, pincode: order.address.pincode },
@@ -116,6 +120,7 @@ export class FulfilmentService {
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       totalPaise: order.totalPaise,
+      gstIncludedPaise: gstIncluded(items),
       shipTo: { name: order.address.name, city: order.address.city, state: order.address.state, pincode: order.address.pincode },
       address: { ...pick(order.address), line2: order.address.line2 ?? null, landmark: order.address.landmark ?? null, type: order.address.type ?? "HOME" },
       items: items.map((i) => ({
@@ -126,6 +131,9 @@ export class FulfilmentService {
         variant: i.variant,
         qty: i.qty,
         unitPricePaise: i.unitPricePaise,
+        gstRateBp: i.gstRateBp,
+        hsn: i.hsn,
+        taxPaise: i.taxPaise,
         status: i.status,
         dispatchBy: iso(i.dispatchBy),
         promisedBy: i.promisedBy.toISOString(),

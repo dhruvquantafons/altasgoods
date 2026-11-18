@@ -218,6 +218,8 @@ export interface Order {
   shippingFee: number;
   platformFee: number;
   total: number;
+  /** GST inside the prices of the lines not cancelled, in paise; absent for sample data */
+  gstIncludedPaise?: number;
   promisedBy: string;
   deliveredAt?: string;
   timeline: OrderEvent[];

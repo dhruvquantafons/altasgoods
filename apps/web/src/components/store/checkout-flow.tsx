@@ -116,7 +116,9 @@ export function CheckoutFlow({
   /* ----- money ----- */
   const payable = totals.total;
   const codBlock =
-    quote && !quote.cod.available
+    !rules.codEnabled
+      ? "Cash on delivery is switched off"
+      : quote && !quote.cod.available
       ? quote.cod.reason
       : payable > COD_LIMIT
         ? `Pay on delivery is available for orders up to ${formatINR(COD_LIMIT)}`

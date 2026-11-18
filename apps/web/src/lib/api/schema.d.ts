@@ -2584,8 +2584,16 @@ export interface operations {
                             };
                         };
                         cod: {
+                            /** @description Off stops cash on delivery for every order */
+                            enabled: boolean;
                             /** @description Largest order total that can be paid by cash on delivery */
                             maxOrderPaise: number;
+                        };
+                        tax: {
+                            /** @description GST rate in basis points for products whose category and own settings have none */
+                            defaultGstRateBp: number;
+                            /** @description HSN code for products whose category and own settings have none */
+                            defaultHsn: string | null;
                         };
                         reviews: {
                             /** @description Publish customer reviews straight away; otherwise they wait for approval */
@@ -2661,8 +2669,16 @@ export interface operations {
                         };
                     };
                     cod: {
+                        /** @description Off stops cash on delivery for every order */
+                        enabled: boolean;
                         /** @description Largest order total that can be paid by cash on delivery */
                         maxOrderPaise: number;
+                    };
+                    tax: {
+                        /** @description GST rate in basis points for products whose category and own settings have none */
+                        defaultGstRateBp: number;
+                        /** @description HSN code for products whose category and own settings have none */
+                        defaultHsn: string | null;
                     };
                     reviews: {
                         /** @description Publish customer reviews straight away; otherwise they wait for approval */
@@ -2730,8 +2746,16 @@ export interface operations {
                             };
                         };
                         cod: {
+                            /** @description Off stops cash on delivery for every order */
+                            enabled: boolean;
                             /** @description Largest order total that can be paid by cash on delivery */
                             maxOrderPaise: number;
+                        };
+                        tax: {
+                            /** @description GST rate in basis points for products whose category and own settings have none */
+                            defaultGstRateBp: number;
+                            /** @description HSN code for products whose category and own settings have none */
+                            defaultHsn: string | null;
                         };
                         reviews: {
                             /** @description Publish customer reviews straight away; otherwise they wait for approval */
@@ -2794,6 +2818,8 @@ export interface operations {
                             freeFromPaise: number;
                         };
                         cod: {
+                            /** @description Off stops cash on delivery for every order */
+                            enabled: boolean;
                             /** @description Largest order total that can be paid by cash on delivery */
                             maxOrderPaise: number;
                         };
@@ -6003,6 +6029,16 @@ export interface operations {
                     categoryId: string;
                     subcategory: string;
                     brandId: string;
+                    /**
+                     * @description Overrides the category's GST rate; null inherits it
+                     * @default null
+                     */
+                    gstRateBp?: number | null;
+                    /**
+                     * @description Overrides the category's HSN code; null inherits it
+                     * @default null
+                     */
+                    hsn?: string | null;
                     /** @default [] */
                     tags?: ("bestseller" | "new" | "deal" | "limited")[];
                     pricePaise: number;
@@ -6055,6 +6091,16 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6068,6 +6114,13 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
                         /** @enum {string} */
                         status: "LIVE" | "INACTIVE" | "ARCHIVED";
@@ -6185,6 +6238,16 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6198,6 +6261,13 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
                         /** @enum {string} */
                         status: "LIVE" | "INACTIVE" | "ARCHIVED";
@@ -6270,6 +6340,10 @@ export interface operations {
                     categoryId?: string;
                     subcategory?: string;
                     brandId?: string;
+                    /** @description Overrides the category's GST rate; null inherits it */
+                    gstRateBp?: number | null;
+                    /** @description Overrides the category's HSN code; null inherits it */
+                    hsn?: string | null;
                     tags?: ("bestseller" | "new" | "deal" | "limited")[];
                     pricePaise?: number;
                     mrpPaise?: number;
@@ -6317,6 +6391,16 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6330,6 +6414,13 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
                         /** @enum {string} */
                         status: "LIVE" | "INACTIVE" | "ARCHIVED";
@@ -6391,6 +6482,16 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6404,6 +6505,13 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
                         /** @enum {string} */
                         status: "LIVE" | "INACTIVE" | "ARCHIVED";
@@ -6465,6 +6573,16 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6478,6 +6596,13 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
                         /** @enum {string} */
                         status: "LIVE" | "INACTIVE" | "ARCHIVED";
@@ -6514,6 +6639,16 @@ export interface operations {
                         icon: string | null;
                         image: string | null;
                         sortOrder: number;
+                        gstRateBp: number | null;
+                        hsn: string | null;
+                        /** @description What its products are taxed at when it sets nothing: the store default */
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         subcategories: {
                             id: string;
                             name: string;
@@ -6542,6 +6677,9 @@ export interface operations {
                     icon?: string | null;
                     image?: string | null;
                     sortOrder?: number;
+                    /** @description GST rate for the category's products; null inherits the store default */
+                    gstRateBp?: number | null;
+                    hsn?: string | null;
                     subcategories?: string[];
                 };
             };
@@ -6559,6 +6697,16 @@ export interface operations {
                         icon: string | null;
                         image: string | null;
                         sortOrder: number;
+                        gstRateBp: number | null;
+                        hsn: string | null;
+                        /** @description What its products are taxed at when it sets nothing: the store default */
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         subcategories: {
                             id: string;
                             name: string;
@@ -6608,6 +6756,9 @@ export interface operations {
                     icon?: string | null;
                     image?: string | null;
                     sortOrder?: number;
+                    /** @description GST rate for the category's products; null inherits the store default */
+                    gstRateBp?: number | null;
+                    hsn?: string | null;
                     subcategories?: string[];
                 };
             };
@@ -6625,6 +6776,16 @@ export interface operations {
                         icon: string | null;
                         image: string | null;
                         sortOrder: number;
+                        gstRateBp: number | null;
+                        hsn: string | null;
+                        /** @description What its products are taxed at when it sets nothing: the store default */
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         subcategories: {
                             id: string;
                             name: string;
@@ -7817,6 +7978,8 @@ export interface operations {
                             couponDiscountPaise: number;
                             deliveryFeePaise: number;
                             totalPaise: number;
+                            /** @description GST included in the prices of the lines that are not cancelled; the delivery fee carries none */
+                            gstIncludedPaise: number;
                             items: {
                                 /** Format: uuid */
                                 id: string;
@@ -7827,6 +7990,10 @@ export interface operations {
                                 qty: number;
                                 unitPricePaise: number;
                                 mrpPaise: number;
+                                /** @description GST rate the line was sold at, in basis points */
+                                gstRateBp: number;
+                                /** @description The GST included in the line's price, after its share of any coupon */
+                                taxPaise: number;
                                 /** @enum {string} */
                                 status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                                 /** Format: date-time */
@@ -7988,6 +8155,8 @@ export interface operations {
                         couponDiscountPaise: number;
                         deliveryFeePaise: number;
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled; the delivery fee carries none */
+                        gstIncludedPaise: number;
                         items: {
                             /** Format: uuid */
                             id: string;
@@ -7998,6 +8167,10 @@ export interface operations {
                             qty: number;
                             unitPricePaise: number;
                             mrpPaise: number;
+                            /** @description GST rate the line was sold at, in basis points */
+                            gstRateBp: number;
+                            /** @description The GST included in the line's price, after its share of any coupon */
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -8100,6 +8273,8 @@ export interface operations {
                         couponDiscountPaise: number;
                         deliveryFeePaise: number;
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled; the delivery fee carries none */
+                        gstIncludedPaise: number;
                         items: {
                             /** Format: uuid */
                             id: string;
@@ -8110,6 +8285,10 @@ export interface operations {
                             qty: number;
                             unitPricePaise: number;
                             mrpPaise: number;
+                            /** @description GST rate the line was sold at, in basis points */
+                            gstRateBp: number;
+                            /** @description The GST included in the line's price, after its share of any coupon */
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -8409,6 +8588,9 @@ export interface operations {
                             variant: string;
                             qty: number;
                             unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** @enum {string} */
@@ -8469,6 +8651,8 @@ export interface operations {
                         /** @enum {string} */
                         paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled */
+                        gstIncludedPaise: number;
                         shipTo: {
                             name: string;
                             city: string;
@@ -8496,6 +8680,9 @@ export interface operations {
                             variant: string;
                             qty: number;
                             unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -8634,6 +8821,8 @@ export interface operations {
                         /** @enum {string} */
                         paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled */
+                        gstIncludedPaise: number;
                         shipTo: {
                             name: string;
                             city: string;
@@ -8661,6 +8850,9 @@ export interface operations {
                             variant: string;
                             qty: number;
                             unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -11271,6 +11463,8 @@ export interface operations {
                         /** @enum {string} */
                         paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled */
+                        gstIncludedPaise: number;
                         shipTo: {
                             name: string;
                             city: string;
@@ -11298,6 +11492,9 @@ export interface operations {
                             variant: string;
                             qty: number;
                             unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */

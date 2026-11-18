@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { gstRateBpSchema, hsnSchema } from "../catalog/gst.js";
 
 const rupeesInPaise = z.number().int().min(0).max(100_000_000);
 
@@ -24,7 +25,14 @@ export const settingsSchema = z.object({
     freeFromPaise: rupeesInPaise.describe("Orders at or above this subtotal ship free"),
     areas: deliveryAreasSchema.default(NO_AREA_RULES),
   }),
-  cod: z.object({ maxOrderPaise: rupeesInPaise.describe("Largest order total that can be paid by cash on delivery") }),
+  cod: z.object({
+    enabled: z.boolean().describe("Off stops cash on delivery for every order"),
+    maxOrderPaise: rupeesInPaise.describe("Largest order total that can be paid by cash on delivery"),
+  }),
+  tax: z.object({
+    defaultGstRateBp: gstRateBpSchema.describe("GST rate in basis points for products whose category and own settings have none"),
+    defaultHsn: hsnSchema.nullable().describe("HSN code for products whose category and own settings have none"),
+  }),
   reviews: z.object({ autoPublish: z.boolean().describe("Publish customer reviews straight away; otherwise they wait for approval") }),
   notice: z.object({
     enabled: z.boolean(),
@@ -55,7 +63,8 @@ export type StoreSettings = z.infer<typeof settingsSchema>;
 
 export const DEFAULT_SETTINGS: StoreSettings = {
   delivery: { feePaise: 4_000, freeFromPaise: 49_900, areas: NO_AREA_RULES },
-  cod: { maxOrderPaise: 5_000_000 },
+  cod: { enabled: true, maxOrderPaise: 5_000_000 },
+  tax: { defaultGstRateBp: 1800, defaultHsn: null },
   reviews: { autoPublish: true },
   notice: { enabled: false, message: "" },
   company: {

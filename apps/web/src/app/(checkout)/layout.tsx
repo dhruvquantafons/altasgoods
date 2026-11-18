@@ -17,7 +17,7 @@ export default async function CheckoutLayout({ children }: { children: React.Rea
   const care = settings.company.customerCare;
   return (
     <StoreSettingsProvider
-      rules={{ fee: settings.delivery.feePaise / 100, freeFrom: settings.delivery.freeFromPaise / 100, codLimit: settings.cod.maxOrderPaise / 100 }}
+      rules={{ fee: settings.delivery.feePaise / 100, freeFrom: settings.delivery.freeFromPaise / 100, codLimit: settings.cod.maxOrderPaise / 100, codEnabled: settings.cod.enabled }}
     >
       <CartProvider signedIn={!!user}>
         <div className="flex min-h-screen flex-col bg-canvas">

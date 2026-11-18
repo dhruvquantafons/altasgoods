@@ -40,7 +40,7 @@ describe("settings", () => {
     const before = await quoteFor("tea-assam");
     expect(before.deliveryFeePaise).toBe(DEFAULT_SETTINGS.delivery.feePaise);
 
-    const next = { ...DEFAULT_SETTINGS, delivery: { feePaise: 9_900, freeFromPaise: 1_000_000 }, cod: { maxOrderPaise: 100 } };
+    const next = { ...DEFAULT_SETTINGS, delivery: { feePaise: 9_900, freeFromPaise: 1_000_000 }, cod: { enabled: true, maxOrderPaise: 100 } };
     const saved = await t.http.put(`${A}/settings`).set(staff).send(next).expect(200);
     expect(saved.body).toMatchObject({ delivery: next.delivery, updatedBy: "Kavya Iyer" });
 
