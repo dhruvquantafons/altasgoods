@@ -3,6 +3,8 @@ import Link from "next/link";
 import Form from "next/form";
 import { ChevronDown, Clock, Headset, LogIn, Mail, MessageCircle, PhoneCall, Scale, Search, ShieldCheck } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
+import { Fact, Placeholder } from "@/components/store/placeholder";
+import { companyEmail, companyLegalName, companyPhone, mailtoHref, PLACEHOLDER_TEXT, realText, telHref } from "@/lib/legal";
 import { Prose } from "@/components/store/prose";
 import { NamedIcon } from "@/components/store/icons";
 import { formatDayMonth } from "@/components/store/delivery";
@@ -183,7 +185,7 @@ export default async function HelpPage(props: PageProps<"/help">) {
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
                 AltasGoods is a calmer Indian store built in Bengaluru, selling and shipping every product itself. Our promise: honest prices,
-                real delivery dates and no hidden charges. {COMPANY.legalName}, CIN {COMPANY.cin}.
+                real delivery dates and no hidden charges. {companyLegalName(COMPANY) ? `${companyLegalName(COMPANY)}${realText(COMPANY.cin) ? `, CIN ${realText(COMPANY.cin)}` : ""}.` : ""}
               </p>
               <Link href="/about" className="mt-3 inline-flex text-[13px] font-semibold text-brand-700 hover:underline">
                 More about AltasGoods
@@ -202,9 +204,11 @@ export default async function HelpPage(props: PageProps<"/help">) {
                 {[
                   { icon: MessageCircle, title: "Chat with us", body: "Typical reply in 2 minutes", href: "/contact" },
                   { icon: PhoneCall, title: "Request a call back", body: "Pick a time, we call you", href: "/contact#call-back" },
-                  { icon: Headset, title: `Call ${COMPANY.customerCare}`, body: `Toll free, ${COMPANY.customerCareHours}`, href: `tel:${COMPANY.customerCare.replace(/\s/g, "")}` },
-                  { icon: Mail, title: COMPANY.email, body: "Reply within 24 hours", href: `mailto:${COMPANY.email}` },
-                ].map((c) => (
+                  companyPhone(COMPANY) ? { icon: Headset, title: `Call ${companyPhone(COMPANY)}`, body: `Toll free${realText(COMPANY.customerCareHours) ? `, ${realText(COMPANY.customerCareHours)}` : ""}`, href: telHref(COMPANY.customerCare)! } : null,
+                  companyEmail(COMPANY) ? { icon: Mail, title: companyEmail(COMPANY)!, body: "Reply within 24 hours", href: mailtoHref(COMPANY.email)! } : null,
+                ]
+                  .filter((c) => c !== null)
+                  .map((c) => (
                   <li key={c.title}>
                     <a href={c.href} className="flex items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:border-ink-300">
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-ink-50 text-ink-700">
@@ -217,6 +221,11 @@ export default async function HelpPage(props: PageProps<"/help">) {
                     </a>
                   </li>
                 ))}
+                {(!companyPhone(COMPANY) || !companyEmail(COMPANY)) && (
+                  <li className="rounded-xl border border-dashed border-line p-3 text-[13px] text-ink-600">
+                    Phone and email: <Placeholder>{PLACEHOLDER_TEXT}</Placeholder>
+                  </li>
+                )}
               </ul>
             </section>
 
@@ -230,27 +239,33 @@ export default async function HelpPage(props: PageProps<"/help">) {
               <dl className="mt-4 flex flex-col gap-2.5 text-[13px]">
                 <div>
                   <dt className="text-ink-500">Grievance Officer</dt>
-                  <dd className="font-semibold text-ink-900">{GRIEVANCE_OFFICER.name}</dd>
+                  <dd className="font-semibold text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.name} />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Email</dt>
                   <dd>
-                    <a href={`mailto:${GRIEVANCE_OFFICER.email}`} className="font-medium text-brand-700 hover:underline">
-                      {GRIEVANCE_OFFICER.email}
-                    </a>
+                    <Fact value={GRIEVANCE_OFFICER.email} link="mailto" className="font-medium text-brand-700 hover:underline" />
                   </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Phone</dt>
-                  <dd className="text-ink-900">{GRIEVANCE_OFFICER.phone}</dd>
+                  <dd className="text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.phone} link="tel" />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Address</dt>
-                  <dd className="text-ink-900">{GRIEVANCE_OFFICER.address}</dd>
+                  <dd className="text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.address} />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Hours</dt>
-                  <dd className="text-ink-900">{GRIEVANCE_OFFICER.hours}</dd>
+                  <dd className="text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.hours} />
+                  </dd>
                 </div>
               </dl>
               <ul className="mt-4 flex flex-col gap-2 border-t border-brand-100 pt-4 text-[13px] text-ink-700">

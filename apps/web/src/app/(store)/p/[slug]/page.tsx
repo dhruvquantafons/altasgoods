@@ -14,7 +14,7 @@ import { Rail, RailItem } from "@/components/store/rail";
 import { ReviewsSection } from "@/components/store/reviews";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { Stars } from "@/components/ui/misc";
-import { Placeholder } from "@/components/store/placeholder";
+import { Fact, Placeholder } from "@/components/store/placeholder";
 import { api, currentUser } from "@/lib/api/server";
 import { getStoreCatalog, redirectedSlug } from "@/lib/store-catalog";
 import { getStoreCoupons } from "@/lib/store-promotions";
@@ -338,25 +338,33 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <dl className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed">
             <div>
               <dt className="inline text-ink-500">Legal name: </dt>
-              <dd className="inline text-ink-800">{COMPANY.legalName}</dd>
+              <dd className="inline text-ink-800">
+                <Fact value={COMPANY.legalName} />
+              </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Address: </dt>
-              <dd className="inline text-ink-800">{COMPANY.registeredOffice}</dd>
+              <dd className="inline text-ink-800">
+                <Fact value={COMPANY.registeredOffice} />
+              </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Customer care: </dt>
-              <dd className="inline text-ink-800">{COMPANY.customerCare}</dd>
+              <dd className="inline text-ink-800">
+                <Fact value={COMPANY.customerCare} />
+              </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Grievance officer: </dt>
               <dd className="inline text-ink-800">
-                {GRIEVANCE_OFFICER.name}, {GRIEVANCE_OFFICER.email}
+                <Fact value={GRIEVANCE_OFFICER.name} />, <Fact value={GRIEVANCE_OFFICER.email} />
               </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">GSTIN: </dt>
-              <dd className="inline font-mono text-xs text-ink-800">{COMPANY.gstin}</dd>
+              <dd className="inline font-mono text-xs text-ink-800">
+                <Fact value={COMPANY.gstin} />
+              </dd>
             </div>
           </dl>
         </div>

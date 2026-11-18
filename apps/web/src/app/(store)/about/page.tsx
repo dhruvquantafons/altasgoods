@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Fact } from "@/components/store/placeholder";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Building2, CalendarClock, HeartHandshake, Scale, Sparkles } from "lucide-react";
@@ -105,7 +106,7 @@ export default async function AboutPage() {
             ))}
           </div>
           <p className="mt-6 text-[13px] text-ink-500">
-            {COMPANY.legalName}, CIN {COMPANY.cin}, GSTIN {COMPANY.gstin}. Registered office: {COMPANY.registeredOffice}.
+            <Fact value={COMPANY.legalName} />, CIN <Fact value={COMPANY.cin} />, GSTIN <Fact value={COMPANY.gstin} />. Registered office: <Fact value={COMPANY.registeredOffice} />.
           </p>
         </section>
 

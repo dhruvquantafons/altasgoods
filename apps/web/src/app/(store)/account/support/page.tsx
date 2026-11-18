@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { loadAccountOrders } from "@/lib/api/account-orders";
 import { api, currentUser } from "@/lib/api/server";
 import { currentTime } from "@/lib/api/support";
+import { Fact } from "@/components/store/placeholder";
 import { getStoreSettings } from "@/lib/store-settings";
 import type { OrderStatus } from "@/lib/status";
 import { UI_TICKET_STATUS } from "@/lib/support-status";
@@ -226,17 +227,19 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
           <Panel title="Grievance Officer">
             <p className="text-[13px] leading-relaxed text-ink-600">Not happy with how we handled something? Our Grievance Officer acknowledges within {grievance.ackHours} hours and resolves within {grievance.resolutionDays} days.</p>
             <ul className="mt-3 flex flex-col gap-2 text-[13px] text-ink-700">
-              <li className="font-medium text-ink-900">{grievance.name}</li>
+              <li className="font-medium text-ink-900">
+                <Fact value={grievance.name} />
+              </li>
               <li className="flex items-center gap-2">
                 <Mail size={14} className="text-ink-400" aria-hidden="true" />
-                {grievance.email}
+                <Fact value={grievance.email} />
               </li>
               <li className="flex items-center gap-2">
                 <PhoneCall size={14} className="text-ink-400" aria-hidden="true" />
-                {grievance.phone}
+                <Fact value={grievance.phone} />
               </li>
             </ul>
-            <p className="mt-3 text-xs text-ink-500">{company.legalName}, {grievance.address}</p>
+            <p className="mt-3 text-xs text-ink-500"><Fact value={company.legalName} />, <Fact value={grievance.address} /></p>
           </Panel>
         </div>
       </div>

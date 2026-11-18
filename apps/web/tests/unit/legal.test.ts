@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   companyEmail,
   companyLegalName,
+  companyPhone,
+  companyRegisteredOffice,
+  mailtoHref,
+  realText,
+  telHref,
   isPlaceholderText,
   legalDeclarations,
   PLACEHOLDER_TEXT,
@@ -196,5 +201,40 @@ describe("companyLegalName and companyEmail", () => {
     expect(companyEmail({ email: "care@acme.test" })).toBe("care@acme.test");
     expect(companyEmail({ email: "care@example.com" })).toBeNull();
     expect(companyEmail({ email: "" })).toBeNull();
+  });
+});
+
+describe("customer care and grievance gating", () => {
+  const defaults = {
+    customerCare: "Not set",
+    customerCareHours: "Not set",
+    cin: "NOT SET",
+    gstin: "NOT SET",
+    email: "care@example.com",
+    grievanceName: "Grievance Officer (name not set)",
+    grievanceEmail: "grievance@example.com",
+    grievancePhone: "Not set",
+    grievanceAddress: "Not set",
+  };
+
+  it("treats every default a fresh store starts with as a placeholder", () => {
+    for (const v of Object.values(defaults)) expect(realText(v)).toBeNull();
+    expect(companyPhone({ customerCare: defaults.customerCare })).toBeNull();
+    expect(companyRegisteredOffice(placeholderCompany)).toBeNull();
+  });
+
+  it("passes real values through, trimmed", () => {
+    expect(companyPhone({ customerCare: " 1800 111 1111 " })).toBe("1800 111 1111");
+    expect(companyRegisteredOffice(company)).toBe("1 Test Street, Test City 100001");
+    expect(realText("A. Officer")).toBe("A. Officer");
+    expect(realText("officer@acme.test")).toBe("officer@acme.test");
+  });
+
+  it("gives no mailto or tel link for a placeholder", () => {
+    expect(mailtoHref(defaults.grievanceEmail)).toBeUndefined();
+    expect(mailtoHref("")).toBeUndefined();
+    expect(telHref(defaults.grievancePhone)).toBeUndefined();
+    expect(mailtoHref("officer@acme.test")).toBe("mailto:officer@acme.test");
+    expect(telHref("1800 111 1111")).toBe("tel:18001111111");
   });
 });

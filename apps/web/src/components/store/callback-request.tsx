@@ -27,7 +27,7 @@ export function CallbackRequest({ careNumber, defaultPhone = "", signedIn }: { c
   if (!signedIn)
     return (
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-ink-600">Sign in so we know whose orders to look at before we call. Or call {careNumber} now.</p>
+        <p className="text-sm text-ink-600">Sign in so we know whose orders to look at before we call. {careNumber ? `Or call ${careNumber} now.` : ""}</p>
         <Link href="/login?next=%2Fcontact%23call-back" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700">
           <LogIn size={16} aria-hidden="true" /> Sign in to request a call back
         </Link>
@@ -51,7 +51,7 @@ export function CallbackRequest({ careNumber, defaultPhone = "", signedIn }: { c
             </Link>
             , also in your Help and support page.
           </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-success-700">The call comes from {careNumber}. We never ask for your OTP, PIN or card details.</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-success-700">{careNumber ? `The call comes from ${careNumber}. ` : ""}We never ask for your OTP, PIN or card details.</p>
           <button type="button" onClick={() => setBooked(null)} className="mt-2 text-[13px] font-semibold text-success-800 underline underline-offset-2">
             Change the number or time
           </button>

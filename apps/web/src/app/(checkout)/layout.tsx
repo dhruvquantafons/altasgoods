@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { companyEmail, companyPhone } from "@/lib/legal";
 import Link from "next/link";
 import { HelpCircle, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
 /** Enclosed, distraction-free checkout: logo, secure label and help only. */
 export default async function CheckoutLayout({ children }: { children: React.ReactNode }) {
   const [settings, user] = await Promise.all([getStoreSettings(), currentUser()]);
-  const care = settings.company.customerCare;
+  const care = companyPhone(settings.company);
+  const email = companyEmail(settings.company);
   return (
     <StoreSettingsProvider
       rules={{ fee: settings.delivery.feePaise / 100, freeFrom: settings.delivery.freeFromPaise / 100, codLimit: settings.cod.maxOrderPaise / 100, codEnabled: settings.cod.enabled }}
@@ -41,7 +43,7 @@ export default async function CheckoutLayout({ children }: { children: React.Rea
             <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 py-5 text-xs text-ink-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
               <p>
                 Payments are processed by RBI regulated partners. AltasGoods never stores your card number. Need help?{" "}
-                {care ? `Call ${care} (toll free).` : `Email ${settings.company.email}.`}
+                {care ? `Call ${care} (toll free).` : email ? `Email ${email}.` : "Use Help."}
               </p>
               <p className="flex gap-4">
                 <Link href="/policies/terms" className="hover:text-ink-800">

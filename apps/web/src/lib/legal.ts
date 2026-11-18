@@ -35,15 +35,23 @@ export function isPlaceholderText(v: string | null | undefined) {
   return t === "" || /\bnot set\b/i.test(t) || /(^|[@/.])example\.com\b/i.test(t);
 }
 
-/** The company's legal name, or null while it is still the placeholder; callers then show just the brand. */
-export function companyLegalName(company: { legalName: string }): string | null {
-  return isPlaceholderText(company.legalName) ? null : company.legalName.trim();
+/** The trimmed value, or null while it is a placeholder. */
+export function realText(v: string | null | undefined): string | null {
+  return isPlaceholderText(v) ? null : v!.trim();
 }
 
+/** The company's legal name, or null while it is still the placeholder; callers then show just the brand. */
+export const companyLegalName = (company: { legalName: string }) => realText(company.legalName);
 /** The company's contact email, or null while it is still the placeholder. */
-export function companyEmail(company: { email: string }): string | null {
-  return isPlaceholderText(company.email) ? null : company.email.trim();
-}
+export const companyEmail = (company: { email: string }) => realText(company.email);
+/** The customer care number, or null while it is still the placeholder. */
+export const companyPhone = (company: { customerCare: string }) => realText(company.customerCare);
+export const companyRegisteredOffice = (company: { registeredOffice: string }) => realText(company.registeredOffice);
+
+/** A mailto link, or undefined while the address is a placeholder. */
+export const mailtoHref = (email: string | null | undefined) => (realText(email) ? `mailto:${email!.trim()}` : undefined);
+/** A tel link, or undefined while the number is a placeholder. */
+export const telHref = (phone: string | null | undefined) => (realText(phone) ? `tel:${phone!.replace(/\s/g, "")}` : undefined);
 
 function netQuantity(title: string) {
   const m = title.match(/(\d+(?:\.\d+)?)\s?(g|kg|ml|L)\b/);

@@ -5,7 +5,8 @@ import { CallbackRequest } from "@/components/store/callback-request";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { currentUser } from "@/lib/api/server";
-import { companyEmail } from "@/lib/legal";
+import { Fact, Placeholder } from "@/components/store/placeholder";
+import { companyEmail, companyPhone, mailtoHref, PLACEHOLDER_TEXT, realText, telHref } from "@/lib/legal";
 import { getStoreSettings, type StorefrontSettings } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +15,20 @@ export const metadata: Metadata = { title: "Contact us" };
 const channelsFor = (COMPANY: StorefrontSettings["company"]) => [
   { icon: Package, title: "Help with an order", body: "Track, cancel, return or report a problem. Fastest for anything about an order.", cta: "Go to your orders", href: "/account/orders" },
   { icon: MessageCircle, title: "Chat with us", body: "Talk to a person from Help in the app or on the web. Typical reply in 2 minutes.", cta: "Start a chat", href: "/account/support" },
-  { icon: PhoneCall, title: `Call ${COMPANY.customerCare}`, body: `Toll free, ${COMPANY.customerCareHours}. Or ask us to call you back, below.`, cta: "Call now", href: `tel:${COMPANY.customerCare.replace(/\s/g, "")}` },
-  { icon: Mail, title: COMPANY.email, body: "For anything that needs attachments or a written record. Reply within 24 hours.", cta: "Write to us", href: `mailto:${COMPANY.email}` },
+  {
+    icon: PhoneCall,
+    title: companyPhone(COMPANY) ? `Call ${companyPhone(COMPANY)}` : "Call us",
+    body: `${companyPhone(COMPANY) ? "Toll free" : "Number to be added by the store"}${realText(COMPANY.customerCareHours) ? `, ${realText(COMPANY.customerCareHours)}` : ""}. Or ask us to call you back, below.`,
+    cta: "Call now",
+    href: telHref(COMPANY.customerCare),
+  },
+  {
+    icon: Mail,
+    title: companyEmail(COMPANY) ?? "Write to us",
+    body: companyEmail(COMPANY) ? "For anything that needs attachments or a written record. Reply within 24 hours." : "Email address to be added by the store.",
+    cta: "Write to us",
+    href: mailtoHref(COMPANY.email),
+  },
 ];
 
 const teamsFor = (company: { email: string }) => [
@@ -38,7 +51,7 @@ export default async function ContactPage() {
       >
         <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[13px] text-ink-700 ring-1 ring-line">
           <Clock size={14} className="text-brand-600" aria-hidden="true" />
-          Customer care is open {COMPANY.customerCareHours}
+          Customer care is open <Fact value={COMPANY.customerCareHours} />
         </p>
       </InfoHero>
 
@@ -51,10 +64,16 @@ export default async function ContactPage() {
               </span>
               <p className="mt-4 text-[15px] font-semibold break-words text-ink-900">{c.title}</p>
               <p className="mt-1 flex-1 text-sm leading-relaxed text-ink-500">{c.body}</p>
-              <a href={c.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline">
-                {c.cta}
-                <ArrowRight size={15} aria-hidden="true" />
-              </a>
+              {c.href ? (
+                <a href={c.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline">
+                  {c.cta}
+                  <ArrowRight size={15} aria-hidden="true" />
+                </a>
+              ) : (
+                <p className="mt-5">
+                  <Placeholder>{PLACEHOLDER_TEXT}</Placeholder>
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -63,8 +82,8 @@ export default async function ContactPage() {
           <h2 id="call-back-heading" className="flex items-center gap-2 text-lg font-semibold text-ink-900">
             <PhoneCall size={18} className="text-brand-600" aria-hidden="true" /> Request a call back
           </h2>
-          <p className="mt-1 mb-5 text-sm text-ink-500">Tell us your number and a time that suits you. Calls are made {COMPANY.customerCareHours}.</p>
-          <CallbackRequest careNumber={COMPANY.customerCare} defaultPhone={phone} signedIn={Boolean(user)} />
+          <p className="mt-1 mb-5 text-sm text-ink-500">Tell us your number and a time that suits you. Calls are made <Fact value={COMPANY.customerCareHours} />.</p>
+          <CallbackRequest careNumber={companyPhone(COMPANY) ?? ""} defaultPhone={phone} signedIn={Boolean(user)} />
         </section>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -91,10 +110,14 @@ export default async function ContactPage() {
             <div className="mt-6 flex gap-4 rounded-xl bg-ink-50 p-4">
               <Building2 size={18} className="mt-0.5 shrink-0 text-ink-500" aria-hidden="true" />
               <div className="text-sm leading-relaxed text-ink-600">
-                <p className="font-semibold text-ink-900">{COMPANY.legalName}</p>
-                <p>{COMPANY.registeredOffice}</p>
+                <p className="font-semibold text-ink-900">
+                  <Fact value={COMPANY.legalName} />
+                </p>
+                <p>
+                  <Fact value={COMPANY.registeredOffice} />
+                </p>
                 <p className="mt-1 text-[13px] text-ink-500">
-                  CIN {COMPANY.cin}, GSTIN {COMPANY.gstin}
+                  CIN <Fact value={COMPANY.cin} />, GSTIN <Fact value={COMPANY.gstin} />
                 </p>
               </div>
             </div>
@@ -110,23 +133,27 @@ export default async function ContactPage() {
             <dl className="mt-5 grid gap-3 text-sm">
               <div>
                 <dt className="text-ink-500">Name</dt>
-                <dd className="font-semibold text-ink-900">{GRIEVANCE_OFFICER.name}</dd>
+                <dd className="font-semibold text-ink-900">
+                  <Fact value={GRIEVANCE_OFFICER.name} />
+                </dd>
               </div>
               <div>
                 <dt className="text-ink-500">Email</dt>
                 <dd>
-                  <a href={`mailto:${GRIEVANCE_OFFICER.email}`} className="font-medium text-brand-700 hover:underline">
-                    {GRIEVANCE_OFFICER.email}
-                  </a>
+                  <Fact value={GRIEVANCE_OFFICER.email} link="mailto" className="font-medium text-brand-700 hover:underline" />
                 </dd>
               </div>
               <div>
                 <dt className="text-ink-500">Phone</dt>
-                <dd className="text-ink-900">{GRIEVANCE_OFFICER.phone}</dd>
+                <dd className="text-ink-900">
+                  <Fact value={GRIEVANCE_OFFICER.phone} link="tel" />
+                </dd>
               </div>
               <div>
                 <dt className="text-ink-500">Hours</dt>
-                <dd className="text-ink-900">{GRIEVANCE_OFFICER.hours}</dd>
+                <dd className="text-ink-900">
+                  <Fact value={GRIEVANCE_OFFICER.hours} />
+                </dd>
               </div>
             </dl>
             <p className="mt-5 flex items-center gap-2 text-[13px] text-ink-700">
