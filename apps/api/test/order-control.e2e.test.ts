@@ -4,10 +4,28 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
 import { offers, orderItems, orders, payments, refunds, returns } from "../src/db/schema.js";
+import { LOGISTICS_PROVIDER } from "../src/common/tokens.js";
 import { DEFAULT_SETTINGS } from "../src/modules/admin/admin.schemas.js";
+import type { Booking, ShipmentRequest } from "../src/modules/commerce/shipping/provider.js";
+import { ShippingService } from "../src/modules/commerce/shipping/shipping.service.js";
+import { SimulatedLogisticsProvider } from "../src/modules/commerce/shipping/simulated.provider.js";
 import { createTestApp, DEMO_AGENT, DEMO_CUSTOMER, DEMO_STAFF, runJobs, signIn, type TestContext } from "./helpers.js";
 
 /** Admin control over an order: refunds, the delivery address, internal notes, lost and returned parcels. */
+
+/** The simulated courier, with a hook into booking so a test can pause it or play a partial booking. */
+class SteerableCourier extends SimulatedLogisticsProvider {
+  onBook: ((request: ShipmentRequest, save: (step: Booking) => Promise<void>) => Promise<void>) | null = null;
+  cancelled: { carrierOrderRef: string | null; awb: string | null }[] = [];
+  override async book(request?: ShipmentRequest, _done?: Booking, save?: (step: Booking) => Promise<void>) {
+    if (this.onBook) await this.onBook(request!, save!);
+    return super.book();
+  }
+  override async cancel(booking?: { carrierOrderRef: string | null; awb: string | null }) {
+    this.cancelled.push(booking!);
+  }
+}
+const courier = new SteerableCourier();
 
 let t: TestContext;
 let shopper: Record<string, string>;
@@ -20,7 +38,7 @@ const A = "/v1/admin";
 const today = () => new Date().toISOString().slice(0, 10);
 
 beforeAll(async () => {
-  t = await createTestApp();
+  t = await createTestApp([{ provide: LOGISTICS_PROVIDER, useValue: courier }]);
   shopper = (await signIn(t.http, DEMO_CUSTOMER)).auth;
   staff = (await signIn(t.http, DEMO_STAFF)).auth;
   agent = (await signIn(t.http, DEMO_AGENT)).auth;
@@ -95,6 +113,13 @@ describe("refunds from the order page", () => {
     expect(audit.body.items.some((e: { entityId: string }) => e.entityId === first.body.id)).toBe(true);
   });
 
+  it("refuses a reference on a refund to the payment method", async () => {
+    const { orderId } = await order(["mugs-stone"]);
+    const r = await refund(orderId, { amountPaise: 1_000, reason: "Goodwill", method: "SOURCE", reference: "UTR12345678" }).expect(422);
+    expect(r.body.code).toBe("REFERENCE_NOT_ALLOWED");
+    expect(await refundsOf(orderId)).toEqual([]);
+  });
+
   it("refuses a refund to the payment method on a cash on delivery order", async () => {
     const { orderId } = await order(["speaker-boom"], "COD");
     const r = await refund(orderId, { amountPaise: 1_000, reason: "Goodwill", method: "SOURCE" }).expect(409);
@@ -160,9 +185,22 @@ describe("bank refunds paid by hand", () => {
         .send({ orderItemId: ids[0], qty: 1, reasonCode: "DEFECTIVE", reasonLabel: "Item is defective or not working", fault: "STORE", resolution: "REFUND", refundTo: "BANK", refundUpi: "shopper@okbank", pickupDate: today(), pickupSlot: "10 AM to 1 PM" })
         .expect(201)
     ).body;
-    for (const to of ["RECEIVED"]) await t.http.post(`${A}/returns/${r.id}/pickup`).set(staff).send({ to }).expect(200);
-    const passed = await t.http.post(`${A}/returns/${r.id}/qc`).set(staff).send({ pass: true }).expect(200);
-    expect(passed.body).toMatchObject({ refundStatus: "INITIATED", refundTo: "BANK", refundUpi: "shopper@okbank" });
+    const before = (await t.http.get(`${A}/orders/${orderId}`).set(staff).expect(200)).body.refundLimit.maxPaise as number;
+    // a low value return is refunded at pickup, so its payout is set aside then
+    const picked = await t.http.post(`${A}/returns/${r.id}/pickup`).set(staff).send({ to: "RECEIVED" }).expect(200);
+    expect(picked.body).toMatchObject({ refundStatus: "INITIATED", refundTo: "BANK", refundUpi: "shopper@okbank" });
+    await t.http.post(`${A}/returns/${r.id}/qc`).set(staff).send({ pass: true }).expect(200);
+
+    // the payout is set aside on the ledger at once: it counts against the cap and shows as waiting on the order page
+    const [pending] = await refundsOf(orderId);
+    expect(pending).toMatchObject({ method: "MANUAL", status: "PENDING", amountPaise: r.refundAmountPaise, reason: `Return ${r.id}`, orderItemId: ids[0] });
+    const detail = (await t.http.get(`${A}/orders/${orderId}`).set(staff).expect(200)).body;
+    expect(detail.refundLimit.maxPaise).toBe(before - r.refundAmountPaise);
+    expect(detail.refunds.map((x: { id: string; status: string }) => [x.id, x.status])).toEqual([[pending!.id, "PENDING"]]);
+    // so a goodwill refund cannot pay the same money twice
+    const twice = await refund(orderId, { amountPaise: before - r.refundAmountPaise + 1, reason: "Goodwill for the defect", method: "MANUAL", reference: "UTR55500011" }).expect(409);
+    expect(twice.body.code).toBe("REFUND_TOO_LARGE");
+    expect((await t.http.get(`/v1/me/returns/${r.id}`).set(shopper).expect(200)).body.refundStatus).toBe("INITIATED");
 
     await t.http.post(`${A}/returns/${r.id}/refund/mark-paid`).set(staff).send({}).expect(422);
     const [done, again] = await Promise.all([
@@ -173,9 +211,49 @@ describe("bank refunds paid by hand", () => {
     const view = await t.http.get(`${A}/returns/${r.id}`).set(staff).expect(200);
     expect(view.body).toMatchObject({ refundStatus: "COMPLETED", refundReference: "UPI-4410029" });
     const rows = await refundsOf(orderId);
-    expect(rows).toEqual([expect.objectContaining({ method: "MANUAL", status: "COMPLETED", reference: "UPI-4410029", amountPaise: r.refundAmountPaise, reason: `Return ${r.id}` })]);
+    // the same row, completed once
+    expect(rows).toEqual([expect.objectContaining({ id: pending!.id, method: "MANUAL", status: "COMPLETED", reference: "UPI-4410029", amountPaise: r.refundAmountPaise, reason: `Return ${r.id}` })]);
+    await t.http.post(`${A}/refunds/${pending!.id}/mark-paid`).set(staff).send({ reference: "UPI-4410029" }).expect(409);
     const mine = await t.http.get("/v1/me/refunds").set(shopper).expect(200);
     expect(mine.body.find((x: { id: string }) => x.id === rows[0]!.id)).toMatchObject({ source: "RETURN", status: "COMPLETED" });
+  });
+
+  it("sets aside a bank refund on a prepaid order, and refuses to resolve a return the cap cannot cover", async () => {
+    const returnOf = async (itemId: string) =>
+      (
+        await t.http
+          .post("/v1/me/returns")
+          .set(shopper)
+          .send({ orderItemId: itemId, qty: 1, reasonCode: "DEFECTIVE", reasonLabel: "Item is defective or not working", fault: "STORE", resolution: "REFUND", refundTo: "BANK", refundUpi: "shopper@okbank", pickupDate: today(), pickupSlot: "10 AM to 1 PM" })
+          .expect(201)
+      ).body;
+
+    // prepaid, bank refund: reserved against the captured payment, so a SOURCE goodwill for the same money is refused
+    const paid = await order(["lamp-arc"]);
+    await delivered(paid.ids[0]!);
+    const r1 = await returnOf(paid.ids[0]!);
+    await t.http.post(`${A}/returns/${r1.id}/pickup`).set(staff).send({ to: "RECEIVED" }).expect(200);
+    await t.http.post(`${A}/returns/${r1.id}/qc`).set(staff).send({ pass: true }).expect(200);
+    const left = paid.order.totalPaise - r1.refundAmountPaise;
+    expect((await t.http.get(`${A}/orders/${paid.orderId}`).set(staff).expect(200)).body.refundLimit).toEqual({ source: true, maxPaise: left });
+    expect((await refund(paid.orderId, { amountPaise: left + 1, reason: "Goodwill", method: "SOURCE" }).expect(409)).body.code).toBe("REFUND_TOO_LARGE");
+    // marking it paid from the Payments page completes the return too
+    const [row] = await refundsOf(paid.orderId);
+    await t.http.post(`${A}/refunds/${row!.id}/mark-paid`).set(staff).send({ reference: "UPI-7781" }).expect(200);
+    expect((await t.http.get(`${A}/returns/${r1.id}`).set(staff).expect(200)).body).toMatchObject({ refundStatus: "COMPLETED", refundReference: "UPI-7781" });
+    await t.http.post(`${A}/returns/${r1.id}/refund/mark-paid`).set(staff).send({ reference: "UPI-7781" }).expect(409);
+
+    // everything already refunded by hand: the check cannot pass and says why
+    const full = await order(["mugs-stone"]);
+    await delivered(full.ids[0]!);
+    const r2 = await returnOf(full.ids[0]!);
+    await refund(full.orderId, { amountPaise: full.order.totalPaise, reason: "Refunded in full", method: "MANUAL", reference: "NEFT-1100" }).expect(201);
+    // (a low value return resolves at pickup, so that is the step that refuses)
+    const refused = await t.http.post(`${A}/returns/${r2.id}/pickup`).set(staff).send({ to: "RECEIVED" }).expect(409);
+    expect(refused.body.code).toBe("REFUND_TOO_LARGE");
+    expect(refused.body.detail).toContain(`return ${r2.id}`);
+    expect((await t.http.get(`${A}/returns/${r2.id}`).set(staff).expect(200)).body).toMatchObject({ status: "PICKUP_SCHEDULED", refundStatus: null });
+    expect(await refundsOf(full.orderId)).toHaveLength(1);
   });
 
   it("puts a Care Desk refund on a cash on delivery order on the ledger for a manual payout", async () => {
@@ -247,6 +325,80 @@ describe("delivery address", () => {
     const locked = await t.http.patch(`${A}/orders/${orderId}/address`).set(staff).send({ ...address, line1: "Somewhere else 1" }).expect(409);
     expect(locked.body.code).toBe("ADDRESS_LOCKED");
     expect((await t.http.get(`${A}/orders/${orderId}`).set(staff).expect(200)).body.addressEditable).toBe(false);
+  });
+
+  it("is locked while the parcel is being booked, and once the courier has a partial booking", async () => {
+    // a booking in flight: the edit is refused until the courier answers
+    const inFlight = await order(["lamp-arc"]);
+    for (const to of ["ACCEPTED", "PACKED"]) await transition([inFlight.ids[0]!], to).expect(200);
+    let entered!: () => void;
+    let release!: () => void;
+    const started = new Promise<void>((r) => (entered = r));
+    const gate = new Promise<void>((r) => (release = r));
+    courier.onBook = async () => {
+      entered();
+      await gate;
+    };
+    try {
+      const booking = transition([inFlight.ids[0]!], "READY_TO_SHIP");
+      const done = booking.then((r) => r);
+      await started;
+      const refused = await t.http.patch(`${A}/orders/${inFlight.orderId}/address`).set(staff).send(address).expect(409);
+      expect(refused.body.code).toBe("ADDRESS_LOCKED");
+      release();
+      expect((await done).body.results[0]).toMatchObject({ ok: true, status: "READY_TO_SHIP" });
+    } finally {
+      courier.onBook = null;
+    }
+
+    // the courier made its order, then the AWB step failed: the courier has the old address, so it stays locked
+    const partial = await order(["mugs-stone"]);
+    for (const to of ["ACCEPTED", "PACKED"]) await transition([partial.ids[0]!], to).expect(200);
+    courier.onBook = async (_r, save) => {
+      await save({ carrierOrderRef: "CO-PARTIAL-1", shipmentRef: "SH-PARTIAL-1" });
+      throw new Error("The courier could not assign an AWB");
+    };
+    try {
+      expect((await transition([partial.ids[0]!], "READY_TO_SHIP").expect(200)).body.results[0]).toMatchObject({ ok: false });
+    } finally {
+      courier.onBook = null;
+    }
+    const [item] = await db.select().from(orderItems).where(eq(orderItems.id, partial.ids[0]!));
+    expect(item).toMatchObject({ status: "PACKED", carrierOrderRef: "CO-PARTIAL-1", awb: null });
+    expect((await t.http.patch(`${A}/orders/${partial.orderId}/address`).set(staff).send(address).expect(409)).body.code).toBe("ADDRESS_LOCKED");
+    expect((await t.http.get(`${A}/orders/${partial.orderId}`).set(staff).expect(200)).body.addressEditable).toBe(false);
+  });
+
+  it("calls a booking off when the address changed after the courier was given it", async () => {
+    const o = await order(["vase-ceramic"]);
+    for (const to of ["ACCEPTED", "PACKED"]) await transition([o.ids[0]!], to).expect(200);
+    courier.cancelled = [];
+    courier.onBook = async (request, save) => {
+      expect(request.address.line1).toBe(o.order.address.line1);
+      // an edit that landed after the courier was handed the old address
+      await db.update(orders).set({ address: { ...o.order.address, line1: "Changed meanwhile 9" } }).where(eq(orders.id, o.orderId));
+      await save({ carrierOrderRef: "CO-STALE-1", shipmentRef: "SH-STALE-1" });
+    };
+    try {
+      const r = await transition([o.ids[0]!], "READY_TO_SHIP").expect(200);
+      expect(r.body.results[0]).toMatchObject({ ok: false, error: expect.stringContaining("address changed") });
+    } finally {
+      courier.onBook = null;
+    }
+    expect(courier.cancelled).toEqual([{ carrierOrderRef: "CO-STALE-1", awb: null }]);
+    const [item] = await db.select().from(orderItems).where(eq(orderItems.id, o.ids[0]!));
+    expect(item).toMatchObject({ status: "PACKED", carrierOrderRef: null, shipmentRef: null, awb: null });
+    // booking again ships to the new address
+    let shippedTo = "";
+    courier.onBook = async (request) => {
+      shippedTo = request.address.line1;
+    };
+    try {
+      expect((await transition([o.ids[0]!], "READY_TO_SHIP").expect(200)).body.results[0]).toMatchObject({ ok: true });
+    } finally {
+      courier.onBook = null;
+    }
+    expect(shippedTo).toBe("Changed meanwhile 9");
   });
 
   it("refuses a pincode we do not deliver to, and a cash on delivery order where cash is not taken", async () => {
@@ -339,6 +491,28 @@ describe("lost and returned parcels", () => {
     expect(await refundsOf(orderId)).toEqual([]);
     const [p] = await db.select().from(payments).where(and(eq(payments.orderId, orderId), eq(payments.provider, "COD")));
     expect(p!.status).toBe("COD_PENDING");
+  });
+
+  it("does not restock or refund twice when the courier repeats a scan", async () => {
+    const shipping = t.app.get(ShippingService);
+    const back = await order(["cushions-linen"]);
+    const backItem = back.items.find((i) => i.id === back.ids[0])!;
+    await shipped(backItem.id);
+    const [{ awb }] = (await db.select({ awb: orderItems.awb }).from(orderItems).where(eq(orderItems.id, backItem.id))) as [{ awb: string }];
+    const stock = await stockOf(backItem.offerId);
+    for (let i = 0; i < 2; i++) await shipping.apply({ awb, raw: "RTO Delivered", status: "RTO_RECEIVED" });
+    expect(await stockOf(backItem.offerId)).toBe(stock + backItem.qty);
+    expect(await refundsOf(back.orderId)).toHaveLength(1);
+
+    const lost = await order(["lamp-arc"]);
+    await shipped(lost.ids[0]!);
+    const [{ awb: lostAwb }] = (await db.select({ awb: orderItems.awb }).from(orderItems).where(eq(orderItems.id, lost.ids[0]!))) as [{ awb: string }];
+    const lostStock = await stockOf(lost.items[0]!.offerId);
+    for (let i = 0; i < 2; i++) await shipping.apply({ awb: lostAwb, raw: "Lost", status: "LOST" });
+    expect(await stockOf(lost.items[0]!.offerId)).toBe(lostStock);
+    expect(await refundsOf(lost.orderId)).toHaveLength(1);
+    // and staff cannot mark it again either
+    expect((await transition([lost.ids[0]!], "LOST", "Lost again").expect(200)).body.results[0]).toMatchObject({ ok: false });
   });
 
   it("offers Mark lost and Received back to staff", async () => {

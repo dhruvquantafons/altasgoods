@@ -39,6 +39,12 @@ export function courierPath(from: OrderItemStatus, to: CourierStatus): OrderItem
   return [];
 }
 
+/** The Redis key held while a line is being booked with the courier. Its address cannot change meanwhile. */
+export const bookingLockKey = (itemId: string) => `ship:book:${itemId}`;
+
+/** The order's address changed after the courier was given it. */
+class AddressChanged extends Error {}
+
 /** Hands parcels to the courier and keeps each line in step with the courier's scans. */
 @Injectable()
 export class ShippingService {
@@ -63,6 +69,12 @@ export class ShippingService {
   /**
    * Books a packed line with the courier and saves its AWB, before the line
    * is marked ready to ship. Safe to retry: it resumes from the last step saved.
+   *
+   * The delivery address is read under the order lock after the booking lock
+   * is taken (an address edit is refused while that lock is held), and checked
+   * again under the order lock whenever a step is saved. If it changed in
+   * between, the courier order made with the old address is cancelled and the
+   * booking fails, so staff book again and the parcel goes to the new address.
    */
   async book(itemId: string) {
     const [row] = await this.db
@@ -79,9 +91,13 @@ export class ShippingService {
     if (item.awb && item.shippingProvider === this.provider.name) return;
 
     // one booking at a time per line, so a double click never books two parcels
-    const lock = `ship:book:${itemId}`;
+    const lock = bookingLockKey(itemId);
     if ((await this.redis.set(lock, "1", "PX", 120_000, "NX")) !== "OK") throw conflict("BOOKING_IN_PROGRESS", "This item is already being booked with the courier");
+    let created: Booking = {};
     try {
+      // waits for an address edit that is committing, so the courier gets the address as it now is
+      order.address = await this.db.transaction(async (tx) => (await tx.select({ address: orders.address }).from(orders).where(eq(orders.id, order.id)).for("share"))[0]!.address);
+      const given = JSON.stringify(order.address);
       const siblings = await this.db
         .select({ id: orderItems.id })
         .from(orderItems)
@@ -92,7 +108,12 @@ export class ShippingService {
       const amountPaise = line - couponShare + (siblings.length ? 0 : order.deliveryFeePaise);
 
       const save = async (step: Booking) => {
-        await this.db.update(orderItems).set({ ...step, shippingProvider: this.provider.name }).where(eq(orderItems.id, itemId));
+        created = { ...created, ...step };
+        await this.db.transaction(async (tx) => {
+          const [now] = await tx.select({ address: orders.address }).from(orders).where(eq(orders.id, order.id)).for("update");
+          if (JSON.stringify(now?.address) !== given) throw new AddressChanged();
+          await tx.update(orderItems).set({ ...step, shippingProvider: this.provider.name }).where(eq(orderItems.id, itemId));
+        });
       };
       const booked = await this.provider.book(
         {
@@ -112,6 +133,15 @@ export class ShippingService {
         save,
       );
       await save(booked);
+    } catch (e) {
+      if (!(e instanceof AddressChanged)) throw e;
+      // nothing of this booking was saved; call off what the courier made with the old address
+      if (created.carrierOrderRef || created.awb) {
+        await this.provider.cancel({ carrierOrderRef: created.carrierOrderRef ?? null, awb: created.awb ?? null }).catch((err: Error) =>
+          this.logger.error(`Could not cancel courier order ${created.carrierOrderRef ?? created.awb} for ${itemId} after its address changed: ${err.message}. Cancel it in the courier's panel.`),
+        );
+      }
+      throw conflict("ADDRESS_CHANGED", "The delivery address changed while the parcel was being booked, so the booking was called off. Book it again to ship to the new address.");
     } finally {
       await this.redis.del(lock);
     }

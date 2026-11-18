@@ -2,13 +2,15 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq } from "drizzle-orm";
 import type { z } from "zod";
 import { conflict, notFound, unprocessable } from "../../common/errors.js";
-import { DB } from "../../common/tokens.js";
+import type { Redis } from "ioredis";
+import { DB, REDIS } from "../../common/tokens.js";
 import type { Db } from "../../db/client.js";
 import { orderItems, orderNotes, orders, refunds, users, type AddressSnapshot, type OrderItemStatus } from "../../db/schema.js";
 import type { adminRefundBody, orderAddressBody } from "./commerce.schemas.js";
 import { PaymentsService } from "./payments/payments.service.js";
 import { RefundsService } from "./payments/refunds.service.js";
 import { ServiceabilityService } from "./serviceability.service.js";
+import { bookingLockKey } from "./shipping/shipping.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
 
 type RefundRow = typeof refunds.$inferSelect;
@@ -17,9 +19,14 @@ type Address = z.infer<typeof orderAddressBody>;
 /** Line statuses before the parcel is booked with the courier. */
 const BEFORE_BOOKING: OrderItemStatus[] = ["PENDING", "NEW", "ACCEPTED", "PACKED"];
 
-/** An order's address can change until the courier has it: no line ready to ship or later, and no AWB. */
-export const addressEditable = (items: { status: OrderItemStatus; awb: string | null }[]) =>
-  items.some((i) => i.status !== "CANCELLED") && items.every((i) => !i.awb && (i.status === "CANCELLED" || BEFORE_BOOKING.includes(i.status)));
+/**
+ * An order's address can change until the courier has it: no line ready to
+ * ship or later, and none booked with the courier, even partly (a courier
+ * order, shipment or AWB). A booking in progress also locks it (see updateAddress).
+ */
+export const addressEditable = (items: { status: OrderItemStatus; awb: string | null; carrierOrderRef: string | null; shipmentRef: string | null }[]) =>
+  items.some((i) => i.status !== "CANCELLED") &&
+  items.every((i) => !i.awb && !i.carrierOrderRef && !i.shipmentRef && (i.status === "CANCELLED" || BEFORE_BOOKING.includes(i.status)));
 
 /** A refund as staff see it: its true status, method and payout reference. */
 export const refundView = (r: RefundRow) => ({
@@ -48,6 +55,7 @@ export class OrderAdminService {
     @Inject(RefundsService) private readonly refunds: RefundsService,
     @Inject(ServiceabilityService) private readonly serviceability: ServiceabilityService,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
+    @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
   /* ------------------------------ Refunds ------------------------------ */
@@ -59,6 +67,7 @@ export class OrderAdminService {
    */
   async refund(actorId: string, orderId: string, body: z.infer<typeof adminRefundBody>) {
     if (body.method === "MANUAL" && !body.reference) throw unprocessable("REFERENCE_REQUIRED", "Enter the UTR or UPI reference of the payment you made");
+    if (body.method === "SOURCE" && body.reference) throw unprocessable("REFERENCE_NOT_ALLOWED", "A refund to the payment method gets its reference from the gateway; leave the reference out");
     const row = await this.db.transaction(async (tx) => {
       if (body.orderItemId) {
         const [item] = await tx.select({ id: orderItems.id }).from(orderItems).where(and(eq(orderItems.id, body.orderItemId), eq(orderItems.orderId, orderId)));
@@ -112,6 +121,8 @@ export class OrderAdminService {
     const before = await this.db.transaction(async (tx) => {
       const { order, items } = await this.workflow.lockOrder(tx, orderId);
       if (!addressEditable(items)) throw conflict("ADDRESS_LOCKED", "Already handed to the courier");
+      // checked under the order lock: a booking that starts after this waits for the commit and reads the new address
+      for (const i of items) if (await this.redis.exists(bookingLockKey(i.id))) throw conflict("ADDRESS_LOCKED", "The parcel is being booked with the courier right now");
       await tx.update(orders).set({ address: next }).where(eq(orders.id, orderId));
       if (oneLine(order.address) !== oneLine(next)) {
         await tx.insert(orderNotes).values({ orderId, authorId: actor.id, authorName: await this.nameOf(actor.id), body: `Changed the delivery address from "${oneLine(order.address)}" to "${oneLine(next)}".` });

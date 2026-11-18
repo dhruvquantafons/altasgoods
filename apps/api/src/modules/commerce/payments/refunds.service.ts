@@ -5,7 +5,7 @@ import { rupees } from "../../../common/money.js";
 import type { Clock } from "../../../common/infra.module.js";
 import { CLOCK, DB, PAYMENT_PROVIDER } from "../../../common/tokens.js";
 import type { Db, Tx } from "../../../db/client.js";
-import { orderItems, orders, payments, refunds, type OrderItemStatus, type PaymentStatus } from "../../../db/schema.js";
+import { orderItems, orders, payments, refunds, returns, type OrderItemStatus, type PaymentStatus } from "../../../db/schema.js";
 import { JobsService } from "../../jobs/jobs.service.js";
 import { isTransientGatewayError, type PaymentProvider, type ProviderRefund, type RefundState } from "./provider.js";
 
@@ -152,7 +152,11 @@ export class RefundsService implements OnModuleInit {
     return refund!;
   }
 
-  /** Records that a manual refund waiting for its payout has been paid, with the payout's reference. */
+  /**
+   * Records that a manual refund waiting for its payout has been paid, with
+   * the payout's reference. A return whose refund this is shows it COMPLETED
+   * too, whichever page it was marked paid from.
+   */
   async markPaid(tx: Tx, refundId: string, reference: string, note?: string | null) {
     const [refund] = await tx.select().from(refunds).where(eq(refunds.id, refundId)).for("update");
     if (!refund) throw notFound("Refund");
@@ -162,6 +166,7 @@ export class RefundsService implements OnModuleInit {
       .set({ status: "COMPLETED", reference, completedAt: this.clock.now(), ...(note ? { note } : {}) })
       .where(eq(refunds.id, refundId))
       .returning();
+    await tx.update(returns).set({ refundStatus: "COMPLETED", updatedAt: this.clock.now() }).where(eq(returns.refundId, refundId));
     await this.settle(tx, refund.paymentId);
     return done!;
   }

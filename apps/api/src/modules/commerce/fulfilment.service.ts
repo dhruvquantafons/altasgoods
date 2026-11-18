@@ -103,7 +103,7 @@ export class FulfilmentService {
       this.db.select().from(orderEvents).where(and(eq(orderEvents.orderId, orderId), inArray(orderEvents.orderItemId, ids))).orderBy(asc(orderEvents.id)),
       this.db.select().from(refunds).where(eq(refunds.orderId, orderId)).orderBy(desc(refunds.createdAt)),
       this.refunds.limit(this.db, order),
-      includeUnpaid ? items : this.db.select({ status: orderItems.status, awb: orderItems.awb }).from(orderItems).where(eq(orderItems.orderId, orderId)),
+      includeUnpaid ? items : this.db.select({ status: orderItems.status, awb: orderItems.awb, carrierOrderRef: orderItems.carrierOrderRef, shipmentRef: orderItems.shipmentRef }).from(orderItems).where(eq(orderItems.orderId, orderId)),
     ]);
     return {
       id: order.id,

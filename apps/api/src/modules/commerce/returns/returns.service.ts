@@ -12,7 +12,7 @@ import { addresses, customerUploads, offers, orderItems, orders, products, refun
 import type { AuthUser } from "../../auth/auth.guard.js";
 import { sniffMime, type FileStore } from "../../files/file-store.js";
 import { PaymentsService } from "../payments/payments.service.js";
-import { customerRefundStatus } from "../payments/refunds.service.js";
+import { customerRefundStatus, RefundsService } from "../payments/refunds.service.js";
 import { OrderWorkflow } from "../workflow.service.js";
 import type { createReturnBody } from "./returns.schemas.js";
 import type { z } from "zod";
@@ -54,6 +54,7 @@ export class ReturnsService {
     @Inject(FILE_STORE) private readonly files: FileStore,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
     @Inject(PaymentsService) private readonly payments: PaymentsService,
+    @Inject(RefundsService) private readonly ledger: RefundsService,
   ) {}
 
   /* ------------------------------ Moves ------------------------------- */
@@ -116,7 +117,15 @@ export class ReturnsService {
     return r;
   }
 
-  /** Refund (once) or replacement, and the order line follows. */
+  /**
+   * Refund (once) or replacement, and the order line follows. A refund to the
+   * payment method goes to the refund job. A bank (UPI) refund, or any refund
+   * of cash on delivery, is paid by the store by hand: it is set aside now as
+   * a manual refund waiting for its payout (INITIATED until marked paid), so
+   * the amount counts against the order's cap and cannot be refunded twice.
+   * If the cap cannot cover it, the step that resolves the return fails and
+   * says why. Credits refunds stay INITIATED with no ledger row.
+   */
   private async resolve(tx: Tx, r: Return) {
     let next = r;
     if (r.resolution === "REFUND" && !r.refundStatus) {
@@ -124,12 +133,33 @@ export class ReturnsService {
       if (r.refundTo === "SOURCE" && order && order.method !== "COD" && (order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED")) {
         const refund = await this.payments.refundToSource(tx, r.orderId, r.refundAmountPaise, `Return ${r.id}`);
         [next] = (await tx.update(returns).set({ refundStatus: refund.status, refundId: refund.id }).where(eq(returns.id, r.id)).returning()) as [Return];
+      } else if (r.refundTo !== "CREDITS") {
+        const refund = await this.reservePayout(tx, r);
+        [next] = (await tx.update(returns).set({ refundStatus: "INITIATED", refundId: refund.id }).where(eq(returns.id, r.id)).returning()) as [Return];
       } else {
-        // BluBuy Credits and bank transfers for cash on delivery are paid by Finance
+        // AltasGoods Credits are left as they were
         [next] = (await tx.update(returns).set({ refundStatus: "INITIATED" }).where(eq(returns.id, r.id)).returning()) as [Return];
       }
     }
     return next;
+  }
+
+  /** Sets a return's manual payout aside on the order's ledger, or fails saying why it does not fit. */
+  private async reservePayout(tx: Tx, r: Return) {
+    try {
+      return await this.payments.refundManually(tx, r.orderId, {
+        amountPaise: r.refundAmountPaise,
+        reason: `Return ${r.id}`,
+        paid: false,
+        orderItemId: r.orderItemId,
+        note: r.refundUpi ? `Pay ${rupees(r.refundAmountPaise)} to ${r.refundUpi} by UPI` : "Pay to the customer's bank account; ask the customer for the details",
+      });
+    } catch (e) {
+      if (e instanceof ApiError && (e.code === "REFUND_TOO_LARGE" || e.code === "NOT_REFUNDABLE")) {
+        throw conflict(e.code, `The ${rupees(r.refundAmountPaise)} refund for return ${r.id} does not fit what is left to refund on order ${r.orderId}. ${e.message}. Check the order's other refunds first.`);
+      }
+      throw e;
+    }
   }
 
   private async finish(tx: Tx, r: Return, actor: Actor) {
@@ -346,20 +376,25 @@ export class ReturnsService {
   async markRefundPaid(id: string, actorId: string, reference: string, note?: string) {
     await this.db.transaction(async (tx) => {
       const r = await this.lock(tx, id);
-      if (r.resolution !== "REFUND" || r.refundTo === "CREDITS" || r.refundStatus !== "INITIATED" || r.refundId) {
+      if (r.resolution !== "REFUND" || r.refundTo === "CREDITS" || r.refundStatus !== "INITIATED") {
         throw conflict("NOT_AWAITING_PAYOUT", "This return has no bank refund waiting to be paid");
       }
-      const refund = await this.payments.refundManually(tx, r.orderId, {
-        amountPaise: r.refundAmountPaise,
-        reason: `Return ${r.id}`,
-        reference,
-        paid: true,
-        orderItemId: r.orderItemId,
-        createdBy: actorId,
-        note: note || null,
-      });
+      // the payout set aside when the return was resolved; one resolved before that was reserved is recorded now
+      const refundId = r.refundId
+        ? (await this.ledger.markPaid(tx, r.refundId, reference, note || null)).id
+        : (
+            await this.payments.refundManually(tx, r.orderId, {
+              amountPaise: r.refundAmountPaise,
+              reason: `Return ${r.id}`,
+              reference,
+              paid: true,
+              orderItemId: r.orderItemId,
+              createdBy: actorId,
+              note: note || null,
+            })
+          ).id;
       const now = this.clock.now();
-      await tx.update(returns).set({ refundStatus: "COMPLETED", refundId: refund.id, updatedAt: now }).where(eq(returns.id, r.id));
+      await tx.update(returns).set({ refundStatus: "COMPLETED", refundId, updatedAt: now }).where(eq(returns.id, r.id));
       await tx.insert(returnEvents).values({ returnId: r.id, fromStatus: r.status, toStatus: r.status, actor: "STAFF", note: `Refund of ${rupees(r.refundAmountPaise)} paid${r.refundUpi ? ` to ${r.refundUpi}` : ""}, reference ${reference}`, at: now });
     });
     return this.view(id, { staff: true });
@@ -456,7 +491,7 @@ export class ReturnsService {
         r: returns,
         item: { title: orderItems.title, image: orderItems.image, variant: orderItems.variant, unitPricePaise: orderItems.unitPricePaise, productId: orderItems.productId },
         customer: users.name,
-        refund: { status: refunds.status, reference: refunds.reference },
+        refund: { status: refunds.status, method: refunds.method, reference: refunds.reference },
       })
       .from(returns)
       .innerJoin(orderItems, eq(orderItems.id, returns.orderItemId))
@@ -487,7 +522,8 @@ export class ReturnsService {
       refundAmountPaise: r.refundAmountPaise,
       instantRefund: r.instantRefund,
       // a refund to the payment method moves on in the refund job: show where it is now
-      refundStatus: row.refund ? (staff ? row.refund.status : customerRefundStatus(row.refund.status)) : r.refundStatus,
+      // a manual payout still waiting reads INITIATED, as it always has
+      refundStatus: !row.refund || (row.refund.method === "MANUAL" && row.refund.status === "PENDING") ? r.refundStatus : staff ? row.refund.status : customerRefundStatus(row.refund.status),
       status: r.status,
       pickupDate: r.pickupDate,
       pickupSlot: r.pickupSlot,
