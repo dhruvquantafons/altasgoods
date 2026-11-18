@@ -189,6 +189,22 @@ describe("Shiprocket serviceability", () => {
     expect(await none.serviceability("400001", 500)).toEqual({ serviceable: false, codAvailable: false, etaDays: null });
   });
 
+  it("counts a 404 as unserviceable only when it says no courier serves the pincode", async () => {
+    const says = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, { status: 404, body: { message: "Sorry, no courier serviceable for this pincode" } }) });
+    expect(await says.serviceability("400001", 500)).toMatchObject({ serviceable: false });
+    for (const body of [{ message: "Not Found" }, { message: "Pickup postcode is invalid" }, {}]) {
+      const p = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, { status: 404, body }) });
+      await expect(p.serviceability("400001", 500)).rejects.toMatchObject({ status: 502 });
+    }
+  });
+
+  it("throws on a 200 that is not a courier list, rather than calling it unserviceable", async () => {
+    for (const body of [{}, { data: {} }, { data: { available_courier_companies: "none" } }]) {
+      const p = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, body) });
+      await expect(p.serviceability("400001", 500)).rejects.toMatchObject({ status: 502 });
+    }
+  });
+
   it("does nothing without a pickup pincode, and throws on a real failure", async () => {
     const f = fakeFetch();
     expect(await new ShiprocketLogisticsProvider({ ...config, fetch: f }).serviceability("400001", 500)).toBeNull();

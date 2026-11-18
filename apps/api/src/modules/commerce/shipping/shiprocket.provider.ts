@@ -44,6 +44,10 @@ export function courierStatus(raw: string): CourierStatus | null {
   return null;
 }
 
+const NOT_FOUND = Symbol("notFound");
+/** What Shiprocket's 404 says when no courier reaches the delivery pincode. */
+const NO_COURIER = /no courier|not serviceable|non[- ]?serviceable|unserviceable|not available for (this )?pincode/i;
+
 interface ShiprocketCourier {
   estimated_delivery_days?: string | number;
   etd?: string;
@@ -74,6 +78,9 @@ function istStamp(d: Date) {
  */
 export class ShiprocketLogisticsProvider implements LogisticsProvider {
   readonly name = "SHIPROCKET" as const;
+  get pickupPincode() {
+    return this.config.pickupPincode;
+  }
   private readonly logger = new Logger("Shiprocket");
   private readonly fetch: typeof fetch;
   private readonly now: () => number;
@@ -184,9 +191,17 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
     if (!this.config.pickupPincode) return null;
     const weight = Math.max(0.1, Math.round(weightGrams / 100) / 10);
     const query = new URLSearchParams({ pickup_postcode: this.config.pickupPincode, delivery_postcode: deliveryPincode, weight: String(weight), cod: "0" });
-    const res = await this.call<{ data?: { available_courier_companies?: ShiprocketCourier[] } }>("GET", `/courier/serviceability/?${query}`, undefined, false, true);
-    const couriers = res.data?.available_courier_companies ?? [];
-    if (!couriers.length) return { serviceable: false, codAvailable: false, etaDays: null };
+    const res = await this.call<{ [NOT_FOUND]?: boolean; message?: string; data?: { available_courier_companies?: unknown } }>("GET", `/courier/serviceability/?${query}`, undefined, false, true);
+    const none: CourierServiceability = { serviceable: false, codAvailable: false, etaDays: null };
+    // only a positive answer counts as "not serviceable"; anything unrecognised throws so the caller falls back
+    if (res[NOT_FOUND]) {
+      if (NO_COURIER.test(res.message ?? "") && !/pickup/i.test(res.message ?? "")) return none;
+      throw new ApiError(502, "COURIER_ERROR", `Shiprocket: unrecognised serviceability answer (404: ${res.message ?? "no message"})`);
+    }
+    const list = res.data?.available_courier_companies;
+    if (!Array.isArray(list)) throw new ApiError(502, "COURIER_ERROR", "Shiprocket: unrecognised serviceability answer");
+    if (!list.length) return none;
+    const couriers = list as ShiprocketCourier[];
     const days = couriers.map((c) => courierDays(c, this.now())).filter((d): d is number => d !== null);
     return {
       serviceable: true,
@@ -239,8 +254,8 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
       this.token = undefined;
       return this.call<T>(method, path, body, true, notFoundIsAnswer);
     }
-    if (res.status === 404 && notFoundIsAnswer) return {} as T;
     const json = parseJson<T & { message?: string; errors?: Record<string, string[]> }>(text);
+    if (res.status === 404 && notFoundIsAnswer) return { ...json, [NOT_FOUND]: true };
     if (!res.ok) {
       const detail = json.errors ? Object.values(json.errors).flat().join(" ") : (json.message ?? "");
       this.logger.error(`${method} ${path} failed with ${res.status}: ${detail}`);

@@ -47,6 +47,8 @@ export interface TrackingUpdate {
  */
 export interface LogisticsProvider {
   readonly name: "SIMULATED" | "SHIPROCKET";
+  /** where serviceability answers are measured from; part of their cache key */
+  readonly pickupPincode?: string;
   /**
    * Books the parcel, resuming from whatever the earlier attempt saved:
    * creates the courier order, assigns an AWB, schedules pickup, makes the label.

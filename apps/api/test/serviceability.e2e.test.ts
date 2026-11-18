@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
+import type { Redis } from "ioredis";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { LOGISTICS_PROVIDER } from "../src/common/tokens.js";
+import { LOGISTICS_PROVIDER, REDIS } from "../src/common/tokens.js";
 import { DEFAULT_SETTINGS } from "../src/modules/admin/admin.schemas.js";
 import { SimulatedLogisticsProvider } from "../src/modules/commerce/shipping/simulated.provider.js";
 import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
 
 /** The simulated courier with a Shiprocket-style serviceability check we can steer. */
 class CheckingCourier extends SimulatedLogisticsProvider {
+  pickupPincode = "560001";
   answer: (pin: string) => Promise<{ serviceable: boolean; codAvailable: boolean; etaDays: number | null } | null> = async () => null;
   calls: { pin: string; weightGrams: number }[] = [];
   serviceability(pin: string, weightGrams: number) {
@@ -36,7 +38,11 @@ beforeAll(async () => {
   staff = (await signIn(t.http, DEMO_STAFF)).auth;
 });
 afterAll(() => t.close());
+const redis = () => t.app.get<Redis>(REDIS);
+const keyPrefix = () => redis().options.keyPrefix ?? "";
+const cacheKeys = async () => (await redis().keys(`${keyPrefix()}serviceability:*`)).map((k) => k.slice(keyPrefix().length));
 beforeEach(async () => {
+  for (const k of await cacheKeys()) await redis().del(k);
   courier.answer = async () => null;
   courier.calls = [];
   await saveAreas({ blocked: [], noCod: [], extraDays: [] }).expect(200);
@@ -154,5 +160,33 @@ describe("Shiprocket check", () => {
     const days = (new Date(q.body.promisedBy).getTime() - t.clock.now().getTime()) / 86_400_000;
     expect(days).toBeGreaterThan(11);
     expect(days).toBeLessThan(13);
+  });
+
+  it("keys the cache by pickup pincode, and caches a well-formed unserviceable answer", async () => {
+    courier.answer = async () => ({ serviceable: false, codAvailable: false, etaDays: null });
+    expect((await check("700001").expect(200)).body.serviceable).toBe(false);
+    expect((await check("700001").expect(200)).body.serviceable).toBe(false);
+    expect(courier.calls).toHaveLength(1);
+    expect(await cacheKeys()).toContain("serviceability:560001:700001:1");
+    courier.pickupPincode = "400001";
+    await check("700001").expect(200);
+    expect(courier.calls).toHaveLength(2);
+    courier.pickupPincode = "560001";
+  });
+
+  it("does not cache a failure, but skips the courier for a minute after one", async () => {
+    courier.answer = async () => {
+      throw new Error("timed out");
+    };
+    expect((await check("800001").expect(200)).body).toMatchObject({ serviceable: true, source: "rules" });
+    expect((await cacheKeys()).filter((k) => !k.includes(":down:"))).toEqual([]);
+    // a different pincode in the window does not wait on the courier again
+    expect((await check("800002").expect(200)).body.source).toBe("rules");
+    expect(courier.calls).toHaveLength(1);
+    // once the pause lapses the courier is asked again, and an answer is cached
+    await redis().del("serviceability:down:560001");
+    courier.answer = async () => ({ serviceable: true, codAvailable: true, etaDays: 4 });
+    expect((await check("800003").expect(200)).body).toMatchObject({ etaDays: 4, source: "rules+shiprocket" });
+    expect(courier.calls).toHaveLength(2);
   });
 });

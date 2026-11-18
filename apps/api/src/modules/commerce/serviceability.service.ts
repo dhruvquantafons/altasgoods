@@ -11,6 +11,8 @@ const CACHE_SECONDS = 12 * 3600;
 const DEFAULT_WEIGHT_GRAMS = 500;
 /** Courier quotes are by weight slab; answers are shared within a 500 g bucket. */
 const BUCKET_GRAMS = 500;
+/** After a courier failure, skip the courier this long so an outage does not slow every lookup. */
+const DOWN_SECONDS = 60;
 
 export interface ServiceabilityResult {
   serviceable: boolean;
@@ -77,10 +79,13 @@ export class ServiceabilityService {
   /** The courier's answer, from cache when fresh; null when it cannot or does not answer. */
   private async courier(pincode: string, weightGrams: number): Promise<CourierServiceability | null> {
     const bucket = Math.max(1, Math.ceil(weightGrams / BUCKET_GRAMS));
-    const key = `serviceability:${pincode}:${bucket}`;
+    const scope = this.provider.pickupPincode ?? "-";
+    const key = `serviceability:${scope}:${pincode}:${bucket}`;
+    const down = `serviceability:down:${scope}`;
     try {
       const cached = await this.redis.get(key);
       if (cached) return JSON.parse(cached) as CourierServiceability;
+      if (await this.redis.get(down)) return null;
     } catch (e) {
       this.logger.warn(`Cache read failed: ${(e as Error).message}`);
     }
@@ -91,6 +96,7 @@ export class ServiceabilityService {
       return answer;
     } catch (e) {
       this.logger.warn(`Courier check for ${pincode} failed, using the delivery rules alone: ${(e as Error).message}`);
+      await this.redis.set(down, "1", "EX", DOWN_SECONDS).catch(() => undefined);
       return null;
     }
   }
