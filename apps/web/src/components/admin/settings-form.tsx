@@ -33,6 +33,7 @@ function toSettings(f: Form, areas: SettingsInput["delivery"]["areas"], tax: { g
     company: f.company,
     grievance: f.grievance,
     reviews: f.reviews,
+    notifications: f.notifications,
     notice: f.notice,
     delivery: { feePaise: toPaise(f.delivery.fee), freeFromPaise: toPaise(f.delivery.freeFrom), areas },
     cod: { enabled: f.cod.enabled, maxOrderPaise: toPaise(f.cod.maxOrder) },
@@ -176,6 +177,17 @@ export function SettingsForm({ initial, savedNote, canEdit = true }: { initial: 
             onChange={(v) => set("reviews", "autoPublish", v)}
             label="Publish reviews straight away"
             description="When off, new customer reviews wait in Reviews until someone approves them."
+          />
+        </div>
+      </Section>
+
+      <Section title="Customer emails">
+        <div className="sm:col-span-2">
+          <Switch
+            checked={form.notifications.customerEmails}
+            onChange={(v) => set("notifications", "customerEmails", v)}
+            label="Email customers about their orders"
+            description="Order confirmations, payment problems, shipping and delivery updates, cancellations, refunds, returns and Care Desk replies. When off, none are sent, and they are not sent later. Sign in and password emails always go out."
           />
         </div>
       </Section>

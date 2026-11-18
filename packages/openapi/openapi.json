@@ -410,6 +410,19 @@
                       ],
                       "additionalProperties": false
                     },
+                    "notifications": {
+                      "type": "object",
+                      "properties": {
+                        "customerEmails": {
+                          "type": "boolean",
+                          "description": "Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later"
+                        }
+                      },
+                      "required": [
+                        "customerEmails"
+                      ],
+                      "additionalProperties": false
+                    },
                     "notice": {
                       "type": "object",
                       "properties": {
@@ -555,6 +568,7 @@
                     "cod",
                     "tax",
                     "reviews",
+                    "notifications",
                     "notice",
                     "company",
                     "grievance",
@@ -716,6 +730,18 @@
                       "autoPublish"
                     ]
                   },
+                  "notifications": {
+                    "type": "object",
+                    "properties": {
+                      "customerEmails": {
+                        "type": "boolean",
+                        "description": "Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later"
+                      }
+                    },
+                    "required": [
+                      "customerEmails"
+                    ]
+                  },
                   "notice": {
                     "type": "object",
                     "properties": {
@@ -841,6 +867,7 @@
                   "cod",
                   "tax",
                   "reviews",
+                  "notifications",
                   "notice",
                   "company",
                   "grievance"
@@ -993,6 +1020,19 @@
                       ],
                       "additionalProperties": false
                     },
+                    "notifications": {
+                      "type": "object",
+                      "properties": {
+                        "customerEmails": {
+                          "type": "boolean",
+                          "description": "Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later"
+                        }
+                      },
+                      "required": [
+                        "customerEmails"
+                      ],
+                      "additionalProperties": false
+                    },
                     "notice": {
                       "type": "object",
                       "properties": {
@@ -1138,6 +1178,7 @@
                     "cod",
                     "tax",
                     "reviews",
+                    "notifications",
                     "notice",
                     "company",
                     "grievance",

@@ -2599,6 +2599,10 @@ export interface operations {
                             /** @description Publish customer reviews straight away; otherwise they wait for approval */
                             autoPublish: boolean;
                         };
+                        notifications: {
+                            /** @description Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later */
+                            customerEmails: boolean;
+                        };
                         notice: {
                             enabled: boolean;
                             /** @description Shown in a bar at the top of every storefront page while enabled */
@@ -2686,6 +2690,10 @@ export interface operations {
                         /** @description Publish customer reviews straight away; otherwise they wait for approval */
                         autoPublish: boolean;
                     };
+                    notifications: {
+                        /** @description Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later */
+                        customerEmails: boolean;
+                    };
                     notice: {
                         enabled: boolean;
                         /** @description Shown in a bar at the top of every storefront page while enabled */
@@ -2762,6 +2770,10 @@ export interface operations {
                         reviews: {
                             /** @description Publish customer reviews straight away; otherwise they wait for approval */
                             autoPublish: boolean;
+                        };
+                        notifications: {
+                            /** @description Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later */
+                            customerEmails: boolean;
                         };
                         notice: {
                             enabled: boolean;
