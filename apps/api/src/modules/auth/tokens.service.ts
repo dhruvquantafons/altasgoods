@@ -34,6 +34,8 @@ export interface Grants {
  * tabs); without this the second one looks like theft and signs everyone out.
  */
 export const REFRESH_GRACE_SECONDS = 30;
+/** How many rotations within the window a repeat may follow to reach the live session. */
+const REFRESH_GRACE_HOPS = 3;
 
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 const secret = () => new TextEncoder().encode(env().JWT_SECRET);
@@ -41,7 +43,7 @@ const revokedAll = (userId: string) => `revoked-all:${userId}`;
 const graceKey = (refreshHash: string) => `refresh-grace:${refreshHash}`;
 
 /** The pair a rotation produced, kept briefly so a repeat of the old token gets it again. */
-interface GraceEntry {
+export interface GraceEntry {
   sessionId: string;
   accessToken: string;
   refreshToken: string;
@@ -58,22 +60,30 @@ function graceKeyBytes() {
   return graceCipherKey.key;
 }
 
+const IV_BYTES = 12;
+const TAG_BYTES = 16;
+
 /** Encrypts with AES-256-GCM, bound to the old token's hash so an entry cannot be moved to another key. */
-function seal(entry: GraceEntry, refreshHash: string) {
-  const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", graceKeyBytes(), iv);
+export function sealGrace(entry: GraceEntry, refreshHash: string) {
+  const iv = randomBytes(IV_BYTES);
+  const cipher = createCipheriv("aes-256-gcm", graceKeyBytes(), iv, { authTagLength: TAG_BYTES });
   cipher.setAAD(Buffer.from(refreshHash));
   const body = Buffer.concat([cipher.update(JSON.stringify(entry), "utf8"), cipher.final()]);
   return [iv, cipher.getAuthTag(), body].map((b) => b.toString("base64url")).join(".");
 }
 
-function open(sealed: string, refreshHash: string): GraceEntry | null {
+/** Opens a sealed entry; anything not exactly as sealed (tag, IV, layout, token) reads as a miss. */
+export function openGrace(sealed: string, refreshHash: string): GraceEntry | null {
   try {
-    const [iv, tag, body] = sealed.split(".").map((p) => Buffer.from(p, "base64url"));
-    const decipher = createDecipheriv("aes-256-gcm", graceKeyBytes(), iv!);
+    const parts = sealed.split(".");
+    if (parts.length !== 3) return null;
+    const [iv, tag, body] = parts.map((p) => Buffer.from(p, "base64url")) as [Buffer, Buffer, Buffer];
+    // GCM would otherwise accept a shortened tag, which is easier to forge
+    if (iv.length !== IV_BYTES || tag.length !== TAG_BYTES) return null;
+    const decipher = createDecipheriv("aes-256-gcm", graceKeyBytes(), iv, { authTagLength: TAG_BYTES });
     decipher.setAAD(Buffer.from(refreshHash));
-    decipher.setAuthTag(tag!);
-    return JSON.parse(Buffer.concat([decipher.update(body!), decipher.final()]).toString("utf8")) as GraceEntry;
+    decipher.setAuthTag(tag);
+    return JSON.parse(Buffer.concat([decipher.update(body), decipher.final()]).toString("utf8")) as GraceEntry;
   } catch {
     return null;
   }
@@ -135,10 +145,11 @@ export class TokensService {
 
   /**
    * Rotates a refresh token. Presenting an already rotated or revoked token is
-   * treated as theft: every session of that user is revoked. The one exception
-   * is a repeat within REFRESH_GRACE_SECONDS of its rotation (parallel requests
-   * holding the same cookie): it gets the same new pair, as long as that new
-   * session is still live and the account may still sign in.
+   * treated as theft: every session of that user is revoked. The exception is a
+   * repeat within REFRESH_GRACE_SECONDS of its rotation (parallel requests
+   * holding the same cookie, a late request from a slow tab): it gets the pair
+   * its rotation led to, as long as that session is live and the account may
+   * still sign in, and is otherwise refused without signing anyone out.
    *
    * The session row is locked for the whole rotation, so parallel callers queue
    * up behind the first and then find its answer in the grace cache.
@@ -150,8 +161,12 @@ export class TokensService {
       const now = this.clock.now();
       if (!row) throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
       if (row.revokedAt) {
-        const repeat = await this.graceAnswer(tx, row, hash, now, grantsFor);
-        return repeat ? { pair: repeat } : { reused: true as const, userId: row.userId };
+        // signed out or revoked rather than rotated, or rotated too long ago: reuse
+        if (!row.replacedBy || now.getTime() - row.revokedAt.getTime() > REFRESH_GRACE_SECONDS * 1000) return { reused: true as const, userId: row.userId };
+        const repeat = await this.graceAnswer(tx, row.userId, hash, row.replacedBy, row.revokedAt, now, grantsFor);
+        // a just rotated token whose line ended (signed out, revoked) or whose answer is gone: refused, not theft
+        if (!repeat) throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
+        return { pair: repeat };
       }
       if (row.expiresAt < now) throw new ApiError(401, "REFRESH_EXPIRED", "Please sign in again.");
       const grants = await grantsFor(row.userId, tx);
@@ -159,7 +174,7 @@ export class TokensService {
       await tx.update(sessions).set({ revokedAt: now, replacedBy: next.sessionId, lastUsedAt: now }).where(eq(sessions.id, row.id));
       // written before the row lock is released, so a caller queued behind this one always finds it
       const entry: GraceEntry = { sessionId: next.sessionId, accessToken: next.pair.accessToken, refreshToken: next.pair.refreshToken, grants };
-      await this.redis.set(graceKey(hash), seal(entry, hash), "EX", REFRESH_GRACE_SECONDS);
+      await this.redis.set(graceKey(hash), sealGrace(entry, hash), "EX", REFRESH_GRACE_SECONDS);
       return { pair: { ...next.pair, userId: row.userId } };
     });
     if (!outcome.pair) {
@@ -170,19 +185,36 @@ export class TokensService {
     return outcome.pair;
   }
 
-  /** The pair a just rotated token was rotated into, or null when the repeat must count as reuse. */
-  private async graceAnswer(tx: Tx, row: typeof sessions.$inferSelect, hash: string, now: Date, grantsFor: GrantsFor) {
-    if (!row.replacedBy || !row.revokedAt || now.getTime() - row.revokedAt.getTime() > REFRESH_GRACE_SECONDS * 1000) return null;
-    const sealed = await this.redis.get(graceKey(hash));
-    const entry = sealed ? open(sealed, hash) : null;
-    if (!entry || entry.sessionId !== row.replacedBy) return null;
-    // signed out, rotated again or revoked since: nothing to hand out
-    const [next] = await tx.select({ revokedAt: sessions.revokedAt, expiresAt: sessions.expiresAt }).from(sessions).where(eq(sessions.id, entry.sessionId));
-    if (!next || next.revokedAt || next.expiresAt < now) return null;
-    // blocked since (throws) or given other roles since (a fresh access token says so)
-    const grants = await grantsFor(row.userId, tx);
-    const accessToken = sameGrants(grants, entry.grants) ? entry.accessToken : await this.sign({ sub: row.userId, sid: entry.sessionId, ...grants });
-    return { accessToken, refreshToken: entry.refreshToken, expiresIn: ACCESS_TTL_SECONDS, userId: row.userId };
+  /**
+   * The pair a just rotated token led to: its successor's, or, when that was
+   * rotated again within the window too, the live session at the end of the
+   * line (at most REFRESH_GRACE_HOPS rotations on), each hop read from its own
+   * sealed grace entry. Null when the line ends in a signed out or revoked
+   * session, leaves the window, or an entry is missing.
+   */
+  private async graceAnswer(tx: Tx, userId: string, presentedHash: string, firstNext: string, rotatedAt: Date, now: Date, grantsFor: GrantsFor) {
+    const windowEnd = rotatedAt.getTime() + REFRESH_GRACE_SECONDS * 1000;
+    let hash = presentedHash;
+    let expected = firstNext;
+    for (let hop = 0; hop < REFRESH_GRACE_HOPS; hop++) {
+      const sealed = await this.redis.get(graceKey(hash));
+      const entry = sealed ? openGrace(sealed, hash) : null;
+      if (!entry || entry.sessionId !== expected) return null;
+      // locked like any rotation, so the head cannot be rotated while it is handed out
+      const [next] = await tx.select().from(sessions).where(eq(sessions.id, entry.sessionId)).for("update");
+      if (!next || next.userId !== userId || next.expiresAt < now) return null;
+      if (!next.revokedAt) {
+        // blocked since (throws) or given other roles since (a fresh access token says so)
+        const grants = await grantsFor(userId, tx);
+        const accessToken = sameGrants(grants, entry.grants) ? entry.accessToken : await this.sign({ sub: userId, sid: next.id, ...grants });
+        return { accessToken, refreshToken: entry.refreshToken, expiresIn: ACCESS_TTL_SECONDS, userId };
+      }
+      // rotated again within the window: follow it; signed out or revoked: the line ends here
+      if (!next.replacedBy || next.revokedAt.getTime() > windowEnd) return null;
+      hash = next.refreshHash;
+      expected = next.replacedBy;
+    }
+    return null;
   }
 
   async revoke(refreshToken: string) {

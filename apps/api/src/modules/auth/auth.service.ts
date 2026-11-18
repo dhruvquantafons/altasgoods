@@ -45,6 +45,22 @@ const loginLimits = (email: string, ip: string) => [
 const SIGNUPS_PER_HOUR_PER_IP = 10;
 const CODE_REQUESTS_PER_HOUR_PER_IP = 20;
 
+/** INCR, then EXPIRE whenever the key has none (new, or left without one by a crash): atomic in Redis. */
+const COUNT_SCRIPT = `
+local count = redis.call("INCR", KEYS[1])
+if redis.call("TTL", KEYS[1]) < 0 then redis.call("EXPIRE", KEYS[1], ARGV[1]) end
+return count`;
+
+/** GET for each key (KEYS[i], window ARGV[i]); a key that exists without an expiry gets its window. */
+const PEEK_SCRIPT = `
+local out = {}
+for i, key in ipairs(KEYS) do
+  local v = redis.call("GET", key)
+  if v and redis.call("TTL", key) == -1 then redis.call("EXPIRE", key, ARGV[i]) end
+  out[i] = v or false
+end
+return out`;
+
 const waitMessage = (seconds: number) => {
   const minutes = Math.max(1, Math.ceil(seconds / 60));
   return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
@@ -80,10 +96,9 @@ export class AuthService {
     if (count > max) throw new RateLimitError(code, message, await this.secondsLeft(key, window));
   }
 
+  /** Adds one and makes sure the key expires, in one step, so a crash in between cannot leave a lock that never lifts. */
   private async count(key: string, window: number) {
-    const count = await this.redis.incr(key);
-    if (count === 1) await this.redis.expire(key, window);
-    return count;
+    return Number(await this.redis.eval(COUNT_SCRIPT, 1, key, window));
   }
 
   private async secondsLeft(key: string, window: number) {
@@ -91,9 +106,15 @@ export class AuthService {
     return ttl > 0 ? ttl : window;
   }
 
+  /** Reads limit counts, giving any key found without an expiry its window again (self healing). */
+  private async peek(limits: { key: string; window: number }[]) {
+    const counts = (await this.redis.eval(PEEK_SCRIPT, limits.length, ...limits.map((l) => l.key), ...limits.map((l) => l.window))) as (string | null)[];
+    return counts.map(Number);
+  }
+
   /** Refuses a sign in attempt while any of its failure counts is at its limit. */
   private async assertLoginAllowed(limits: ReturnType<typeof loginLimits>) {
-    const counts = await this.redis.mget(...limits.map((l) => l.key));
+    const counts = await this.peek(limits);
     let wait = 0;
     for (const [i, l] of limits.entries()) {
       if (Number(counts[i]) >= l.max) wait = Math.max(wait, await this.secondsLeft(l.key, l.window));
@@ -256,7 +277,8 @@ export class AuthService {
     if (!user) throw notFound("User");
     // signed in already, so counted per account: wrong guesses from a stolen session stay slow
     const failures = `pwchange:fail:${userId}`;
-    if (Number(await this.redis.get(failures)) >= PASSWORD_CHANGE_FAILURES_PER_WINDOW) {
+    const [failed] = await this.peek([{ key: failures, window: WINDOW_SECONDS }]);
+    if (failed! >= PASSWORD_CHANGE_FAILURES_PER_WINDOW) {
       const wait = await this.secondsLeft(failures, WINDOW_SECONDS);
       throw new RateLimitError("LOGIN_RATE_LIMITED", `Too many attempts. Please wait ${waitMessage(wait)}, or reset your password.`, wait);
     }

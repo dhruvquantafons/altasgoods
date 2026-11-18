@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
-import { EMAIL_PROVIDER } from "../src/common/tokens.js";
+import { createHash } from "node:crypto";
+import type { Redis } from "ioredis";
+import { EMAIL_PROVIDER, REDIS } from "../src/common/tokens.js";
 import { createDb } from "../src/db/client.js";
 import { sessions, users } from "../src/db/schema.js";
 import type { EmailMessage, EmailProvider } from "../src/modules/auth/email.provider.js";
@@ -33,6 +35,9 @@ beforeEach(() => {
   outbox.sent = [];
 });
 afterEach(() => t.clock.reset());
+
+/** The app's own Redis client (keys are prefixed for the test run). */
+const redis = () => t.app.get<symbol, Redis>(REDIS);
 
 /** A sign in attempt from a given client address (the app trusts X-Forwarded-For from loopback). */
 const login = (email: string, password: string, ip: string) => t.http.post("/v1/auth/login").set("X-Forwarded-For", ip).send({ email, password });
@@ -117,6 +122,25 @@ describe("sign in", () => {
     expect(slowed.body.code).toBe("LOGIN_RATE_LIMITED");
     expect(Number(slowed.headers["retry-after"])).toBeGreaterThan(900);
     expect(Number(slowed.headers["retry-after"])).toBeLessThanOrEqual(3600);
+  });
+
+  it("gives a limit key left without an expiry its window again", async () => {
+    await signUp(t.http, "stuck.valve@example.com");
+    const ip = testIp();
+    // as if the process died between counting and setting the expiry
+    await redis().set("login:fail:stuck.valve@example.com", "5");
+    await redis().set(`login:fail-ip:${ip}`, "2");
+    await redis().set(`signup:ip:${ip}`, "3");
+    await redis().set(`pwreset:req:stuck.valve@example.com`, "1");
+    // read only (a correct password counts nothing): healed on the check
+    await login("stuck.valve@example.com", "a-long-password", ip).expect(200);
+    expect(await redis().ttl("login:fail:stuck.valve@example.com")).toBeGreaterThan(3000);
+    expect(await redis().ttl(`login:fail-ip:${ip}`)).toBeGreaterThan(800);
+    // counted: healed as it counts
+    await signUp(t.http, "stuck.signup@example.com", "Stuck", "a-long-password", ip);
+    expect(await redis().ttl(`signup:ip:${ip}`)).toBeGreaterThan(3000);
+    await t.http.post("/v1/auth/password/forgot").set("X-Forwarded-For", ip).send({ email: "stuck.valve@example.com" }).expect(200);
+    expect(await redis().ttl("pwreset:req:stuck.valve@example.com")).toBeGreaterThan(800);
   });
 
   it("lifts every sign in and sign up limit through the development reset", async () => {
@@ -311,11 +335,39 @@ describe("sessions", () => {
     await t.http.get("/v1/me").set({ Authorization: `Bearer ${again.body.accessToken}` }).expect(200);
   });
 
-  it("does not hand out the pair again once its session was signed out", async () => {
+  it("does not hand out the pair again once its session was signed out, and signs nobody else out", async () => {
     const { session } = await signUp(t.http, "quick.leaver@example.com");
+    const { session: phone } = await signIn(t.http, "quick.leaver@example.com", "a-long-password");
     const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
     await t.http.post("/v1/auth/logout").send({ refreshToken: first.body.refreshToken }).expect(204);
-    await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
+    const late = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
+    expect(late.body.code).toBe("REFRESH_INVALID");
+    // a late request from the signed out tab is not theft: the phone stays signed in
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${phone.accessToken}` }).expect(200);
+    await t.http.post("/v1/auth/refresh").send({ refreshToken: phone.refreshToken }).expect(200);
+  });
+
+  it("follows a token rotated twice within the window to the live pair", async () => {
+    const { session } = await signUp(t.http, "twice.rotated@example.com");
+    const t1 = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    t.clock.advance(10_000);
+    const t2 = await t.http.post("/v1/auth/refresh").send({ refreshToken: t1.body.refreshToken }).expect(200);
+    t.clock.advance(10_000);
+    const late = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    expect(late.body).toEqual(t2.body);
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${late.body.accessToken}` }).expect(200);
+    await t.http.post("/v1/auth/refresh").send({ refreshToken: t2.body.refreshToken }).expect(200);
+  });
+
+  it("refuses a repeat within the window that finds no cached answer, without signing anyone out", async () => {
+    const { session } = await signUp(t.http, "lost.cache@example.com");
+    const { session: phone } = await signIn(t.http, "lost.cache@example.com", "a-long-password");
+    const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    await redis().del(`refresh-grace:${createHash("sha256").update(session.refreshToken).digest("hex")}`);
+    const late = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
+    expect(late.body.code).toBe("REFRESH_INVALID");
+    await t.http.post("/v1/auth/refresh").send({ refreshToken: first.body.refreshToken }).expect(200);
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${phone.accessToken}` }).expect(200);
   });
 
   it("does not hand out the pair again to an account blocked meanwhile", async () => {
