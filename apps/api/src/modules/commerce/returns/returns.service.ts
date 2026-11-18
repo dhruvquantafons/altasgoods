@@ -421,10 +421,16 @@ export class ReturnsService {
 
   async view(id: string) {
     const [row] = await this.db
-      .select({ r: returns, item: { title: orderItems.title, image: orderItems.image, variant: orderItems.variant, unitPricePaise: orderItems.unitPricePaise, productId: orderItems.productId }, customer: users.name })
+      .select({
+        r: returns,
+        item: { title: orderItems.title, image: orderItems.image, variant: orderItems.variant, unitPricePaise: orderItems.unitPricePaise, productId: orderItems.productId },
+        customer: users.name,
+        refund: { status: refunds.status },
+      })
       .from(returns)
       .innerJoin(orderItems, eq(orderItems.id, returns.orderItemId))
       .innerJoin(users, eq(users.id, returns.userId))
+      .leftJoin(refunds, eq(refunds.id, returns.refundId))
       .where(eq(returns.id, id));
     if (!row) throw notFound("Return");
     const events = await this.db.select().from(returnEvents).where(eq(returnEvents.returnId, id)).orderBy(returnEvents.at, returnEvents.id);
@@ -447,7 +453,8 @@ export class ReturnsService {
       refundTo: r.refundTo,
       refundAmountPaise: r.refundAmountPaise,
       instantRefund: r.instantRefund,
-      refundStatus: r.refundStatus,
+      // a refund to the payment method moves on in the refund job: show where it is now
+      refundStatus: row.refund?.status ?? r.refundStatus,
       status: r.status,
       pickupDate: r.pickupDate,
       pickupSlot: r.pickupSlot,

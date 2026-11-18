@@ -120,3 +120,40 @@ describe("Shiprocket provider", () => {
     expect(p.parseWebhook(body, { "x-api-key": "hook-token" })).toEqual({ awb: "12345", raw: "OUT FOR DELIVERY", status: "OUT_FOR_DELIVERY" });
   });
 });
+
+/** A fetch that only ends when its request is aborted. */
+const hanging = () =>
+  vi.fn(
+    (_url: string, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      }),
+  ) as unknown as typeof fetch;
+
+describe("Shiprocket timeouts", () => {
+  it("gives up on a courier that does not answer, as a 504", async () => {
+    const p = new ShiprocketLogisticsProvider({ ...config, fetch: hanging(), timeoutMs: 50 });
+    await expect(p.track("AWB1")).rejects.toMatchObject({ status: 504, code: "COURIER_TIMEOUT" });
+  }, 2000);
+
+  it("bounds the courier call after signing in too", async () => {
+    const answers = [new Response(JSON.stringify({ token: "tok" }), { status: 200 })];
+    const f = vi.fn((_url: string, init?: RequestInit) =>
+      answers.length
+        ? Promise.resolve(answers.shift()!)
+        : new Promise<Response>((_, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+          }),
+    ) as unknown as typeof fetch;
+    const p = new ShiprocketLogisticsProvider({ ...config, fetch: f, timeoutMs: 50 });
+    await expect(p.cancel({ carrierOrderRef: "111", awb: null })).rejects.toMatchObject({ status: 504, code: "COURIER_TIMEOUT" });
+  }, 2000);
+
+  it("reports a courier it cannot reach as a 502", async () => {
+    const down = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    }) as unknown as typeof fetch;
+    const p = new ShiprocketLogisticsProvider({ ...config, fetch: down });
+    await expect(p.track("AWB1")).rejects.toMatchObject({ status: 502 });
+  });
+});

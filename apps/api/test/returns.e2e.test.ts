@@ -5,7 +5,7 @@ import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
 import { sampleSignaturePng } from "../src/db/sample-files.js";
 import { orderItems, orders } from "../src/db/schema.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, runJobs, signIn, signUp, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 let shopper: Record<string, string>;
@@ -84,10 +84,12 @@ describe("returns", () => {
     await advance(r.id, "IN_TRANSIT");
     await advance(r.id, "RECEIVED");
     const done = await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: true }).expect(200);
-    expect(done.body).toMatchObject({ status: "COMPLETED" });
-    expect(["COMPLETED", "PROCESSING"]).toContain(done.body.refundStatus);
+    expect(done.body).toMatchObject({ status: "COMPLETED", refundStatus: "PENDING" });
     const [after] = await db.select({ status: orderItems.status }).from(orderItems).where(eq(orderItems.id, itemId));
     expect(after!.status).toBe("RETURNED");
+    // the refund job sends it to the gateway after the decision commits
+    await runJobs(t);
+    expect((await t.http.get(`/v1/me/returns/${r.id}`).set(shopper).expect(200)).body.refundStatus).toBe("COMPLETED");
     const [order] = await db.select({ paymentStatus: orders.paymentStatus }).from(orders).where(eq(orders.id, orderId));
     expect(order!.paymentStatus).toBe("REFUNDED");
   });
@@ -112,7 +114,12 @@ describe("returns", () => {
     await advance(r.id, "IN_TRANSIT");
     await advance(r.id, "RECEIVED");
     const done = await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: true }).expect(200);
+    // the same single refund, not a second one
     expect(done.body.refundStatus).toBe(picked.body.refundStatus);
+    await runJobs(t);
+    const [order] = await db.select({ id: orders.id }).from(orders).innerJoin(orderItems, eq(orderItems.orderId, orders.id)).where(eq(orderItems.id, itemId));
+    const refunds = (await t.http.get("/v1/me/refunds").set(shopper).expect(200)).body.filter((f: { orderId: string }) => f.orderId === order!.id);
+    expect(refunds).toEqual([expect.objectContaining({ status: "COMPLETED", source: "RETURN" })]);
   });
 
   it("can be cancelled before pickup, and the item stays delivered", async () => {

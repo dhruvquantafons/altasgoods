@@ -10,6 +10,7 @@ import type { Db, Tx } from "../../db/client.js";
 import {
   orderItems,
   orders,
+  refunds,
   supportActions,
   supportAttachments,
   supportEvents,
@@ -174,6 +175,14 @@ export class SupportService {
     ]);
     const lastPublic = [...messages].reverse().find((m) => m.kind === "CUSTOMER" || m.kind === "AGENT");
     const { level, limitPaise } = agentLevel(me.roles);
+    // a refund to the payment method finishes in the refund job: report where it is now
+    const refundIds = actions.map((a) => (a.details as { refundId?: string } | null)?.refundId).filter((x): x is string => !!x);
+    const refundRows = refundIds.length ? await this.db.select({ id: refunds.id, status: refunds.status }).from(refunds).where(inArray(refunds.id, refundIds)) : [];
+    const actionStatus = (a: (typeof actions)[number]) => {
+      const refund = refundRows.find((r) => r.id === (a.details as { refundId?: string } | null)?.refundId);
+      if (a.status !== "PROCESSING" || !refund) return a.status;
+      return refund.status === "COMPLETED" ? "COMPLETED" : refund.status === "FAILED" ? "FAILED" : "PROCESSING";
+    };
     const approver = me.roles.some((r) => (APPROVER_ROLES as string[]).includes(r));
     return {
       ...this.summary(t, assignee ? (assignee.name ?? assignee.email) : null),
@@ -184,7 +193,7 @@ export class SupportService {
       actions: actions.map((a) => ({
         id: a.id,
         kind: a.kind,
-        status: a.status,
+        status: actionStatus(a),
         orderId: a.orderId,
         amountPaise: a.amountPaise,
         details: a.details,

@@ -1,14 +1,15 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { and, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { isProduction } from "../../../config/env.js";
 import type { Db, Tx } from "../../../db/client.js";
-import { coupons, orderEvents, orders, paymentEvents, payments, refunds } from "../../../db/schema.js";
+import { coupons, orderEvents, orders, paymentEvents, payments } from "../../../db/schema.js";
 import { conflict, forbidden, notFound } from "../../../common/errors.js";
 import type { Clock } from "../../../common/infra.module.js";
 import { CLOCK, DB, PAYMENT_PROVIDER } from "../../../common/tokens.js";
 import { PAYMENT_WINDOW_MS } from "../pricing.js";
 import { OrderWorkflow, type OrderRow } from "../workflow.service.js";
 import type { PaymentProvider, ProviderEvent } from "./provider.js";
+import { RefundsService } from "./refunds.service.js";
 import { SANDBOX_SIGNATURE_HEADER, SandboxPaymentProvider, signSandbox } from "./sandbox.provider.js";
 
 @Injectable()
@@ -20,41 +21,60 @@ export class PaymentsService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
+    @Inject(RefundsService) private readonly refunds: RefundsService,
   ) {}
 
   /**
    * Goodwill or claim refund to the original payment method of a paid order
-   * (Care Desk). Never more than what is still unrefunded.
+   * (Care Desk, returns). Never more than what is still unrefunded, counting
+   * refunds still on their way. Queues the refund in the caller's
+   * transaction; the gateway is called by the refund job after commit, so the
+   * returned row is PENDING.
    */
   async refundToSource(tx: Tx, orderId: string, amountPaise: number, reason: string) {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
     if (!order) throw notFound("Order");
     if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
-    const [payment] = await tx.select().from(payments).where(and(eq(payments.orderId, order.id), eq(payments.status, order.paymentStatus)));
-    if (!payment) throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
-    const [{ refunded }] = (await tx.select({ refunded: sql<number>`coalesce(sum(${refunds.amountPaise}), 0)::bigint` }).from(refunds).where(eq(refunds.paymentId, payment.id))) as [{ refunded: number }];
-    const left = order.totalPaise - Number(refunded);
-    if (amountPaise > left) throw conflict("REFUND_TOO_LARGE", `Only ₹${(left / 100).toLocaleString("en-IN")} of this order is left to refund`);
-    const result = await this.provider.refund({ providerRef: payment.providerRef ?? "", amountPaise });
-    const [refund] = await tx
-      .insert(refunds)
-      .values({ paymentId: payment.id, orderId: order.id, amountPaise, status: result.status, reason, completedAt: result.status === "COMPLETED" ? this.clock.now() : null })
-      .returning();
-    const status = Number(refunded) + amountPaise >= order.totalPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
-    await tx.update(payments).set({ status }).where(eq(payments.id, payment.id));
-    await tx.update(orders).set({ paymentStatus: status }).where(eq(orders.id, order.id));
-    return refund!;
+    const payment = await this.refunds.paidPayment(tx, order.id);
+    if (!payment || (payment.status !== "CAPTURED" && payment.status !== "PARTIALLY_REFUNDED")) throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
+    const left = order.totalPaise - (await this.refunds.committed(tx, payment.id));
+    if (amountPaise > left) throw conflict("REFUND_TOO_LARGE", `Only ₹${(Math.max(left, 0) / 100).toLocaleString("en-IN")} of this order is left to refund`);
+    return this.refunds.queue(tx, { paymentId: payment.id, orderId: order.id, amountPaise, reason });
   }
 
-  /** Opens a payment attempt with the provider for an unpaid order. */
-  async startAttempt(tx: Tx, order: OrderRow) {
+  /**
+   * Records a payment attempt for an unpaid order, inside the caller's
+   * transaction. The gateway is not called here: call startSession() once
+   * the transaction has committed, so no lock is held while it answers.
+   */
+  async openAttempt(tx: Tx, order: OrderRow) {
     const [payment] = await tx
       .insert(payments)
       .values({ orderId: order.id, provider: this.provider.name, method: order.paymentMethod, amountPaise: order.totalPaise, status: "CREATED" })
       .returning();
-    const session = await this.provider.createSession({ paymentId: payment!.id, orderId: order.id, amountPaise: order.totalPaise, method: order.paymentMethod });
-    await tx.update(payments).set({ providerRef: session.providerRef }).where(eq(payments.id, payment!.id));
-    return { payment: { ...payment!, providerRef: session.providerRef }, nextAction: { type: "REDIRECT" as const, url: session.redirectUrl } };
+    return payment!;
+  }
+
+  /**
+   * Opens the gateway session for an attempt recorded by openAttempt(), after
+   * its transaction committed. Never throws: when the gateway fails, the
+   * attempt stays CREATED without a reference and the customer retries
+   * payment (or the order expires with the payment window). Returns where to
+   * send the customer, or null.
+   */
+  async startSession(payment: { id: string; orderId: string; amountPaise: number; method: OrderRow["paymentMethod"] }) {
+    try {
+      const session = await this.provider.createSession({ paymentId: payment.id, orderId: payment.orderId, amountPaise: payment.amountPaise, method: payment.method });
+      const [opened] = await this.db
+        .update(payments)
+        .set({ providerRef: session.providerRef })
+        .where(and(eq(payments.id, payment.id), isNull(payments.providerRef), inArray(payments.status, ["CREATED", "PENDING"])))
+        .returning({ id: payments.id });
+      return opened ? { type: "REDIRECT" as const, url: session.redirectUrl } : null;
+    } catch (e) {
+      this.logger.error(`Could not open a gateway session for payment ${payment.id} of ${payment.orderId}: ${(e as Error).message}`);
+      return null;
+    }
   }
 
   /** Entry point for provider webhooks. Verifies the signature, then processes. */
@@ -97,14 +117,12 @@ export class PaymentsService {
         // an earlier attempt (one the customer retried away from) already paid for this order
         const alreadyPaid = order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED" || order.paymentStatus === "REFUNDED";
         if (order.status === "ABANDONED" || order.status === "CANCELLED" || alreadyPaid) {
-          // money arrived after the order expired, or twice: give it straight back
-          const result = await this.provider.refund({ providerRef: payment.providerRef ?? "", amountPaise: payment.amountPaise });
+          // money arrived after the order expired, or twice: give it straight back. The refund
+          // job marks this payment (and, for a late capture, the order) REFUNDED once it completes.
           const reason = alreadyPaid ? "Duplicate payment for an order that was already paid" : "Payment received after the order expired";
-          await tx.insert(refunds).values({ paymentId: payment.id, orderId: order.id, amountPaise: payment.amountPaise, status: result.status, reason, completedAt: result.status === "COMPLETED" ? now : null });
-          await tx.update(payments).set({ status: "REFUNDED" }).where(eq(payments.id, payment.id));
-          if (!alreadyPaid) await tx.update(orders).set({ paymentStatus: "REFUNDED" }).where(eq(orders.id, order.id));
-          this.logger.warn(`${alreadyPaid ? "Duplicate" : "Late"} capture on ${order.id} refunded`);
-          return { duplicate: false, status: "REFUNDED" as const };
+          await this.refunds.queue(tx, { paymentId: payment.id, orderId: order.id, amountPaise: payment.amountPaise, reason });
+          this.logger.warn(`${alreadyPaid ? "Duplicate" : "Late"} capture on ${order.id}, refund queued`);
+          return { duplicate: false, status: "CAPTURED" as const };
         }
 
         await tx.update(orders).set({ paymentStatus: "CAPTURED", paymentDueBy: null }).where(eq(orders.id, order.id));
@@ -134,9 +152,14 @@ export class PaymentsService {
     return this.get(userId, paymentId);
   }
 
-  /** Starts a new attempt for an order whose payment failed, within the payment window. */
+  /**
+   * Starts a new attempt for an order whose payment failed (or whose gateway
+   * session never opened), within the payment window. The gateway session is
+   * opened after commit; if that fails, nextAction is null and the customer
+   * can retry again.
+   */
   async retry(userId: string, orderId: string) {
-    return this.db.transaction(async (tx) => {
+    const payment = await this.db.transaction(async (tx) => {
       const { order } = await this.workflow.lockOrder(tx, orderId);
       if (order.userId !== userId) throw notFound("Order");
       if (order.status !== "PAYMENT_PENDING" && order.status !== "PAYMENT_FAILED") throw conflict("ORDER_NOT_PAYABLE", "This order does not need payment");
@@ -146,9 +169,10 @@ export class PaymentsService {
         await tx.update(orders).set({ status: "PAYMENT_PENDING", paymentStatus: "CREATED" }).where(eq(orders.id, orderId));
         await tx.insert(orderEvents).values({ orderId, fromStatus: "PAYMENT_FAILED", toStatus: "PAYMENT_PENDING", actor: "CUSTOMER", note: "Payment retried" });
       }
-      const attempt = await this.startAttempt(tx, order);
-      return { id: attempt.payment.id, method: attempt.payment.method, status: attempt.payment.status, amountPaise: attempt.payment.amountPaise, nextAction: attempt.nextAction };
+      return this.openAttempt(tx, order);
     });
+    const nextAction = await this.startSession(payment);
+    return { id: payment.id, method: payment.method, status: payment.status, amountPaise: payment.amountPaise, nextAction };
   }
 
   async get(userId: string, paymentId: string) {

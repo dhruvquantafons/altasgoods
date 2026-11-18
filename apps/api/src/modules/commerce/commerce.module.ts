@@ -19,6 +19,7 @@ import { DevLogisticsService } from "./dev-logistics.service.js";
 import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
 import { RazorpayPaymentProvider } from "./payments/razorpay.provider.js";
+import { RefundsService } from "./payments/refunds.service.js";
 import { SandboxPaymentProvider } from "./payments/sandbox.provider.js";
 import { PaymentSweeper } from "./payments/sweeper.js";
 import { QuoteService } from "./quote.service.js";
@@ -60,6 +61,7 @@ import { OrderWorkflow } from "./workflow.service.js";
     CartService,
     WishlistService,
     QuoteService,
+    RefundsService,
     OrderWorkflow,
     PaymentsService,
     OrdersService,
@@ -99,6 +101,6 @@ import { OrderWorkflow } from "./workflow.service.js";
       },
     },
   ],
-  exports: [SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
+  exports: [SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, RefundsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
 })
 export class CommerceModule {}

@@ -7,6 +7,7 @@ import { configureApp } from "../src/app.js";
 import { AppModule } from "../src/app.module.js";
 import { env } from "../src/config/env.js";
 import { CLOCK } from "../src/common/tokens.js";
+import { JobsService } from "../src/modules/jobs/jobs.service.js";
 import { createDb } from "../src/db/client.js";
 import { resetDatabase } from "../src/db/reset.js";
 import { DEMO_CUSTOMER_EMAIL, DEMO_PASSWORD, DEMO_STAFF_EMAIL, careAgentEmail } from "../src/db/demo.js";
@@ -56,6 +57,12 @@ export async function createTestApp(overrides: { provide: symbol; useValue: unkn
   await app.init();
   return { app, http: request(app.getHttpServer()), clock, close: () => app.close() };
 }
+
+/**
+ * Runs the background jobs that are due (refunds, emails). Tests run with
+ * automatic kicks off, so work queued by a request happens here, deterministically.
+ */
+export const runJobs = (t: TestContext) => t.app.get(JobsService).runDue(100);
 
 /** Signs in with email and password and returns a bearer header. */
 export async function signIn(http: TestContext["http"], email: string, password = DEMO_PASSWORD) {

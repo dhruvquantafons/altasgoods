@@ -6,7 +6,7 @@ import { createDb } from "../src/db/client.js";
 import { samplePdf } from "../src/db/sample-files.js";
 import { orders, supportTickets, users } from "../src/db/schema.js";
 import { DEMO_SUPERVISOR_EMAIL, careAgentEmail } from "../src/db/demo.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, runJobs, signIn, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 let shopper: Record<string, string>;
@@ -115,7 +115,11 @@ describe("a customer conversation, end to end", () => {
   it("refunds to the original payment within the agent's limit", async () => {
     const r = await t.http.post(`${S}/tickets/${id}/actions`).set(revathi).send({ kind: "REFUND", amountPaise: 50_000, destination: "SOURCE", reason: "damaged" }).expect(200);
     const refund = r.body.actions.find((a: { kind: string }) => a.kind === "REFUND");
-    expect(["COMPLETED", "PROCESSING"]).toContain(refund.status);
+    // queued with the action, sent to the gateway by the refund job
+    expect(refund.status).toBe("PROCESSING");
+    await runJobs(t);
+    const later = await t.http.get(`${S}/tickets/${id}`).set(revathi).expect(200);
+    expect(later.body.actions.find((a: { id: string }) => a.id === refund.id).status).toBe("COMPLETED");
     const [order] = await db.select({ paymentStatus: orders.paymentStatus }).from(orders).where(eq(orders.id, orderId));
     expect(order!.paymentStatus).toBe("PARTIALLY_REFUNDED");
     const mine = await t.http.get(`${ME}/tickets/${id}`).set(shopper).expect(200);

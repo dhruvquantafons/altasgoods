@@ -2,10 +2,10 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Clock } from "../../common/infra.module.js";
 import { notFound } from "../../common/errors.js";
-import { CLOCK, LOGISTICS_PROVIDER, PAYMENT_PROVIDER } from "../../common/tokens.js";
+import { CLOCK, LOGISTICS_PROVIDER } from "../../common/tokens.js";
 import type { Tx } from "../../db/client.js";
-import { offers, orderEvents, orderItems, orders, payments, refunds, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
-import type { PaymentProvider } from "./payments/provider.js";
+import { offers, orderEvents, orderItems, orders, payments, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
+import { RefundsService } from "./payments/refunds.service.js";
 import type { LogisticsProvider } from "./shipping/provider.js";
 import { dispatchByDate } from "./pricing.js";
 import { assertTransition, deriveOrderStatus } from "./state.js";
@@ -24,8 +24,8 @@ const INACTIVE: OrderItemStatus[] = ["CANCELLED", "RTO_IN_TRANSIT", "RTO_RECEIVE
 export class OrderWorkflow {
   constructor(
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
     @Inject(LOGISTICS_PROVIDER) private readonly courier: LogisticsProvider,
+    @Inject(RefundsService) private readonly refunds: RefundsService,
   ) {}
 
   async lockOrder(tx: Tx, orderId: string) {
@@ -52,6 +52,7 @@ export class OrderWorkflow {
       const patch: Partial<OrderItemRow> = { status: args.to };
       if (args.to === "CANCELLED") {
         // a parcel booked but not yet collected: call the courier off first, so a cancelled item is never picked up
+        // (bounded by the courier client's timeout; a failure rolls the cancellation back)
         if (item.carrierOrderRef && item.shippingProvider === this.courier.name) await this.courier.cancel({ carrierOrderRef: item.carrierOrderRef, awb: item.awb });
         patch.cancelledAt = now;
         patch.cancelReason = args.note ?? null;
@@ -96,17 +97,19 @@ export class OrderWorkflow {
   /**
    * Refunds cancelled lines of a paid order: the line amount less its share of
    * the coupon. When nothing is left active, the remainder (delivery fee
-   * included) is refunded too.
+   * included) is refunded too. The refund is queued in this transaction and
+   * sent by the refund job after commit; refunds still on their way count as
+   * refunded, so nothing is refunded twice.
    */
   private async refundCancelled(tx: Tx, order: OrderRow, all: OrderItemRow[], cancelled: OrderItemRow[], reason: string) {
     if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") return;
-    const [payment] = await tx.select().from(payments).where(and(eq(payments.orderId, order.id), eq(payments.status, order.paymentStatus)));
-    if (!payment) return;
-    const [{ refunded }] = (await tx.select({ refunded: sql<number>`coalesce(sum(${refunds.amountPaise}), 0)::bigint` }).from(refunds).where(eq(refunds.paymentId, payment.id))) as [{ refunded: number }];
+    const payment = await this.refunds.paidPayment(tx, order.id);
+    if (!payment || (payment.status !== "CAPTURED" && payment.status !== "PARTIALLY_REFUNDED")) return;
+    const refunded = await this.refunds.committed(tx, payment.id);
     const nothingLeft = all.every((i) => INACTIVE.includes(i.status));
 
     let amount: number;
-    if (nothingLeft) amount = order.totalPaise - Number(refunded);
+    if (nothingLeft) amount = order.totalPaise - refunded;
     else {
       amount = cancelled.reduce((a, i) => {
         const line = i.unitPricePaise * i.qty;
@@ -114,22 +117,17 @@ export class OrderWorkflow {
         return a + line - couponShare;
       }, 0);
     }
+    // never more than is left, even if earlier line refunds rounded up
+    amount = Math.min(amount, order.totalPaise - refunded);
     if (amount <= 0) return;
 
-    const result = await this.provider.refund({ providerRef: payment.providerRef ?? "", amountPaise: amount });
-    await tx.insert(refunds).values({
+    await this.refunds.queue(tx, {
       paymentId: payment.id,
       orderId: order.id,
       orderItemId: cancelled.length === 1 ? cancelled[0]!.id : null,
       amountPaise: amount,
-      status: result.status,
       reason,
-      completedAt: result.status === "COMPLETED" ? this.clock.now() : null,
     });
-    const status = Number(refunded) + amount >= order.totalPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
-    await tx.update(payments).set({ status }).where(eq(payments.id, payment.id));
-    await tx.update(orders).set({ paymentStatus: status }).where(eq(orders.id, order.id));
-    order.paymentStatus = status;
   }
 
   private async markCodCollected(tx: Tx, order: OrderRow, all: OrderItemRow[]) {

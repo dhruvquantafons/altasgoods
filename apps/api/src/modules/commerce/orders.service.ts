@@ -48,8 +48,12 @@ export class OrdersService {
 
   /**
    * Places an order atomically: re-prices with the offer rows locked, reserves
-   * stock, records the order, and opens a payment (or confirms COD at once).
-   * The Idempotency-Key makes retries safe: the same key returns the same order.
+   * stock, records the order and its payment attempt (or confirms COD at once).
+   * The gateway session is opened only after commit, so no stock lock is held
+   * while the gateway answers; if it fails, the order stays PAYMENT_PENDING
+   * with no nextAction and the customer retries payment.
+   * The Idempotency-Key makes retries safe: the same key returns the same
+   * order, even when two requests with it race.
    */
   async place(userId: string, body: z.infer<typeof placeOrderBody>, idempotencyKey: string | undefined, channel: "WEB" | "ANDROID" | "IOS" = "WEB") {
     if (!idempotencyKey || idempotencyKey.length < 8 || idempotencyKey.length > 100) throw unprocessable("IDEMPOTENCY_KEY_REQUIRED", "Send a unique Idempotency-Key header with every order");
@@ -62,74 +66,85 @@ export class OrdersService {
     if (!lines.length) throw unprocessable("CART_EMPTY", "Your cart is empty");
     const now = this.clock.now();
 
-    const orderId = await this.db.transaction(async (tx) => {
-      const q = await this.quotes.build(tx, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod, lock: true });
-      if (!q.canPlaceOrder) throw new ApiError(409, q.issues[0]?.code ?? "CANNOT_PLACE_ORDER", q.issues.map((i) => i.message).join(". ") || "This order cannot be placed");
+    let placed: { orderId: string; attempt: typeof payments.$inferSelect | null };
+    try {
+      placed = await this.db.transaction(async (tx) => {
+        const q = await this.quotes.build(tx, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod, lock: true });
+        if (!q.canPlaceOrder) throw new ApiError(409, q.issues[0]?.code ?? "CANNOT_PLACE_ORDER", q.issues.map((i) => i.message).join(". ") || "This order cannot be placed");
 
-      for (const l of q.lines) {
-        const updated = await tx
-          .update(offers)
-          .set({ stock: sql`${offers.stock} - ${l.qty}` })
-          .where(and(eq(offers.id, l.offerId), sql`${offers.stock} >= ${l.qty}`))
-          .returning({ id: offers.id });
-        if (!updated.length) throw conflict("INSUFFICIENT_STOCK", `${l.title} just sold out`);
-      }
+        for (const l of q.lines) {
+          const updated = await tx
+            .update(offers)
+            .set({ stock: sql`${offers.stock} - ${l.qty}` })
+            .where(and(eq(offers.id, l.offerId), sql`${offers.stock} >= ${l.qty}`))
+            .returning({ id: offers.id });
+          if (!updated.length) throw conflict("INSUFFICIENT_STOCK", `${l.title} just sold out`);
+        }
 
-      const [{ n }] = (await tx.execute<{ n: number }>(sql`select nextval('order_number_seq')::int as n`)).rows as [{ n: number }];
-      const id = `BB-${istStamp(now)}-${String(n).padStart(5, "0")}`;
-      const cod = body.paymentMethod === "COD";
-      const couponApplied = q.coupon?.applied ? q.coupon.code : null;
+        const [{ n }] = (await tx.execute<{ n: number }>(sql`select nextval('order_number_seq')::int as n`)).rows as [{ n: number }];
+        const id = `BB-${istStamp(now)}-${String(n).padStart(5, "0")}`;
+        const cod = body.paymentMethod === "COD";
+        const couponApplied = q.coupon?.applied ? q.coupon.code : null;
 
-      const [order] = await tx
-        .insert(orders)
-        .values({
-          id,
-          userId,
-          status: cod ? "CONFIRMED" : "PAYMENT_PENDING",
-          paymentMethod: body.paymentMethod,
-          paymentStatus: cod ? "COD_PENDING" : "CREATED",
-          address: { name: address.name, phone: address.phone, line1: address.line1, line2: address.line2, landmark: address.landmark, city: address.city, state: address.state, pincode: address.pincode, type: address.type },
-          mrpTotalPaise: q.mrpTotalPaise,
-          subtotalPaise: q.subtotalPaise,
-          couponDiscountPaise: q.couponDiscountPaise,
-          deliveryFeePaise: q.deliveryFeePaise,
-          totalPaise: q.totalPaise,
-          couponCode: couponApplied,
-          idempotencyKey,
-          channel,
-          paymentDueBy: cod ? null : new Date(now.getTime() + PAYMENT_WINDOW_MS),
-          placedAt: now,
-        })
-        .returning();
+        const [order] = await tx
+          .insert(orders)
+          .values({
+            id,
+            userId,
+            status: cod ? "CONFIRMED" : "PAYMENT_PENDING",
+            paymentMethod: body.paymentMethod,
+            paymentStatus: cod ? "COD_PENDING" : "CREATED",
+            address: { name: address.name, phone: address.phone, line1: address.line1, line2: address.line2, landmark: address.landmark, city: address.city, state: address.state, pincode: address.pincode, type: address.type },
+            mrpTotalPaise: q.mrpTotalPaise,
+            subtotalPaise: q.subtotalPaise,
+            couponDiscountPaise: q.couponDiscountPaise,
+            deliveryFeePaise: q.deliveryFeePaise,
+            totalPaise: q.totalPaise,
+            couponCode: couponApplied,
+            idempotencyKey,
+            channel,
+            paymentDueBy: cod ? null : new Date(now.getTime() + PAYMENT_WINDOW_MS),
+            placedAt: now,
+          })
+          .returning();
 
-      await tx.insert(orderItems).values(
-        q.lines.map((l) => ({
-          orderId: id,
-          productId: l.productId,
-          offerId: l.offerId,
-          sellerId: HOUSE_SELLER_ID,
-          title: l.title,
-          image: l.image,
-          variant: l.variant,
-          qty: l.qty,
-          unitPricePaise: l.unitPricePaise,
-          mrpPaise: l.mrpPaise,
-          status: "PENDING" as const,
-          promisedBy: new Date(q.promisedBy),
-        })),
-      );
-      await tx.insert(orderEvents).values({ orderId: id, toStatus: order!.status, actor: "CUSTOMER", actorId: userId, note: cod ? "Order placed, pay on delivery" : "Order placed, awaiting payment" });
-      if (couponApplied) await tx.update(coupons).set({ usageCount: sql`${coupons.usageCount} + 1` }).where(eq(coupons.code, couponApplied));
+        await tx.insert(orderItems).values(
+          q.lines.map((l) => ({
+            orderId: id,
+            productId: l.productId,
+            offerId: l.offerId,
+            sellerId: HOUSE_SELLER_ID,
+            title: l.title,
+            image: l.image,
+            variant: l.variant,
+            qty: l.qty,
+            unitPricePaise: l.unitPricePaise,
+            mrpPaise: l.mrpPaise,
+            status: "PENDING" as const,
+            promisedBy: new Date(q.promisedBy),
+          })),
+        );
+        await tx.insert(orderEvents).values({ orderId: id, toStatus: order!.status, actor: "CUSTOMER", actorId: userId, note: cod ? "Order placed, pay on delivery" : "Order placed, awaiting payment" });
+        if (couponApplied) await tx.update(coupons).set({ usageCount: sql`${coupons.usageCount} + 1` }).where(eq(coupons.code, couponApplied));
 
-      if (cod) {
-        await tx.insert(payments).values({ orderId: id, provider: "COD", method: "COD", amountPaise: q.totalPaise, status: "COD_PENDING" });
-        await this.workflow.transition(tx, { orderId: id, to: "NEW", actor: "SYSTEM", note: "Cash on delivery order confirmed" });
-      } else await this.payments.startAttempt(tx, order!);
-      return id;
-    });
+        if (cod) {
+          await tx.insert(payments).values({ orderId: id, provider: "COD", method: "COD", amountPaise: q.totalPaise, status: "COD_PENDING" });
+          await this.workflow.transition(tx, { orderId: id, to: "NEW", actor: "SYSTEM", note: "Cash on delivery order confirmed" });
+          return { orderId: id, attempt: null };
+        }
+        return { orderId: id, attempt: await this.payments.openAttempt(tx, order!) };
+      });
+    } catch (e) {
+      // a concurrent request with the same key won the race (unique key violation, or the
+      // stock it reserved): it is the same order, so answer with it
+      const [raced] = await this.db.select({ id: orders.id }).from(orders).where(and(eq(orders.userId, userId), eq(orders.idempotencyKey, idempotencyKey)));
+      if (raced) return this.placedResponse(userId, raced.id);
+      throw e;
+    }
 
     if (fromCart) await this.cart.removeOffers(userId, lines.map((l) => l.offerId));
-    return this.placedResponse(userId, orderId);
+    if (placed.attempt) await this.payments.startSession(placed.attempt);
+    return this.placedResponse(userId, placed.orderId);
   }
 
   private async placedResponse(userId: string, orderId: string) {

@@ -1,11 +1,14 @@
 import { timingSafeEqual } from "node:crypto";
 import { Logger } from "@nestjs/common";
 import { ApiError } from "../../../common/errors.js";
+import { fetchText, OutboundFailure, parseJson } from "../../../common/outbound.js";
 import type { Booking, CourierStatus, LogisticsProvider, ShipmentRequest, TrackingUpdate } from "./provider.js";
 
 const API = "https://apiv2.shiprocket.in/v1/external";
 /** Shiprocket tokens last 10 days; renew a day early. */
 const TOKEN_TTL_MS = 9 * 86_400_000;
+/** Longest we wait for Shiprocket on any call. */
+export const SHIPROCKET_TIMEOUT_MS = 15_000;
 
 export const SHIPROCKET_TOKEN_HEADER = "x-api-key";
 
@@ -19,6 +22,7 @@ export interface ShiprocketConfig {
   /** injectable for tests */
   fetch?: typeof fetch;
   now?: () => number;
+  timeoutMs?: number;
 }
 
 /**
@@ -57,11 +61,13 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
   private readonly logger = new Logger("Shiprocket");
   private readonly fetch: typeof fetch;
   private readonly now: () => number;
+  private readonly timeoutMs: number;
   private token?: { value: string; expiresAt: number };
 
   constructor(private readonly config: ShiprocketConfig) {
     this.fetch = config.fetch ?? fetch;
     this.now = config.now ?? Date.now;
+    this.timeoutMs = config.timeoutMs ?? SHIPROCKET_TIMEOUT_MS;
   }
 
   async book(r: ShipmentRequest, done: Booking, save: (step: Booking) => Promise<void>) {
@@ -167,12 +173,12 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
 
   private async authToken(renew = false) {
     if (!renew && this.token && this.token.expiresAt > this.now()) return this.token.value;
-    const res = await this.fetch(`${API}/auth/login`, {
+    const { res, text } = await this.send("POST /auth/login", `${API}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: this.config.email, password: this.config.password }),
     });
-    const json = (await res.json().catch(() => ({}))) as { token?: string; message?: string };
+    const json = parseJson<{ token?: string; message?: string }>(text);
     if (!res.ok || !json.token) {
       this.logger.error(`Login failed with ${res.status}: ${json.message ?? ""}`);
       throw new ApiError(502, "COURIER_LOGIN_FAILED", "Could not sign in to Shiprocket. Check SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD");
@@ -182,7 +188,7 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
   }
 
   private async call<T>(method: "GET" | "POST", path: string, body?: unknown, retried = false): Promise<T> {
-    const res = await this.fetch(`${API}${path}`, {
+    const { res, text } = await this.send(`${method} ${path}`, `${API}${path}`, {
       method,
       headers: { Authorization: `Bearer ${await this.authToken()}`, ...(body ? { "Content-Type": "application/json" } : {}) },
       body: body ? JSON.stringify(body) : undefined,
@@ -192,12 +198,24 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
       this.token = undefined;
       return this.call<T>(method, path, body, true);
     }
-    const json = (await res.json().catch(() => ({}))) as T & { message?: string; errors?: Record<string, string[]> };
+    const json = parseJson<T & { message?: string; errors?: Record<string, string[]> }>(text);
     if (!res.ok) {
       const detail = json.errors ? Object.values(json.errors).flat().join(" ") : (json.message ?? "");
       this.logger.error(`${method} ${path} failed with ${res.status}: ${detail}`);
       throw new ApiError(502, "COURIER_ERROR", `Shiprocket: ${detail || "the request failed"}`);
     }
     return json;
+  }
+
+  /** One bounded request; a timeout is a 504, a network failure a 502. */
+  private async send(what: string, url: string, init: RequestInit) {
+    try {
+      return await fetchText(this.fetch, url, init, this.timeoutMs);
+    } catch (e) {
+      if (!(e instanceof OutboundFailure)) throw e;
+      this.logger.error(`${what} ${e.message}`);
+      if (e.timedOut) throw new ApiError(504, "COURIER_TIMEOUT", "Shiprocket took too long to answer. Please try again.");
+      throw new ApiError(502, "COURIER_ERROR", "Shiprocket could not be reached");
+    }
   }
 }
