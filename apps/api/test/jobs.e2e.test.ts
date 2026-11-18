@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { DB } from "../src/common/tokens.js";
 import type { Db } from "../src/db/client.js";
 import { jobs } from "../src/db/schema.js";
-import { JOB_MAX_ATTEMPTS, JobsService, retryDelayMs } from "../src/modules/jobs/jobs.service.js";
+import { JOB_MAX_ATTEMPTS, JOB_STALE_MS, JobsService, retryDelayMs } from "../src/modules/jobs/jobs.service.js";
 import { createTestApp, type TestContext } from "./helpers.js";
 
 let t: TestContext;
@@ -102,6 +102,49 @@ describe("jobs", () => {
     expect(await row(id)).toMatchObject({ status: "FAILED", attempts: JOB_MAX_ATTEMPTS, lastError: "still broken" });
     expect(onExhausted).toHaveBeenCalledTimes(1);
     expect(onExhausted).toHaveBeenCalledWith({ ref: "x" }, expect.objectContaining({ message: "still broken" }));
+  });
+
+  it("marks a job FAILED only once its failure has been recorded", async () => {
+    const k = kind();
+    const run = vi.fn(async () => {
+      throw new Error("still broken");
+    });
+    const onExhausted = vi.fn().mockRejectedValueOnce(new Error("database away")).mockResolvedValue(undefined);
+    svc.register(k, run, { onExhausted });
+    const id = await svc.enqueue(db, k, {});
+    await db.update(jobs).set({ attempts: JOB_MAX_ATTEMPTS - 1 }).where(eq(jobs.id, id));
+
+    await svc.runDue();
+    // recording the failure failed: the job is kept for another go, not FAILED
+    expect(await row(id)).toMatchObject({ status: "QUEUED", attempts: JOB_MAX_ATTEMPTS });
+    t.clock.advance(2 * 3_600_000);
+    await svc.runDue();
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(onExhausted).toHaveBeenCalledTimes(2);
+    expect(await row(id)).toMatchObject({ status: "FAILED", lastError: "still broken" });
+  });
+
+  it("does not run a job twice when another worker took it over while it waited in a batch", async () => {
+    const k = kind();
+    const other = new JobsService(db, t.clock);
+    const ran: string[] = [];
+    // A and B each take ten minutes; C waits twenty behind them, past its lease, and the other worker takes it
+    const handler = async (p: { name: string }) => {
+      ran.push(p.name);
+      if (p.name !== "C") t.clock.advance(10 * 60_000);
+      if (p.name === "B") await other.runDue();
+    };
+    svc.register(k, handler);
+    other.register(k, handler);
+    const at = (ms: number) => ({ runAfter: new Date(t.clock.now().getTime() - ms) });
+    const c = await svc.enqueue(db, k, { name: "C" }, at(1000));
+    await svc.enqueue(db, k, { name: "B" }, at(2000));
+    await svc.enqueue(db, k, { name: "A" }, at(3000));
+    expect(20 * 60_000).toBeGreaterThan(JOB_STALE_MS);
+
+    await svc.runDue(3);
+    expect(ran).toEqual(["A", "B", "C"]);
+    expect(await row(c)).toMatchObject({ status: "DONE", attempts: 2 });
   });
 
   it("never runs the same job on two workers at once", async () => {

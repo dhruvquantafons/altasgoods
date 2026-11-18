@@ -11520,6 +11520,10 @@
                         "CLOSED"
                       ]
                     },
+                    "sessionOpen": {
+                      "type": "boolean",
+                      "description": "False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments"
+                    },
                     "checkout": {
                       "nullable": true,
                       "description": "Set when the customer pays in the gateway's own checkout",
@@ -11562,6 +11566,7 @@
                     "provider",
                     "failureReason",
                     "orderStatus",
+                    "sessionOpen",
                     "checkout"
                   ],
                   "additionalProperties": false
@@ -11688,6 +11693,10 @@
                         "CLOSED"
                       ]
                     },
+                    "sessionOpen": {
+                      "type": "boolean",
+                      "description": "False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments"
+                    },
                     "checkout": {
                       "nullable": true,
                       "description": "Set when the customer pays in the gateway's own checkout",
@@ -11730,6 +11739,7 @@
                     "provider",
                     "failureReason",
                     "orderStatus",
+                    "sessionOpen",
                     "checkout"
                   ],
                   "additionalProperties": false
@@ -11866,6 +11876,10 @@
                         "CLOSED"
                       ]
                     },
+                    "sessionOpen": {
+                      "type": "boolean",
+                      "description": "False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments"
+                    },
                     "checkout": {
                       "nullable": true,
                       "description": "Set when the customer pays in the gateway's own checkout",
@@ -11908,6 +11922,7 @@
                     "provider",
                     "failureReason",
                     "orderStatus",
+                    "sessionOpen",
                     "checkout"
                   ],
                   "additionalProperties": false
@@ -13442,7 +13457,8 @@
                 "PENDING",
                 "PROCESSING",
                 "COMPLETED",
-                "FAILED"
+                "FAILED",
+                "NEEDS_ATTENTION"
               ]
             }
           },
@@ -13512,7 +13528,8 @@
                               "PENDING",
                               "PROCESSING",
                               "COMPLETED",
-                              "FAILED"
+                              "FAILED",
+                              "NEEDS_ATTENTION"
                             ]
                           },
                           "reason": {

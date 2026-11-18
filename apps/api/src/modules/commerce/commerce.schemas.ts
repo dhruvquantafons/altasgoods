@@ -215,6 +215,7 @@ export const paymentDetailSchema = paymentSummary.extend({
   provider: z.string(),
   failureReason: z.string().nullable(),
   orderStatus: z.enum(ORDER_STATUSES),
+  sessionOpen: z.boolean().describe("False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments"),
   checkout: z
     .object({ gateway: z.literal("RAZORPAY"), keyId: z.string(), orderRef: z.string(), currency: z.literal("INR") })
     .nullable()

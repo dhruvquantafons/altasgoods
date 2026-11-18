@@ -11,6 +11,7 @@ import { addresses, customerUploads, offers, orderItems, orders, products, refun
 import type { AuthUser } from "../../auth/auth.guard.js";
 import { sniffMime, type FileStore } from "../../files/file-store.js";
 import { PaymentsService } from "../payments/payments.service.js";
+import { customerRefundStatus } from "../payments/refunds.service.js";
 import { OrderWorkflow } from "../workflow.service.js";
 import type { createReturnBody } from "./returns.schemas.js";
 import type { z } from "zod";
@@ -278,7 +279,7 @@ export class ReturnsService {
         image: item?.image ?? null,
         amountPaise: f.amountPaise,
         method,
-        status: f.status,
+        status: customerRefundStatus(f.status),
         createdAt: f.createdAt.toISOString(),
         completedAt: f.completedAt ? f.completedAt.toISOString() : null,
       };
@@ -454,7 +455,7 @@ export class ReturnsService {
       refundAmountPaise: r.refundAmountPaise,
       instantRefund: r.instantRefund,
       // a refund to the payment method moves on in the refund job: show where it is now
-      refundStatus: row.refund?.status ?? r.refundStatus,
+      refundStatus: row.refund ? customerRefundStatus(row.refund.status) : r.refundStatus,
       status: r.status,
       pickupDate: r.pickupDate,
       pickupSlot: r.pickupSlot,

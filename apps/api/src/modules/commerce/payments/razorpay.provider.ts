@@ -41,13 +41,19 @@ interface RazorpayRefund {
   status: "pending" | "processed" | "failed";
 }
 
-/** A Razorpay answer with an error status; `upstreamStatus` is what Razorpay replied. */
+/**
+ * A Razorpay answer with an error status; `upstreamStatus` is what Razorpay
+ * replied. Its 5xx and 429 answers are worth retrying, its other 4xx are not.
+ */
 class RazorpayError extends ApiError {
+  readonly transient: boolean;
+
   constructor(
     readonly upstreamStatus: number,
     message: string,
   ) {
     super(502, "PAYMENT_GATEWAY_ERROR", message);
+    this.transient = upstreamStatus >= 500 || upstreamStatus === 429;
   }
 }
 
@@ -143,14 +149,16 @@ export class RazorpayPaymentProvider implements PaymentProvider {
   }
 
   /**
-   * Refunds part or all of the order's captured payment. `receipt` (our
-   * refund id) is Razorpay's idempotency key: a refund already made with it,
-   * on an earlier attempt whose answer we lost, is returned instead of
-   * refunding again.
+   * Refunds part or all of the order's captured payment, tagged with
+   * `receipt` (our refund id). Our protection against refunding twice is the
+   * lookup first: a refund Razorpay already holds with this receipt (made on
+   * an earlier attempt whose answer we lost) is returned instead. The caller
+   * holds the refund row lock, so two attempts never overlap. If Razorpay
+   * rejects the POST with a 400, the receipt is looked up again in case the
+   * refund exists after all.
    */
   async refund(input: { providerRef: string; amountPaise: number; receipt: string }): Promise<ProviderRefund> {
-    const { items } = await this.call<{ items: RazorpayPayment[] }>("GET", `/orders/${encodeURIComponent(input.providerRef)}/payments`);
-    const captured = items.find((p) => p.status === "captured" || p.status === "refunded");
+    const captured = await this.capturedPayment(input.providerRef);
     if (!captured) throw conflict("NOT_REFUNDABLE", "Razorpay has no captured payment for this order");
     const earlier = await this.refundByReceipt(captured.id, input.receipt);
     if (earlier) return { providerRefundId: earlier.id, status: refundState(earlier.status) };
@@ -171,9 +179,21 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     return { providerRefundId: refund.id, status: refundState(refund.status) };
   }
 
+  async findRefund(input: { providerRef: string; receipt: string }): Promise<ProviderRefund | null> {
+    // without a captured payment there is nothing a refund could have been made against
+    const captured = await this.capturedPayment(input.providerRef);
+    const refund = captured ? await this.refundByReceipt(captured.id, input.receipt) : null;
+    return refund ? { providerRefundId: refund.id, status: refundState(refund.status) } : null;
+  }
+
   async refundStatus(providerRefundId: string): Promise<RefundState> {
     const refund = await this.call<RazorpayRefund>("GET", `/refunds/${encodeURIComponent(providerRefundId)}`);
     return refundState(refund.status);
+  }
+
+  private async capturedPayment(providerRef: string) {
+    const { items } = await this.call<{ items: RazorpayPayment[] }>("GET", `/orders/${encodeURIComponent(providerRef)}/payments`);
+    return items.find((p) => p.status === "captured" || p.status === "refunded") ?? null;
   }
 
   private async refundByReceipt(razorpayPaymentId: string, receipt: string) {

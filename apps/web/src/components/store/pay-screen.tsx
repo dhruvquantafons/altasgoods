@@ -11,7 +11,7 @@ import type { PaymentDetail } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  payment: { id: string; status: string; amountPaise: number; failureReason: string | null; method: string; methodCode: string };
+  payment: { id: string; status: string; amountPaise: number; failureReason: string | null; method: string; methodCode: string; sessionOpen: boolean };
   order: { id: string; status: string; paymentDueBy: string | null; itemCount: number; firstItem: string };
   /** Set when the gateway's own checkout takes the payment; null for the sandbox. */
   checkout: PaymentDetail["checkout"];
@@ -90,8 +90,11 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
       setBusy(null);
       return setError(r.error);
     }
-    if (r.data.status === "CAPTURED") return router.replace(`/order/confirmed?id=${order.id}`);
+    // money that reached an order which had already ended is given back, never confirmed
+    const ended = r.data.orderStatus === "ABANDONED" || r.data.orderStatus === "CANCELLED";
+    if (r.data.status === "CAPTURED" && !ended) return router.replace(`/order/confirmed?id=${order.id}`);
     setBusy(null);
+    if (ended && (r.data.status === "CAPTURED" || r.data.status === "REFUNDED")) return setError("This order had already expired, so the amount was refunded straight away.");
     if (r.data.status === "REFUNDED") return setError("This order had already expired, so the amount was refunded straight away.");
     setFailed(r.data.failureReason ?? "The payment did not go through");
   };
@@ -141,11 +144,14 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
     router.replace(`/checkout/pay/${r.data.paymentId}`);
   };
 
+  // the gateway could not open this payment when the order was placed: start a fresh attempt
+  const unopened = !payment.sessionOpen && (payment.status === "CREATED" || payment.status === "PENDING");
+
   const mm = left === null ? null : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-4 py-10 sm:py-16">
-      {!checkout && (
+      {!checkout && !unopened && (
         <div className="mb-4 flex items-center justify-center gap-2 rounded-full bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-800 ring-1 ring-accent-100">
           <FlaskConical size={14} aria-hidden="true" />
           AltasGoods Pay sandbox: no real money moves
@@ -198,6 +204,14 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
               <p className="mt-0.5">{failed}. Your items are still reserved; you can try again.</p>
             </div>
           )}
+          {unopened && !failed && !expired && !paid && (
+            <div role="status" className="mt-5 rounded-xl bg-warning-50 px-3.5 py-3 text-[13px] text-warning-700">
+              <p className="flex items-center gap-2 font-semibold">
+                <CircleAlert size={15} aria-hidden="true" /> The payment page did not open
+              </p>
+              <p className="mt-0.5">The payment gateway did not respond in time. Your items are still reserved; try again.</p>
+            </div>
+          )}
           {error && (
             <p role="alert" className="mt-5 rounded-xl bg-danger-50 px-3.5 py-3 text-[13px] text-danger-700">
               {error}
@@ -216,7 +230,7 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
                   Back to cart
                 </Link>
               </>
-            ) : failed ? (
+            ) : failed || unopened ? (
               <button type="button" onClick={retry} disabled={!!busy} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-300">
                 {busy === "retry" && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
                 Try again

@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
+import { isTransientGatewayError } from "../src/modules/commerce/payments/provider.js";
 import { RAZORPAY_SIGNATURE_HEADER, RazorpayPaymentProvider } from "../src/modules/commerce/payments/razorpay.provider.js";
 
 const config = { keyId: "rzp_test_key", keySecret: "key-secret", webhookSecret: "webhook-secret", webOrigin: "http://localhost:3000" };
@@ -88,6 +89,30 @@ describe("Razorpay provider", () => {
       return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
     }) as unknown as typeof fetch;
     expect(await new RazorpayPaymentProvider({ ...config, fetch: raced }).refund({ providerRef: "order_abc", amountPaise: 300, receipt: "refund-1" })).toEqual({ providerRefundId: "rfnd_7", status: "COMPLETED" });
+  });
+
+  it("finds a refund by its receipt, and knows there is none without a captured payment", async () => {
+    const f = fakeFetch({ items: [{ id: "pay_1", status: "captured" }] }, { items: [{ id: "rfnd_3", receipt: "refund-1", status: "processed" }] }, { items: [{ id: "pay_0", status: "failed" }] });
+    const p = new RazorpayPaymentProvider({ ...config, fetch: f });
+    expect(await p.findRefund({ providerRef: "order_abc", receipt: "refund-1" })).toEqual({ providerRefundId: "rfnd_3", status: "COMPLETED" });
+    expect(await p.findRefund({ providerRef: "order_abc", receipt: "refund-1" })).toBeNull();
+    expect(f).toHaveBeenCalledTimes(3);
+  });
+
+  it("tells a refusal from a failure worth retrying", async () => {
+    const answering = (status: number) =>
+      new RazorpayPaymentProvider({ ...config, fetch: vi.fn(async () => new Response(JSON.stringify({ error: { description: "no" } }), { status })) as unknown as typeof fetch });
+    const failure = (status: number) => answering(status).refundStatus("rfnd_1").catch((e: unknown) => e);
+    expect(isTransientGatewayError(await failure(400))).toBe(false);
+    expect(isTransientGatewayError(await failure(404))).toBe(false);
+    expect(isTransientGatewayError(await failure(429))).toBe(true);
+    expect(isTransientGatewayError(await failure(503))).toBe(true);
+    const slow = await new RazorpayPaymentProvider({ ...config, fetch: hanging(), timeoutMs: 20 }).refundStatus("rfnd_1").catch((e: unknown) => e);
+    expect(isTransientGatewayError(slow)).toBe(true);
+    // nothing captured to refund: a refusal
+    const none = await new RazorpayPaymentProvider({ ...config, fetch: fakeFetch({ items: [] }) }).refund({ providerRef: "order_abc", amountPaise: 1, receipt: "r" }).catch((e: unknown) => e);
+    expect(none).toMatchObject({ code: "NOT_REFUNDABLE" });
+    expect(isTransientGatewayError(none)).toBe(false);
   });
 
   it("reads a refund's status", async () => {

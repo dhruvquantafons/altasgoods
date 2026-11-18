@@ -123,8 +123,9 @@ describe("prepaid checkout", () => {
     expect(detail.body).toMatchObject({ status: "ABANDONED", paymentStatus: "EXPIRED" });
     expect(await stockOf(o.id)).toBe(stockBefore);
 
-    // a payment that lands after expiry is refunded, never silently kept
-    await t.http.post(`/v1/payments/${placed.body.payment.id}/sandbox/complete`).set(shopper).send({ outcome: "SUCCESS" }).expect(200);
+    // a payment that lands after expiry is refunded, never silently kept: the customer is told so at once
+    const landed = await t.http.post(`/v1/payments/${placed.body.payment.id}/sandbox/complete`).set(shopper).send({ outcome: "SUCCESS" }).expect(200);
+    expect(landed.body).toMatchObject({ status: "REFUNDED", orderStatus: "ABANDONED" });
     const queued = await t.http.get(`/v1/me/orders/${placed.body.order.id}`).set(shopper).expect(200);
     expect(queued.body.refunds).toEqual([expect.objectContaining({ amountPaise: queued.body.totalPaise, status: "PENDING", reason: "Payment received after the order expired" })]);
     await runJobs(t);

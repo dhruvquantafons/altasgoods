@@ -46,7 +46,7 @@ export class AdminInsightsService {
         .where(inArray(orderItems.status, ["NEW", "ACCEPTED", "PACKED", "READY_TO_SHIP"]))
         .groupBy(orderItems.status),
       this.db.select({ n: count() }).from(returns).where(inArray(returns.status, ["PENDING_REVIEW", "RECEIVED", "QC_FAILED"])),
-      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING"])),
+      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING", "NEEDS_ATTENTION"])),
       this.db
         .select({ productId: orderItems.productId, title: orderItems.title, image: orderItems.image, units: sum(orderItems.qty), revenue: sql<string>`sum(${orderItems.qty} * ${orderItems.unitPricePaise})` })
         .from(orderItems)
@@ -122,7 +122,7 @@ export class AdminInsightsService {
       this.db.select({ n: count() }).from(payments).innerJoin(orders, eq(orders.id, payments.orderId)).innerJoin(users, eq(users.id, orders.userId)).where(where),
       this.db.select({ n: count(), total: sum(payments.amountPaise) }).from(payments).where(and(gte(payments.capturedAt, today), inArray(payments.status, ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"]))),
       this.db.select({ n: count() }).from(payments).where(and(gte(payments.createdAt, new Date(now.getTime() - DAY)), eq(payments.status, "FAILED"))),
-      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING"])),
+      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING", "NEEDS_ATTENTION"])),
     ]);
     return {
       items: rows.map(({ p, name, email, userId }) => ({

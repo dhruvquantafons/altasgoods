@@ -5308,6 +5308,8 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments */
+                        sessionOpen: boolean;
                         /** @description Set when the customer pays in the gateway's own checkout */
                         checkout: {
                             /** @enum {string} */
@@ -5358,6 +5360,8 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments */
+                        sessionOpen: boolean;
                         /** @description Set when the customer pays in the gateway's own checkout */
                         checkout: {
                             /** @enum {string} */
@@ -5409,6 +5413,8 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments */
+                        sessionOpen: boolean;
                         /** @description Set when the customer pays in the gateway's own checkout */
                         checkout: {
                             /** @enum {string} */
@@ -5839,7 +5845,7 @@ export interface operations {
     AdminInsightsController_refunds: {
         parameters: {
             query?: {
-                status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+                status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
                 /** @description Order ID or customer email */
                 q?: string;
                 page?: number;
@@ -5863,7 +5869,7 @@ export interface operations {
                             orderId: string;
                             amountPaise: number;
                             /** @enum {string} */
-                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
                             reason: string;
                             /** @enum {string} */
                             method: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";

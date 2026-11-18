@@ -37,6 +37,11 @@ export class SandboxPaymentProvider implements PaymentProvider {
     return { providerRefundId: `sbx_rfnd_${input.receipt}`, status: "COMPLETED" };
   }
 
+  /** Sandbox refunds never fail half way, so there is never one to find. */
+  async findRefund(_input: { providerRef: string; receipt: string }): Promise<ProviderRefund | null> {
+    return null;
+  }
+
   async refundStatus(): Promise<RefundState> {
     return "COMPLETED";
   }

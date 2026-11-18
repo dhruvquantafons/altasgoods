@@ -1,22 +1,27 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "../src/common/errors.js";
+import { ApiError, conflict } from "../src/common/errors.js";
 import { DB, PAYMENT_PROVIDER } from "../src/common/tokens.js";
 import { env } from "../src/config/env.js";
 import { createDb, type Db } from "../src/db/client.js";
-import { offers, orders, payments, refunds } from "../src/db/schema.js";
+import { jobs as jobRows, offers, orders, payments, refunds } from "../src/db/schema.js";
 import { PaymentsService } from "../src/modules/commerce/payments/payments.service.js";
-import type { RefundState } from "../src/modules/commerce/payments/provider.js";
+import type { ProviderRefund, RefundState } from "../src/modules/commerce/payments/provider.js";
 import { RefundsService } from "../src/modules/commerce/payments/refunds.service.js";
 import { SandboxPaymentProvider } from "../src/modules/commerce/payments/sandbox.provider.js";
 import { JOB_MAX_ATTEMPTS, JobsService, retryDelayMs } from "../src/modules/jobs/jobs.service.js";
 import { createTestApp, DEMO_CUSTOMER, signIn, type TestContext } from "./helpers.js";
 
-/** The sandbox gateway with knobs: a slow or failing session, failing or slow refunds. */
+/** The sandbox gateway with knobs: a slow or failing session, failing or slow refunds, a receipt lookup. */
 class FlakyGateway extends SandboxPaymentProvider {
   sessionHook?: () => Promise<void>;
   refundFailures = 0;
+  /** how the failing refunds fail: a timeout (worth retrying) or a refusal (not) */
+  refundError: "timeout" | "refused" = "timeout";
+  /** what a receipt lookup answers */
+  lookup: "none" | "unreachable" | ProviderRefund = "none";
+  lookups: string[] = [];
   refundResult: "COMPLETED" | "PROCESSING" = "COMPLETED";
   statusAnswer: RefundState = "COMPLETED";
   refundCalls: { receipt: string; amountPaise: number }[] = [];
@@ -30,9 +35,16 @@ class FlakyGateway extends SandboxPaymentProvider {
     this.refundCalls.push({ receipt: input.receipt, amountPaise: input.amountPaise });
     if (this.refundFailures > 0) {
       this.refundFailures--;
+      if (this.refundError === "refused") throw conflict("NOT_REFUNDABLE", "Razorpay has no captured payment for this order");
       throw new ApiError(504, "PAYMENT_GATEWAY_TIMEOUT", "The payment gateway took too long to answer");
     }
     return { providerRefundId: `rfnd_${input.receipt}`, status: this.refundResult };
+  }
+
+  override async findRefund(input: { receipt: string }) {
+    this.lookups.push(input.receipt);
+    if (this.lookup === "unreachable") throw new ApiError(504, "PAYMENT_GATEWAY_TIMEOUT", "The payment gateway took too long to answer");
+    return this.lookup === "none" ? null : this.lookup;
   }
 
   override async refundStatus() {
@@ -67,6 +79,9 @@ beforeEach(() => {
   gateway.refundResult = "COMPLETED";
   gateway.statusAnswer = "COMPLETED";
   gateway.refundCalls = [];
+  gateway.refundError = "timeout";
+  gateway.lookup = "none";
+  gateway.lookups = [];
 });
 
 async function offerOf(slug: string) {
@@ -100,10 +115,14 @@ describe("checkout with a payment gateway outside the stock lock", () => {
     expect(await stockOf(offerId)).toBe(before - 2);
     const [attempt] = await db.select().from(payments).where(eq(payments.id, placed.body.payment.id));
     expect(attempt!.providerRef).toBeNull();
+    // the pay page can tell the session never opened, and offers a retry
+    const unopened = await t.http.get(`/v1/payments/${placed.body.payment.id}`).set(shopper).expect(200);
+    expect(unopened.body).toMatchObject({ status: "CREATED", sessionOpen: false });
 
     gateway.sessionHook = undefined;
     const retry = await t.http.post(`/v1/me/orders/${placed.body.order.id}/payments`).set(shopper).expect(201);
     expect(retry.body.nextAction.url).toContain(`/checkout/pay/${retry.body.id}`);
+    expect((await t.http.get(`/v1/payments/${retry.body.id}`).set(shopper).expect(200)).body.sessionOpen).toBe(true);
     const paid = await t.http.post(`/v1/payments/${retry.body.id}/sandbox/complete`).set(shopper).send({ outcome: "SUCCESS" }).expect(200);
     expect(paid.body).toMatchObject({ status: "CAPTURED", orderStatus: "CONFIRMED" });
     expect(await stockOf(offerId)).toBe(before - 2);
@@ -155,6 +174,9 @@ describe("refunds through the job queue", () => {
     const cancelled = await t.http.post(`/v1/me/orders/${order.id}/cancel`).set(shopper).send({ reason: "Changed my mind" }).expect(200);
     expect(cancelled.body.refunds).toEqual([expect.objectContaining({ amountPaise: order.totalPaise, status: "PENDING" })]);
     expect(cancelled.body.paymentStatus).toBe("CAPTURED");
+    // to the customer the payment is already on its way back
+    const [paidWith] = await db.select({ id: payments.id }).from(payments).where(and(eq(payments.orderId, order.id), eq(payments.status, "CAPTURED")));
+    expect((await t.http.get(`/v1/payments/${paidWith!.id}`).set(shopper).expect(200)).body.status).toBe("REFUNDED");
 
     // the gateway times out: the refund waits for the retry
     await jobs.runDue();
@@ -179,29 +201,97 @@ describe("refunds through the job queue", () => {
     expect(gateway.refundCalls).toHaveLength(2);
   });
 
-  it("marks a refund FAILED after the last attempt, which frees the amount to refund again", async () => {
-    const order = await paidOrder("speaker-boom");
+  /** Fails every attempt of a full Goodwill refund with timeouts, then answers the final receipt lookup. */
+  async function exhaust(slug: string, lookup: FlakyGateway["lookup"]) {
+    const order = await paidOrder(slug);
     const pay = t.app.get(PaymentsService);
     gateway.refundFailures = 1_000;
-    await appDb.transaction((tx) => pay.refundToSource(tx, order.id, order.totalPaise, "Goodwill"));
-
-    // while it is pending, the amount counts as refunded
-    await expect(appDb.transaction((tx) => pay.refundToSource(tx, order.id, 1, "Goodwill"))).rejects.toMatchObject({ code: "REFUND_TOO_LARGE" });
-
+    gateway.lookup = lookup;
+    const refund = await appDb.transaction((tx) => pay.refundToSource(tx, order.id, order.totalPaise, "Goodwill"));
     for (let i = 0; i < JOB_MAX_ATTEMPTS + 1; i++) {
       await jobs.runDue();
       t.clock.advance(2 * 3_600_000);
     }
     expect(gateway.refundCalls).toHaveLength(JOB_MAX_ATTEMPTS);
+    expect(gateway.lookups).toEqual([refund.id]);
+    const [job] = await db.select().from(jobRows).where(sql`${jobRows.payload}->>'refundId' = ${refund.id}`);
+    expect(job!.status).toBe("FAILED");
+    gateway.refundFailures = 0;
+    return { order, refund, pay };
+  }
+  const goodwill = (pay: PaymentsService, orderId: string, amountPaise: number) => appDb.transaction((tx) => pay.refundToSource(tx, orderId, amountPaise, "Goodwill, again"));
+
+  it("keeps the amount reserved when the gateway never answers, until staff retry the same refund", async () => {
+    const { order, refund, pay } = await exhaust("speaker-boom", "unreachable");
+    expect((await refundsOf(order.id))[0]!.status).toBe("NEEDS_ATTENTION");
+    expect((await orderOf(order.id)).paymentStatus).toBe("CAPTURED");
+    // it may have been paid: nothing more can be refunded
+    await expect(goodwill(pay, order.id, 1)).rejects.toMatchObject({ code: "REFUND_TOO_LARGE" });
+    // the customer only sees it on its way
+    expect((await t.http.get(`/v1/me/orders/${order.id}`).set(shopper).expect(200)).body.refunds[0].status).toBe("PROCESSING");
+
+    gateway.lookup = "none";
+    const again = await t.app.get(RefundsService).retry(refund.id);
+    expect(again).toMatchObject({ id: refund.id, status: "PENDING" });
+    await jobs.runDue();
+    const rows = await refundsOf(order.id);
+    expect(rows).toEqual([expect.objectContaining({ id: refund.id, status: "COMPLETED" })]);
+    expect(gateway.refundCalls.at(-1)).toEqual({ receipt: refund.id, amountPaise: order.totalPaise });
+    expect((await orderOf(order.id)).paymentStatus).toBe("REFUNDED");
+    await expect(t.app.get(RefundsService).retry(refund.id)).rejects.toMatchObject({ code: "REFUND_NOT_RETRYABLE" });
+  });
+
+  it("records the refund the gateway made after all when the last attempt timed out", async () => {
+    // the final lookup finds what Razorpay did make under the receipt
+    const { order, refund } = await exhaust("backpack-urban", { providerRefundId: "rfnd_made_anyway", status: "COMPLETED" });
+    expect((await refundsOf(order.id))[0]).toMatchObject({ id: refund.id, status: "COMPLETED", providerRefundId: "rfnd_made_anyway" });
+    expect((await orderOf(order.id)).paymentStatus).toBe("REFUNDED");
+  });
+
+  it("frees the amount only when the gateway confirms no refund was made, and re-reserves it on retry", async () => {
+    const { order, refund, pay } = await exhaust("mugs-stone", "none");
     expect((await refundsOf(order.id))[0]!.status).toBe("FAILED");
     expect((await orderOf(order.id)).paymentStatus).toBe("CAPTURED");
 
-    gateway.refundFailures = 0;
-    await appDb.transaction((tx) => pay.refundToSource(tx, order.id, order.totalPaise, "Goodwill, again"));
+    // the amount is free again: another refund takes part of it, so the old one no longer fits
+    await goodwill(pay, order.id, 100);
+    await expect(t.app.get(RefundsService).retry(refund.id)).rejects.toMatchObject({ code: "REFUND_TOO_LARGE" });
     await jobs.runDue();
-    const rows = await refundsOf(order.id);
-    expect(rows.map((r) => r.status).sort()).toEqual(["COMPLETED", "FAILED"]);
-    expect((await orderOf(order.id)).paymentStatus).toBe("REFUNDED");
+    expect((await refundsOf(order.id)).map((r) => r.status).sort()).toEqual(["COMPLETED", "FAILED"]);
+  });
+
+  it("fails a refund the gateway refuses at once, after confirming none was made", async () => {
+    const order = await paidOrder("cushions-linen");
+    const pay = t.app.get(PaymentsService);
+    gateway.refundFailures = 1;
+    gateway.refundError = "refused";
+    const refund = await appDb.transaction((tx) => pay.refundToSource(tx, order.id, 500, "Goodwill"));
+    await jobs.runDue();
+    expect(gateway.refundCalls).toHaveLength(1);
+    expect(gateway.lookups).toEqual([refund.id]);
+    expect((await refundsOf(order.id))[0]!.status).toBe("FAILED");
+
+    // refused, yet the receipt turns up: that refund is recorded, not failed
+    gateway.refundFailures = 1;
+    gateway.lookup = { providerRefundId: "rfnd_found", status: "PROCESSING" };
+    const second = await appDb.transaction((tx) => pay.refundToSource(tx, order.id, 500, "Goodwill"));
+    await jobs.runDue();
+    expect((await db.select().from(refunds).where(eq(refunds.id, second.id)))[0]).toMatchObject({ status: "PROCESSING", providerRefundId: "rfnd_found" });
+  });
+
+  it("does not leave a refund pending when its worker died while giving up", async () => {
+    const order = await paidOrder("serum-glow");
+    const pay = t.app.get(PaymentsService);
+    const refund = await appDb.transaction((tx) => pay.refundToSource(tx, order.id, 700, "Goodwill"));
+    // the last attempt was claimed, then the worker died before recording anything
+    await db
+      .update(jobRows)
+      .set({ status: "RUNNING", attempts: JOB_MAX_ATTEMPTS, lockedAt: new Date(t.clock.now().getTime() - 20 * 60_000) })
+      .where(sql`${jobRows.payload}->>'refundId' = ${refund.id}`);
+    gateway.refundFailures = 1;
+    gateway.lookup = "unreachable";
+    await jobs.runDue();
+    expect((await db.select().from(refunds).where(eq(refunds.id, refund.id)))[0]!.status).toBe("NEEDS_ATTENTION");
   });
 
   it("re-checks refunds the gateway is still processing", async () => {
@@ -217,7 +307,8 @@ describe("refunds through the job queue", () => {
     gateway.statusAnswer = "PROCESSING";
     expect(await sweep.refreshProcessing()).toBe(0);
     gateway.statusAnswer = "COMPLETED";
-    expect(await sweep.refreshProcessing()).toBe(1);
+    // (other tests' processing refunds settle too)
+    expect(await sweep.refreshProcessing()).toBeGreaterThanOrEqual(1);
     expect((await refundsOf(order.id))[0]!.status).toBe("COMPLETED");
     expect((await orderOf(order.id)).paymentStatus).toBe("PARTIALLY_REFUNDED");
     const [payment] = await db.select().from(payments).where(and(eq(payments.orderId, order.id), eq(payments.status, "PARTIALLY_REFUNDED")));

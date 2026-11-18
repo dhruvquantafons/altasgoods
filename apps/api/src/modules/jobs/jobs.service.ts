@@ -9,7 +9,11 @@ import { jobs } from "../../db/schema.js";
 
 /** Runs per job before it is marked FAILED. */
 export const JOB_MAX_ATTEMPTS = 8;
-/** A RUNNING job claimed this long ago belongs to a worker that died; another may take it over. */
+/**
+ * A job's lease: a RUNNING job whose run started (or, while it waits in a
+ * claimed batch, whose claim was made) this long ago belongs to a worker that
+ * died, and another worker may take it over.
+ */
 export const JOB_STALE_MS = 15 * 60_000;
 /** Wait before run `attempts + 1`: 30s, 1m, 2m, 4m ... capped at an hour. */
 export const retryDelayMs = (attempts: number) => Math.min(30_000 * 2 ** Math.max(attempts - 1, 0), 3_600_000);
@@ -30,7 +34,12 @@ export interface JobContext {
 export type JobHandler<P> = (payload: P, ctx: JobContext) => Promise<void>;
 
 export interface JobOptions<P> {
-  /** Called once when the last attempt has failed, to record the failure in business terms. */
+  /**
+   * Called when the last attempt has failed, to record the failure in business
+   * terms. The job is marked FAILED only after this returns; if it throws (or
+   * the worker dies first) the job is retried later, run and all, so it may be
+   * called more than once and must be idempotent too.
+   */
   onExhausted?: (payload: P, error: Error) => Promise<void>;
 }
 
@@ -46,9 +55,19 @@ type Scope = { enqueued: boolean };
  *   (QUEUED -> RUNNING, attempts + 1), which is safe with several API instances,
  *   then runs each handler outside that claim, one after another. A handler owns
  *   its transactions. Success marks the row DONE; a throw puts it back to QUEUED
- *   after `retryDelayMs(attempts)`, or marks it FAILED (with `last_error`) after
- *   JOB_MAX_ATTEMPTS and calls the handler's `onExhausted`. A RUNNING row whose
- *   claim is older than JOB_STALE_MS is taken over (its worker died).
+ *   after `retryDelayMs(attempts)`. After JOB_MAX_ATTEMPTS the handler's
+ *   `onExhausted` runs first and only then is the row marked FAILED (with
+ *   `last_error`), so a crash in between retries the job instead of losing it.
+ * - Leases: `locked_at` is renewed when each job actually starts, and the start
+ *   only proceeds if the row still carries this worker's lease. A RUNNING row
+ *   older than JOB_STALE_MS is taken over by any worker. So a job waiting in a
+ *   batch behind slow jobs may be taken over, and is then skipped here; and the
+ *   end of a run only records DONE / QUEUED / FAILED while the lease is still
+ *   ours. Guarantee: at least once; two runs of one job overlap only if a run
+ *   takes longer than JOB_STALE_MS; a job runs again after a success only if its
+ *   worker died before recording DONE. Handlers must be idempotent, and anything
+ *   that cannot be repeated (sending an email) should record that it happened in
+ *   its own transaction and check that record first.
  * - `kick()` runs `runDue` on the next tick. Producers do not call it inside their
  *   transaction: HTTP requests are wrapped by JobsKickInterceptor and other code by
  *   `scope(fn)`, which kick once the work (and so its commits) has finished, if
@@ -146,32 +165,51 @@ export class JobsService {
       .set({ status: "RUNNING", attempts: sql`${jobs.attempts} + 1`, lockedAt: now })
       .where(inArray(jobs.id, due))
       .returning();
+    // UPDATE ... RETURNING does not keep the subquery's order: oldest first
+    claimed.sort((a, b) => a.runAfter.getTime() - b.runAfter.getTime());
     for (const job of claimed) await this.execute(job);
     return claimed.length;
   }
 
   private async execute(job: typeof jobs.$inferSelect) {
     const handler = this.handlers.get(job.kind)!;
+    // renew the lease now that the run starts; another worker may have taken the job over while it waited in this batch
+    const startedAt = this.clock.now();
+    const [started] = await this.db
+      .update(jobs)
+      .set({ lockedAt: startedAt })
+      .where(and(eq(jobs.id, job.id), eq(jobs.status, "RUNNING"), eq(jobs.lockedAt, job.lockedAt!)))
+      .returning({ id: jobs.id });
+    if (!started) {
+      this.logger.warn(`${job.kind} ${job.id} was taken over by another worker before it started here`);
+      return;
+    }
+    const ours = and(eq(jobs.id, job.id), eq(jobs.status, "RUNNING"), eq(jobs.lockedAt, startedAt));
+    const finish = async (patch: Partial<typeof jobs.$inferInsert>) => {
+      const [kept] = await this.db.update(jobs).set(patch).where(ours).returning({ id: jobs.id });
+      if (!kept) this.logger.warn(`${job.kind} ${job.id} ran past its lease and was taken over; its result here is not recorded`);
+    };
     const lastAttempt = job.attempts >= JOB_MAX_ATTEMPTS;
+    const retryLater = (lastError: string) => finish({ status: "QUEUED", lockedAt: null, lastError, runAfter: new Date(this.clock.now().getTime() + retryDelayMs(job.attempts)) });
     try {
       await handler.run(job.payload, { jobId: job.id, attempt: job.attempts, lastAttempt });
-      await this.db.update(jobs).set({ status: "DONE", lockedAt: null, lastError: null }).where(eq(jobs.id, job.id));
+      await finish({ status: "DONE", lockedAt: null, lastError: null });
     } catch (e) {
       const error = e instanceof Error ? e : new Error(String(e));
       const lastError = error.message.slice(0, 2000);
-      if (lastAttempt) {
-        await this.db.update(jobs).set({ status: "FAILED", lockedAt: null, lastError }).where(eq(jobs.id, job.id));
-        this.logger.error(`${job.kind} ${job.id} failed for good after ${job.attempts} attempts: ${lastError}`);
-        try {
-          await handler.opts.onExhausted?.(job.payload, error);
-        } catch (f) {
-          this.logger.error(`${job.kind} ${job.id} could not record its failure: ${(f as Error).message}`);
-        }
-      } else {
-        const runAfter = new Date(this.clock.now().getTime() + retryDelayMs(job.attempts));
-        await this.db.update(jobs).set({ status: "QUEUED", lockedAt: null, lastError, runAfter }).where(eq(jobs.id, job.id));
-        this.logger.warn(`${job.kind} ${job.id} attempt ${job.attempts} failed, retrying at ${runAfter.toISOString()}: ${lastError}`);
+      if (!lastAttempt) {
+        this.logger.warn(`${job.kind} ${job.id} attempt ${job.attempts} failed, will retry: ${lastError}`);
+        return retryLater(lastError);
       }
+      try {
+        await handler.opts.onExhausted?.(job.payload, error);
+      } catch (f) {
+        // the failure is not recorded yet: keep the job, so it is tried again rather than lost
+        this.logger.error(`${job.kind} ${job.id} could not record its failure, will retry: ${(f as Error).message}`);
+        return retryLater(lastError);
+      }
+      await finish({ status: "FAILED", lockedAt: null, lastError });
+      this.logger.error(`${job.kind} ${job.id} failed for good after ${job.attempts} attempts: ${lastError}`);
     }
   }
 }

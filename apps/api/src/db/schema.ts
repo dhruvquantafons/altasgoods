@@ -93,7 +93,13 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const PAYMENT_METHODS = ["UPI", "CARD", "NETBANKING", "EMI", "PAY_LATER", "COD"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const REFUND_STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "FAILED"] as const;
+/**
+ * PENDING waits for the refund job; PROCESSING is with the gateway; FAILED is
+ * definitely not paid (the amount can be refunded again); NEEDS_ATTENTION ran
+ * out of attempts without the gateway confirming either way, so the amount
+ * stays reserved until someone checks it and retries.
+ */
+export const REFUND_STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "FAILED", "NEEDS_ATTENTION"] as const;
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
 
 /** QUEUED waits for its run_after; RUNNING is claimed by a worker; DONE and FAILED are final. */
@@ -614,7 +620,7 @@ export const refunds = pgTable(
     completedAt: ts("completed_at"),
     createdAt: createdAt(),
   },
-  (t) => [index("refunds_order_idx").on(t.orderId), index("refunds_status_idx").on(t.status)],
+  (t) => [index("refunds_order_idx").on(t.orderId), index("refunds_status_idx").on(t.status), check("refunds_status_ck", inList("status", REFUND_STATUSES))],
 );
 
 /* ---------------------------------- Jobs ---------------------------------- */

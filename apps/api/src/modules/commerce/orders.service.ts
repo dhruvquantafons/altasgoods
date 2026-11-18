@@ -13,6 +13,7 @@ import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
 import { cancelBody, orderListQuery, placeOrderBody, quoteBody } from "./commerce.schemas.js";
 import { PaymentsService } from "./payments/payments.service.js";
+import { customerRefundStatus } from "./payments/refunds.service.js";
 import { PAYMENT_WINDOW_MS } from "./pricing.js";
 import { publicQuote, QuoteService } from "./quote.service.js";
 import { CUSTOMER_CANCELLABLE } from "./state.js";
@@ -137,7 +138,14 @@ export class OrdersService {
     } catch (e) {
       // a concurrent request with the same key won the race (unique key violation, or the
       // stock it reserved): it is the same order, so answer with it
-      const [raced] = await this.db.select({ id: orders.id }).from(orders).where(and(eq(orders.userId, userId), eq(orders.idempotencyKey, idempotencyKey)));
+      const raced = await this.db
+        .select({ id: orders.id })
+        .from(orders)
+        .where(and(eq(orders.userId, userId), eq(orders.idempotencyKey, idempotencyKey)))
+        .then(
+          (rows) => rows[0],
+          () => undefined,
+        );
       if (raced) return this.placedResponse(userId, raced.id);
       throw e;
     }
@@ -233,7 +241,7 @@ export class OrdersService {
         canCancel: CUSTOMER_CANCELLABLE.includes(item.status) || (unpaid && item.status === "PENDING"),
       })),
       payments: pays.map((p) => ({ id: p.id, method: p.method, status: p.status, amountPaise: p.amountPaise })),
-      refunds: refundRows.map((r) => ({ id: r.id, amountPaise: r.amountPaise, status: r.status, reason: r.reason, createdAt: r.createdAt.toISOString() })),
+      refunds: refundRows.map((r) => ({ id: r.id, amountPaise: r.amountPaise, status: customerRefundStatus(r.status), reason: r.reason, createdAt: r.createdAt.toISOString() })),
       events: events.map((e) => ({ orderItemId: e.orderItemId, fromStatus: e.fromStatus, toStatus: e.toStatus, actor: e.actor, note: e.note, at: e.createdAt.toISOString() })),
     };
   }

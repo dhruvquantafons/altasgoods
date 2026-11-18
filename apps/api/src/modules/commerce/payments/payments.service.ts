@@ -122,7 +122,8 @@ export class PaymentsService {
           const reason = alreadyPaid ? "Duplicate payment for an order that was already paid" : "Payment received after the order expired";
           await this.refunds.queue(tx, { paymentId: payment.id, orderId: order.id, amountPaise: payment.amountPaise, reason });
           this.logger.warn(`${alreadyPaid ? "Duplicate" : "Late"} capture on ${order.id}, refund queued`);
-          return { duplicate: false, status: "CAPTURED" as const };
+          // to the customer this payment is being given back in full (see get())
+          return { duplicate: false, status: "REFUNDED" as const };
         }
 
         await tx.update(orders).set({ paymentStatus: "CAPTURED", paymentDueBy: null }).where(eq(orders.id, order.id));
@@ -175,18 +176,33 @@ export class PaymentsService {
     return { id: payment.id, method: payment.method, status: payment.status, amountPaise: payment.amountPaise, nextAction };
   }
 
+  /**
+   * The customer's view of a payment. Refunds on their way count: a captured
+   * payment with refunds queued for all of it reads REFUNDED (a late or
+   * duplicate capture being given back, or a cancelled order), and with some
+   * of it PARTIALLY_REFUNDED, as soon as the refund is queued rather than when
+   * the gateway finishes. The payment row itself keeps the gateway's truth.
+   */
   async get(userId: string, paymentId: string) {
     const payment = await this.ownPayment(userId, paymentId);
     const [order] = await this.db.select({ status: orders.status }).from(orders).where(eq(orders.id, payment.orderId));
+    let status = payment.status;
+    if (status === "CAPTURED" || status === "PARTIALLY_REFUNDED") {
+      const promised = await this.refunds.committed(this.db, payment.id);
+      if (promised >= payment.amountPaise) status = "REFUNDED";
+      else if (promised > 0) status = "PARTIALLY_REFUNDED";
+    }
     return {
       id: payment.id,
       orderId: payment.orderId,
       provider: payment.provider,
       method: payment.method,
-      status: payment.status,
+      status,
       amountPaise: payment.amountPaise,
       failureReason: payment.failureReason,
       orderStatus: order!.status,
+      // false when the gateway session never opened (the gateway failed at checkout): retry the payment
+      sessionOpen: !!payment.providerRef,
       // only an attempt that is still open can be paid in the gateway's checkout
       checkout:
         this.provider.checkout && payment.provider === this.provider.name && payment.providerRef && (payment.status === "CREATED" || payment.status === "PENDING" || payment.status === "FAILED")
