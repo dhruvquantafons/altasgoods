@@ -483,7 +483,7 @@ export function DeleteAccountButton() {
         onClose={() => !busy && setOpen(false)}
         size="sm"
         title="Delete your account?"
-        description="This cannot be undone. You will be signed out everywhere and will not be able to sign in with this email again unless you create a new account."
+        description="This cannot be undone. You will be signed out everywhere. Deleting your account closes any remaining return or damage claims on past orders. You can create a new account with this email later."
         footer={
           <>
             <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>

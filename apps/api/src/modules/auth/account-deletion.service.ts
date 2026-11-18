@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { ApiError, conflict } from "../../common/errors.js";
 import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB, FILE_STORE } from "../../common/tokens.js";
@@ -18,6 +18,7 @@ import {
   returns,
   sessions,
   supportActions,
+  supportEvents,
   supportMessages,
   supportTickets,
   users,
@@ -108,7 +109,7 @@ export class AccountDeletionService {
   /** Anonymises the account; the caller has already checked who is asking and their password. */
   async delete(userId: string) {
     const fileIds = await this.db.transaction(async (tx) => {
-      const [user] = await tx.select({ status: users.status, staff: users.staffRoles }).from(users).where(eq(users.id, userId)).for("update");
+      const [user] = await tx.select({ status: users.status, staff: users.staffRoles, name: users.name, email: users.email }).from(users).where(eq(users.id, userId)).for("update");
       if (!user || user.status === "DELETED") throw new ApiError(401, "UNAUTHENTICATED", "Please sign in to continue.");
       if (user.staff.length) throw conflict("STAFF_ACCOUNT", "Ask a Super Admin to remove your staff access first.");
       // checked inside the transaction, with the user row locked
@@ -134,7 +135,19 @@ export class AccountDeletionService {
         .where(and(inArray(refunds.orderId, myOrders), sql`${refunds.note} like 'Pay to UPI %'`));
 
       await tx.update(supportTickets).set({ customerName: DELETED_NAME }).where(eq(supportTickets.userId, userId));
-      await tx.update(supportMessages).set({ author: DELETED_NAME }).where(and(inArray(supportMessages.ticketId, myTickets), eq(supportMessages.kind, "CUSTOMER")));
+      await tx.update(supportMessages).set({ author: DELETED_NAME }).where(or(eq(supportMessages.authorId, userId), and(inArray(supportMessages.ticketId, myTickets), eq(supportMessages.kind, "CUSTOMER"))));
+      // the timeline of their tickets names whoever acted: for the customer, their own name or email
+      await tx.update(supportEvents).set({ actor: DELETED_NAME }).where(or(eq(supportEvents.actorId, userId), and(inArray(supportEvents.ticketId, myTickets), sql`${supportEvents.actor} in (${user.name ?? ""}, ${user.email})`)));
+
+      // earlier block and unblock entries quote the customer's name or email; the action and time stay
+      const scrub = (text: string) => [user.email, user.name].reduce<string>((t, v) => (v ? t.split(v).join(DELETED_NAME) : t), text);
+      const entries = await tx.select({ id: auditEvents.id, summary: auditEvents.summary, changes: auditEvents.changes }).from(auditEvents).where(and(eq(auditEvents.entityType, "customer"), eq(auditEvents.entityId, userId)));
+      for (const e of entries) {
+        await tx
+          .update(auditEvents)
+          .set({ summary: scrub(e.summary), changes: e.changes ? (JSON.parse(scrub(JSON.stringify(e.changes))) as typeof e.changes) : null })
+          .where(eq(auditEvents.id, e.id));
+      }
       await tx.update(supportActions).set({ details: sql`${supportActions.details} - 'upi'` }).where(inArray(supportActions.ticketId, myTickets));
 
       const uploads = await tx.delete(customerUploads).where(eq(customerUploads.userId, userId)).returning({ fileId: customerUploads.fileId });

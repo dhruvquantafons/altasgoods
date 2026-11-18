@@ -127,7 +127,7 @@ export default async function ProfilePage(props: PageProps<"/account/profile">) 
                 </p>
                 <p className="mt-2">
                   Your past orders and returns are kept without your name, phone or street address, because tax law requires us to keep those records. Your reviews stay, shown as
-                  Anonymous. You can delete once your orders and returns are finished.
+                  Anonymous. You can delete once your orders and returns are finished. Deleting your account closes any remaining return or damage claims on past orders.
                 </p>
               </div>
               <DeleteAccountButton />

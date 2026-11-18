@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
-import { addresses, auditEvents, cartItems, orderItems, orders, returns, reviews, supportTickets, users, wishlistItems } from "../src/db/schema.js";
+import { addresses, auditEvents, cartItems, orderItems, orders, returns, reviews, supportEvents, supportMessages, supportTickets, users, wishlistItems } from "../src/db/schema.js";
 import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
 
 let t: TestContext;
@@ -95,8 +95,17 @@ describe("DELETE /v1/me", () => {
     await t.http.put("/v1/me/wishlist").set(mine.auth).send({ productIds: [product.body.id] }).expect(200);
     await t.http.post("/v1/cart/items").set(mine.auth).send({ offerId: product.body.offerId, qty: 1 }).expect(200);
     expect((await db.select().from(cartItems).where(eq(cartItems.userId, mine.userId))).length).toBe(1);
+    // staff blocked and unblocked them once, which quotes their name and email in the audit log
+    await t.http.patch(`/v1/admin/customers/${mine.userId}`).set(staff).send({ status: "BLOCKED", reason: "Chargeback check" }).expect(200);
+    await t.http.patch(`/v1/admin/customers/${mine.userId}`).set(staff).send({ status: "ACTIVE" }).expect(200);
+    const blockEntries = await db.select().from(auditEvents).where(and(eq(auditEvents.entityType, "customer"), eq(auditEvents.entityId, mine.userId)));
+    expect(blockEntries).toHaveLength(2);
+    expect(JSON.stringify(blockEntries)).toContain("Priya Nair");
+    const events = await db.select().from(supportEvents).where(eq(supportEvents.ticketId, ticket.body.id));
+    expect(JSON.stringify(events)).toContain("Priya Nair");
     const login = await t.http.post("/v1/auth/login").send({ email: "leaving@example.com", password: PASSWORD }).expect(200);
     const refreshToken = login.body.refreshToken as string;
+    mine.auth = { Authorization: `Bearer ${login.body.accessToken}` };
 
     // delivered a while ago and closed
     await ageDelivery(mine.itemId);
@@ -122,6 +131,17 @@ describe("DELETE /v1/me", () => {
     // the ticket keeps its conversation, not the name
     const [tk] = await db.select({ name: supportTickets.customerName }).from(supportTickets).where(eq(supportTickets.id, ticket.body.id));
     expect(tk!.name).toBe("Deleted customer");
+
+    // no name or email is left in the places staff read: ticket timeline and messages, audit summaries and changes
+    const personal = /Priya|Nair|leaving@example\.com/;
+    const after = await db.select().from(auditEvents).where(and(eq(auditEvents.entityType, "customer"), eq(auditEvents.entityId, mine.userId)));
+    expect(after.map((e) => e.action).sort()).toEqual(["customer.block", "customer.unblock"]);
+    expect(after.find((e) => e.action === "customer.block")!.summary).toBe("Blocked Deleted customer: Chargeback check");
+    expect(JSON.stringify(after)).not.toMatch(personal);
+    expect(JSON.stringify(await db.select().from(supportEvents).where(eq(supportEvents.ticketId, ticket.body.id)))).not.toMatch(personal);
+    expect(JSON.stringify(await db.select().from(supportMessages).where(eq(supportMessages.ticketId, ticket.body.id)))).not.toMatch(personal);
+    expect(JSON.stringify(await db.select().from(supportTickets).where(eq(supportTickets.id, ticket.body.id)))).not.toMatch(personal);
+    expect(JSON.stringify(await db.select().from(orders).where(eq(orders.id, mine.orderId)))).not.toMatch(personal);
 
     // reviews stay, as Anonymous
     expect((await db.select().from(reviews).where(eq(reviews.userId, mine.userId))).length).toBe(1);
