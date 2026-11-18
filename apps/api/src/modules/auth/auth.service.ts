@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { and, eq, ne, sql } from "drizzle-orm";
 import type { Redis } from "ioredis";
 import { devToolsEnabled, env } from "../../config/env.js";
-import type { Db } from "../../db/client.js";
+import type { Db, Tx } from "../../db/client.js";
 import { users } from "../../db/schema.js";
 import { ApiError, conflict, notFound } from "../../common/errors.js";
 import type { Clock } from "../../common/infra.module.js";
@@ -144,7 +144,7 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string, meta: { userAgent?: string; ip?: string }) {
-    const { userId: _userId, ...pair } = await this.tokens.rotate(refreshToken, (id) => this.grants(id), meta);
+    const { userId: _userId, ...pair } = await this.tokens.rotate(refreshToken, (id, db) => this.grants(id, db), meta);
     return pair;
   }
 
@@ -156,8 +156,8 @@ export class AuthService {
    * Staff roles and the "password change required" flag, as carried in the
    * access token. A blocked account gets no new token, so a refresh fails.
    */
-  async grants(userId: string): Promise<Grants> {
-    const [user] = await this.db.select({ staff: users.staffRoles, status: users.status, pwc: users.mustChangePassword }).from(users).where(eq(users.id, userId));
+  async grants(userId: string, db: Tx = this.db): Promise<Grants> {
+    const [user] = await db.select({ staff: users.staffRoles, status: users.status, pwc: users.mustChangePassword }).from(users).where(eq(users.id, userId));
     if (!user || user.status === "BLOCKED") throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
     return { staff: user.staff, pwc: user.pwc };
   }

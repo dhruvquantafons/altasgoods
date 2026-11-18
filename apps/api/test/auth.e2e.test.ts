@@ -1,5 +1,9 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { env } from "../src/config/env.js";
 import { EMAIL_PROVIDER } from "../src/common/tokens.js";
+import { createDb } from "../src/db/client.js";
+import { users } from "../src/db/schema.js";
 import type { EmailMessage, EmailProvider } from "../src/modules/auth/email.provider.js";
 import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
 
@@ -16,14 +20,19 @@ class OutboxEmailProvider implements EmailProvider {
 }
 
 const outbox = new OutboxEmailProvider();
+const { db, pool } = createDb(env().TEST_DATABASE_URL);
 let t: TestContext;
 beforeAll(async () => {
   t = await createTestApp([{ provide: EMAIL_PROVIDER, useValue: outbox }]);
 });
-afterAll(() => t.close());
+afterAll(async () => {
+  await t.close();
+  await pool.end();
+});
 beforeEach(() => {
   outbox.sent = [];
 });
+afterEach(() => t.clock.reset());
 
 describe("sign up", () => {
   it("creates a shopper account and signs it in", async () => {
@@ -168,7 +177,8 @@ describe("sessions", () => {
     const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
     expect(first.body.refreshToken).not.toBe(session.refreshToken);
 
-    // replaying the original token looks like theft
+    // replaying the original token after the 30 second grace looks like theft
+    t.clock.advance(31_000);
     const reuse = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
     expect(reuse.body.code).toBe("REFRESH_REUSED");
     // and the rotated token was revoked along with every other session
@@ -179,9 +189,63 @@ describe("sessions", () => {
     const { session } = await signUp(t.http, "replayed@example.com");
     const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
     await t.http.get("/v1/me").set({ Authorization: `Bearer ${first.body.accessToken}` }).expect(200);
+    t.clock.advance(31_000);
     await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
     // the thief may hold the newest access token: it stops working at once, not 15 minutes later
     await t.http.get("/v1/me").set({ Authorization: `Bearer ${first.body.accessToken}` }).expect(401);
+  });
+
+  it("answers concurrent refreshes of one token with the same new pair, signing nobody out", async () => {
+    const { session } = await signUp(t.http, "parallel.tabs@example.com");
+    // another device of the same shopper, which must stay signed in
+    const { session: phone } = await signIn(t.http, "parallel.tabs@example.com", "a-long-password");
+    let token = session.refreshToken as string;
+    for (const callers of [2, 5]) {
+      const answers = await Promise.all(Array.from({ length: callers }, () => t.http.post("/v1/auth/refresh").send({ refreshToken: token })));
+      expect(answers.map((r) => r.status)).toEqual(Array(callers).fill(200));
+      expect(new Set(answers.map((r) => r.body.refreshToken)).size).toBe(1);
+      expect(new Set(answers.map((r) => r.body.accessToken)).size).toBe(1);
+      expect(answers[0]!.body.refreshToken).not.toBe(token);
+      token = answers[0]!.body.refreshToken;
+    }
+    // the new pair works, and the other device was left alone
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${(await t.http.post("/v1/auth/refresh").send({ refreshToken: token }).expect(200)).body.accessToken}` }).expect(200);
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${phone.accessToken}` }).expect(200);
+    await t.http.post("/v1/auth/refresh").send({ refreshToken: phone.refreshToken }).expect(200);
+  });
+
+  it("gives a repeat of a just rotated token the same pair for 30 seconds", async () => {
+    const { session } = await signUp(t.http, "slow.network@example.com");
+    const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    t.clock.advance(25_000);
+    const again = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    expect(again.body).toEqual(first.body);
+    await t.http.get("/v1/me").set({ Authorization: `Bearer ${again.body.accessToken}` }).expect(200);
+  });
+
+  it("does not hand out the pair again once its session was signed out", async () => {
+    const { session } = await signUp(t.http, "quick.leaver@example.com");
+    const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    await t.http.post("/v1/auth/logout").send({ refreshToken: first.body.refreshToken }).expect(204);
+    await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
+  });
+
+  it("does not hand out the pair again to an account blocked meanwhile", async () => {
+    const { session } = await signUp(t.http, "blocked.meanwhile@example.com");
+    await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    await db.update(users).set({ status: "BLOCKED" }).where(eq(users.id, session.user.id));
+    const r = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(401);
+    expect(r.body.code).toBe("REFRESH_INVALID");
+  });
+
+  it("carries a role change made meanwhile in the repeated answer", async () => {
+    const { session } = await signUp(t.http, "promoted.meanwhile@example.com");
+    const first = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    await db.update(users).set({ staffRoles: ["CATALOG_MANAGER"] }).where(eq(users.id, session.user.id));
+    const again = await t.http.post("/v1/auth/refresh").send({ refreshToken: session.refreshToken }).expect(200);
+    expect(again.body.refreshToken).toBe(first.body.refreshToken);
+    const claims = JSON.parse(Buffer.from(again.body.accessToken.split(".")[1], "base64url").toString("utf8"));
+    expect(claims.staff).toEqual(["CATALOG_MANAGER"]);
   });
 
   it("logs out by revoking the refresh token", async () => {
