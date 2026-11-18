@@ -5,6 +5,8 @@ import { notFound } from "../../common/errors.js";
 import { CLOCK, LOGISTICS_PROVIDER } from "../../common/tokens.js";
 import type { Tx } from "../../db/client.js";
 import { offers, orderEvents, orderItems, orders, payments, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
+import { NotificationsService } from "./notifications/notifications.service.js";
+import type { EmailItem } from "./notifications/emails.js";
 import { lineNetPaise, RefundsService } from "./payments/refunds.service.js";
 import type { LogisticsProvider } from "./shipping/provider.js";
 import { dispatchByDate } from "./pricing.js";
@@ -15,6 +17,10 @@ export type OrderItemRow = typeof orderItems.$inferSelect;
 
 const INACTIVE: OrderItemStatus[] = ["CANCELLED", "RTO_IN_TRANSIT", "RTO_RECEIVED", "LOST"];
 
+/** A line that moved in a transition: as it is now, where it came from and its order event. */
+type Moved = { item: OrderItemRow; from: OrderItemStatus; eventId: number };
+const emailItem = (i: OrderItemRow): EmailItem => ({ title: i.title, variant: i.variant, qty: i.qty });
+
 /**
  * The only place order items change status. Each transition is validated
  * against the state machine, applies its side effects (stock, fees, refunds,
@@ -24,6 +30,9 @@ const INACTIVE: OrderItemStatus[] = ["CANCELLED", "RTO_IN_TRANSIT", "RTO_RECEIVE
  * a lost one (LOST) does not. Either way a prepaid line is refunded (its
  * amount less its coupon share, never more than is left of the payment).
  * Cash on delivery was never collected for them, so nothing is refunded.
+ *
+ * It also queues the customer's email for the change (see announce), in the
+ * same transaction, unless the caller passes `notify: false`.
  */
 @Injectable()
 export class OrderWorkflow {
@@ -31,6 +40,7 @@ export class OrderWorkflow {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(LOGISTICS_PROVIDER) private readonly courier: LogisticsProvider,
     @Inject(RefundsService) private readonly refunds: RefundsService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   async lockOrder(tx: Tx, orderId: string) {
@@ -42,7 +52,17 @@ export class OrderWorkflow {
 
   async transition(
     tx: Tx,
-    args: { orderId: string; itemIds?: string[]; to: OrderItemStatus; actor: Actor; actorId?: string; note?: string; headerOverride?: OrderStatus },
+    args: {
+      orderId: string;
+      itemIds?: string[];
+      to: OrderItemStatus;
+      actor: Actor;
+      actorId?: string;
+      note?: string;
+      headerOverride?: OrderStatus;
+      /** false: no customer email for this step (a courier scan that skips ahead emails only for where the parcel ends up) */
+      notify?: boolean;
+    },
   ) {
     const now = this.clock.now();
     const { order, items } = await this.lockOrder(tx, args.orderId);
@@ -51,6 +71,7 @@ export class OrderWorkflow {
 
     const handling = args.to === "NEW" ? await this.handlingDays(tx, targets) : new Map<string, number>();
     const updated = new Map<string, OrderItemRow>();
+    const moved: Moved[] = [];
 
     for (const item of targets) {
       assertTransition(item.status, args.to, args.actor);
@@ -71,7 +92,11 @@ export class OrderWorkflow {
 
       const [row] = await tx.update(orderItems).set(patch).where(eq(orderItems.id, item.id)).returning();
       updated.set(item.id, row!);
-      await tx.insert(orderEvents).values({ orderId: order.id, orderItemId: item.id, fromStatus: item.status, toStatus: args.to, actor: args.actor, actorId: args.actorId, note: args.note });
+      const [event] = await tx
+        .insert(orderEvents)
+        .values({ orderId: order.id, orderItemId: item.id, fromStatus: item.status, toStatus: args.to, actor: args.actor, actorId: args.actorId, note: args.note })
+        .returning({ id: orderEvents.id });
+      moved.push({ item: row!, from: item.status, eventId: event!.id });
     }
 
     const all = items.map((i) => updated.get(i.id) ?? i);
@@ -81,8 +106,82 @@ export class OrderWorkflow {
       await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? "Parcel lost in transit" : "Parcel returned to the store", args.actorId);
     }
     if (args.to === "DELIVERED") await this.markCodCollected(tx, order, all);
-    await this.recomputeHeader(tx, order, all, args.actor, args.headerOverride);
+    const header = await this.recomputeHeader(tx, order, all, args.actor, args.headerOverride);
+    if (args.notify !== false) await this.announce(tx, order, all, moved, args, header);
     return [...updated.values()];
+  }
+
+  /**
+   * The customer's email for a transition: order confirmed (NEW), cancelled
+   * (or, for an unpaid order that expired, abandoned), shipped, out for
+   * delivery, delivered, lost, or returned to the store. Lines moved together
+   * share one email per parcel (AWB), and repeats of the same change (a
+   * courier sending a scan twice) share its dedupe key, so each goes out once.
+   * A parcel back out after a failed attempt, or a line back to delivered
+   * after a withdrawn return, sends nothing.
+   */
+  private async announce(tx: Tx, order: OrderRow, all: OrderItemRow[], moved: Moved[], args: { to: OrderItemStatus; actor: Actor; note?: string }, header: OrderStatus) {
+    if (!moved.length) return;
+    const base = { userId: order.userId, orderId: order.id };
+    const paidOnline = order.paymentMethod !== "COD" && (order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED");
+    /** one email per parcel: lines with the same AWB together, a line without one on its own */
+    const parcels = (lines: Moved[]) => {
+      const groups = new Map<string, Moved[]>();
+      for (const m of lines) {
+        const key = m.item.awb ?? `${order.id}:${m.eventId}`;
+        groups.set(key, [...(groups.get(key) ?? []), m]);
+      }
+      return [...groups.entries()].map(([key, ms]) => ({ key, items: ms.map((m) => m.item) }));
+    };
+    const tracking = (i: OrderItemRow) => (i.awb && i.shippingProvider === this.courier.name ? this.courier.trackingUrl(i.awb) : null);
+
+    switch (args.to) {
+      case "NEW":
+        await this.notifications.notify(tx, "ORDER_PLACED", { ...base, key: order.id, data: { orderId: order.id, totalPaise: order.totalPaise, paymentMethod: order.paymentMethod, items: all.map(emailItem) } });
+        return;
+      case "CANCELLED":
+        if (header === "ABANDONED") {
+          await this.notifications.notify(tx, "ORDER_ABANDONED", { ...base, key: order.id, data: { orderId: order.id, items: moved.map((m) => emailItem(m.item)) } });
+          return;
+        }
+        await this.notifications.notify(tx, "ORDER_CANCELLED", {
+          ...base,
+          key: `${order.id}:${moved[0]!.eventId}`,
+          data: {
+            orderId: order.id,
+            items: moved.map((m) => emailItem(m.item)),
+            byCustomer: args.actor === "CUSTOMER",
+            reason: args.actor === "CUSTOMER" ? null : (args.note ?? null),
+            whole: all.every((i) => i.status === "CANCELLED"),
+            prepaid: paidOnline,
+          },
+        });
+        return;
+      case "SHIPPED":
+        // back out after a failed delivery attempt: the customer already knows it shipped
+        for (const p of parcels(moved.filter((m) => m.from !== "OUT_FOR_DELIVERY"))) {
+          const first = p.items[0]!;
+          await this.notifications.notify(tx, "SHIPPED", { ...base, key: p.key, data: { orderId: order.id, items: p.items.map(emailItem), courier: first.courier, awb: first.awb, trackingUrl: tracking(first) } });
+        }
+        return;
+      case "OUT_FOR_DELIVERY":
+        for (const p of parcels(moved)) {
+          await this.notifications.notify(tx, "OUT_FOR_DELIVERY", { ...base, key: p.key, data: { orderId: order.id, items: p.items.map(emailItem), trackingUrl: tracking(p.items[0]!), cod: order.paymentMethod === "COD" } });
+        }
+        return;
+      case "DELIVERED":
+        // only a parcel arriving; a line back from a withdrawn or rejected return is not news
+        for (const p of parcels(moved.filter((m) => m.from === "SHIPPED" || m.from === "OUT_FOR_DELIVERY"))) {
+          await this.notifications.notify(tx, "DELIVERED", { ...base, key: p.key, data: { orderId: order.id, items: p.items.map(emailItem) } });
+        }
+        return;
+      case "LOST":
+      case "RTO_RECEIVED":
+        for (const p of parcels(moved)) {
+          await this.notifications.notify(tx, args.to === "LOST" ? "PARCEL_LOST" : "PARCEL_RETURNED", { ...base, key: p.key, data: { orderId: order.id, items: p.items.map(emailItem), prepaid: paidOnline } });
+        }
+        return;
+    }
   }
 
   async recomputeHeader(tx: Tx, order: OrderRow, items: { status: OrderItemStatus }[], actor: Actor, override?: OrderStatus) {

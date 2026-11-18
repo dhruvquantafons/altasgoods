@@ -11,6 +11,7 @@ import type { Db, Tx } from "../../../db/client.js";
 import { addresses, customerUploads, offers, orderItems, orders, products, refunds, returnEvents, returns, users, type Actor, type ReturnStatus } from "../../../db/schema.js";
 import type { AuthUser } from "../../auth/auth.guard.js";
 import { sniffMime, type FileStore } from "../../files/file-store.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
 import { PaymentsService } from "../payments/payments.service.js";
 import { customerRefundStatus, RefundsService } from "../payments/refunds.service.js";
 import { OrderWorkflow } from "../workflow.service.js";
@@ -41,6 +42,14 @@ const MOVES: Partial<Record<ReturnStatus, ReturnStatus[]>> = {
   QC_PASSED: ["COMPLETED"],
   QC_FAILED: ["COMPLETED", "REJECTED"],
 };
+/** The customer email each return status sends (see ReturnsService.announce). */
+const RETURN_EMAIL: Partial<Record<ReturnStatus, "RETURN_APPROVED" | "RETURN_REJECTED" | "RETURN_PICKED_UP" | "RETURN_QC_FAILED" | "RETURN_REPLACED">> = {
+  APPROVED: "RETURN_APPROVED",
+  REJECTED: "RETURN_REJECTED",
+  PICKED_UP: "RETURN_PICKED_UP",
+  QC_FAILED: "RETURN_QC_FAILED",
+  COMPLETED: "RETURN_REPLACED",
+};
 /** The reverse pickup, in order. A scan that skips steps walks the return through each one. */
 const PICKUP_PATH: ReturnStatus[] = ["PICKUP_SCHEDULED", "OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"];
 export type PickupScan = "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED";
@@ -55,6 +64,7 @@ export class ReturnsService {
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
     @Inject(PaymentsService) private readonly payments: PaymentsService,
     @Inject(RefundsService) private readonly ledger: RefundsService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   /* ------------------------------ Moves ------------------------------- */
@@ -69,7 +79,41 @@ export class ReturnsService {
       .returning();
     if (!next) throw conflict("STALE_RETURN", "This return changed meanwhile. Reload and try again.");
     await tx.insert(returnEvents).values({ returnId: r.id, fromStatus: r.status, toStatus: to, actor, note, at: now });
+    await this.announce(tx, r.status, next, note);
     return next;
+  }
+
+  /**
+   * The customer's email for a return step: approved, picked up, failed the
+   * check, rejected, or (for a replacement or exchange) completed. A refund
+   * has its own email, sent when resolve() issues it. Once each per return.
+   */
+  private async announce(tx: Tx, from: ReturnStatus, r: Return, note: string | null) {
+    const kind = RETURN_EMAIL[r.status];
+    if (!kind || (kind === "RETURN_REPLACED" && r.resolution === "REFUND")) return;
+    const title = await this.itemTitle(tx, r);
+    const base = { userId: r.userId, orderId: r.orderId, returnId: r.id, key: r.id };
+    const ids = { returnId: r.id, orderId: r.orderId, title };
+    if (kind === "RETURN_APPROVED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, pickupDate: r.pickupDate, pickupSlot: r.pickupSlot } });
+    if (kind === "RETURN_REJECTED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, reason: note, afterCheck: from === "QC_FAILED" } });
+    if (kind === "RETURN_PICKED_UP") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, refundNow: r.instantRefund && r.resolution === "REFUND" } });
+    if (kind === "RETURN_QC_FAILED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, note } });
+    if (kind === "RETURN_REPLACED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, exchangeSize: r.resolution === "EXCHANGE" ? r.exchangeSize : null } });
+  }
+
+  private async itemTitle(tx: Tx, r: Return) {
+    const [item] = await tx.select({ title: orderItems.title, variant: orderItems.variant }).from(orderItems).where(eq(orderItems.id, r.orderItemId));
+    return item ? `${item.title}${item.variant ? ` (${item.variant})` : ""}` : "your item";
+  }
+
+  private async announceRefund(tx: Tx, r: Return, toSource: boolean) {
+    await this.notifications.notify(tx, "RETURN_REFUNDED", {
+      userId: r.userId,
+      orderId: r.orderId,
+      returnId: r.id,
+      key: r.id,
+      data: { returnId: r.id, orderId: r.orderId, title: await this.itemTitle(tx, r), amountPaise: r.refundAmountPaise, toSource },
+    });
   }
 
   private async lock(tx: Tx, id: string) {
@@ -131,11 +175,14 @@ export class ReturnsService {
     if (r.resolution === "REFUND" && !r.refundStatus) {
       const [order] = await tx.select({ method: orders.paymentMethod, paymentStatus: orders.paymentStatus }).from(orders).where(eq(orders.id, r.orderId));
       if (r.refundTo === "SOURCE" && order && order.method !== "COD" && (order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED")) {
-        const refund = await this.payments.refundToSource(tx, r.orderId, r.refundAmountPaise, `Return ${r.id}`);
+        // the return's own email tells the customer, not the generic "refund started" one
+        const refund = await this.payments.refundToSource(tx, r.orderId, r.refundAmountPaise, `Return ${r.id}`, { notify: false });
         [next] = (await tx.update(returns).set({ refundStatus: refund.status, refundId: refund.id }).where(eq(returns.id, r.id)).returning()) as [Return];
+        await this.announceRefund(tx, next, true);
       } else if (r.refundTo !== "CREDITS") {
         const refund = await this.reservePayout(tx, r);
         [next] = (await tx.update(returns).set({ refundStatus: "INITIATED", refundId: refund.id }).where(eq(returns.id, r.id)).returning()) as [Return];
+        await this.announceRefund(tx, next, false);
       } else {
         // Credits cannot be chosen any more; a return that chose them before stays as it was
         [next] = (await tx.update(returns).set({ refundStatus: "INITIATED" }).where(eq(returns.id, r.id)).returning()) as [Return];
@@ -151,6 +198,7 @@ export class ReturnsService {
         amountPaise: r.refundAmountPaise,
         reason: `Return ${r.id}`,
         paid: false,
+        notify: false,
         orderItemId: r.orderItemId,
         note: r.refundUpi ? `Pay ${rupees(r.refundAmountPaise)} to ${r.refundUpi} by UPI` : "Pay to the customer's bank account; ask the customer for the details",
       });

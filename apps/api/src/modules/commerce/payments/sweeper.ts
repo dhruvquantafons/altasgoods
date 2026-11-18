@@ -43,7 +43,8 @@ export class PaymentSweeper implements OnApplicationBootstrap, OnApplicationShut
       }, 60_000),
       setInterval(async () => {
         try {
-          const settled = await this.refunds.refreshProcessing();
+          // a settled refund queues the customer's email: the scope sends it straight after
+          const settled = await this.jobs.scope(() => this.refunds.refreshProcessing());
           if (settled) this.logger.log(`Settled ${settled} refunds from the gateway`);
         } catch (e) {
           this.logger.error(e);

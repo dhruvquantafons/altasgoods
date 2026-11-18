@@ -21,6 +21,7 @@ import {
   type OrderSnapshot,
   type TicketStatus,
 } from "../../db/schema.js";
+import { NotificationsService } from "../commerce/notifications/notifications.service.js";
 import { PaymentsService } from "../commerce/payments/payments.service.js";
 import { sniffMime, type FileStore } from "../files/file-store.js";
 import { ACTIVE_STATUSES, AGENT_TRANSITIONS, agentLevel, APPROVER_ROLES, PRIORITY_FOR, rupees, statusLabel, SUPPORT_ROLES } from "./support.rules.js";
@@ -42,6 +43,7 @@ export class SupportService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(FILE_STORE) private readonly files: FileStore,
     @Inject(PaymentsService) private readonly payments: PaymentsService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   /* ------------------------------ People ------------------------------ */
@@ -300,7 +302,12 @@ export class SupportService {
       const attachments = await this.claimAttachments(tx, id, input.attachmentIds);
       const now = this.clock.now();
       if (input.kind === "REPLY") t = await this.pickUp(tx, t, me);
-      await tx.insert(supportMessages).values({ ticketId: id, kind: input.kind === "REPLY" ? "AGENT" : "NOTE", author: me.name, authorId: me.id, body: input.body, attachments, at: now });
+      const [m] = await tx
+        .insert(supportMessages)
+        .values({ ticketId: id, kind: input.kind === "REPLY" ? "AGENT" : "NOTE", author: me.name, authorId: me.id, body: input.body, attachments, at: now })
+        .returning({ id: supportMessages.id });
+      // the customer hears about replies by email (the text is read when it is sent); internal notes stay internal
+      if (input.kind === "REPLY") await this.notifications.notify(tx, "CARE_REPLY", { userId: t.userId, ticketId: id, key: String(m!.id), data: { ticketId: id, messageId: m!.id } });
       [t] = (await tx
         .update(supportTickets)
         .set({ updatedAt: now, ...(input.kind === "REPLY" && !t.firstResponseAt ? { firstResponseAt: now } : {}) })

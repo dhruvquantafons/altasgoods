@@ -7,6 +7,7 @@ import { CLOCK, DB, PAYMENT_PROVIDER } from "../../../common/tokens.js";
 import type { Db, Tx } from "../../../db/client.js";
 import { orderItems, orders, payments, refunds, returns, type OrderItemStatus, type PaymentStatus } from "../../../db/schema.js";
 import { JobsService } from "../../jobs/jobs.service.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
 import { isTransientGatewayError, type PaymentProvider, type ProviderRefund, type RefundState } from "./provider.js";
 
 /** Job kind that sends one PENDING refund to the gateway. Payload: { refundId }. */
@@ -60,6 +61,7 @@ export class RefundsService implements OnModuleInit {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
     @Inject(JobsService) private readonly jobs: JobsService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   onModuleInit() {
@@ -122,14 +124,34 @@ export class RefundsService implements OnModuleInit {
     return { payment, leftPaise: collected - (await this.committed(tx, payment.id)), online: false };
   }
 
-  /** Records a PENDING refund and queues the job that sends it, inside the caller's transaction. */
-  async queue(tx: Tx, input: { paymentId: string; orderId: string; orderItemId?: string | null; amountPaise: number; reason: string; createdBy?: string | null; note?: string | null }) {
+  /**
+   * Records a PENDING refund and queues the job that sends it, inside the caller's transaction.
+   * The customer is told it started, unless `notify` is false (a return's refund has its own email).
+   */
+  async queue(
+    tx: Tx,
+    input: { paymentId: string; orderId: string; orderItemId?: string | null; amountPaise: number; reason: string; createdBy?: string | null; note?: string | null },
+    { notify = true }: { notify?: boolean } = {},
+  ) {
     const [refund] = await tx
       .insert(refunds)
       .values({ ...input, method: "SOURCE", status: "PENDING" })
       .returning();
     await this.jobs.enqueue(tx, REFUND_JOB, { refundId: refund!.id });
+    if (notify) await this.announce(tx, refund!, "REFUND_STARTED");
     return refund!;
+  }
+
+  /** The customer's refund email: started when a refund is recorded, completed when it is paid out. Once each per refund. */
+  private async announce(tx: Tx, refund: RefundRow, kind: "REFUND_STARTED" | "REFUND_COMPLETED") {
+    const [order] = await tx.select({ userId: orders.userId }).from(orders).where(eq(orders.id, refund.orderId));
+    await this.notifications.notify(tx, kind, {
+      userId: order?.userId ?? null,
+      orderId: refund.orderId,
+      refundId: refund.id,
+      key: refund.id,
+      data: { orderId: refund.orderId, amountPaise: refund.amountPaise, toSource: refund.method === "SOURCE" },
+    });
   }
 
   /**
@@ -142,6 +164,7 @@ export class RefundsService implements OnModuleInit {
   async recordManual(
     tx: Tx,
     input: { paymentId: string; orderId: string; orderItemId?: string | null; amountPaise: number; reason: string; reference?: string | null; createdBy?: string | null; note?: string | null; paid: boolean },
+    { notify = true }: { notify?: boolean } = {},
   ) {
     const { paid, ...values } = input;
     const [refund] = await tx
@@ -149,6 +172,9 @@ export class RefundsService implements OnModuleInit {
       .values({ ...values, method: "MANUAL", status: paid ? "COMPLETED" : "PENDING", completedAt: paid ? this.clock.now() : null })
       .returning();
     if (paid) await this.settle(tx, refund!.paymentId);
+    // paid already: the customer hears it is done; waiting for the payout: that it started
+    if (paid) await this.announce(tx, refund!, "REFUND_COMPLETED");
+    else if (notify) await this.announce(tx, refund!, "REFUND_STARTED");
     return refund!;
   }
 
@@ -168,6 +194,7 @@ export class RefundsService implements OnModuleInit {
       .returning();
     await tx.update(returns).set({ refundStatus: "COMPLETED", updatedAt: this.clock.now() }).where(eq(returns.refundId, refundId));
     await this.settle(tx, refund.paymentId);
+    await this.announce(tx, done!, "REFUND_COMPLETED");
     return done!;
   }
 
@@ -290,7 +317,11 @@ export class RefundsService implements OnModuleInit {
       .update(refunds)
       .set({ status, ...(providerRefundId ? { providerRefundId } : {}), completedAt: status === "COMPLETED" ? this.clock.now() : null })
       .where(eq(refunds.id, refund.id));
-    if (status === "COMPLETED") await this.settle(tx, refund.paymentId);
+    if (status === "COMPLETED") {
+      await this.settle(tx, refund.paymentId);
+      await this.announce(tx, refund, "REFUND_COMPLETED");
+    }
+    // a failed refund, or one needing attention, is for staff to sort out: the customer is not emailed
     if (status === "FAILED") this.logger.error(`The gateway refused refund ${refund.id} of order ${refund.orderId}`);
   }
 

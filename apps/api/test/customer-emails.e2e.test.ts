@@ -186,6 +186,212 @@ describe("the email job", () => {
   });
 });
 
+describe("order and payment emails", () => {
+  it("confirms a cash on delivery order", async () => {
+    const { orderId } = await place("serum-glow", "COD");
+    await drain();
+    const m = only(/is confirmed/);
+    expect(m).toMatchObject({ to: DEMO_CUSTOMER, subject: `Your AltasGoods order ${orderId} is confirmed` });
+    expect(m.text).toContain(`${WEB}/account/orders/${orderId}`);
+    expect(m.text).toContain("Hello Ananya,");
+    expect(m.text).toContain("cash on delivery");
+    expect(m.html).toContain(`${WEB}/account/orders/${orderId}`);
+    expect(m.text).not.toMatch(/[—–]/);
+  });
+
+  it("confirms a prepaid order once the payment is captured, and only then", async () => {
+    const { orderId, paymentId } = await place("serum-glow", "UPI");
+    await drain();
+    expect(outbox.sent).toHaveLength(0);
+    await pay(paymentId);
+    await drain();
+    expect(only(/is confirmed/).subject).toBe(`Your AltasGoods order ${orderId} is confirmed`);
+  });
+
+  it("tells the customer a payment failed, once per attempt", async () => {
+    const { orderId, paymentId } = await place("serum-glow", "CARD");
+    await pay(paymentId, "FAILURE");
+    // the gateway repeats its failure webhook
+    await t.app.get(PaymentsService).process({ id: `evt-${randomUUID()}`, type: "payment.failed", providerRef: (await db.select({ ref: payments.providerRef }).from(payments).where(eq(payments.id, paymentId)))[0]!.ref!, failureReason: "Declined" });
+    await drain();
+    const m = only(/did not go through/);
+    expect(m.subject).toBe(`Payment for your AltasGoods order ${orderId} did not go through`);
+    expect(m.text).toContain(`${WEB}/account/orders/${orderId}`);
+  });
+
+  it("tells the customer an unpaid order expired, without a second cancellation email", async () => {
+    const { orderId } = await place("serum-glow", "UPI");
+    t.clock.advance(31 * 60_000);
+    await t.app.get(PaymentsService).expireStale();
+    await drain();
+    // (an unpaid order from an earlier test expires too)
+    const mine = outbox.sent.filter((m) => m.subject.includes(orderId));
+    expect(mine.map((m) => m.subject)).toEqual([`Your AltasGoods order ${orderId} was cancelled`]);
+    expect(mine[0]!.text).toContain("did not receive the payment");
+  });
+});
+
+describe("cancellation and refund emails", () => {
+  it("confirms a customer cancellation, then the refund starting and completing", async () => {
+    const { orderId, paymentId } = await place("serum-glow", "UPI");
+    await pay(paymentId);
+    await drain();
+    outbox.sent = [];
+    await t.http.post(`/v1/me/orders/${orderId}/cancel`).set(shopper).send({ reason: "Ordered by mistake" }).expect(200);
+    await drain();
+    expect(only(/is cancelled/).text).toContain("As you asked");
+    const started = only(/has started/);
+    expect(started.subject).toMatch(new RegExp(`^Your refund of ₹[\\d,.]+ for order ${orderId} has started$`));
+    expect(started.text).toContain(`${WEB}/account/returns?tab=refunds`);
+    expect(only(/is complete$/).subject).toMatch(new RegExp(`for order ${orderId} is complete$`));
+  });
+
+  it("tells the customer the store cancelled an item, with the reason", async () => {
+    const { orderId, itemId } = await place("serum-glow", "COD");
+    await drain();
+    outbox.sent = [];
+    await transition([itemId], "CANCELLED", "Out of stock at the warehouse");
+    await drain();
+    const m = only(/is cancelled/);
+    expect(m.subject).toBe(`Your AltasGoods order ${orderId} is cancelled`);
+    expect(m.text).toContain("we had to cancel");
+    expect(m.text).toContain("Out of stock at the warehouse");
+    expect(m.text).toContain("You have not been charged");
+    expect(outbox.sent).toHaveLength(1);
+  });
+});
+
+describe("shipping emails", () => {
+  it("sends one shipped email with the tracking link however often the courier repeats the scan", async () => {
+    const { orderId, awb } = await readyLine("speaker-boom");
+    await drain();
+    outbox.sent = [];
+    await scan(awb, "Picked Up");
+    await scan(awb, "In Transit");
+    await drain();
+    const m = only(/has shipped/);
+    expect(m.subject).toBe(`Your AltasGoods order ${orderId} has shipped`);
+    expect(m.text).toContain(`https://track.test/${awb}`);
+    expect(m.text).toContain(`${WEB}/account/orders/${orderId}`);
+    expect(m.text).toContain("Delhivery");
+    expect(outbox.sent).toHaveLength(1);
+  });
+
+  it("sends out for delivery and delivered, once each", async () => {
+    const { orderId, awb } = await readyLine("airfryer-crisp");
+    await scan(awb, "Shipped");
+    await drain();
+    outbox.sent = [];
+    await scan(awb, "Out For Delivery");
+    await scan(awb, "Out For Delivery");
+    await drain();
+    expect(only(/out for delivery/).text).toContain(`https://track.test/${awb}`);
+    await scan(awb, "Delivered");
+    await scan(awb, "Delivered");
+    await drain();
+    expect(only(/was delivered/).subject).toBe(`Your AltasGoods order ${orderId} was delivered`);
+    expect(outbox.sent).toHaveLength(2);
+  });
+
+  it("goes straight to delivered when the courier skips the scans in between", async () => {
+    const { awb } = await readyLine("cookware-pan");
+    await drain();
+    outbox.sent = [];
+    await scan(awb, "Delivered");
+    await drain();
+    expect(subjects()).toEqual([expect.stringMatching(/was delivered$/)]);
+  });
+
+  it("tells the customer a parcel was lost and that a refund has started", async () => {
+    const { orderId, itemId, awb } = await readyLine("tablet-slate");
+    await scan(awb, "Shipped");
+    await drain();
+    outbox.sent = [];
+    await transition([itemId], "LOST", "Courier confirmed the parcel is lost");
+    await drain();
+    const m = only(/An update on your AltasGoods order/);
+    expect(m.subject).toBe(`An update on your AltasGoods order ${orderId}`);
+    expect(m.text).toContain("lost your parcel");
+    expect(m.text).toContain("refund");
+    only(/has started/);
+  });
+});
+
+describe("return emails", () => {
+  const today = () => t.clock.now().toISOString().slice(0, 10);
+  const request = (itemId: string, extra: object = {}) => ({
+    orderItemId: itemId,
+    qty: 1,
+    reasonCode: "DEFECTIVE",
+    reasonLabel: "Item is defective or not working",
+    fault: "STORE",
+    resolution: "REFUND",
+    refundTo: "SOURCE",
+    pickupDate: today(),
+    pickupSlot: "10 AM to 1 PM",
+    ...extra,
+  });
+  const advance = (id: string, to: string) => t.http.post(`/v1/dev/returns/${id}/advance`).set(staff).send({ to }).expect(200);
+
+  it("approves, picks up and refunds an in-policy return", async () => {
+    const { itemId } = await deliveredLine("serum-glow");
+    await drain();
+    outbox.sent = [];
+    const r = (await t.http.post("/v1/me/returns").set(shopper).send(request(itemId)).expect(201)).body;
+    await drain();
+    const approved = only(/is approved/);
+    expect(approved.subject).toBe(`Your AltasGoods return ${r.id} is approved`);
+    expect(approved.text).toContain(`${WEB}/account/returns`);
+    expect(approved.text).toContain("10 AM to 1 PM");
+
+    await advance(r.id, "PICKED_UP");
+    await drain();
+    expect(only(/We picked up/).subject).toBe(`We picked up your AltasGoods return ${r.id}`);
+    // a low value return is refunded at the doorstep: the return's refund email, not a second generic one
+    expect(only(/Your refund for AltasGoods return/).subject).toBe(`Your refund for AltasGoods return ${r.id} has started`);
+    expect(subjects().filter((s) => /^Your refund of/.test(s) && /has started/.test(s))).toHaveLength(0);
+    only(/is complete$/);
+  });
+
+  it("reports a failed check, then the rejection", async () => {
+    const { itemId } = await deliveredLine("speaker-boom");
+    const r = (await t.http.post("/v1/me/returns").set(shopper).send(request(itemId, { resolution: "REPLACEMENT", refundTo: undefined })).expect(201)).body;
+    await advance(r.id, "RECEIVED");
+    await drain();
+    outbox.sent = [];
+    await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: false, note: "Water damage inside the case" }).expect(200);
+    await drain();
+    expect(only(/did not pass|An update on your AltasGoods return/).text).toContain("Water damage inside the case");
+    outbox.sent = [];
+    await t.http.post(`/v1/admin/returns/${r.id}/settle`).set(staff).send({ accept: false, note: "Damage is not covered by the return policy" }).expect(200);
+    await drain();
+    const m = only(/An update on your AltasGoods return/);
+    expect(m.subject).toBe(`An update on your AltasGoods return ${r.id}`);
+    expect(m.text).toContain("could not accept");
+    expect(m.text).toContain("Damage is not covered by the return policy");
+  });
+});
+
+describe("Care Desk emails", () => {
+  it("emails the customer an agent's reply, never an internal note", async () => {
+    const agent = (await signIn(t.http, careAgentEmail(0))).auth;
+    const ticket = (await t.http.post("/v1/me/support/tickets").set(shopper).send({ subject: "Where is my parcel", category: "Delivery", body: "It has not moved in three days." }).expect(201)).body;
+    await drain();
+    outbox.sent = [];
+    await t.http.post(`/v1/support/tickets/${ticket.id}/messages`).set(agent).send({ kind: "NOTE", body: "Courier says the hub is flooded" }).expect(200);
+    await drain();
+    expect(outbox.sent).toHaveLength(0);
+    await t.http.post(`/v1/support/tickets/${ticket.id}/messages`).set(agent).send({ kind: "REPLY", body: "Sorry for the wait.\n\nYour parcel moves again tomorrow." }).expect(200);
+    await drain();
+    const m = only(/New reply/);
+    expect(m).toMatchObject({ to: DEMO_CUSTOMER, subject: `New reply on your AltasGoods help request ${ticket.id}` });
+    expect(m.text).toContain("Revathi from AltasGoods");
+    expect(m.text).toContain("Your parcel moves again tomorrow.");
+    expect(m.text).not.toContain("flooded");
+    expect(m.text).toContain(`${WEB}/account/support`);
+  });
+});
+
 describe("every trigger sends its email once", () => {
   it("leaves at most one email job per key", async () => {
     const dupes = await db

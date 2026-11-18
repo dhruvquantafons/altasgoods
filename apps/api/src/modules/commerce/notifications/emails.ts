@@ -120,7 +120,7 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
       title: "Your order is confirmed",
       paragraphs: [
         `Thank you for shopping with AltasGoods. We have your order ${d.orderId} for ${rupees(d.totalPaise)}.`,
-        d.paymentMethod === "COD" ? `Please keep ${rupees(d.totalPaise)} ready to pay when it is delivered.` : `Your payment by ${payLabel[d.paymentMethod]} has been received.`,
+        d.paymentMethod === "COD" ? `You chose cash on delivery, so please keep ${rupees(d.totalPaise)} ready when it arrives.` : `Your payment by ${payLabel[d.paymentMethod]} has been received.`,
         "We will email you again when it ships.",
       ],
       list: d.items.map(itemLine),

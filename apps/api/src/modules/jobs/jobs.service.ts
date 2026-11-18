@@ -141,7 +141,8 @@ export class JobsService {
 
   /** Claims and runs up to `limit` due jobs. Returns how many it ran. */
   runDue(limit = 20): Promise<number> {
-    const run = this.chain.then(() => this.runBatch(limit));
+    // a job may queue others (a refund queues its email): kick again for them once this batch is done
+    const run = this.chain.then(() => this.scope(() => this.runBatch(limit)));
     this.chain = run.catch(() => undefined);
     return run;
   }

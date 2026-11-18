@@ -158,8 +158,9 @@ export class ShippingService {
       const { items } = await this.workflow.lockOrder(tx, item.orderId);
       const line = items.find((i) => i.id === item.id)!;
       const path = update.status ? courierPath(line.status, update.status) : [];
-      for (const to of path) {
-        await this.workflow.transition(tx, { orderId: item.orderId, itemIds: [item.id], to, actor: "LOGISTICS", note: `${line.courier ?? "Courier"}: ${update.raw}` });
+      for (const [i, to] of path.entries()) {
+        // a scan that skips steps emails the customer only about where the parcel is now
+        await this.workflow.transition(tx, { orderId: item.orderId, itemIds: [item.id], to, actor: "LOGISTICS", note: `${line.courier ?? "Courier"}: ${update.raw}`, notify: i === path.length - 1 });
       }
       await tx.update(orderItems).set({ trackingStatus: update.raw, trackedAt: this.clock.now() }).where(eq(orderItems.id, item.id));
       return { changed: path.length > 0 };

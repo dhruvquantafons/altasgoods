@@ -8,13 +8,14 @@ import type { Clock } from "../../../common/infra.module.js";
 import { rupees } from "../../../common/money.js";
 import { CLOCK, DB, PAYMENT_PROVIDER } from "../../../common/tokens.js";
 import { PAYMENT_WINDOW_MS } from "../pricing.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
 import { OrderWorkflow, type OrderRow } from "../workflow.service.js";
 import type { PaymentProvider, ProviderEvent } from "./provider.js";
 import { RefundsService } from "./refunds.service.js";
 import { SANDBOX_SIGNATURE_HEADER, SandboxPaymentProvider, signSandbox } from "./sandbox.provider.js";
 
-/** Who issued a refund, for which line, and a staff-only remark. */
-type RefundExtra = { orderItemId?: string | null; createdBy?: string | null; note?: string | null };
+/** Who issued a refund, for which line, and a staff-only remark; `notify: false` skips the customer's "refund started" email (a return sends its own). */
+type RefundExtra = { orderItemId?: string | null; createdBy?: string | null; note?: string | null; notify?: boolean };
 
 @Injectable()
 export class PaymentsService {
@@ -26,6 +27,7 @@ export class PaymentsService {
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
     @Inject(RefundsService) private readonly refunds: RefundsService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -42,7 +44,8 @@ export class PaymentsService {
     const limit = await this.refunds.limit(tx, order);
     if (!limit?.online) throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
     if (amountPaise > limit.leftPaise) throw conflict("REFUND_TOO_LARGE", `Only ${rupees(Math.max(limit.leftPaise, 0))} of this order is left to refund`);
-    return this.refunds.queue(tx, { paymentId: limit.payment.id, orderId: order.id, amountPaise, reason, ...extra });
+    const { notify, ...who } = extra;
+    return this.refunds.queue(tx, { paymentId: limit.payment.id, orderId: order.id, amountPaise, reason, ...who }, { notify });
   }
 
   /**
@@ -67,7 +70,8 @@ export class PaymentsService {
             : "Nothing collected on this cash on delivery order is left to refund. Cash is collected when a parcel is delivered.",
       );
     }
-    return this.refunds.recordManual(tx, { ...input, paymentId: limit.payment.id, orderId: order.id });
+    const { notify, ...details } = input;
+    return this.refunds.recordManual(tx, { ...details, paymentId: limit.payment.id, orderId: order.id }, { notify });
   }
 
   /**
@@ -165,6 +169,14 @@ export class PaymentsService {
       if (order.status === "PAYMENT_PENDING") {
         await tx.update(orders).set({ status: "PAYMENT_FAILED", paymentStatus: "FAILED" }).where(eq(orders.id, order.id));
         await tx.insert(orderEvents).values({ orderId: order.id, fromStatus: order.status, toStatus: "PAYMENT_FAILED", actor: "PAYMENT", note: event.failureReason });
+        // once per attempt (a repeated failure webhook finds the payment FAILED already and stops above),
+        // and only while the order can still be paid
+        if (!order.paymentDueBy || order.paymentDueBy > now) await this.notifications.notify(tx, "PAYMENT_FAILED", {
+          userId: order.userId,
+          orderId: order.id,
+          key: payment.id,
+          data: { orderId: order.id, amountPaise: payment.amountPaise, payBy: order.paymentDueBy?.toISOString() ?? null },
+        });
       }
       return { duplicate: false, status: "FAILED" as const };
     });
