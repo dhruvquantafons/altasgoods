@@ -5,12 +5,16 @@ import type { Db, Tx } from "../../../db/client.js";
 import { coupons, orderEvents, orders, paymentEvents, payments } from "../../../db/schema.js";
 import { conflict, forbidden, notFound } from "../../../common/errors.js";
 import type { Clock } from "../../../common/infra.module.js";
+import { rupees } from "../../../common/money.js";
 import { CLOCK, DB, PAYMENT_PROVIDER } from "../../../common/tokens.js";
 import { PAYMENT_WINDOW_MS } from "../pricing.js";
 import { OrderWorkflow, type OrderRow } from "../workflow.service.js";
 import type { PaymentProvider, ProviderEvent } from "./provider.js";
 import { RefundsService } from "./refunds.service.js";
 import { SANDBOX_SIGNATURE_HEADER, SandboxPaymentProvider, signSandbox } from "./sandbox.provider.js";
+
+/** Who issued a refund, for which line, and a staff-only remark. */
+type RefundExtra = { orderItemId?: string | null; createdBy?: string | null; note?: string | null };
 
 @Injectable()
 export class PaymentsService {
@@ -31,15 +35,39 @@ export class PaymentsService {
    * transaction; the gateway is called by the refund job after commit, so the
    * returned row is PENDING.
    */
-  async refundToSource(tx: Tx, orderId: string, amountPaise: number, reason: string) {
+  async refundToSource(tx: Tx, orderId: string, amountPaise: number, reason: string, extra: RefundExtra = {}) {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
     if (!order) throw notFound("Order");
     if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
-    const payment = await this.refunds.paidPayment(tx, order.id);
-    if (!payment || (payment.status !== "CAPTURED" && payment.status !== "PARTIALLY_REFUNDED")) throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
-    const left = order.totalPaise - (await this.refunds.committed(tx, payment.id));
-    if (amountPaise > left) throw conflict("REFUND_TOO_LARGE", `Only ₹${(Math.max(left, 0) / 100).toLocaleString("en-IN")} of this order is left to refund`);
-    return this.refunds.queue(tx, { paymentId: payment.id, orderId: order.id, amountPaise, reason });
+    const limit = await this.refunds.limit(tx, order);
+    if (!limit?.online) throw conflict("NOT_REFUNDABLE", "This order has no captured online payment to refund to");
+    if (amountPaise > limit.leftPaise) throw conflict("REFUND_TOO_LARGE", `Only ${rupees(Math.max(limit.leftPaise, 0))} of this order is left to refund`);
+    return this.refunds.queue(tx, { paymentId: limit.payment.id, orderId: order.id, amountPaise, reason, ...extra });
+  }
+
+  /**
+   * Records a refund the store pays itself, by UPI or bank transfer: already
+   * paid (with its reference), or waiting for the payout (paid: false). It
+   * never reaches the gateway. Capped like any refund: on a prepaid order by
+   * what is left of the payment, on cash on delivery by what was collected
+   * and not yet refunded, so nothing can be refunded before delivery.
+   */
+  async refundManually(tx: Tx, orderId: string, input: { amountPaise: number; reason: string; reference?: string | null; paid: boolean } & RefundExtra) {
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
+    if (!order) throw notFound("Order");
+    const limit = await this.refunds.limit(tx, order);
+    if (!limit) throw conflict("NOT_REFUNDABLE", "Nothing has been paid on this order, so there is nothing to refund");
+    if (input.amountPaise > limit.leftPaise) {
+      throw conflict(
+        "REFUND_TOO_LARGE",
+        limit.online
+          ? `Only ${rupees(Math.max(limit.leftPaise, 0))} of this order is left to refund`
+          : limit.leftPaise > 0
+            ? `Only ${rupees(limit.leftPaise)} was collected on this cash on delivery order and not yet refunded`
+            : "Nothing collected on this cash on delivery order is left to refund. Cash is collected when a parcel is delivered.",
+      );
+    }
+    return this.refunds.recordManual(tx, { ...input, paymentId: limit.payment.id, orderId: order.id });
   }
 
   /**

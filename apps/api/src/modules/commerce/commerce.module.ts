@@ -8,6 +8,7 @@ import {
   AddressesController,
   AdminInsightsController,
   AdminOrdersController,
+  AdminRefundsController,
   CartController,
   DevController,
   WishlistController,
@@ -36,6 +37,7 @@ import { PromotionsService } from "./promotions.service.js";
 import { AdminReturnsController, CustomerReturnsController, DevReturnsController } from "./returns/returns.controllers.js";
 import { ReturnsService } from "./returns/returns.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
+import { OrderAdminService } from "./order-admin.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
 
 @Module({
@@ -46,6 +48,7 @@ import { OrderWorkflow } from "./workflow.service.js";
     OrdersController,
     PaymentsController,
     AdminOrdersController,
+    AdminRefundsController,
     AdminInsightsController,
     AdminPromotionsController,
     StorefrontPromotionsController,
@@ -70,6 +73,7 @@ import { OrderWorkflow } from "./workflow.service.js";
     PaymentsService,
     OrdersService,
     FulfilmentService,
+    OrderAdminService,
     DevLogisticsService,
     ReturnsService,
     PaymentSweeper,

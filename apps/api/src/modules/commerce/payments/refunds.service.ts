@@ -1,10 +1,11 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { and, asc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { conflict, notFound } from "../../../common/errors.js";
+import { rupees } from "../../../common/money.js";
 import type { Clock } from "../../../common/infra.module.js";
 import { CLOCK, DB, PAYMENT_PROVIDER } from "../../../common/tokens.js";
 import type { Db, Tx } from "../../../db/client.js";
-import { orders, payments, refunds, type PaymentStatus } from "../../../db/schema.js";
+import { orderItems, orders, payments, refunds, type OrderItemStatus, type PaymentStatus } from "../../../db/schema.js";
 import { JobsService } from "../../jobs/jobs.service.js";
 import { isTransientGatewayError, type PaymentProvider, type ProviderRefund, type RefundState } from "./provider.js";
 
@@ -14,6 +15,18 @@ export const REFUND_JOB = "refund.execute";
 const PAID: PaymentStatus[] = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"];
 
 type RefundRow = typeof refunds.$inferSelect;
+type OrderRow = typeof orders.$inferSelect;
+type PaymentRow = typeof payments.$inferSelect;
+
+/** Lines whose parcel reached the customer, so cash on delivery was collected for them. */
+const DELIVERED_LIKE: OrderItemStatus[] = ["DELIVERED", "RETURN_REQUESTED", "RETURN_IN_PROGRESS", "RETURNED", "REPLACED", "CLOSED"];
+
+/** A line's share of the order: its amount less its share of the coupon. Every per-line refund uses this. */
+export const lineNetPaise = (order: Pick<OrderRow, "subtotalPaise" | "couponDiscountPaise">, line: { unitPricePaise: number; qty: number }) => {
+  const gross = line.unitPricePaise * line.qty;
+  const couponShare = order.subtotalPaise ? Math.round((order.couponDiscountPaise * gross) / order.subtotalPaise) : 0;
+  return gross - couponShare;
+};
 
 /** What a customer sees: a refund waiting on the store's check is still on its way. */
 export const customerRefundStatus = (s: RefundRow["status"]) => (s === "NEEDS_ATTENTION" ? "PROCESSING" : s);
@@ -76,14 +89,81 @@ export class RefundsService implements OnModuleInit {
     return Number(row?.total ?? 0);
   }
 
+  /**
+   * What is still refundable on a payment: the amount captured less every
+   * refund promised from it. The one cap for refunds to the payment method,
+   * their retries, and manual refunds on prepaid orders.
+   */
+  async refundable(tx: Tx, payment: Pick<PaymentRow, "id" | "amountPaise">) {
+    return payment.amountPaise - (await this.committed(tx, payment.id));
+  }
+
+  /**
+   * How much a refund on this order may be, and which payment it is booked
+   * against. Prepaid: what is left of the captured payment. Cash on delivery:
+   * what was actually collected (delivered lines; the delivery fee once every
+   * booked parcel is delivered, since it travels with one of them) less what
+   * was refunded. Null when nothing was paid. Call with the order row locked.
+   */
+  async limit(tx: Tx, order: OrderRow): Promise<{ payment: PaymentRow; leftPaise: number; online: boolean } | null> {
+    if (order.paymentMethod !== "COD") {
+      // a fully refunded payment is still the one that paid: nothing is left of it
+      const payment = await this.paidPayment(tx, order.id);
+      if (!payment) return null;
+      return { payment, leftPaise: await this.refundable(tx, payment), online: true };
+    }
+    const [payment] = await tx.select().from(payments).where(and(eq(payments.orderId, order.id), eq(payments.provider, "COD"))).orderBy(asc(payments.createdAt)).limit(1);
+    if (!payment) return null;
+    const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+    const delivered = items.filter((i) => DELIVERED_LIKE.includes(i.status));
+    const booked = items.filter((i) => i.awb);
+    const feeCollected = delivered.length > 0 && booked.every((i) => DELIVERED_LIKE.includes(i.status));
+    const collected = Math.min(payment.amountPaise, delivered.reduce((a, i) => a + lineNetPaise(order, i), 0) + (feeCollected ? order.deliveryFeePaise : 0));
+    return { payment, leftPaise: collected - (await this.committed(tx, payment.id)), online: false };
+  }
+
   /** Records a PENDING refund and queues the job that sends it, inside the caller's transaction. */
-  async queue(tx: Tx, input: { paymentId: string; orderId: string; orderItemId?: string | null; amountPaise: number; reason: string }) {
+  async queue(tx: Tx, input: { paymentId: string; orderId: string; orderItemId?: string | null; amountPaise: number; reason: string; createdBy?: string | null; note?: string | null }) {
     const [refund] = await tx
       .insert(refunds)
-      .values({ ...input, status: "PENDING" })
+      .values({ ...input, method: "SOURCE", status: "PENDING" })
       .returning();
     await this.jobs.enqueue(tx, REFUND_JOB, { refundId: refund!.id });
     return refund!;
+  }
+
+  /**
+   * Records money the store pays back itself (UPI or bank transfer), never
+   * through the gateway: COMPLETED with its reference when already paid, or
+   * PENDING while it waits for someone to pay it (see markPaid). Either way it
+   * counts against the cap at once. A completed one settles the payment like
+   * a gateway refund. The caller checks the cap (see limit) under the order lock.
+   */
+  async recordManual(
+    tx: Tx,
+    input: { paymentId: string; orderId: string; orderItemId?: string | null; amountPaise: number; reason: string; reference?: string | null; createdBy?: string | null; note?: string | null; paid: boolean },
+  ) {
+    const { paid, ...values } = input;
+    const [refund] = await tx
+      .insert(refunds)
+      .values({ ...values, method: "MANUAL", status: paid ? "COMPLETED" : "PENDING", completedAt: paid ? this.clock.now() : null })
+      .returning();
+    if (paid) await this.settle(tx, refund!.paymentId);
+    return refund!;
+  }
+
+  /** Records that a manual refund waiting for its payout has been paid, with the payout's reference. */
+  async markPaid(tx: Tx, refundId: string, reference: string, note?: string | null) {
+    const [refund] = await tx.select().from(refunds).where(eq(refunds.id, refundId)).for("update");
+    if (!refund) throw notFound("Refund");
+    if (refund.method !== "MANUAL" || refund.status !== "PENDING") throw conflict("NOT_AWAITING_PAYOUT", "This refund is not waiting for a manual payout");
+    const [done] = await tx
+      .update(refunds)
+      .set({ status: "COMPLETED", reference, completedAt: this.clock.now(), ...(note ? { note } : {}) })
+      .where(eq(refunds.id, refundId))
+      .returning();
+    await this.settle(tx, refund.paymentId);
+    return done!;
   }
 
   /**
@@ -96,7 +176,8 @@ export class RefundsService implements OnModuleInit {
   async execute(refundId: string) {
     await this.db.transaction(async (tx) => {
       const [refund] = await tx.select().from(refunds).where(eq(refunds.id, refundId)).for("update");
-      if (!refund || refund.status !== "PENDING") return;
+      // a manual refund is paid by the store, never sent to the gateway
+      if (!refund || refund.status !== "PENDING" || refund.method !== "SOURCE") return;
       const providerRef = await this.providerRef(tx, refund.paymentId);
       let result: ProviderRefund | null;
       try {
@@ -123,7 +204,7 @@ export class RefundsService implements OnModuleInit {
   async giveUp(refundId: string, error: Error) {
     await this.db.transaction(async (tx) => {
       const [refund] = await tx.select().from(refunds).where(eq(refunds.id, refundId)).for("update");
-      if (!refund || refund.status !== "PENDING") return;
+      if (!refund || refund.status !== "PENDING" || refund.method !== "SOURCE") return;
       let found: ProviderRefund | null;
       try {
         found = await this.provider.findRefund({ providerRef: await this.providerRef(tx, refund.paymentId), receipt: refund.id });
@@ -153,12 +234,14 @@ export class RefundsService implements OnModuleInit {
       this.db.transaction(async (tx) => {
         const [refund] = await tx.select().from(refunds).where(eq(refunds.id, refundId)).for("update");
         if (!refund) throw notFound("Refund");
-        if (refund.status !== "FAILED" && refund.status !== "NEEDS_ATTENTION") throw conflict("REFUND_NOT_RETRYABLE", "Only a failed refund, or one that needs attention, can be sent again");
+        if (refund.method !== "SOURCE" || (refund.status !== "FAILED" && refund.status !== "NEEDS_ATTENTION")) {
+          throw conflict("REFUND_NOT_RETRYABLE", "Only a failed refund, or one that needs attention, can be sent again");
+        }
         await tx.select({ id: orders.id }).from(orders).where(eq(orders.id, refund.orderId)).for("update");
         if (refund.status === "FAILED") {
-          const [payment] = await tx.select({ amountPaise: payments.amountPaise }).from(payments).where(eq(payments.id, refund.paymentId));
-          const left = (payment?.amountPaise ?? 0) - (await this.committed(tx, refund.paymentId));
-          if (refund.amountPaise > left) throw conflict("REFUND_TOO_LARGE", `Only ₹${(Math.max(left, 0) / 100).toLocaleString("en-IN")} of this payment is left to refund`);
+          const [payment] = await tx.select({ id: payments.id, amountPaise: payments.amountPaise }).from(payments).where(eq(payments.id, refund.paymentId));
+          const left = payment ? await this.refundable(tx, payment) : 0;
+          if (refund.amountPaise > left) throw conflict("REFUND_TOO_LARGE", `Only ${rupees(Math.max(left, 0))} of this payment is left to refund`);
         }
         const [again] = await tx.update(refunds).set({ status: "PENDING", completedAt: null }).where(eq(refunds.id, refund.id)).returning();
         await this.jobs.enqueue(tx, REFUND_JOB, { refundId: refund.id });
@@ -211,6 +294,10 @@ export class RefundsService implements OnModuleInit {
    * when this payment is the one that paid for it.
    */
   private async settle(tx: Tx, paymentId: string) {
+    // the order row first, then the payment: the order every refund path takes them in, so none deadlock
+    const [owner] = await tx.select({ orderId: payments.orderId }).from(payments).where(eq(payments.id, paymentId));
+    if (!owner) return;
+    await tx.select({ id: orders.id }).from(orders).where(eq(orders.id, owner.orderId)).for("update");
     const [payment] = await tx.select().from(payments).where(eq(payments.id, paymentId)).for("update");
     if (!payment || !PAID.includes(payment.status)) return;
     const [row] = await tx

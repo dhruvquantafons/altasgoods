@@ -66,7 +66,7 @@ export async function seed(db: Db) {
   if (isProduction()) throw new Error("Refusing to seed a production database");
   const m = await loadMock();
 
-  await db.execute(sql`truncate table jobs, refunds, payment_events, payments, order_events, order_items, orders, cart_items, addresses, coupons,
+  await db.execute(sql`truncate table jobs, refunds, payment_events, payments, order_notes, order_events, order_items, orders, cart_items, addresses, coupons,
     return_events, returns, customer_uploads,
     support_attachments, support_actions, support_events, support_messages, support_tickets,
     media, files,

@@ -1524,6 +1524,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/orders/{id}/address": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminOrdersController_address"];
+        trace?: never;
+    };
+    "/v1/admin/orders/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminOrdersController_notes"];
+        put?: never;
+        post: operations["AdminOrdersController_addNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/logistics/status": {
         parameters: {
             query?: never;
@@ -1550,6 +1582,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AdminOrdersController_refreshTracking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/orders/{id}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminRefundsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/refunds/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminRefundsController_retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/refunds/{id}/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminRefundsController_markPaid"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1966,6 +2046,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AdminReturnsController_settle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/returns/{id}/refund/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminReturnsController_markRefundPaid"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8363,6 +8459,30 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         }[];
+                        addressEditable: boolean;
+                        refunds: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                            /** @enum {string} */
+                            method: "SOURCE" | "MANUAL";
+                            reason: string;
+                            reference: string | null;
+                            note: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            completedAt: string | null;
+                        }[];
+                        refundLimit: {
+                            source: boolean;
+                            maxPaise: number;
+                        };
                     };
                 };
             };
@@ -8380,7 +8500,8 @@ export interface operations {
                 "application/json": {
                     ids: string[];
                     /** @enum {string} */
-                    to: "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "CANCELLED";
+                    to: "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "CANCELLED" | "LOST" | "RTO_RECEIVED";
+                    /** @description Required to cancel, mark lost (LOST) or record a parcel back at the store (RTO_RECEIVED) */
                     reason?: string;
                 };
             };
@@ -8400,6 +8521,197 @@ export interface operations {
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED" | null;
                             error: string | null;
                         }[];
+                    };
+                };
+            };
+        };
+    };
+    AdminOrdersController_address: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    phone: string;
+                    line1: string;
+                    line2?: string;
+                    landmark?: string;
+                    city: string;
+                    state: string;
+                    pincode: string;
+                    /**
+                     * @default HOME
+                     * @enum {string}
+                     */
+                    type?: "HOME" | "WORK" | "OTHER";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** Format: date-time */
+                        placedAt: string;
+                        /** @enum {string} */
+                        status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @enum {string} */
+                        paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                        /** @enum {string} */
+                        paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                        totalPaise: number;
+                        shipTo: {
+                            name: string;
+                            city: string;
+                            state: string;
+                            pincode: string;
+                        };
+                        address: {
+                            name: string;
+                            phone: string;
+                            line1: string;
+                            line2: string | null;
+                            landmark: string | null;
+                            city: string;
+                            state: string;
+                            pincode: string;
+                        };
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            productId: string;
+                            title: string;
+                            image: string;
+                            variant: string;
+                            qty: number;
+                            unitPricePaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
+                            /** Format: date-time */
+                            dispatchBy: string | null;
+                            /** Format: date-time */
+                            promisedBy: string;
+                            awb: string | null;
+                            courier: string | null;
+                            labelUrl: string | null;
+                            trackingStatus: string | null;
+                            /** Format: date-time */
+                            trackedAt: string | null;
+                            trackingUrl: string | null;
+                            simulated: boolean;
+                            allowedActions: ("PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED")[];
+                        }[];
+                        events: {
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            fromStatus: string | null;
+                            toStatus: string;
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        addressEditable: boolean;
+                        refunds: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                            /** @enum {string} */
+                            method: "SOURCE" | "MANUAL";
+                            reason: string;
+                            reference: string | null;
+                            note: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            completedAt: string | null;
+                        }[];
+                        refundLimit: {
+                            source: boolean;
+                            maxPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    AdminOrdersController_notes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        authorId: string | null;
+                        authorName: string;
+                        body: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminOrdersController_addNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        authorId: string | null;
+                        authorName: string;
+                        body: string;
+                        /** Format: date-time */
+                        createdAt: string;
                     };
                 };
             };
@@ -8464,6 +8776,153 @@ export interface operations {
             };
         };
     };
+    AdminRefundsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amountPaise: number;
+                    /** @description Why; the customer sees it with the refund */
+                    reason: string;
+                    /**
+                     * @description SOURCE goes back through the gateway; MANUAL records money the store already sent by UPI or bank transfer
+                     * @enum {string}
+                     */
+                    method: "SOURCE" | "MANUAL";
+                    /** @description Required for MANUAL: the UTR or UPI reference of the payout */
+                    reference?: string;
+                    /**
+                     * Format: uuid
+                     * @description The line it is for, if any
+                     */
+                    orderItemId?: string;
+                    /** @description Staff-only remark */
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string | null;
+                        amountPaise: number;
+                        /** @enum {string} */
+                        status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                        /** @enum {string} */
+                        method: "SOURCE" | "MANUAL";
+                        reason: string;
+                        reference: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        completedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminRefundsController_retry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string | null;
+                        amountPaise: number;
+                        /** @enum {string} */
+                        status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                        /** @enum {string} */
+                        method: "SOURCE" | "MANUAL";
+                        reason: string;
+                        reference: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        completedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminRefundsController_markPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The UTR or UPI reference of the payout */
+                    reference: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string | null;
+                        amountPaise: number;
+                        /** @enum {string} */
+                        status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                        /** @enum {string} */
+                        method: "SOURCE" | "MANUAL";
+                        reason: string;
+                        reference: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        completedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
     AdminInsightsController_overview: {
         parameters: {
             query?: never;
@@ -8501,6 +8960,8 @@ export interface operations {
                             returnsWaiting: number;
                             refundsPending: number;
                             refundsPendingPaise: number;
+                            /** @description Refunds the gateway could not confirm; check the gateway, then retry */
+                            refundsNeedAttention: number;
                         };
                         /** @description The last 14 days, oldest first */
                         series: {
@@ -8628,8 +9089,18 @@ export interface operations {
                             /** @enum {string} */
                             status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
                             reason: string;
-                            /** @enum {string} */
+                            /**
+                             * @description How the customer paid
+                             * @enum {string}
+                             */
                             method: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            /**
+                             * @description SOURCE: through the gateway. MANUAL: paid by the store, PENDING until marked paid
+                             * @enum {string}
+                             */
+                            refundMethod: "SOURCE" | "MANUAL";
+                            /** @description The payout's UTR or UPI reference, for a MANUAL refund */
+                            reference: string | null;
                             /** @enum {string} */
                             provider: "SANDBOX" | "RAZORPAY" | "COD";
                             providerRef: string | null;
@@ -9309,8 +9780,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -9416,8 +9892,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -9496,8 +9977,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -9576,8 +10062,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -9663,8 +10154,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -9834,8 +10330,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -9914,8 +10415,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -10001,8 +10507,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -10088,8 +10599,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -10182,8 +10698,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -10269,8 +10790,106 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        decisionNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminReturnsController_markRefundPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The UTR or UPI reference of the payout */
+                    reference: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -10376,8 +10995,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -10632,6 +11256,30 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         }[];
+                        addressEditable: boolean;
+                        refunds: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                            /** @enum {string} */
+                            method: "SOURCE" | "MANUAL";
+                            reason: string;
+                            reference: string | null;
+                            note: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            completedAt: string | null;
+                        }[];
+                        refundLimit: {
+                            source: boolean;
+                            maxPaise: number;
+                        };
                         customer: {
                             /** Format: uuid */
                             id: string;

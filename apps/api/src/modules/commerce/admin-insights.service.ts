@@ -34,7 +34,7 @@ export class AdminInsightsService {
 
     const since = new Date(today.getTime() - 13 * DAY);
     const istDay = sql<string>`to_char(${orders.placedAt} at time zone 'Asia/Kolkata', 'YYYY-MM-DD')`;
-    const [seriesRows, work, returnsWaiting, refundsPending, top, latest, lowStock] = await Promise.all([
+    const [seriesRows, work, returnsWaiting, refundsPending, top, latest, lowStock, needAttention] = await Promise.all([
       this.db
         .select({ day: istDay, n: count(), total: sum(orders.totalPaise) })
         .from(orders)
@@ -69,6 +69,7 @@ export class AdminInsightsService {
         .where(and(eq(offers.sellerId, HOUSE_SELLER_ID), eq(offers.status, "ACTIVE"), lte(offers.stock, 5), eq(products.listingStatus, "LIVE")))
         .orderBy(offers.stock)
         .limit(8),
+      this.db.select({ n: count() }).from(refunds).where(eq(refunds.status, "NEEDS_ATTENTION")),
     ]);
 
     const byDay = new Map(seriesRows.map((r) => [r.day, r]));
@@ -92,6 +93,7 @@ export class AdminInsightsService {
         returnsWaiting: returnsWaiting[0]?.n ?? 0,
         refundsPending: refundsPending[0]?.n ?? 0,
         refundsPendingPaise: Number(refundsPending[0]?.total ?? 0),
+        refundsNeedAttention: needAttention[0]?.n ?? 0,
       },
       series,
       topProducts: top.map((t) => ({ productId: t.productId, title: t.title, image: t.image, units: Number(t.units ?? 0), revenuePaise: Number(t.revenue ?? 0) })),
@@ -175,6 +177,8 @@ export class AdminInsightsService {
         status: r.status,
         reason: r.reason,
         method,
+        refundMethod: r.method,
+        reference: r.reference,
         provider,
         providerRef,
         createdAt: r.createdAt.toISOString(),

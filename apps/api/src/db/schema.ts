@@ -102,6 +102,14 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const REFUND_STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "FAILED", "NEEDS_ATTENTION"] as const;
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
 
+/**
+ * SOURCE goes back through the gateway (the refund job). MANUAL is money the
+ * store pays itself, by UPI or bank transfer: PENDING until someone records
+ * the payout with its reference, then COMPLETED. Never sent to the gateway.
+ */
+export const REFUND_METHODS = ["SOURCE", "MANUAL"] as const;
+export type RefundMethod = (typeof REFUND_METHODS)[number];
+
 /** QUEUED waits for its run_after; RUNNING is claimed by a worker; DONE and FAILED are final. */
 export const JOB_STATUSES = ["QUEUED", "RUNNING", "DONE", "FAILED"] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
@@ -582,6 +590,23 @@ export const orderEvents = pgTable(
   (t) => [index("order_events_order_idx").on(t.orderId, t.createdAt)],
 );
 
+/** Staff-only notes on an order. Never part of any customer response. */
+export const orderNotes = pgTable(
+  "order_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    /** kept as written, so the note still reads well after an account is removed */
+    authorName: text("author_name").notNull(),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("order_notes_order_idx").on(t.orderId, t.createdAt), check("order_notes_body_ck", sql`char_length(${t.body}) between 1 and 2000`)],
+);
+
 /* -------------------------------- Payments ------------------------------- */
 
 export const payments = pgTable(
@@ -629,10 +654,22 @@ export const refunds = pgTable(
     reason: text("reason").notNull(),
     /** the gateway's id for this refund, once the gateway has it */
     providerRefundId: text("provider_refund_id"),
+    method: text("method").notNull().default("SOURCE").$type<RefundMethod>(),
+    /** for a MANUAL refund: the UTR or UPI reference of the payout */
+    reference: text("reference"),
+    /** the staff member who issued it, when one did */
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    /** staff-only remark */
+    note: text("note"),
     completedAt: ts("completed_at"),
     createdAt: createdAt(),
   },
-  (t) => [index("refunds_order_idx").on(t.orderId), index("refunds_status_idx").on(t.status), check("refunds_status_ck", inList("status", REFUND_STATUSES))],
+  (t) => [
+    index("refunds_order_idx").on(t.orderId),
+    index("refunds_status_idx").on(t.status),
+    check("refunds_status_ck", inList("status", REFUND_STATUSES)),
+    check("refunds_method_ck", inList("method", REFUND_METHODS)),
+  ],
 );
 
 /* ---------------------------------- Jobs ---------------------------------- */

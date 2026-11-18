@@ -175,13 +175,14 @@ export class SupportService {
     ]);
     const lastPublic = [...messages].reverse().find((m) => m.kind === "CUSTOMER" || m.kind === "AGENT");
     const { level, limitPaise } = agentLevel(me.roles);
-    // a refund to the payment method finishes in the refund job: report where it is now
+    // a refund finishes in the refund job, or when a manual payout is recorded: report where it is now.
+    // Staff see the true status, including a refund the gateway could not confirm (NEEDS_ATTENTION).
     const refundIds = actions.map((a) => (a.details as { refundId?: string } | null)?.refundId).filter((x): x is string => !!x);
     const refundRows = refundIds.length ? await this.db.select({ id: refunds.id, status: refunds.status }).from(refunds).where(inArray(refunds.id, refundIds)) : [];
     const actionStatus = (a: (typeof actions)[number]) => {
       const refund = refundRows.find((r) => r.id === (a.details as { refundId?: string } | null)?.refundId);
       if (a.status !== "PROCESSING" || !refund) return a.status;
-      return refund.status === "COMPLETED" ? "COMPLETED" : refund.status === "FAILED" ? "FAILED" : "PROCESSING";
+      return refund.status === "COMPLETED" || refund.status === "FAILED" || refund.status === "NEEDS_ATTENTION" ? refund.status : "PROCESSING";
     };
     const approver = me.roles.some((r) => (APPROVER_ROLES as string[]).includes(r));
     return {
@@ -362,16 +363,23 @@ export class SupportService {
 
   /**
    * Online payments of orders in this database are refunded through the
-   * payment provider straight away. Refunds to AltasGoods Credits, to a bank
-   * account for cash on delivery, and for imported history stay INITIATED
-   * for Finance.
+   * payment provider straight away. A cash on delivery order is refunded to
+   * the customer's bank account by hand: the refund goes on the order's ledger
+   * as a manual payout waiting to be paid (capped by what was collected), and
+   * Operations records it paid with its reference on the Payments page.
+   * Refunds to AltasGoods Credits and for imported history stay INITIATED.
    */
   private async executeRefund(tx: Tx, action: typeof supportActions.$inferSelect, t: Ticket) {
     const destination = (action.details as { destination?: string }).destination;
     const [order] = await tx.select({ id: orders.id, method: orders.paymentMethod }).from(orders).where(eq(orders.id, t.orderId!));
     const to = destination === "CREDITS" ? "AltasGoods Credits" : t.orderSnapshot?.cod ? "your bank account" : t.orderSnapshot?.paymentLabel ?? "your payment method";
-    if (destination === "SOURCE" && order && order.method !== "COD") {
-      const refund = await this.payments.refundToSource(tx, order.id, action.amountPaise!, `Care Desk ticket ${t.id}`);
+    if (destination === "SOURCE" && order) {
+      const reason = `Care Desk ticket ${t.id}`;
+      const by = { createdBy: action.createdById };
+      const refund =
+        order.method !== "COD"
+          ? await this.payments.refundToSource(tx, order.id, action.amountPaise!, reason, by)
+          : await this.payments.refundManually(tx, order.id, { amountPaise: action.amountPaise!, reason, paid: false, note: `Pay to the customer's bank account or UPI; the details are on ticket ${t.id}`, ...by });
       await tx.update(supportActions).set({ status: refund.status === "COMPLETED" ? "COMPLETED" : "PROCESSING", details: { ...action.details, refundId: refund.id } }).where(eq(supportActions.id, action.id));
     }
     await this.system(tx, t.id, `We have initiated a refund of ${rupees(action.amountPaise ?? 0)} to ${to}.`, true);

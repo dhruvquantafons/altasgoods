@@ -17,8 +17,10 @@ import { FulfilmentService } from "./fulfilment.service.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
 import { ServiceabilityService } from "./serviceability.service.js";
 import { ShippingService } from "./shipping/shipping.service.js";
-import { AuditService } from "../admin/audit.service.js";
+import { AuditService, diff } from "../admin/audit.service.js";
+import { rupees } from "../../common/money.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
+import { ADDRESS_FIELDS, OrderAdminService } from "./order-admin.service.js";
 
 const uuidParam = { schema: z.uuid() };
 
@@ -217,6 +219,7 @@ export class AdminOrdersController {
     @Inject(FulfilmentService) private readonly svc: FulfilmentService,
     @Inject(ShippingService) private readonly shipping: ShippingService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(OrderAdminService) private readonly admin: OrderAdminService,
   ) {}
 
   @StaffOnly("OPS_ADMIN", "AUDITOR")
@@ -239,7 +242,14 @@ export class AdminOrdersController {
   async transition(@CurrentUser() u: AuthUser, @Body({ schema: s.transitionBody }) body: z.infer<typeof s.transitionBody>) {
     const r = await this.svc.transition(u.id, body);
     const done = r.results.filter((x) => x.ok).length;
-    const verb: Record<typeof body.to, string> = { ACCEPTED: "Accepted", PACKED: "Packed", READY_TO_SHIP: "Marked ready to ship", CANCELLED: "Cancelled" };
+    const verb: Record<typeof body.to, string> = {
+      ACCEPTED: "Accepted",
+      PACKED: "Packed",
+      READY_TO_SHIP: "Marked ready to ship",
+      CANCELLED: "Cancelled",
+      LOST: "Marked lost",
+      RTO_RECEIVED: "Received back at the store",
+    };
     if (done) {
       await this.audit.log(
         u,
@@ -249,6 +259,32 @@ export class AdminOrdersController {
       );
     }
     return r;
+  }
+
+  /** Corrects the delivery address before the parcel is booked with the courier (409 ADDRESS_LOCKED after). */
+  @Patch("orders/:id/address")
+  @ApiResponse({ status: 200, standardSchema: s.fulfilmentOrderSchema })
+  async address(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body({ schema: s.orderAddressBody }) body: z.infer<typeof s.orderAddressBody>) {
+    const { before, after } = await this.admin.updateAddress(u, id, body);
+    const changes = diff(before as unknown as Record<string, unknown>, after as unknown as Record<string, unknown>, [...ADDRESS_FIELDS]);
+    if (Object.keys(changes).length) await this.audit.log(u, "order.address", { type: "order", id }, `Changed the delivery address of order ${id}`, changes);
+    return this.svc.order(id);
+  }
+
+  /** Internal notes on the order. Staff only: no customer response ever includes them. */
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
+  @Get("orders/:id/notes")
+  @ApiResponse({ status: 200, standardSchema: z.array(s.orderNoteSchema) })
+  notes(@Param("id") id: string) {
+    return this.admin.notes(id);
+  }
+
+  @Post("orders/:id/notes")
+  @ApiResponse({ status: 201, standardSchema: s.orderNoteSchema })
+  async addNote(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body({ schema: s.orderNoteBody }) body: z.infer<typeof s.orderNoteBody>) {
+    const note = await this.admin.addNote(u, id, body.body);
+    await this.audit.log(u, "order.note", { type: "order", id }, `Added an internal note to order ${id}`);
+    return note;
   }
 
   /** Which courier is connected, and what Shiprocket still needs before it can take over. */
@@ -274,6 +310,57 @@ export class AdminOrdersController {
   @ApiResponse({ status: 200, standardSchema: s.trackingRefreshResult })
   refreshTracking(@Param("id", uuidParam) id: string) {
     return this.shipping.refresh(id);
+  }
+}
+
+@ApiTags("Admin refunds")
+@ApiBearerAuth()
+@StaffOnly("OPS_ADMIN")
+@Controller("v1/admin")
+export class AdminRefundsController {
+  constructor(
+    @Inject(OrderAdminService) private readonly admin: OrderAdminService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
+
+  /**
+   * A goodwill or manual refund. SOURCE: to the captured online payment,
+   * through the refund job (PENDING until the gateway answers). MANUAL: money
+   * the store already sent by UPI or bank transfer, recorded COMPLETED with
+   * its reference. Both are capped: what is left of the payment, or on cash
+   * on delivery what was collected and not yet refunded.
+   */
+  @Post("orders/:id/refunds")
+  @ApiResponse({ status: 201, standardSchema: s.adminRefundSchema })
+  async create(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body({ schema: s.adminRefundBody }) body: z.infer<typeof s.adminRefundBody>) {
+    const r = await this.admin.refund(u.id, id, body);
+    const how = body.method === "SOURCE" ? "to the original payment method" : `paid by hand, reference ${body.reference}`;
+    await this.audit.log(u, "refund.create", { type: "refund", id: r.id }, `Refunded ${rupees(r.amountPaise)} on order ${id} ${how}: ${body.reason}`);
+    return r;
+  }
+
+  /**
+   * Sends a FAILED or NEEDS_ATTENTION refund again under the same receipt,
+   * after staff checked the gateway. If the gateway itself failed the refund
+   * under that receipt it stays failed: issue a new refund instead.
+   */
+  @Post("refunds/:id/retry")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.adminRefundSchema })
+  async retry(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string) {
+    const r = await this.admin.retry(id);
+    await this.audit.log(u, "refund.retry", { type: "refund", id }, `Sent the refund of ${rupees(r.amountPaise)} on order ${r.orderId} to the gateway again`);
+    return r;
+  }
+
+  /** Records the payout of a manual refund that was waiting for one (a Care Desk refund on cash on delivery, say). */
+  @Post("refunds/:id/mark-paid")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.adminRefundSchema })
+  async markPaid(@CurrentUser() u: AuthUser, @Param("id", uuidParam) id: string, @Body({ schema: s.markPaidBody }) body: z.infer<typeof s.markPaidBody>) {
+    const r = await this.admin.markPaid(id, body.reference, body.note);
+    await this.audit.log(u, "refund.mark_paid", { type: "refund", id }, `Marked the refund of ${rupees(r.amountPaise)} on order ${r.orderId} paid, reference ${body.reference}`);
+    return r;
   }
 }
 

@@ -6,6 +6,7 @@ import { ApiError, conflict, notFound, unprocessable } from "../../../common/err
 import type { Clock } from "../../../common/infra.module.js";
 import { env, isProduction } from "../../../config/env.js";
 import { CLOCK, DB, FILE_STORE } from "../../../common/tokens.js";
+import { rupees } from "../../../common/money.js";
 import type { Db, Tx } from "../../../db/client.js";
 import { addresses, customerUploads, offers, orderItems, orders, products, refunds, returnEvents, returns, users, type Actor, type ReturnStatus } from "../../../db/schema.js";
 import type { AuthUser } from "../../auth/auth.guard.js";
@@ -329,11 +330,39 @@ export class ReturnsService {
       .from(returns)
       .where(wanted?.length ? inArray(returns.status, wanted) : undefined)
       .orderBy(desc(returns.updatedAt));
-    return Promise.all(rows.map((r) => this.view(r.id)));
+    return Promise.all(rows.map((r) => this.view(r.id, { staff: true })));
   }
 
   storeReturn(id: string) {
-    return this.view(id);
+    return this.view(id, { staff: true });
+  }
+
+  /**
+   * Records that the store paid a return's bank (UPI) refund by hand, with the
+   * payout's reference: a MANUAL refund on the order's ledger (capped like any
+   * refund) and the return's refund COMPLETED. Once only: the return row is
+   * locked and must still be waiting. Credits refunds are not paid this way.
+   */
+  async markRefundPaid(id: string, actorId: string, reference: string, note?: string) {
+    await this.db.transaction(async (tx) => {
+      const r = await this.lock(tx, id);
+      if (r.resolution !== "REFUND" || r.refundTo === "CREDITS" || r.refundStatus !== "INITIATED" || r.refundId) {
+        throw conflict("NOT_AWAITING_PAYOUT", "This return has no bank refund waiting to be paid");
+      }
+      const refund = await this.payments.refundManually(tx, r.orderId, {
+        amountPaise: r.refundAmountPaise,
+        reason: `Return ${r.id}`,
+        reference,
+        paid: true,
+        orderItemId: r.orderItemId,
+        createdBy: actorId,
+        note: note || null,
+      });
+      const now = this.clock.now();
+      await tx.update(returns).set({ refundStatus: "COMPLETED", refundId: refund.id, updatedAt: now }).where(eq(returns.id, r.id));
+      await tx.insert(returnEvents).values({ returnId: r.id, fromStatus: r.status, toStatus: r.status, actor: "STAFF", note: `Refund of ${rupees(r.refundAmountPaise)} paid${r.refundUpi ? ` to ${r.refundUpi}` : ""}, reference ${reference}`, at: now });
+    });
+    return this.view(id, { staff: true });
   }
 
   /** Out-of-policy requests: the store approves (pickup is booked) or rejects with a reason. */
@@ -420,13 +449,14 @@ export class ReturnsService {
 
   /* ------------------------------- View ------------------------------- */
 
-  async view(id: string) {
+  /** A return as its customer sees it, or with `staff` the refund's true status (one needing attention is "Processing" to the customer). */
+  async view(id: string, { staff = false } = {}) {
     const [row] = await this.db
       .select({
         r: returns,
         item: { title: orderItems.title, image: orderItems.image, variant: orderItems.variant, unitPricePaise: orderItems.unitPricePaise, productId: orderItems.productId },
         customer: users.name,
-        refund: { status: refunds.status },
+        refund: { status: refunds.status, reference: refunds.reference },
       })
       .from(returns)
       .innerJoin(orderItems, eq(orderItems.id, returns.orderItemId))
@@ -452,10 +482,12 @@ export class ReturnsService {
       resolution: r.resolution,
       exchangeSize: r.exchangeSize,
       refundTo: r.refundTo,
+      refundUpi: r.refundUpi,
+      refundReference: row.refund?.reference ?? null,
       refundAmountPaise: r.refundAmountPaise,
       instantRefund: r.instantRefund,
       // a refund to the payment method moves on in the refund job: show where it is now
-      refundStatus: row.refund ? customerRefundStatus(row.refund.status) : r.refundStatus,
+      refundStatus: row.refund ? (staff ? row.refund.status : customerRefundStatus(row.refund.status)) : r.refundStatus,
       status: r.status,
       pickupDate: r.pickupDate,
       pickupSlot: r.pickupSlot,

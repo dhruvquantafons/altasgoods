@@ -5,7 +5,7 @@ import { notFound } from "../../common/errors.js";
 import { CLOCK, LOGISTICS_PROVIDER } from "../../common/tokens.js";
 import type { Tx } from "../../db/client.js";
 import { offers, orderEvents, orderItems, orders, payments, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
-import { RefundsService } from "./payments/refunds.service.js";
+import { lineNetPaise, RefundsService } from "./payments/refunds.service.js";
 import type { LogisticsProvider } from "./shipping/provider.js";
 import { dispatchByDate } from "./pricing.js";
 import { assertTransition, deriveOrderStatus } from "./state.js";
@@ -19,6 +19,11 @@ const INACTIVE: OrderItemStatus[] = ["CANCELLED", "RTO_IN_TRANSIT", "RTO_RECEIVE
  * The only place order items change status. Each transition is validated
  * against the state machine, applies its side effects (stock, fees, refunds,
  * AWB), is recorded in order_events, and re-derives the order header.
+ *
+ * A parcel that comes back to the store (RTO_RECEIVED) goes back into stock;
+ * a lost one (LOST) does not. Either way a prepaid line is refunded (its
+ * amount less its coupon share, never more than is left of the payment).
+ * Cash on delivery was never collected for them, so nothing is refunded.
  */
 @Injectable()
 export class OrderWorkflow {
@@ -58,6 +63,7 @@ export class OrderWorkflow {
         patch.cancelReason = args.note ?? null;
         await tx.update(offers).set({ stock: sql`${offers.stock} + ${item.qty}` }).where(eq(offers.id, item.offerId));
       }
+      if (args.to === "RTO_RECEIVED") await tx.update(offers).set({ stock: sql`${offers.stock} + ${item.qty}` }).where(eq(offers.id, item.offerId));
       if (args.to === "NEW") patch.dispatchBy = dispatchByDate(now, handling.get(item.id) ?? 1);
       if (args.to === "SHIPPED" && !item.shippedAt) patch.shippedAt = now;
       // a line back from a withdrawn return keeps its original delivery date
@@ -70,6 +76,10 @@ export class OrderWorkflow {
 
     const all = items.map((i) => updated.get(i.id) ?? i);
     if (args.to === "CANCELLED") await this.refundCancelled(tx, order, all, [...updated.values()], args.note ?? "Item cancelled");
+    if (args.to === "LOST" || args.to === "RTO_RECEIVED") {
+      // the staff note stays on the order event; the refund says what happened
+      await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? "Parcel lost in transit" : "Parcel returned to the store", args.actorId);
+    }
     if (args.to === "DELIVERED") await this.markCodCollected(tx, order, all);
     await this.recomputeHeader(tx, order, all, args.actor, args.headerOverride);
     return [...updated.values()];
@@ -102,31 +112,30 @@ export class OrderWorkflow {
    * refunded, so nothing is refunded twice.
    */
   private async refundCancelled(tx: Tx, order: OrderRow, all: OrderItemRow[], cancelled: OrderItemRow[], reason: string) {
-    if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") return;
-    const payment = await this.refunds.paidPayment(tx, order.id);
-    if (!payment || (payment.status !== "CAPTURED" && payment.status !== "PARTIALLY_REFUNDED")) return;
-    const refunded = await this.refunds.committed(tx, payment.id);
     const nothingLeft = all.every((i) => INACTIVE.includes(i.status));
+    await this.refundLines(tx, order, cancelled, reason, undefined, nothingLeft);
+  }
 
-    let amount: number;
-    if (nothingLeft) amount = order.totalPaise - refunded;
-    else {
-      amount = cancelled.reduce((a, i) => {
-        const line = i.unitPricePaise * i.qty;
-        const couponShare = order.subtotalPaise ? Math.round((order.couponDiscountPaise * line) / order.subtotalPaise) : 0;
-        return a + line - couponShare;
-      }, 0);
-    }
-    // never more than is left, even if earlier line refunds rounded up
-    amount = Math.min(amount, order.totalPaise - refunded);
+  /**
+   * Queues the refund for lines of a paid order that will not be delivered:
+   * each line's amount less its coupon share, or everything that is left
+   * (delivery fee included) when `everything`. Never more than is left of
+   * the payment, even if earlier line refunds rounded up. Unpaid and cash on
+   * delivery orders get nothing back.
+   */
+  private async refundLines(tx: Tx, order: OrderRow, lines: OrderItemRow[], reason: string, createdBy?: string, everything = false) {
+    if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") return;
+    const limit = await this.refunds.limit(tx, order);
+    if (!limit?.online) return;
+    const amount = Math.min(everything ? limit.leftPaise : lines.reduce((a, i) => a + lineNetPaise(order, i), 0), limit.leftPaise);
     if (amount <= 0) return;
-
     await this.refunds.queue(tx, {
-      paymentId: payment.id,
+      paymentId: limit.payment.id,
       orderId: order.id,
-      orderItemId: cancelled.length === 1 ? cancelled[0]!.id : null,
+      orderItemId: lines.length === 1 ? lines[0]!.id : null,
       amountPaise: amount,
       reason,
+      createdBy: createdBy ?? null,
     });
   }
 

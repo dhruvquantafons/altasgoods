@@ -145,6 +145,16 @@ export class AdminReturnsController {
     return r;
   }
 
+  /** Records that the store paid a bank (UPI) refund by hand, with the payout's reference. Once only. */
+  @Post(":id/refund/mark-paid")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.returnSchema })
+  async markRefundPaid(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.markPaidBody }) body: z.infer<typeof s.markPaidBody>) {
+    const r = await this.svc.markRefundPaid(id, u.id, body.reference, body.note);
+    await this.audit.log(u, "refund.mark_paid", { type: "return", id }, `Marked the bank refund of return ${id} paid, reference ${body.reference}`);
+    return r;
+  }
+
   @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get(":id/photos/:photoId")
   @ApiProduces("image/png", "image/jpeg")

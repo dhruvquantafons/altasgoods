@@ -48,6 +48,7 @@ export const pickupBody = z.object({
   awb: z.string().trim().min(4).max(40).regex(/^[A-Za-z0-9-]+$/, "Use the AWB as the courier printed it").optional().describe("The courier's AWB for the reverse pickup"),
   note: z.string().trim().max(500).optional().describe("Required when the pickup failed"),
 });
+export { markPaidBody } from "../commerce.schemas.js";
 export const settleBody = z.object({ accept: z.boolean(), note: z.string().trim().max(500) });
 export const returnListQuery = z.object({ status: z.string().max(200).optional() });
 
@@ -66,9 +67,11 @@ export const returnSchema = z.object({
   resolution: z.enum(["REFUND", "REPLACEMENT", "EXCHANGE"]),
   exchangeSize: z.string().nullable(),
   refundTo: z.enum(["SOURCE", "CREDITS", "BANK"]).nullable(),
+  refundUpi: z.string().nullable().describe("Where a bank (UPI) refund goes"),
+  refundReference: z.string().nullable().describe("The UTR or UPI reference once a bank refund has been paid"),
   refundAmountPaise: z.number().int(),
   instantRefund: z.boolean(),
-  refundStatus: z.string().nullable(),
+  refundStatus: z.string().nullable().describe("INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING"),
   status,
   pickupDate: z.string().nullable(),
   pickupSlot: z.string().nullable(),

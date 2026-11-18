@@ -18684,6 +18684,107 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "addressEditable": {
+                      "type": "boolean"
+                    },
+                    "refunds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "orderId": {
+                            "type": "string"
+                          },
+                          "orderItemId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "amountPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "PROCESSING",
+                              "COMPLETED",
+                              "FAILED",
+                              "NEEDS_ATTENTION"
+                            ]
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "SOURCE",
+                              "MANUAL"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "completedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderId",
+                          "orderItemId",
+                          "amountPaise",
+                          "status",
+                          "method",
+                          "reason",
+                          "reference",
+                          "note",
+                          "createdAt",
+                          "completedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "refundLimit": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "boolean"
+                        },
+                        "maxPaise": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "maxPaise"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -18696,7 +18797,10 @@
                     "shipTo",
                     "address",
                     "items",
-                    "events"
+                    "events",
+                    "addressEditable",
+                    "refunds",
+                    "refundLimit"
                   ],
                   "additionalProperties": false
                 }
@@ -18741,13 +18845,16 @@
                       "ACCEPTED",
                       "PACKED",
                       "READY_TO_SHIP",
-                      "CANCELLED"
+                      "CANCELLED",
+                      "LOST",
+                      "RTO_RECEIVED"
                     ]
                   },
                   "reason": {
+                    "description": "Required to cancel, mark lost (LOST) or record a parcel back at the store (RTO_RECEIVED)",
                     "type": "string",
                     "minLength": 3,
-                    "maxLength": 200
+                    "maxLength": 500
                   }
                 },
                 "required": [
@@ -18820,6 +18927,688 @@
                   },
                   "required": [
                     "results"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin orders"
+        ]
+      }
+    },
+    "/v1/admin/orders/{id}/address": {
+      "patch": {
+        "operationId": "AdminOrdersController_address",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "line1": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200
+                  },
+                  "line2": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "landmark": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "state": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "pincode": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{5}$"
+                  },
+                  "type": {
+                    "default": "HOME",
+                    "type": "string",
+                    "enum": [
+                      "HOME",
+                      "WORK",
+                      "OTHER"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone",
+                  "line1",
+                  "city",
+                  "state",
+                  "pincode"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "placedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PAYMENT_PENDING",
+                        "PAYMENT_FAILED",
+                        "ABANDONED",
+                        "CONFIRMED",
+                        "IN_PROGRESS",
+                        "PARTIALLY_SHIPPED",
+                        "SHIPPED",
+                        "PARTIALLY_DELIVERED",
+                        "DELIVERED",
+                        "CANCELLED",
+                        "CLOSED"
+                      ]
+                    },
+                    "paymentMethod": {
+                      "type": "string",
+                      "enum": [
+                        "UPI",
+                        "CARD",
+                        "NETBANKING",
+                        "EMI",
+                        "PAY_LATER",
+                        "COD"
+                      ]
+                    },
+                    "paymentStatus": {
+                      "type": "string",
+                      "enum": [
+                        "CREATED",
+                        "PENDING",
+                        "AUTHORIZED",
+                        "CAPTURED",
+                        "FAILED",
+                        "EXPIRED",
+                        "CANCELLED",
+                        "PARTIALLY_REFUNDED",
+                        "REFUNDED",
+                        "COD_PENDING",
+                        "COD_COLLECTED"
+                      ]
+                    },
+                    "totalPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "shipTo": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        },
+                        "pincode": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "city",
+                        "state",
+                        "pincode"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "address": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "line1": {
+                          "type": "string"
+                        },
+                        "line2": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "landmark": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        },
+                        "pincode": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "phone",
+                        "line1",
+                        "line2",
+                        "landmark",
+                        "city",
+                        "state",
+                        "pincode"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "productId": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "image": {
+                            "type": "string"
+                          },
+                          "variant": {
+                            "type": "string"
+                          },
+                          "qty": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "unitPricePaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "NEW",
+                              "ACCEPTED",
+                              "PACKED",
+                              "READY_TO_SHIP",
+                              "SHIPPED",
+                              "OUT_FOR_DELIVERY",
+                              "DELIVERED",
+                              "CANCELLATION_REQUESTED",
+                              "CANCELLED",
+                              "RTO_IN_TRANSIT",
+                              "RTO_RECEIVED",
+                              "LOST",
+                              "RETURN_REQUESTED",
+                              "RETURN_IN_PROGRESS",
+                              "RETURNED",
+                              "REPLACED",
+                              "CLOSED"
+                            ]
+                          },
+                          "dispatchBy": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "promisedBy": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "awb": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "courier": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "labelUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackingStatus": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "trackedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "trackingUrl": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "simulated": {
+                            "type": "boolean"
+                          },
+                          "allowedActions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "PENDING",
+                                "NEW",
+                                "ACCEPTED",
+                                "PACKED",
+                                "READY_TO_SHIP",
+                                "SHIPPED",
+                                "OUT_FOR_DELIVERY",
+                                "DELIVERED",
+                                "CANCELLATION_REQUESTED",
+                                "CANCELLED",
+                                "RTO_IN_TRANSIT",
+                                "RTO_RECEIVED",
+                                "LOST",
+                                "RETURN_REQUESTED",
+                                "RETURN_IN_PROGRESS",
+                                "RETURNED",
+                                "REPLACED",
+                                "CLOSED"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "productId",
+                          "title",
+                          "image",
+                          "variant",
+                          "qty",
+                          "unitPricePaise",
+                          "status",
+                          "dispatchBy",
+                          "promisedBy",
+                          "awb",
+                          "courier",
+                          "labelUrl",
+                          "trackingStatus",
+                          "trackedAt",
+                          "trackingUrl",
+                          "simulated",
+                          "allowedActions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "orderItemId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fromStatus": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "toStatus": {
+                            "type": "string"
+                          },
+                          "actor": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "orderItemId",
+                          "fromStatus",
+                          "toStatus",
+                          "actor",
+                          "note",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "addressEditable": {
+                      "type": "boolean"
+                    },
+                    "refunds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "orderId": {
+                            "type": "string"
+                          },
+                          "orderItemId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "amountPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "PROCESSING",
+                              "COMPLETED",
+                              "FAILED",
+                              "NEEDS_ATTENTION"
+                            ]
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "SOURCE",
+                              "MANUAL"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "completedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderId",
+                          "orderItemId",
+                          "amountPaise",
+                          "status",
+                          "method",
+                          "reason",
+                          "reference",
+                          "note",
+                          "createdAt",
+                          "completedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "refundLimit": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "boolean"
+                        },
+                        "maxPaise": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "maxPaise"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "placedAt",
+                    "status",
+                    "paymentMethod",
+                    "paymentStatus",
+                    "totalPaise",
+                    "shipTo",
+                    "address",
+                    "items",
+                    "events",
+                    "addressEditable",
+                    "refunds",
+                    "refundLimit"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin orders"
+        ]
+      }
+    },
+    "/v1/admin/orders/{id}/notes": {
+      "get": {
+        "operationId": "AdminOrdersController_notes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "authorId": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "authorName": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "authorId",
+                      "authorName",
+                      "body",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin orders"
+        ]
+      },
+      "post": {
+        "operationId": "AdminOrdersController_addNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "authorId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "authorName": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "authorId",
+                    "authorName",
+                    "body",
+                    "createdAt"
                   ],
                   "additionalProperties": false
                 }
@@ -18980,6 +19769,417 @@
         ]
       }
     },
+    "/v1/admin/orders/{id}/refunds": {
+      "post": {
+        "operationId": "AdminRefundsController_create",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountPaise": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500,
+                    "description": "Why; the customer sees it with the refund"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "SOURCE",
+                      "MANUAL"
+                    ],
+                    "description": "SOURCE goes back through the gateway; MANUAL records money the store already sent by UPI or bank transfer"
+                  },
+                  "reference": {
+                    "description": "Required for MANUAL: the UTR or UPI reference of the payout",
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 60,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ./_-]*$"
+                  },
+                  "orderItemId": {
+                    "description": "The line it is for, if any",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "note": {
+                    "description": "Staff-only remark",
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "amountPaise",
+                  "reason",
+                  "method"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "orderId": {
+                      "type": "string"
+                    },
+                    "orderItemId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "amountPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "PROCESSING",
+                        "COMPLETED",
+                        "FAILED",
+                        "NEEDS_ATTENTION"
+                      ]
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "SOURCE",
+                        "MANUAL"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "reference": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "note": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "orderItemId",
+                    "amountPaise",
+                    "status",
+                    "method",
+                    "reason",
+                    "reference",
+                    "note",
+                    "createdAt",
+                    "completedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin refunds"
+        ]
+      }
+    },
+    "/v1/admin/refunds/{id}/retry": {
+      "post": {
+        "operationId": "AdminRefundsController_retry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "orderId": {
+                      "type": "string"
+                    },
+                    "orderItemId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "amountPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "PROCESSING",
+                        "COMPLETED",
+                        "FAILED",
+                        "NEEDS_ATTENTION"
+                      ]
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "SOURCE",
+                        "MANUAL"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "reference": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "note": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "orderItemId",
+                    "amountPaise",
+                    "status",
+                    "method",
+                    "reason",
+                    "reference",
+                    "note",
+                    "createdAt",
+                    "completedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin refunds"
+        ]
+      }
+    },
+    "/v1/admin/refunds/{id}/mark-paid": {
+      "post": {
+        "operationId": "AdminRefundsController_markPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reference": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 60,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ./_-]*$",
+                    "description": "The UTR or UPI reference of the payout"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reference"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "orderId": {
+                      "type": "string"
+                    },
+                    "orderItemId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "amountPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "PROCESSING",
+                        "COMPLETED",
+                        "FAILED",
+                        "NEEDS_ATTENTION"
+                      ]
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "SOURCE",
+                        "MANUAL"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "reference": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "note": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "orderItemId",
+                    "amountPaise",
+                    "status",
+                    "method",
+                    "reason",
+                    "reference",
+                    "note",
+                    "createdAt",
+                    "completedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin refunds"
+        ]
+      }
+    },
     "/v1/admin/overview": {
       "get": {
         "operationId": "AdminInsightsController_overview",
@@ -19091,6 +20291,12 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "refundsNeedAttention": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Refunds the gateway could not confirm; check the gateway, then retry"
                         }
                       },
                       "required": [
@@ -19099,7 +20305,8 @@
                         "toHandOver",
                         "returnsWaiting",
                         "refundsPending",
-                        "refundsPendingPaise"
+                        "refundsPendingPaise",
+                        "refundsNeedAttention"
                       ],
                       "additionalProperties": false
                     },
@@ -19670,7 +20877,21 @@
                               "EMI",
                               "PAY_LATER",
                               "COD"
-                            ]
+                            ],
+                            "description": "How the customer paid"
+                          },
+                          "refundMethod": {
+                            "type": "string",
+                            "enum": [
+                              "SOURCE",
+                              "MANUAL"
+                            ],
+                            "description": "SOURCE: through the gateway. MANUAL: paid by the store, PENDING until marked paid"
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "description": "The payout's UTR or UPI reference, for a MANUAL refund",
+                            "type": "string"
                           },
                           "provider": {
                             "type": "string",
@@ -19726,6 +20947,8 @@
                           "status",
                           "reason",
                           "method",
+                          "refundMethod",
+                          "reference",
                           "provider",
                           "providerRef",
                           "createdAt",
@@ -21539,6 +22762,16 @@
                           "BANK"
                         ]
                       },
+                      "refundUpi": {
+                        "nullable": true,
+                        "description": "Where a bank (UPI) refund goes",
+                        "type": "string"
+                      },
+                      "refundReference": {
+                        "nullable": true,
+                        "description": "The UTR or UPI reference once a bank refund has been paid",
+                        "type": "string"
+                      },
                       "refundAmountPaise": {
                         "type": "integer",
                         "minimum": -9007199254740991,
@@ -21549,6 +22782,7 @@
                       },
                       "refundStatus": {
                         "nullable": true,
+                        "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                         "type": "string"
                       },
                       "status": {
@@ -21713,6 +22947,8 @@
                       "resolution",
                       "exchangeSize",
                       "refundTo",
+                      "refundUpi",
+                      "refundReference",
                       "refundAmountPaise",
                       "instantRefund",
                       "refundStatus",
@@ -21964,6 +23200,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -21974,6 +23220,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -22138,6 +23385,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -22298,6 +23547,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -22308,6 +23567,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -22472,6 +23732,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -22632,6 +23894,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -22642,6 +23914,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -22806,6 +24079,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -22991,6 +24266,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -23001,6 +24286,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -23165,6 +24451,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -23537,6 +24825,16 @@
                           "BANK"
                         ]
                       },
+                      "refundUpi": {
+                        "nullable": true,
+                        "description": "Where a bank (UPI) refund goes",
+                        "type": "string"
+                      },
+                      "refundReference": {
+                        "nullable": true,
+                        "description": "The UTR or UPI reference once a bank refund has been paid",
+                        "type": "string"
+                      },
                       "refundAmountPaise": {
                         "type": "integer",
                         "minimum": -9007199254740991,
@@ -23547,6 +24845,7 @@
                       },
                       "refundStatus": {
                         "nullable": true,
+                        "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                         "type": "string"
                       },
                       "status": {
@@ -23711,6 +25010,8 @@
                       "resolution",
                       "exchangeSize",
                       "refundTo",
+                      "refundUpi",
+                      "refundReference",
                       "refundAmountPaise",
                       "instantRefund",
                       "refundStatus",
@@ -23872,6 +25173,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -23882,6 +25193,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -24046,6 +25358,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -24228,6 +25542,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -24238,6 +25562,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -24402,6 +25727,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -24584,6 +25911,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -24594,6 +25931,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -24758,6 +26096,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -24956,6 +26296,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -24966,6 +26316,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -25130,6 +26481,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -25313,6 +26666,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -25323,6 +26686,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -25487,6 +26851,381 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
+                    "refundAmountPaise",
+                    "instantRefund",
+                    "refundStatus",
+                    "status",
+                    "pickupDate",
+                    "pickupSlot",
+                    "address",
+                    "awb",
+                    "qcNote",
+                    "decisionNote",
+                    "cancellable",
+                    "events",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin returns"
+        ]
+      }
+    },
+    "/v1/admin/returns/{id}/refund/mark-paid": {
+      "post": {
+        "operationId": "AdminReturnsController_markRefundPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "pattern": "^RT-\\d+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reference": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 60,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ./_-]*$",
+                    "description": "The UTR or UPI reference of the payout"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reference"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "orderId": {
+                      "type": "string"
+                    },
+                    "orderItemId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "item": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string"
+                        },
+                        "variant": {
+                          "type": "string"
+                        },
+                        "unitPricePaise": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "productId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "title",
+                        "image",
+                        "variant",
+                        "unitPricePaise",
+                        "productId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "customerName": {
+                      "type": "string"
+                    },
+                    "qty": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "reasonCode": {
+                      "type": "string"
+                    },
+                    "reasonLabel": {
+                      "type": "string"
+                    },
+                    "fault": {
+                      "type": "string",
+                      "enum": [
+                        "STORE",
+                        "LOGISTICS",
+                        "CUSTOMER"
+                      ]
+                    },
+                    "comments": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "resolution": {
+                      "type": "string",
+                      "enum": [
+                        "REFUND",
+                        "REPLACEMENT",
+                        "EXCHANGE"
+                      ]
+                    },
+                    "exchangeSize": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "refundTo": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "SOURCE",
+                        "CREDITS",
+                        "BANK"
+                      ]
+                    },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
+                    "refundAmountPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "instantRefund": {
+                      "type": "boolean"
+                    },
+                    "refundStatus": {
+                      "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "REQUESTED",
+                        "PENDING_REVIEW",
+                        "APPROVED",
+                        "REJECTED",
+                        "PICKUP_SCHEDULED",
+                        "OUT_FOR_PICKUP",
+                        "PICKUP_FAILED",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "RECEIVED",
+                        "QC_PASSED",
+                        "QC_FAILED",
+                        "COMPLETED",
+                        "CANCELLED",
+                        "LOST"
+                      ]
+                    },
+                    "pickupDate": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "pickupSlot": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "pincode": {
+                          "type": "string"
+                        },
+                        "line1": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "city",
+                        "pincode",
+                        "line1"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "awb": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "qcNote": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "decisionNote": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "cancellable": {
+                      "type": "boolean"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fromStatus": {
+                            "nullable": true,
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "PENDING_REVIEW",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "OUT_FOR_PICKUP",
+                              "PICKUP_FAILED",
+                              "PICKED_UP",
+                              "IN_TRANSIT",
+                              "RECEIVED",
+                              "QC_PASSED",
+                              "QC_FAILED",
+                              "COMPLETED",
+                              "CANCELLED",
+                              "LOST"
+                            ]
+                          },
+                          "toStatus": {
+                            "type": "string",
+                            "enum": [
+                              "REQUESTED",
+                              "PENDING_REVIEW",
+                              "APPROVED",
+                              "REJECTED",
+                              "PICKUP_SCHEDULED",
+                              "OUT_FOR_PICKUP",
+                              "PICKUP_FAILED",
+                              "PICKED_UP",
+                              "IN_TRANSIT",
+                              "RECEIVED",
+                              "QC_PASSED",
+                              "QC_FAILED",
+                              "COMPLETED",
+                              "CANCELLED",
+                              "LOST"
+                            ]
+                          },
+                          "actor": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "fromStatus",
+                          "toStatus",
+                          "actor",
+                          "note",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orderId",
+                    "orderItemId",
+                    "item",
+                    "customerName",
+                    "qty",
+                    "reasonCode",
+                    "reasonLabel",
+                    "fault",
+                    "comments",
+                    "photos",
+                    "resolution",
+                    "exchangeSize",
+                    "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -25711,6 +27450,16 @@
                         "BANK"
                       ]
                     },
+                    "refundUpi": {
+                      "nullable": true,
+                      "description": "Where a bank (UPI) refund goes",
+                      "type": "string"
+                    },
+                    "refundReference": {
+                      "nullable": true,
+                      "description": "The UTR or UPI reference once a bank refund has been paid",
+                      "type": "string"
+                    },
                     "refundAmountPaise": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -25721,6 +27470,7 @@
                     },
                     "refundStatus": {
                       "nullable": true,
+                      "description": "INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING",
                       "type": "string"
                     },
                     "status": {
@@ -25885,6 +27635,8 @@
                     "resolution",
                     "exchangeSize",
                     "refundTo",
+                    "refundUpi",
+                    "refundReference",
                     "refundAmountPaise",
                     "instantRefund",
                     "refundStatus",
@@ -26730,6 +28482,107 @@
                         "additionalProperties": false
                       }
                     },
+                    "addressEditable": {
+                      "type": "boolean"
+                    },
+                    "refunds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "orderId": {
+                            "type": "string"
+                          },
+                          "orderItemId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "amountPaise": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "PROCESSING",
+                              "COMPLETED",
+                              "FAILED",
+                              "NEEDS_ATTENTION"
+                            ]
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "SOURCE",
+                              "MANUAL"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "completedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "orderId",
+                          "orderItemId",
+                          "amountPaise",
+                          "status",
+                          "method",
+                          "reason",
+                          "reference",
+                          "note",
+                          "createdAt",
+                          "completedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "refundLimit": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "boolean"
+                        },
+                        "maxPaise": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "maxPaise"
+                      ],
+                      "additionalProperties": false
+                    },
                     "customer": {
                       "type": "object",
                       "properties": {
@@ -26770,6 +28623,9 @@
                     "address",
                     "items",
                     "events",
+                    "addressEditable",
+                    "refunds",
+                    "refundLimit",
                     "customer"
                   ],
                   "additionalProperties": false
