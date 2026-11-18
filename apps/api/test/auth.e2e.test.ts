@@ -5,7 +5,7 @@ import { EMAIL_PROVIDER } from "../src/common/tokens.js";
 import { createDb } from "../src/db/client.js";
 import { users } from "../src/db/schema.js";
 import type { EmailMessage, EmailProvider } from "../src/modules/auth/email.provider.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, testIp, type TestContext } from "./helpers.js";
 
 /** Keeps every email the app sends, so tests can read the codes in them. */
 class OutboxEmailProvider implements EmailProvider {
@@ -34,6 +34,9 @@ beforeEach(() => {
 });
 afterEach(() => t.clock.reset());
 
+/** A sign in attempt from a given client address (the app trusts X-Forwarded-For from loopback). */
+const login = (email: string, password: string, ip: string) => t.http.post("/v1/auth/login").set("X-Forwarded-For", ip).send({ email, password });
+
 describe("sign up", () => {
   it("creates a shopper account and signs it in", async () => {
     const { session } = await signUp(t.http, "New.Shopper@Example.com", "New Shopper");
@@ -42,6 +45,16 @@ describe("sign up", () => {
     expect(session.expiresIn).toBe(900);
     // and the password works from then on, whatever the case of the email
     await signIn(t.http, "NEW.SHOPPER@example.com", "a-long-password");
+  });
+
+  it("allows ten sign ups an hour from one address", async () => {
+    const ip = testIp();
+    for (let i = 0; i < 10; i++) await signUp(t.http, `batch.${i}@example.com`, "Batch", "a-long-password", ip);
+    const limited = await t.http.post("/v1/auth/signup").set("X-Forwarded-For", ip).send({ name: "One More", email: "batch.10@example.com", password: "a-long-password" }).expect(429);
+    expect(limited.body.code).toBe("SIGNUP_RATE_LIMITED");
+    expect(Number(limited.headers["retry-after"])).toBeGreaterThan(900);
+    // someone else is not held up
+    await signUp(t.http, "batch.10@example.com", "Batch", "a-long-password", testIp());
   });
 
   it("refuses a taken email, a short password and a bad address", async () => {
@@ -60,11 +73,66 @@ describe("sign in", () => {
     expect(unknown.body).toMatchObject({ code: wrong.body.code, detail: wrong.body.detail });
   });
 
-  it("locks an email after ten wrong passwords", async () => {
+  it("locks an email after ten wrong passwords from one address, and only from that address", async () => {
     await signUp(t.http, "guessed@example.com");
-    for (let i = 0; i < 10; i++) await t.http.post("/v1/auth/login").send({ email: "guessed@example.com", password: "wrong-password" }).expect(401);
-    const locked = await t.http.post("/v1/auth/login").send({ email: "guessed@example.com", password: "a-long-password" }).expect(429);
+    const attacker = testIp();
+    for (let i = 0; i < 10; i++) await login("guessed@example.com", "wrong-password", attacker).expect(401);
+    const locked = await login("guessed@example.com", "a-long-password", attacker).expect(429);
     expect(locked.body.code).toBe("LOGIN_RATE_LIMITED");
+    expect(Number(locked.headers["retry-after"])).toBeGreaterThan(800);
+    expect(Number(locked.headers["retry-after"])).toBeLessThanOrEqual(900);
+    // the owner, somewhere else, still gets in
+    await login("guessed@example.com", "a-long-password", testIp()).expect(200);
+  });
+
+  it("clears only the email and address that signed in", async () => {
+    await signUp(t.http, "two.places@example.com");
+    const [home, office] = [testIp(), testIp()];
+    for (let i = 0; i < 9; i++) await login("two.places@example.com", "wrong-password", home).expect(401);
+    for (let i = 0; i < 9; i++) await login("two.places@example.com", "wrong-password", office).expect(401);
+    await login("two.places@example.com", "a-long-password", home).expect(200);
+    // home starts over
+    for (let i = 0; i < 9; i++) await login("two.places@example.com", "wrong-password", home).expect(401);
+    // the office count was kept: one more wrong try locks it
+    await login("two.places@example.com", "wrong-password", office).expect(401);
+    await login("two.places@example.com", "a-long-password", office).expect(429);
+  });
+
+  it("stops one address after thirty wrong passwords across any emails, with the same answer for real and unknown ones", async () => {
+    await signUp(t.http, "sprayed@example.com");
+    const sprayer = testIp();
+    for (let i = 0; i < 30; i++) await login(`nobody.${i}@example.com`, "wrong-password", sprayer).expect(401);
+    const real = await login("sprayed@example.com", "a-long-password", sprayer).expect(429);
+    const unknown = await login("nobody.else@example.com", "wrong-password", sprayer).expect(429);
+    expect(real.body.code).toBe("LOGIN_RATE_LIMITED");
+    expect(unknown.body).toMatchObject({ code: real.body.code, detail: real.body.detail });
+    expect(Number(real.headers["retry-after"])).toBeGreaterThan(0);
+    await login("sprayed@example.com", "a-long-password", testIp()).expect(200);
+  });
+
+  it("slows a guess spread over many addresses at a hundred an hour per email", { timeout: 60_000 }, async () => {
+    await signUp(t.http, "much.wanted@example.com");
+    for (let i = 0; i < 100; i++) await login("much.wanted@example.com", "wrong-password", testIp()).expect(401);
+    const slowed = await login("much.wanted@example.com", "a-long-password", testIp()).expect(429);
+    expect(slowed.body.code).toBe("LOGIN_RATE_LIMITED");
+    expect(Number(slowed.headers["retry-after"])).toBeGreaterThan(900);
+    expect(Number(slowed.headers["retry-after"])).toBeLessThanOrEqual(3600);
+  });
+
+  it("lifts every sign in and sign up limit through the development reset", async () => {
+    await signUp(t.http, "reset.limits@example.com");
+    const ip = testIp();
+    for (let i = 0; i < 10; i++) await login("reset.limits@example.com", "wrong-password", ip).expect(401);
+    for (let i = 0; i < 20; i++) await login(`stranger.${i}@example.com`, "wrong-password", ip).expect(401);
+    for (let i = 0; i < 10; i++) await signUp(t.http, `reset.batch.${i}@example.com`, "Batch", "a-long-password", ip);
+    for (let i = 0; i < 20; i++) await t.http.post("/v1/auth/password/forgot").set("X-Forwarded-For", ip).send({ email: `reset.ask.${i}@example.com` }).expect(200);
+    await login("reset.limits@example.com", "a-long-password", ip).expect(429);
+    await t.http.post("/v1/auth/password/forgot").set("X-Forwarded-For", ip).send({ email: "reset.ask.20@example.com" }).expect(429);
+
+    await t.http.post("/v1/dev/rate-limits/reset").expect(200);
+    await login("reset.limits@example.com", "a-long-password", ip).expect(200);
+    await signUp(t.http, "reset.batch.10@example.com", "Batch", "a-long-password", ip);
+    await t.http.post("/v1/auth/password/forgot").set("X-Forwarded-For", ip).send({ email: "reset.ask.20@example.com" }).expect(200);
   });
 
   it("includes staff roles for store staff", async () => {
@@ -117,6 +185,16 @@ describe("forgot password", () => {
     for (let i = 0; i < 4; i++) await t.http.post("/v1/auth/password/forgot").send({ email: "unlucky@example.com" }).expect(200);
     const limited = await t.http.post("/v1/auth/password/forgot").send({ email: "unlucky@example.com" }).expect(429);
     expect(limited.body.code).toBe("OTP_RATE_LIMITED");
+    expect(Number(limited.headers["retry-after"])).toBeGreaterThan(0);
+  });
+
+  it("allows twenty code requests an hour from one address, across emails", async () => {
+    const ip = testIp();
+    for (let i = 0; i < 20; i++) await t.http.post("/v1/auth/password/forgot").set("X-Forwarded-For", ip).send({ email: `asker.${i}@example.com` }).expect(200);
+    const limited = await t.http.post("/v1/auth/password/forgot").set("X-Forwarded-For", ip).send({ email: "asker.20@example.com" }).expect(429);
+    expect(limited.body.code).toBe("OTP_RATE_LIMITED");
+    expect(Number(limited.headers["retry-after"])).toBeGreaterThan(900);
+    await t.http.post("/v1/auth/password/forgot").set("X-Forwarded-For", testIp()).send({ email: "asker.20@example.com" }).expect(200);
   });
 });
 
@@ -154,6 +232,16 @@ describe("change password", () => {
     await t.http.post("/v1/auth/refresh").send({ refreshToken: here.refreshToken }).expect(200);
     await t.http.get("/v1/me").set({ Authorization: `Bearer ${other.accessToken}` }).expect(401);
     await signIn(t.http, "changer@example.com", "new-password-1");
+  });
+
+  it("locks wrong current passwords per account, apart from sign in attempts", async () => {
+    const { auth } = await signUp(t.http, "fumbler@example.com");
+    // wrong sign ins elsewhere do not stop a signed in owner changing their password
+    for (let i = 0; i < 10; i++) await login("fumbler@example.com", "wrong-password", testIp()).expect(401);
+    for (let i = 0; i < 10; i++) await t.http.post("/v1/me/password").set(auth).send({ currentPassword: "nope-nope", newPassword: "new-password-1" }).expect(400);
+    const locked = await t.http.post("/v1/me/password").set(auth).send({ currentPassword: "a-long-password", newPassword: "new-password-1" }).expect(429);
+    expect(locked.body.code).toBe("LOGIN_RATE_LIMITED");
+    expect(Number(locked.headers["retry-after"])).toBeGreaterThan(800);
   });
 
   it("signs out every other device on request", async () => {

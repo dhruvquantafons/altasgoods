@@ -16,6 +16,17 @@ export class ApiError extends HttpException {
   }
 }
 
+/** A 429 that tells the client when to try again (sent as Retry-After, in seconds). */
+export class RateLimitError extends ApiError {
+  constructor(
+    code: string,
+    message: string,
+    readonly retryAfterSeconds: number,
+  ) {
+    super(429, code, message);
+  }
+}
+
 export const notFound = (what: string) => new ApiError(404, "NOT_FOUND", `${what} not found`);
 export const forbidden = (message = "You do not have access to this resource") => new ApiError(403, "FORBIDDEN", message);
 export const conflict = (code: string, message: string) => new ApiError(409, code, message);
@@ -44,6 +55,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     let detail = "Something went wrong. Please try again.";
     let errors: { path: string; message: string }[] | undefined;
 
+    if (exception instanceof RateLimitError) res.setHeader("Retry-After", String(Math.max(1, Math.ceil(exception.retryAfterSeconds))));
     if (exception instanceof ApiError) {
       status = exception.getStatus();
       code = exception.code;

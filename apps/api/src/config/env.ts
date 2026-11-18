@@ -1,4 +1,37 @@
+import { isIP } from "node:net";
 import { z } from "zod";
+
+/** What Express's "trust proxy" setting takes: trust everything or nothing, a number of hops, or addresses. */
+export type TrustProxy = boolean | number | string[];
+
+const TRUST_NAMES = new Set(["loopback", "linklocal", "uniquelocal"]);
+
+const validTrustItem = (item: string) => {
+  if (TRUST_NAMES.has(item)) return true;
+  const [addr = "", range, ...rest] = item.split("/");
+  const family = isIP(addr);
+  if (!family || rest.length) return false;
+  if (range === undefined) return true;
+  // a prefix length, or (IPv4) a netmask such as 255.255.0.0
+  if (/^\d+$/.test(range)) return Number(range) <= (family === 4 ? 32 : 128);
+  return family === 4 && isIP(range) === 4;
+};
+
+/**
+ * Reads TRUST_PROXY the way Express understands "trust proxy": "true" or
+ * "false", a number of hops, or a comma list of addresses, CIDR ranges and the
+ * names loopback, linklocal and uniquelocal.
+ */
+export function parseTrustProxy(raw: string): TrustProxy {
+  const value = raw.trim();
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (/^\d+$/.test(value)) return Number(value);
+  const items = value.split(",").map((s) => s.trim());
+  const bad = items.find((i) => !validTrustItem(i));
+  if (bad !== undefined) throw new Error(`"${bad}" is not an address, a CIDR range or one of loopback, linklocal, uniquelocal`);
+  return items;
+}
 
 const schema = z.object({
   /** Required, no default: a forgotten value must fail startup, not quietly run as development. */
@@ -10,6 +43,22 @@ const schema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   PAYMENTS_WEBHOOK_SECRET: z.string().min(16),
   WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
+  /**
+   * Which peers may say who the client is through X-Forwarded-For (Express
+   * "trust proxy"). Sign in limits count per client address, so this must
+   * cover the web server, and nothing a shopper can reach directly.
+   */
+  TRUST_PROXY: z
+    .string()
+    .default("loopback")
+    .transform((v, ctx) => {
+      try {
+        return parseTrustProxy(v);
+      } catch (e) {
+        ctx.addIssue({ code: "custom", message: (e as Error).message });
+        return z.NEVER;
+      }
+    }),
   /** Which payment gateway takes online payments: the local sandbox or Razorpay. */
   PAYMENTS_PROVIDER: z.enum(["sandbox", "razorpay"]).default("sandbox"),
   RAZORPAY_KEY_ID: z.string().optional(),

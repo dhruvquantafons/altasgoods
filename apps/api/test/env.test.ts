@@ -17,3 +17,19 @@ describe("NODE_ENV", () => {
     expect(devToolsEnabled()).toBe(false); // vitest runs as NODE_ENV=test
   });
 });
+
+describe("TRUST_PROXY", () => {
+  const trust = (value?: string) => parseEnv({ ...base, NODE_ENV: "development", TRUST_PROXY: value }).TRUST_PROXY;
+  it("defaults to loopback", () => {
+    expect(trust()).toEqual(["loopback"]);
+  });
+  it("reads the forms Express accepts", () => {
+    expect(trust("true")).toBe(true);
+    expect(trust("false")).toBe(false);
+    expect(trust("2")).toBe(2);
+    expect(trust("loopback, 10.0.0.0/8,192.168.1.7, fd00::/8, 172.16.0.0/255.240.0.0")).toEqual(["loopback", "10.0.0.0/8", "192.168.1.7", "fd00::/8", "172.16.0.0/255.240.0.0"]);
+  });
+  it("refuses what Express would not understand", () => {
+    for (const bad of ["yes", "10.0.0.0/33", "10.0.0", "loopback,", "fd00::/129", "-1"]) expect(() => trust(bad), bad).toThrow(/TRUST_PROXY/);
+  });
+});

@@ -22,6 +22,7 @@ import {
   userSchema,
 } from "./auth.schemas.js";
 
+/** req.ip is the client as named by trusted proxies (TRUST_PROXY), the web server among them. */
 const meta = (req: Request) => ({ userAgent: req.headers["user-agent"], ip: req.ip });
 
 @ApiTags("Auth")
@@ -49,8 +50,8 @@ export class AuthController {
   @Post("auth/password/forgot")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: forgotPasswordResponse })
-  forgotPassword(@Body({ schema: forgotPasswordBody }) body: z.infer<typeof forgotPasswordBody>) {
-    return this.auth.requestPasswordReset(body.email);
+  forgotPassword(@Body({ schema: forgotPasswordBody }) body: z.infer<typeof forgotPasswordBody>, @Req() req: Request) {
+    return this.auth.requestPasswordReset(body.email, meta(req));
   }
 
   @Public()
