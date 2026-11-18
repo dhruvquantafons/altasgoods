@@ -6,7 +6,7 @@ import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import type { Problem, User } from "./types";
 import { ACCESS_COOKIE, apiUrl, peekClaims } from "./session";
-import { canEdit, type Area } from "./staff";
+import { canEdit, canSee, type Area } from "./staff";
 
 /** Error carrying the API's problem details. */
 export class ApiRequestError extends Error {
@@ -37,7 +37,7 @@ export async function proxyFile(path: string) {
     const r = await fetch(`${apiUrl()}${path}`, { headers: await authHeader(), cache: "no-store" });
     if (!r.ok) return new Response(r.status === 404 ? "Not found" : "Not available", { status: r.status === 404 ? 404 : r.status === 403 ? 403 : 502 });
     const headers = new Headers({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" });
-    for (const h of ["content-type", "content-disposition", "content-length"]) {
+    for (const h of ["content-type", "content-disposition", "content-length", "x-export-truncated"]) {
       const v = r.headers.get(h);
       if (v) headers.set(h, v);
     }
@@ -84,6 +84,12 @@ export async function apiAvailable() {
   } catch {
     return false;
   }
+}
+
+/** Whether the signed-in staff member may open this area, and so download its exports. */
+export async function canSeeArea(area: Area) {
+  const user = await currentUser();
+  return !!user && canSee(user.staffRoles, area);
 }
 
 /**

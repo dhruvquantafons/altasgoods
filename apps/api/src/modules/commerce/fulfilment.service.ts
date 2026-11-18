@@ -26,6 +26,16 @@ const NOTE_REQUIRED: Partial<Record<OrderItemStatus, string>> = {
   RTO_RECEIVED: "Note the state the parcel came back in",
 };
 
+/** Order line filters for the fulfilment queue. Lines still waiting for the customer's payment are left out. Shared with the CSV export. */
+export function itemFilters(query: Pick<z.infer<typeof fulfilmentItemsQuery>, "q" | "status">): { base: SQL[]; where: SQL | undefined } {
+  const base: SQL[] = [ne(orderItems.status, "PENDING")];
+  if (query.q) {
+    const like = `%${query.q}%`;
+    base.push(or(sql`${orderItems.orderId} ilike ${like}`, sql`${orderItems.title} ilike ${like}`, sql`${orderItems.awb} ilike ${like}`)!);
+  }
+  return { base, where: and(...base, ...(query.status.length ? [inArray(orderItems.status, query.status)] : [])) };
+}
+
 /** The store's fulfilment queue: staff accept, pack and hand over every order line. */
 @Injectable()
 export class FulfilmentService {
@@ -37,13 +47,7 @@ export class FulfilmentService {
   ) {}
 
   async list(query: z.infer<typeof fulfilmentItemsQuery>) {
-    // lines still waiting for the customer's payment are not ready to fulfil
-    const base: SQL[] = [ne(orderItems.status, "PENDING")];
-    if (query.q) {
-      const like = `%${query.q}%`;
-      base.push(or(sql`${orderItems.orderId} ilike ${like}`, sql`${orderItems.title} ilike ${like}`, sql`${orderItems.awb} ilike ${like}`)!);
-    }
-    const where = and(...base, ...(query.status.length ? [inArray(orderItems.status, query.status)] : []));
+    const { base, where } = itemFilters(query);
 
     const [rows, [total], counts] = await Promise.all([
       this.db

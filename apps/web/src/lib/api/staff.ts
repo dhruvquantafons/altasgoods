@@ -1,3 +1,5 @@
+import { exportAreaFor } from "./exports";
+
 /** Display names for AltasGoods staff roles, who counts as an admin, and who may see or change each area. */
 export const STAFF_ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
@@ -85,10 +87,12 @@ export const navFor = (roles: readonly string[]): AdminArea[] => ADMIN_AREAS.fil
  * or "unmapped" for an /admin page missing from AREA_ROLES (Super Admin only).
  */
 export function areaForPath(path: string): Area | "unmapped" | null {
-  const [, top, sub] = path.split("/");
+  const [, top, sub, third] = path.split("/");
   if (top === "logistics" || top === "portals" || top === "support") return top;
   if (top !== "admin") return null;
   if (!sub) return "overview";
+  // a CSV download belongs to the page that offers it
+  if (sub === "exports") return (third && exportAreaFor(third)) || "unmapped";
   return (ADMIN_AREAS as readonly string[]).includes(sub) && sub !== "overview" ? (sub as AdminArea) : "unmapped";
 }
 

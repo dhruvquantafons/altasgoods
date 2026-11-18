@@ -13,6 +13,24 @@ import type { adminPaymentsQuery, adminRefundsQuery } from "./commerce.schemas.j
 const SOLD = sql`${orders.status} not in ('PAYMENT_PENDING', 'PAYMENT_FAILED', 'ABANDONED', 'CANCELLED')`;
 const DAY = 86_400_000;
 
+/** Payment list filters. Needs the users table joined (the search matches the customer's email). Shared with the CSV export. */
+export function paymentFilters(q: z.infer<typeof adminPaymentsQuery>): SQL[] {
+  const filters: SQL[] = [];
+  if (q.status) filters.push(eq(payments.status, q.status));
+  if (q.method) filters.push(eq(payments.method, q.method));
+  if (q.provider) filters.push(eq(payments.provider, q.provider));
+  if (q.q) filters.push(or(ilike(payments.orderId, `%${q.q}%`), ilike(payments.providerRef, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+  return filters;
+}
+
+/** Refund list filters. Needs the users table joined. Shared with the CSV export. */
+export function refundFilters(q: z.infer<typeof adminRefundsQuery>): SQL[] {
+  const filters: SQL[] = [];
+  if (q.status) filters.push(eq(refunds.status, q.status));
+  if (q.q) filters.push(or(ilike(refunds.orderId, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+  return filters;
+}
+
 /** The numbers behind AltasGoods Control's overview and payments pages. Read only. */
 @Injectable()
 export class AdminInsightsService {
@@ -103,11 +121,7 @@ export class AdminInsightsService {
   }
 
   async payments(q: z.infer<typeof adminPaymentsQuery>) {
-    const filters: SQL[] = [];
-    if (q.status) filters.push(eq(payments.status, q.status));
-    if (q.method) filters.push(eq(payments.method, q.method));
-    if (q.provider) filters.push(eq(payments.provider, q.provider));
-    if (q.q) filters.push(or(ilike(payments.orderId, `%${q.q}%`), ilike(payments.providerRef, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+    const filters = paymentFilters(q);
     const where = filters.length ? and(...filters) : undefined;
     const now = this.clock.now();
     const today = istAt(now, 0, 0);
@@ -154,9 +168,7 @@ export class AdminInsightsService {
   }
 
   async refunds(q: z.infer<typeof adminRefundsQuery>) {
-    const filters: SQL[] = [];
-    if (q.status) filters.push(eq(refunds.status, q.status));
-    if (q.q) filters.push(or(ilike(refunds.orderId, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+    const filters = refundFilters(q);
     const where = filters.length ? and(...filters) : undefined;
     const base = this.db
       .select({ r: refunds, method: payments.method, provider: payments.provider, providerRef: payments.providerRef, name: users.name, email: users.email, userId: users.id })

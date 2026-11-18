@@ -6,13 +6,16 @@ import { SettingsService } from "./settings.service.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { StaffController } from "./staff.controller.js";
 import { StaffService } from "./staff.service.js";
+import { AdminExportsController } from "./exports.controller.js";
+import { DEFAULT_EXPORT_ROW_CAP, ExportsService } from "./exports.service.js";
+import { EXPORT_ROW_CAP } from "../../common/tokens.js";
 
 /** The audit log, store settings and staff. Global, so every module can record changes and read settings. */
 @Global()
 @Module({
   imports: [AuthModule],
-  controllers: [AdminSystemController, StorefrontSettingsController, AdminBannersController, StorefrontBannersController, StaffController],
-  providers: [AuditService, SettingsService, BannersService, StaffService],
+  controllers: [AdminSystemController, StorefrontSettingsController, AdminBannersController, StorefrontBannersController, StaffController, AdminExportsController],
+  providers: [AuditService, SettingsService, BannersService, StaffService, ExportsService, { provide: EXPORT_ROW_CAP, useValue: DEFAULT_EXPORT_ROW_CAP }],
   exports: [AuditService, SettingsService],
 })
 export class AdminModule {}

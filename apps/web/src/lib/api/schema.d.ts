@@ -212,6 +212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/exports/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminExportsController_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/signup": {
         parameters: {
             query?: never;
@@ -3495,6 +3511,51 @@ export interface operations {
                         /** @description Only when no email really goes out */
                         inviteLink?: string;
                     };
+                };
+            };
+        };
+    };
+    AdminExportsController_export: {
+        parameters: {
+            query?: {
+                /** @description Search text, as on the matching list page */
+                q?: string;
+                /** @description Status filter, as on the matching list page (order lines take a comma separated list) */
+                status?: string;
+                /** @description Payment method (orders and payments) */
+                method?: string;
+                /** @description Payment provider (payments) */
+                provider?: string;
+                /** @description Audit action or prefix (audit) */
+                action?: string;
+                /** @description Audit entity type (audit) */
+                entityType?: string;
+                /** @description Audit entity id (audit) */
+                entityId?: string;
+                /** @description Audit actor (audit) */
+                actorId?: string;
+                /** @description First day to include (IST), for example 2026-03-01 */
+                from?: string;
+                /** @description Last day to include (IST), inclusive */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file (UTF-8 with a byte order mark, CRLF line endings, money in rupees, times in IST) */
+            200: {
+                headers: {
+                    /** @description true when the file stops at the row cap */
+                    "X-Export-Truncated"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
         };

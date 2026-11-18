@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ScrollText } from "lucide-react";
 import { Mono } from "@/components/admin/bits";
+import { ExportButton } from "@/components/admin/export-button";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { sp } from "@/components/admin/helpers";
 import { Pager } from "@/components/admin/pager";
@@ -9,6 +10,7 @@ import { Avatar, EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { loadAudit } from "@/lib/api/admin-system";
+import { canSeeArea } from "@/lib/api/server";
 import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "Audit log" };
@@ -30,6 +32,7 @@ const AREAS = [
   { value: "review", label: "Reviews" },
   { value: "settings", label: "Settings" },
   { value: "staff", label: "Staff" },
+  { value: "export", label: "Exports" },
 ];
 
 /** Where an entry's subject lives in the console, when it has a page. */
@@ -73,13 +76,17 @@ export default async function AuditPage(props: PageProps<"/admin/audit">) {
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
   const current = { q: q || undefined, actor: actor === "all" ? undefined : actor, area: area === "all" ? undefined : area };
 
-  const data = await loadAudit({ q: q || undefined, actorId: current.actor, action: current.area, page, pageSize: PAGE_SIZE });
+  const [data, exportable] = await Promise.all([loadAudit({ q: q || undefined, actorId: current.actor, action: current.area, page, pageSize: PAGE_SIZE }), canSeeArea("audit")]);
   const pages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
   const from = data.total ? (page - 1) * PAGE_SIZE + 1 : 0;
 
   return (
     <>
-      <PageHeader title="Audit log" description="Every change made in AltasGoods Control and the Care Desk: who made it, when, and what changed." />
+      <PageHeader
+        title="Audit log"
+        description="Every change made in AltasGoods Control and the Care Desk: who made it, when, and what changed."
+        actions={exportable && <ExportButton kind="audit" filters={{ q, actorId: current.actor, action: current.area, from: sp(params, "from"), to: sp(params, "to") }} />}
+      />
 
       <Card>
         <div className="border-b border-line px-5 py-3.5">

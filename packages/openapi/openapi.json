@@ -3030,6 +3030,149 @@
         ]
       }
     },
+    "/v1/admin/exports/{kind}": {
+      "get": {
+        "operationId": "AdminExportsController_export",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Search text, as on the matching list page",
+            "schema": {
+              "description": "Search text, as on the matching list page",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Status filter, as on the matching list page (order lines take a comma separated list)",
+            "schema": {
+              "description": "Status filter, as on the matching list page (order lines take a comma separated list)",
+              "type": "string"
+            }
+          },
+          {
+            "name": "method",
+            "required": false,
+            "in": "query",
+            "description": "Payment method (orders and payments)",
+            "schema": {
+              "description": "Payment method (orders and payments)",
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "required": false,
+            "in": "query",
+            "description": "Payment provider (payments)",
+            "schema": {
+              "description": "Payment provider (payments)",
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "description": "Audit action or prefix (audit)",
+            "schema": {
+              "description": "Audit action or prefix (audit)",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": false,
+            "in": "query",
+            "description": "Audit entity type (audit)",
+            "schema": {
+              "description": "Audit entity type (audit)",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "required": false,
+            "in": "query",
+            "description": "Audit entity id (audit)",
+            "schema": {
+              "description": "Audit entity id (audit)",
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "required": false,
+            "in": "query",
+            "description": "Audit actor (audit)",
+            "schema": {
+              "description": "Audit actor (audit)",
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day to include (IST), for example 2026-03-01",
+            "schema": {
+              "description": "First day to include (IST), for example 2026-03-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day to include (IST), inclusive",
+            "schema": {
+              "description": "Last day to include (IST), inclusive",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The CSV file (UTF-8 with a byte order mark, CRLF line endings, money in rupees, times in IST)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "X-Export-Truncated": {
+                "description": "true when the file stops at the row cap",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/v1/auth/signup": {
       "post": {
         "operationId": "AuthController_signup",

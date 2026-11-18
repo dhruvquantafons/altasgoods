@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CircleX, IndianRupee, ReceiptIndianRupee, Wallet } from "lucide-react";
+import { ExportButton } from "@/components/admin/export-button";
 import { REFUND_STATUS, refundStatusMeta } from "@/components/admin/admin-status";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { RefundActions } from "@/components/admin/fulfilment/order-admin";
@@ -14,7 +15,7 @@ import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui
 import { TabLinks } from "@/components/ui/tabs";
 import { loadPayments, loadRefunds } from "@/lib/api/admin-system";
 import { paise, uiPaymentMethod, uiPaymentStatus } from "@/lib/api/format";
-import { canEditArea } from "@/lib/api/server";
+import { canEditArea, canSeeArea } from "@/lib/api/server";
 import { PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/status";
 import { formatDateTime } from "@/lib/utils";
 
@@ -35,10 +36,11 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
   const query = { q: q || undefined, page, pageSize: PAGE_SIZE };
 
-  const [pays, refunds, edit] = await Promise.all([
+  const [pays, refunds, edit, exportable] = await Promise.all([
     loadPayments({ ...query, ...(tab === "payments" ? { status: status === "all" ? undefined : (status as never), method: method === "all" ? undefined : (method as never) } : { q: undefined, page: 1, pageSize: 1 }) }),
     tab === "refunds" ? loadRefunds({ ...query, status: status === "all" ? undefined : (status as never) }) : null,
     canEditArea("payments"),
+    canSeeArea("payments"),
   ]);
   const list = tab === "refunds" ? refunds! : pays;
   const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
@@ -48,7 +50,22 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
 
   return (
     <>
-      <PageHeader title="Payments" description="Every payment attempt and refund, with the gateway's reference. Refunds go back to the way the customer paid." />
+      <PageHeader
+        title="Payments"
+        description="Every payment attempt and refund, with the gateway's reference. Refunds go back to the way the customer paid."
+        actions={
+          exportable &&
+          (tab === "refunds" ? (
+            <ExportButton kind="refunds" filters={{ q, status, from: sp(params, "from"), to: sp(params, "to") }}>
+              Export refunds
+            </ExportButton>
+          ) : (
+            <ExportButton kind="payments" filters={{ q, status, method, from: sp(params, "from"), to: sp(params, "to") }}>
+              Export payments
+            </ExportButton>
+          ))
+        }
+      />
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:gap-4">
         <StatCard label="Captured today" value={paise(s.capturedTodayPaise)} icon={IndianRupee} footer={`${s.capturedTodayCount} payment${s.capturedTodayCount === 1 ? "" : "s"} since midnight`} />

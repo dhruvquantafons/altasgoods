@@ -3,12 +3,13 @@ import { QueueTable } from "@/components/admin/fulfilment/queue-table";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { hrefWith, sp } from "@/components/admin/helpers";
 import { Pager } from "@/components/admin/pager";
+import { ExportButton } from "@/components/admin/export-button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
 import { loadAdminItems } from "@/lib/api/admin-fulfilment";
-import { canEditArea } from "@/lib/api/server";
+import { canEditArea, canSeeArea } from "@/lib/api/server";
 import type { ApiOrderItemStatus } from "@/lib/api/types";
 
 export const metadata = { title: "Orders" };
@@ -33,7 +34,8 @@ export default async function OrdersPage(props: PageProps<"/admin/orders">) {
   const q = sp(params, "q")?.trim() ?? "";
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
 
-  const [data, edit] = await Promise.all([loadAdminItems({ status: view.statuses, q, page, pageSize: PAGE_SIZE }), canEditArea("orders")]);
+  const [data, edit, exportable] = await Promise.all([loadAdminItems({ status: view.statuses, q, page, pageSize: PAGE_SIZE }), canEditArea("orders"), canSeeArea("orders")]);
+  const range = { from: sp(params, "from"), to: sp(params, "to") };
   const count = (statuses: ApiOrderItemStatus[]) =>
     statuses.length ? statuses.reduce((n, s) => n + (data.counts[s] ?? 0), 0) : Object.values(data.counts).reduce((n, c) => n + c, 0);
   const current = { view: view.key === VIEWS[0]!.key ? undefined : view.key, q: q || undefined };
@@ -42,7 +44,22 @@ export default async function OrdersPage(props: PageProps<"/admin/orders">) {
 
   return (
     <>
-      <PageHeader title="Orders" description="Accept, pack and hand over every order line. Lines waiting for payment appear once the customer has paid." />
+      <PageHeader
+        title="Orders"
+        description="Accept, pack and hand over every order line. Lines waiting for payment appear once the customer has paid."
+        actions={
+          exportable && (
+            <>
+              <ExportButton kind="orders" filters={{ q, ...range }}>
+                Export orders
+              </ExportButton>
+              <ExportButton kind="order-items" filters={{ q, status: view.statuses, ...range }}>
+                Export items
+              </ExportButton>
+            </>
+          )
+        }
+      />
 
       <TabLinks
         className="mb-5"
