@@ -213,3 +213,15 @@ export const TIER_TONE: Record<"Bronze" | "Silver" | "Gold" | "Platinum", Tone> 
 export function riskTone(score: number): Tone {
   return score >= 70 ? "danger" : score >= 40 ? "warning" : "success";
 }
+
+export const REFUND_STATUS: M<"PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION"> = {
+  PENDING: { label: "Pending", tone: "warning", description: "Waiting to be sent to the gateway" },
+  PROCESSING: { label: "With the gateway", tone: "info" },
+  COMPLETED: { label: "Refunded", tone: "success" },
+  FAILED: { label: "Failed", tone: "danger", description: "Not paid; the amount can be refunded again" },
+  NEEDS_ATTENTION: { label: "Needs attention", tone: "danger", description: "The gateway could not confirm it. Check the gateway, then retry." },
+};
+
+/** A refund's status as staff read it: a manual refund that is still PENDING waits for the store's own payout. */
+export const refundStatusMeta = (r: { status: keyof typeof REFUND_STATUS; method?: "SOURCE" | "MANUAL" }) =>
+  r.method === "MANUAL" && r.status === "PENDING" ? { label: "Awaiting payout", tone: "warning" as const, description: "Pay it by UPI or bank transfer, then mark it paid" } : REFUND_STATUS[r.status];

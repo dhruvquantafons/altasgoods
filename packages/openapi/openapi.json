@@ -18484,6 +18484,10 @@
                         },
                         "pincode": {
                           "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "description": "HOME, WORK or OTHER"
                         }
                       },
                       "required": [
@@ -18494,7 +18498,8 @@
                         "landmark",
                         "city",
                         "state",
-                        "pincode"
+                        "pincode",
+                        "type"
                       ],
                       "additionalProperties": false
                     },
@@ -19137,6 +19142,10 @@
                         },
                         "pincode": {
                           "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "description": "HOME, WORK or OTHER"
                         }
                       },
                       "required": [
@@ -19147,7 +19156,8 @@
                         "landmark",
                         "city",
                         "state",
-                        "pincode"
+                        "pincode",
+                        "type"
                       ],
                       "additionalProperties": false
                     },
@@ -28308,6 +28318,10 @@
                         },
                         "pincode": {
                           "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "description": "HOME, WORK or OTHER"
                         }
                       },
                       "required": [
@@ -28318,7 +28332,8 @@
                         "landmark",
                         "city",
                         "state",
-                        "pincode"
+                        "pincode",
+                        "type"
                       ],
                       "additionalProperties": false
                     },

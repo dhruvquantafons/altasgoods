@@ -127,6 +127,8 @@ const ACTION_STATUS: Record<string, { label: string; tone: "info" | "success" | 
   INITIATED: { label: "Initiated", tone: "info" },
   PROCESSING: { label: "Processing", tone: "info" },
   COMPLETED: { label: "Refunded", tone: "success" },
+  FAILED: { label: "Refund failed", tone: "danger" },
+  NEEDS_ATTENTION: { label: "Needs attention", tone: "danger" },
   PENDING_APPROVAL: { label: "Awaiting approval", tone: "warning" },
   REJECTED: { label: "Rejected", tone: "danger" },
   CREATED: { label: "Created", tone: "success" },

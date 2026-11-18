@@ -113,7 +113,7 @@ export class FulfilmentService {
       paymentStatus: order.paymentStatus,
       totalPaise: order.totalPaise,
       shipTo: { name: order.address.name, city: order.address.city, state: order.address.state, pincode: order.address.pincode },
-      address: { ...pick(order.address), line2: order.address.line2 ?? null, landmark: order.address.landmark ?? null },
+      address: { ...pick(order.address), line2: order.address.line2 ?? null, landmark: order.address.landmark ?? null, type: order.address.type ?? "HOME" },
       items: items.map((i) => ({
         id: i.id,
         productId: i.productId,

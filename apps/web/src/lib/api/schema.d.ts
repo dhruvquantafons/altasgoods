@@ -8423,6 +8423,8 @@ export interface operations {
                             city: string;
                             state: string;
                             pincode: string;
+                            /** @description HOME, WORK or OTHER */
+                            type: string;
                         };
                         items: {
                             /** Format: uuid */
@@ -8586,6 +8588,8 @@ export interface operations {
                             city: string;
                             state: string;
                             pincode: string;
+                            /** @description HOME, WORK or OTHER */
+                            type: string;
                         };
                         items: {
                             /** Format: uuid */
@@ -11221,6 +11225,8 @@ export interface operations {
                             city: string;
                             state: string;
                             pincode: string;
+                            /** @description HOME, WORK or OTHER */
+                            type: string;
                         };
                         items: {
                             /** Format: uuid */

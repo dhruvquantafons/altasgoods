@@ -306,6 +306,7 @@ export const fulfilmentOrderSchema = z.object({
     city: z.string(),
     state: z.string(),
     pincode: z.string(),
+    type: z.string().describe("HOME, WORK or OTHER"),
   }),
   items: z.array(
     fulfilmentItemSchema.omit({ orderId: true, placedAt: true, paymentMethod: true, shipTo: true }).extend({

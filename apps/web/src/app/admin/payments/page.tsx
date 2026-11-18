@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { CircleX, IndianRupee, ReceiptIndianRupee, Wallet } from "lucide-react";
+import { REFUND_STATUS, refundStatusMeta } from "@/components/admin/admin-status";
 import { FilterBar } from "@/components/admin/filter-bar";
+import { RefundActions } from "@/components/admin/fulfilment/order-admin";
 import { sp } from "@/components/admin/helpers";
 import { Pager } from "@/components/admin/pager";
-import { Badge, StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
@@ -12,7 +14,8 @@ import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui
 import { TabLinks } from "@/components/ui/tabs";
 import { loadPayments, loadRefunds } from "@/lib/api/admin-system";
 import { paise, uiPaymentMethod, uiPaymentStatus } from "@/lib/api/format";
-import { PAYMENT_METHOD, PAYMENT_STATUS, type Tone } from "@/lib/status";
+import { canEditArea } from "@/lib/api/server";
+import { PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/status";
 import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "Payments" };
@@ -20,9 +23,8 @@ export const metadata = { title: "Payments" };
 const PAGE_SIZE = 25;
 const PAYMENT_STATUSES = ["CAPTURED", "FAILED", "PENDING", "CREATED", "EXPIRED", "PARTIALLY_REFUNDED", "REFUNDED", "COD_PENDING", "COD_COLLECTED"] as const;
 const METHODS = ["UPI", "CARD", "NETBANKING", "EMI", "PAY_LATER", "COD"] as const;
-const REFUND_TONE: Record<string, Tone> = { PENDING: "warning", PROCESSING: "info", COMPLETED: "success", FAILED: "danger" };
+const REFUND_STATUSES = ["PENDING", "PROCESSING", "NEEDS_ATTENTION", "COMPLETED", "FAILED"] as const;
 const PROVIDER: Record<string, string> = { RAZORPAY: "Razorpay", SANDBOX: "Sandbox (test)", COD: "Cash on delivery" };
-const words = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 
 export default async function PaymentsPage(props: PageProps<"/admin/payments">) {
   const params = await props.searchParams;
@@ -33,9 +35,10 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
   const query = { q: q || undefined, page, pageSize: PAGE_SIZE };
 
-  const [pays, refunds] = await Promise.all([
+  const [pays, refunds, edit] = await Promise.all([
     loadPayments({ ...query, ...(tab === "payments" ? { status: status === "all" ? undefined : (status as never), method: method === "all" ? undefined : (method as never) } : { q: undefined, page: 1, pageSize: 1 }) }),
     tab === "refunds" ? loadRefunds({ ...query, status: status === "all" ? undefined : (status as never) }) : null,
+    canEditArea("payments"),
   ]);
   const list = tab === "refunds" ? refunds! : pays;
   const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
@@ -71,7 +74,7 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
             keep={{ tab: current.tab }}
             selects={
               tab === "refunds"
-                ? [{ name: "status", label: "Status", value: status, className: "sm:w-44", options: [{ value: "all", label: "All statuses" }, ...["PENDING", "PROCESSING", "COMPLETED", "FAILED"].map((v) => ({ value: v, label: words(v) }))] }]
+                ? [{ name: "status", label: "Status", value: status, className: "sm:w-44", options: [{ value: "all", label: "All statuses" }, ...REFUND_STATUSES.map((v) => ({ value: v, label: REFUND_STATUS[v].label }))] }]
                 : [
                     { name: "status", label: "Status", value: status, className: "sm:w-48", options: [{ value: "all", label: "All statuses" }, ...PAYMENT_STATUSES.map((v) => ({ value: v, label: PAYMENT_STATUS[uiPaymentStatus(v)].label }))] },
                     { name: "method", label: "Method", value: method, className: "sm:w-40", options: [{ value: "all", label: "All methods" }, ...METHODS.map((v) => ({ value: v, label: PAYMENT_METHOD[uiPaymentMethod(v)] }))] },
@@ -154,13 +157,25 @@ export default async function PaymentsPage(props: PageProps<"/admin/payments">) 
                       {paise(r.amountPaise)}
                     </TD>
                     <TD>
-                      <Badge tone={REFUND_TONE[r.status] ?? "neutral"} size="sm" dot>
-                        {words(r.status)}
-                      </Badge>
+                      <StatusBadge meta={refundStatusMeta({ status: r.status, method: r.refundMethod })} size="sm" />
                       {r.completedAt && <p className="mt-1 text-xs text-ink-500">{formatDateTime(r.completedAt)}</p>}
+                      {edit && (
+                        <div className="mt-1.5 flex gap-2">
+                          <RefundActions refund={{ id: r.id, orderId: r.orderId, amountPaise: r.amountPaise, status: r.status, method: r.refundMethod }} />
+                        </div>
+                      )}
                     </TD>
                     <TD className="hidden text-[13px] text-ink-700 xl:table-cell">
-                      {PAYMENT_METHOD[uiPaymentMethod(r.method)]}, {PROVIDER[r.provider] ?? r.provider}
+                      {r.refundMethod === "MANUAL" ? (
+                        <>
+                          Paid by the store
+                          {r.reference && <span className="block font-mono text-xs text-ink-500">Ref {r.reference}</span>}
+                        </>
+                      ) : (
+                        <>
+                          {PAYMENT_METHOD[uiPaymentMethod(r.method)]}, {PROVIDER[r.provider] ?? r.provider}
+                        </>
+                      )}
                     </TD>
                   </TR>
                 ))}

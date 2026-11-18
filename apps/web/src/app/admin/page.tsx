@@ -25,6 +25,7 @@ export default async function AdminOverview() {
     { label: "To hand over", value: o.work.toHandOver, href: "/admin/orders?view=ship", icon: Truck },
     { label: "Returns waiting", value: o.work.returnsWaiting, href: "/admin/returns", icon: RotateCcw },
     { label: "Refunds pending", value: o.work.refundsPending, hint: o.work.refundsPending ? paise(o.work.refundsPendingPaise) : undefined, href: "/admin/payments?tab=refunds", icon: ReceiptIndianRupee },
+    { label: "Refunds needing attention", value: o.work.refundsNeedAttention, href: "/admin/payments?tab=refunds&status=NEEDS_ATTENTION", icon: TriangleAlert },
   ];
 
   return (
@@ -48,7 +49,7 @@ export default async function AdminOverview() {
 
       <Card className="mb-6">
         <CardHeader title="Waiting for you" description="Order lines, returns and refunds that need someone from the store" />
-        <ul className="grid grid-cols-2 gap-px overflow-hidden border-t border-line bg-line sm:grid-cols-3 xl:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-px overflow-hidden border-t border-line bg-line sm:grid-cols-3 xl:grid-cols-6">
           {work.map((w) => (
             <li key={w.label} className="bg-white">
               <Link href={w.href} className="flex h-full items-center gap-3 px-5 py-4 hover:bg-ink-50/70">

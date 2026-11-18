@@ -232,7 +232,7 @@ describe("delivery address", () => {
     const { orderId, ids, order: o } = await order(["lamp-arc"]);
     await transition([ids[0]!], "ACCEPTED").expect(200);
     const r = await t.http.patch(`${A}/orders/${orderId}/address`).set(staff).send(address).expect(200);
-    expect(r.body.address).toMatchObject({ line1: address.line1, pincode: "560025" });
+    expect(r.body.address).toMatchObject({ line1: address.line1, pincode: "560025", type: "WORK" });
     expect(r.body.addressEditable).toBe(true);
     const [saved] = await db.select().from(orders).where(eq(orders.id, orderId));
     expect(saved!.address).toMatchObject({ line1: address.line1, pincode: "560025", type: "WORK" });

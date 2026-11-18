@@ -16,6 +16,11 @@ export async function loadAdminItems(query: { status?: ApiOrderItemStatus[]; q?:
 
 export const loadAdminOrder = cache(async (id: string) => unwrap(await (await api()).GET("/v1/admin/orders/{id}", { params: { path: { id } } }), { notFoundOn404: true }));
 
+/** Staff-only notes on an order. */
+export async function loadOrderNotes(id: string) {
+  return unwrap(await (await api()).GET("/v1/admin/orders/{id}/notes", { params: { path: { id } } }));
+}
+
 export async function loadAdminReturns(status?: ApiReturnStatus[]) {
   return unwrap(await (await api()).GET("/v1/admin/returns", { params: { query: { status: status?.length ? status.join(",") : undefined } } }));
 }

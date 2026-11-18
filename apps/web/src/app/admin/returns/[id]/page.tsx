@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReturnActions, ReturnPickupUpdate, ReturnScanSimulator } from "@/components/admin/fulfilment/return-actions";
+import { ReturnRefundPaid } from "@/components/admin/fulfilment/order-admin";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -21,11 +22,22 @@ const ACTOR: Record<string, string> = { CUSTOMER: "Customer", STAFF: "Store", SE
 const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 const RESOLUTION = { REFUND: "Refund", REPLACEMENT: "Replacement", EXCHANGE: "Exchange" } as const;
 const REFUND_TO = { SOURCE: "Original payment method", CREDITS: "AltasGoods Credits", BANK: "Bank account (UPI)" } as const;
+/** Refund statuses as staff read them; the customer sees one needing attention as processing. */
+const REFUND_STATE: Record<string, string> = {
+  INITIATED: "Waiting for the store's payout",
+  PENDING: "Pending",
+  PROCESSING: "With the gateway",
+  COMPLETED: "Refunded",
+  FAILED: "Failed",
+  NEEDS_ATTENTION: "Needs attention: the gateway could not confirm it. Retry it from Payments.",
+};
 
 export default async function AdminReturnPage(props: PageProps<"/admin/returns/[id]">) {
   const { id } = await props.params;
   const [r, edit] = await Promise.all([loadAdminReturn(id), canEditArea("returns")]);
   const next = nextStep(r);
+  // a bank (UPI) refund is paid by the store, then recorded here
+  const payout = r.resolution === "REFUND" && r.refundTo !== "CREDITS" && r.refundStatus === "INITIATED";
 
   return (
     <>
@@ -125,9 +137,16 @@ export default async function AdminReturnPage(props: PageProps<"/admin/returns/[
                   items={[
                     { label: "Amount", value: paise(r.refundAmountPaise) },
                     { label: "To", value: r.refundTo ? REFUND_TO[r.refundTo] : "Original payment method" },
-                    { label: "Status", value: r.refundStatus ? label(r.refundStatus) : r.instantRefund ? "Refunded at pickup" : "Released after the check" },
+                    ...(r.refundUpi ? [{ label: "UPI ID", value: <span className="font-mono">{r.refundUpi}</span> }] : []),
+                    { label: "Status", value: r.refundStatus ? (REFUND_STATE[r.refundStatus] ?? label(r.refundStatus)) : r.instantRefund ? "Refunded at pickup" : "Released after the check" },
+                    ...(r.refundReference ? [{ label: "Payout reference", value: <span className="font-mono">{r.refundReference}</span> }] : []),
                   ]}
                 />
+                {edit && payout && (
+                  <div className="mt-4">
+                    <ReturnRefundPaid id={r.id} amountPaise={r.refundAmountPaise} upi={r.refundUpi} />
+                  </div>
+                )}
               </CardBody>
             </Card>
           )}

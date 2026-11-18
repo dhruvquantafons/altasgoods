@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { refundStatusMeta } from "@/components/admin/admin-status";
 import { CourierSimulator, LineActions, TrackingRefresh } from "@/components/admin/fulfilment/line-actions";
+import { OrderAddressEdit, OrderNotes, OrderRefund, RefundActions } from "@/components/admin/fulfilment/order-admin";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { DescriptionList, Timeline } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
-import { loadAdminOrder } from "@/lib/api/admin-fulfilment";
+import { loadAdminOrder, loadOrderNotes } from "@/lib/api/admin-fulfilment";
 import { canEditArea } from "@/lib/api/server";
 import { paise, uiItemStatus, uiOrderStatus, uiPaymentMethod, uiPaymentStatus } from "@/lib/api/format";
 import type { AdminOrderItem } from "@/lib/api/types";
@@ -22,7 +24,7 @@ const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g
 
 export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id]">) {
   const { id } = await props.params;
-  const [order, edit] = await Promise.all([loadAdminOrder(id), canEditArea("orders")]);
+  const [order, edit, notes] = await Promise.all([loadAdminOrder(id), canEditArea("orders"), loadOrderNotes(id)]);
 
   // lines in the same status can be moved together from the header
   const groups = new Map<string, AdminOrderItem[]>();
@@ -43,9 +45,14 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
             <StatusBadge meta={PAYMENT_STATUS[uiPaymentStatus(order.paymentStatus)]} />
           </>
         }
-        actions={bulk.map((g) => (
-          <LineActions key={g[0]!.status} orderId={order.id} itemIds={g.map((i) => i.id)} status={g[0]!.status} allowed={g[0]!.allowedActions} />
-        ))}
+        actions={
+          <>
+            {bulk.map((g) => (
+              <LineActions key={g[0]!.status} orderId={order.id} itemIds={g.map((i) => i.id)} status={g[0]!.status} allowed={g[0]!.allowedActions} />
+            ))}
+            {edit && <OrderRefund order={order} />}
+          </>
+        }
       />
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -110,7 +117,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
 
         <div className="space-y-5">
           <Card>
-            <CardHeader title="Deliver to" />
+            <CardHeader title="Deliver to" action={edit && order.addressEditable ? <OrderAddressEdit orderId={order.id} address={a} /> : undefined} />
             <CardBody>
               {a ? (
                 <address className="text-sm leading-relaxed text-ink-700 not-italic">
@@ -151,6 +158,36 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
                   { label: "Order total", value: paise(order.totalPaise) },
                 ]}
               />
+              {order.refunds.length > 0 && (
+                <div className="mt-4 border-t border-line pt-4">
+                  <p className="mb-2 text-[13px] font-medium text-ink-700">Refunds</p>
+                  <ul className="space-y-3">
+                    {order.refunds.map((r) => (
+                      <li key={r.id} className="text-[13px]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-medium text-ink-900">{paise(r.amountPaise)}</span>
+                          <StatusBadge meta={refundStatusMeta(r)} size="sm" />
+                        </div>
+                        <p className="text-xs text-ink-500">
+                          {r.reason}
+                          {r.method === "MANUAL" ? `, paid by the store${r.reference ? `, ref ${r.reference}` : ""}` : ""}, {formatDateTime(r.createdAt)}
+                        </p>
+                        {edit && (
+                          <div className="mt-1.5 flex gap-2">
+                            <RefundActions refund={r} />
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+          <Card>
+            <CardHeader title="Internal notes" description="Only staff can see these" />
+            <CardBody>
+              <OrderNotes orderId={order.id} notes={notes} edit={edit} />
             </CardBody>
           </Card>
         </div>
