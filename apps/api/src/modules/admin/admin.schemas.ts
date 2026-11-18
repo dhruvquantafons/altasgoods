@@ -2,11 +2,27 @@ import { z } from "zod";
 
 const rupeesInPaise = z.number().int().min(0).max(100_000_000);
 
+/** A full 6 digit pincode, or the first 2 to 5 digits of a group of them. */
+const areaEntry = z.string().regex(/^\d{2,6}$/, "Use a 6 digit pincode or a 2 to 5 digit prefix");
+
+/** Where the store does not deliver, does not take cash on delivery, or is slower. */
+export const deliveryAreasSchema = z.object({
+  blocked: z.array(areaEntry).max(500).describe("Pincodes and prefixes we do not deliver to"),
+  noCod: z.array(areaEntry).max(500).describe("Pincodes and prefixes where cash on delivery is off"),
+  extraDays: z
+    .array(z.object({ prefix: areaEntry, days: z.number().int().min(0).max(15) }))
+    .max(500)
+    .describe("Extra days added to the delivery promise; the longest matching prefix wins"),
+});
+export type DeliveryAreas = z.infer<typeof deliveryAreasSchema>;
+const NO_AREA_RULES: DeliveryAreas = { blocked: [], noCod: [], extraDays: [] };
+
 /** Store-wide settings. Defaults are what the store ran with before settings existed. */
 export const settingsSchema = z.object({
   delivery: z.object({
     feePaise: rupeesInPaise.describe("Delivery fee for orders below the free delivery threshold"),
     freeFromPaise: rupeesInPaise.describe("Orders at or above this subtotal ship free"),
+    areas: deliveryAreasSchema.default(NO_AREA_RULES),
   }),
   cod: z.object({ maxOrderPaise: rupeesInPaise.describe("Largest order total that can be paid by cash on delivery") }),
   reviews: z.object({ autoPublish: z.boolean().describe("Publish customer reviews straight away; otherwise they wait for approval") }),
@@ -38,7 +54,7 @@ export const settingsSchema = z.object({
 export type StoreSettings = z.infer<typeof settingsSchema>;
 
 export const DEFAULT_SETTINGS: StoreSettings = {
-  delivery: { feePaise: 4_000, freeFromPaise: 49_900 },
+  delivery: { feePaise: 4_000, freeFromPaise: 49_900, areas: NO_AREA_RULES },
   cod: { maxOrderPaise: 5_000_000 },
   reviews: { autoPublish: true },
   notice: { enabled: false, message: "" },
@@ -65,7 +81,10 @@ export const DEFAULT_SETTINGS: StoreSettings = {
 };
 
 /** What the storefront may read: everything except internal switches. */
-export const storefrontSettingsSchema = settingsSchema.pick({ delivery: true, cod: true, notice: true, company: true, grievance: true });
+export const storefrontSettingsSchema = settingsSchema
+  .pick({ delivery: true, cod: true, notice: true, company: true, grievance: true })
+  // the pincode rules are answered by the pincode check, not published
+  .extend({ delivery: settingsSchema.shape.delivery.pick({ feePaise: true, freeFromPaise: true }) });
 
 export const settingsResponse = settingsSchema.extend({ updatedAt: z.iso.datetime().nullable(), updatedBy: z.string().nullable() });
 

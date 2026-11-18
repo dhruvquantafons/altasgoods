@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES } from "@/components/store/store-settings";
-import { formatCountdown, formatHoursMinutes, isValidPincode, lookupPincode, msToCutoff, promiseDays } from "@/components/store/delivery";
+import { formatCountdown, formatHoursMinutes, isValidPincode, msToCutoff, promiseDays } from "@/components/store/delivery";
 import { bestBankOffer, computeTotals, couponBlocker, lineKey, priceLines } from "@/components/store/pricing";
 import type { BankOffer, CartCatalog, CartLine, CartOffer, CouponLite } from "@/components/store/types";
 
@@ -88,17 +88,25 @@ describe("cart totals", () => {
 });
 
 describe("delivery promise", () => {
-  it("validates and looks up pincodes", () => {
+  it("validates pincodes the way the API does", () => {
     expect(isValidPincode("560087")).toBe(true);
+    expect(isValidPincode("900001")).toBe(true);
     expect(isValidPincode("060087")).toBe(false);
-    expect(lookupPincode("682551")?.serviceable).toBe(false);
-    expect(lookupPincode("12345")).toBeNull();
+    expect(isValidPincode("12345")).toBe(false);
+  });
+
+  it("promises the longer of the area's extra days and the courier's estimate", () => {
+    const at = Date.parse("2026-10-01T10:00:00+05:30");
+    const area = (extraDays: number, etaDays: number | null) => ({ pincode: "791001", serviceable: true, codAvailable: true, extraDays, etaDays });
+    expect(promiseDays(2, area(3, null), at)).toBe(5);
+    expect(promiseDays(2, area(0, 9), at)).toBe(9);
+    expect(promiseDays(2, area(3, 4), at)).toBe(5);
   });
 
   it("adds a day after the 2 PM IST cutoff", () => {
     const before = Date.parse("2026-10-01T13:00:00+05:30");
     const after = Date.parse("2026-10-01T15:00:00+05:30");
-    const info = lookupPincode("560087");
+    const info = { pincode: "560087", serviceable: true, codAvailable: true, extraDays: 0, etaDays: null };
     expect(promiseDays(2, info, after)).toBe(promiseDays(2, info, before) + 1);
     expect(msToCutoff(before)).toBe(3600_000);
     expect(msToCutoff(after)).toBe(0);

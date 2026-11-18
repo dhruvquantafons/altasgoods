@@ -5,11 +5,9 @@ import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AddToCartButton, WishlistButton } from "./cart-buttons";
 import { DealTimer } from "./countdown";
-import { DEFAULT_PINCODE, lookupPincode, promiseDays, promiseLabel } from "./delivery";
+import { promiseDays, promiseLabel } from "./delivery";
 import { DeliveryText } from "./store-settings";
 import { AssuredMark, PriceRow, RatingChip } from "./price";
-
-const defaultPin = lookupPincode(DEFAULT_PINCODE);
 
 /** The store's offer for a product. */
 export function featuredOffer(p: Product) {
@@ -23,12 +21,12 @@ export function cardBadge(p: Product, deal?: boolean): { label: string; classNam
   return null;
 }
 
-/** "Free delivery by Sat, 3 Oct" for the default pincode. */
+/** "Free delivery by Sat, 3 Oct" at the usual pace; the exact date for a pincode is shown once it is known. */
 export function deliveryLine(p: Product) {
   const offer = featuredOffer(p);
   // only rendered on the server (never imported by a client component), so Date.now() is request time
   const now = Date.now();
-  const days = promiseDays(offer.deliveryDays, defaultPin, now);
+  const days = promiseDays(offer.deliveryDays, null, now);
   return { price: offer.price, when: promiseLabel(days, now), days };
 }
 

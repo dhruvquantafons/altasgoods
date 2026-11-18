@@ -48,7 +48,7 @@ export class StorefrontSettingsController {
   @ApiResponse({ status: 200, standardSchema: s.storefrontSettingsSchema })
   async get() {
     const { delivery, cod, notice, company, grievance } = await this.settings.get();
-    return { delivery, cod, notice, company, grievance };
+    return { delivery: { feePaise: delivery.feePaise, freeFromPaise: delivery.freeFromPaise }, cod, notice, company, grievance };
   }
 }
 

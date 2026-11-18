@@ -6,7 +6,8 @@ import { useState, type ReactNode } from "react";
 import { BadgeCheck, Bookmark, Lock, Minus, Plus, ShoppingBag, Tag, Trash2, Truck, X } from "lucide-react";
 import { cn, formatINR } from "@/lib/utils";
 import { MAX_QTY, useCart, usePincode } from "./cart-context";
-import { daysFromNow, formatPromise, lookupPincode, promiseDays } from "./delivery";
+import { daysFromNow, formatPromise, promiseDays } from "./delivery";
+import { usePincodeInfo } from "./pincode-lookup";
 import { useDeliveryRules } from "./store-settings";
 import { PriceDetails } from "./price-details";
 import { computeTotals, couponBlocker, couponValue, priceLines, type PricedLine } from "./pricing";
@@ -18,7 +19,7 @@ export function CartView({ catalog, coupons: all, children }: { catalog: CartCat
   const cart = useCart();
   const now = useNow(60_000);
   const { pincode } = usePincode();
-  const info = lookupPincode(pincode);
+  const { info } = usePincodeInfo(pincode);
   // The cart cannot see order history, so a first-order coupon (BLUFIRST) was always blocked here, even on a first order.
   // Like UPI-only coupons, it can be applied in the cart; the checkout quote from the API decides and says so if it does not apply.
   const coupons = all.map((c) => (c.firstOrderOnly ? { ...c, firstOrderOnly: undefined, description: `${c.description}. Checked against your orders at checkout.` } : c));
@@ -34,8 +35,8 @@ export function CartView({ catalog, coupons: all, children }: { catalog: CartCat
           <h1 className="text-2xl font-semibold tracking-tight text-ink-900 lg:text-[28px]">Your cart</h1>
           {!empty && (
             <p className="mt-1 text-sm text-ink-500">
-              {totals.itemCount} item{totals.itemCount === 1 ? "" : "s"}, delivering to {info?.city}{" "}
-              {pincode}
+              {totals.itemCount} item{totals.itemCount === 1 ? "" : "s"}, delivering to {pincode}
+              {info && !info.serviceable && <span className="text-danger-600"> (we do not deliver here yet)</span>}
             </p>
           )}
         </div>

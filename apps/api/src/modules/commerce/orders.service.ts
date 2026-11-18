@@ -41,9 +41,10 @@ export class OrdersService {
   ) {}
 
   async quote(userId: string, body: z.infer<typeof quoteBody>) {
-    await this.addresses.get(userId, body.addressId);
+    const address = await this.addresses.get(userId, body.addressId);
     const lines = body.lines ?? (await this.cart.checkoutLines(userId));
-    const q = await this.quotes.build(this.db, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod });
+    const destination = await this.quotes.destination(address.pincode, lines);
+    const q = await this.quotes.build(this.db, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod, destination });
     return publicQuote(q);
   }
 
@@ -66,11 +67,15 @@ export class OrdersService {
     const lines = body.lines ?? (await this.cart.checkoutLines(userId));
     if (!lines.length) throw unprocessable("CART_EMPTY", "Your cart is empty");
     const now = this.clock.now();
+    // asked before the transaction: it may call the courier, and no lock is held while it does
+    const destination = await this.quotes.destination(address.pincode, lines);
 
     let placed: { orderId: string; attempt: typeof payments.$inferSelect | null };
     try {
       placed = await this.db.transaction(async (tx) => {
-        const q = await this.quotes.build(tx, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod, lock: true });
+        const q = await this.quotes.build(tx, { lines, couponCode: body.couponCode, paymentMethod: body.paymentMethod, destination, lock: true });
+        const undeliverable = q.issues.find((i) => i.code === "PINCODE_UNSERVICEABLE");
+        if (undeliverable) throw unprocessable(undeliverable.code, undeliverable.message);
         if (!q.canPlaceOrder) throw new ApiError(409, q.issues[0]?.code ?? "CANNOT_PLACE_ORDER", q.issues.map((i) => i.message).join(". ") || "This order cannot be placed");
 
         for (const l of q.lines) {

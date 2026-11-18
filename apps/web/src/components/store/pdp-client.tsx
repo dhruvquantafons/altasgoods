@@ -22,7 +22,8 @@ import { cn, formatINR } from "@/lib/utils";
 import { useCart, usePincode, useWishlist } from "./cart-context";
 import { AddToCartButton, BuyNowButton } from "./cart-buttons";
 import { CutoffNote, DealTimer, useClock } from "./countdown";
-import { formatPromise, isValidPincode, lookupPincode, promiseDays, promiseLabel } from "./delivery";
+import { formatPromise, isValidPincode, promiseDays, promiseLabel } from "./delivery";
+import { usePincodeInfo } from "./pincode-lookup";
 import { useDeliveryRules } from "./store-settings";
 import type { CartOffer } from "./types";
 
@@ -194,14 +195,14 @@ function DeliveryModule() {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const now = useClock();
-  const info = lookupPincode(pincode);
+  const { info, loading } = usePincodeInfo(pincode);
   const o = data.offer;
   const days = promiseDays(o.deliveryDays, info, now);
   const { freeFrom: FREE_DELIVERY_THRESHOLD, fee: DELIVERY_FEE, codLimit: COD_LIMIT } = useDeliveryRules();
   const free = price * qty >= FREE_DELIVERY_THRESHOLD;
   const codReason = !o.codAvailable
     ? "Pay on delivery is not offered for this item"
-    : !(info?.codAvailable ?? false)
+    : info && !info.codAvailable
       ? `Pay on delivery is not available for ${pincode}`
       : price * qty > COD_LIMIT
         ? `Pay on delivery is available for orders up to ${formatINR(COD_LIMIT)}`
@@ -221,7 +222,7 @@ function DeliveryModule() {
         <span className="flex min-w-0 items-center gap-1.5 text-ink-700">
           <MapPin size={15} className="shrink-0 text-ink-500" aria-hidden="true" />
           <span className="truncate">
-            Deliver to <span className="font-semibold text-ink-900">{info?.city ?? "India"} {pincode}</span>
+            Deliver to <span className="font-semibold text-ink-900">{pincode}</span>
           </span>
         </span>
         <button type="button" onClick={() => setEditing((e) => !e)} className="shrink-0 font-semibold text-brand-700 hover:underline" aria-expanded={editing}>
@@ -276,12 +277,11 @@ function DeliveryModule() {
                 {free ? "Free delivery" : `${formatINR(DELIVERY_FEE)} delivery`} {days <= 1 ? promiseLabel(days, now) : `by ${formatPromise(new Date(now + days * 86400_000))}`}
               </span>{" "}
               <CutoffNote />
-              {info && info.zone === "special" && <span className="block text-ink-500">Remote area, allow a little extra time</span>}
             </span>
           </li>
           <li className="flex gap-2.5">
             <Banknote size={16} className="mt-px shrink-0 text-ink-600" aria-hidden="true" />
-            <span className="text-ink-700">{cod ? "Pay on delivery available, cash or UPI at the door" : codReason}</span>
+            <span className="text-ink-700">{loading ? "Checking pay on delivery for your pincode" : cod ? "Pay on delivery available, cash or UPI at the door" : codReason}</span>
           </li>
           {price >= 10000 && (
             <li className="flex gap-2.5">

@@ -32,7 +32,8 @@ import { Stepper } from "@/components/ui/misc";
 import { cn, formatINR } from "@/lib/utils";
 import { useCart } from "./cart-context";
 import { useNow } from "@/components/now-provider";
-import { daysFromNow, formatPromise, INDIAN_STATES, isValidPincode, lookupPincode, promiseDays } from "./delivery";
+import { daysFromNow, formatPromise, INDIAN_STATES, isValidPincode, promiseDays } from "./delivery";
+import { usePincodeInfo } from "./pincode-lookup";
 import { useDeliveryRules } from "./store-settings";
 import { PriceDetails } from "./price-details";
 import { computeTotals } from "./pricing";
@@ -77,7 +78,7 @@ export function CheckoutFlow({
   const [quote, setQuote] = useState<Quote | null>(null);
 
   const address = addresses.find((a) => a.id === addressId) ?? addresses[0];
-  const info = lookupPincode(address?.pincode ?? "");
+  const { info, loading: checkingPin } = usePincodeInfo(address?.pincode);
   const localTotals = computeTotals(lines, catalog, { couponCode: cart.coupon, coupons, method, rules });
 
   // The API prices the order; its quote is the authority for every amount shown.
@@ -119,7 +120,7 @@ export function CheckoutFlow({
       ? quote.cod.reason
       : payable > COD_LIMIT
         ? `Pay on delivery is available for orders up to ${formatINR(COD_LIMIT)}`
-        : !info?.codAvailable
+        : info && !info.codAvailable
           ? `Pay on delivery is not available for pincode ${address?.pincode}`
           : totals.lines.some((l) => !l.offer.codAvailable)
             ? "One or more items cannot be paid on delivery"
@@ -239,7 +240,6 @@ export function CheckoutFlow({
               <legend className="sr-only">Choose a delivery address</legend>
               <div className="flex flex-col gap-3">
                 {addresses.map((a) => {
-                  const ai = lookupPincode(a.pincode);
                   const on = a.id === addressId;
                   return (
                     <label
@@ -262,14 +262,7 @@ export function CheckoutFlow({
                           {a.landmark ? `, ${a.landmark}` : ""}, {a.city}, {a.state} {a.pincode}
                         </span>
                         <span className="mt-0.5 block text-ink-500">{a.phone}</span>
-                        <span
-                          className={cn("mt-1.5 inline-flex items-center gap-1 text-xs font-medium", ai?.serviceable ? "text-success-700" : "text-danger-700")}
-                        >
-                          {ai?.serviceable ? <Check size={13} aria-hidden="true" /> : <CircleAlert size={13} aria-hidden="true" />}
-                          {ai?.serviceable
-                            ? `All items deliverable${ai.codAvailable ? ", pay on delivery available" : ""}`
-                            : "Not deliverable to this pincode yet"}
-                        </span>
+                        <AddressReach pincode={a.pincode} />
                       </span>
                     </label>
                   );
@@ -313,7 +306,7 @@ export function CheckoutFlow({
             <StepActions>
               <button
                 type="button"
-                disabled={!info?.serviceable}
+                disabled={checkingPin || (!!info && !info.serviceable)}
                 onClick={next}
                 className="h-11 rounded-xl bg-brand-600 px-6 text-sm font-semibold text-white hover:bg-brand-700 disabled:bg-brand-300"
               >
@@ -518,7 +511,7 @@ export function CheckoutFlow({
         </div>
         <button
           type="button"
-          disabled={placing || (step === 1 && !info?.serviceable)}
+          disabled={placing || (step === 1 && (checkingPin || (!!info && !info.serviceable)))}
           onClick={step === 4 ? place : next}
           className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white disabled:bg-brand-400"
         >
@@ -627,6 +620,20 @@ function PayOption({
 }
 
 /** Saves the address; resolves to an error message, or null once saved. */
+/** Whether the store delivers to an address's pincode, asked of the API. */
+function AddressReach({ pincode }: { pincode: string }) {
+  const { info, loading } = usePincodeInfo(pincode);
+  if (loading) return <span className="mt-1.5 block text-xs text-ink-500">Checking delivery to this pincode</span>;
+  // when the check cannot answer, say nothing: checkout still verifies the pincode when the order is placed
+  if (!info) return null;
+  return (
+    <span className={cn("mt-1.5 inline-flex items-center gap-1 text-xs font-medium", info.serviceable ? "text-success-700" : "text-danger-700")}>
+      {info.serviceable ? <Check size={13} aria-hidden="true" /> : <CircleAlert size={13} aria-hidden="true" />}
+      {info.serviceable ? `All items deliverable${info.codAvailable ? ", pay on delivery available" : ""}` : "Not deliverable to this pincode yet"}
+    </span>
+  );
+}
+
 function AddressForm({
   onSave,
   onCancel,
@@ -641,16 +648,14 @@ function AddressForm({
   const [f, setF] = useState({ pincode: "", name, phone, line1: "", line2: "", landmark: "", city: "", state: "", type: "home" as AddressLite["type"] });
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const info = isValidPincode(f.pincode) ? lookupPincode(f.pincode) : null;
+  const { info } = usePincodeInfo(f.pincode);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
   const setPincode = (e: React.ChangeEvent<HTMLInputElement>) => {
     const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
-    const hit = isValidPincode(pin) ? lookupPincode(pin) : null;
-    // only a pincode the lookup knows fills in the city and state; otherwise the customer types them
-    setF((x) => ({ ...x, pincode: pin, ...(hit?.state ? { city: hit.city, state: hit.state } : {}) }));
+    setF((x) => ({ ...x, pincode: pin }));
   };
   const save = async () => {
-    if (!info) return setErr("Enter a valid 6 digit pincode");
+    if (!isValidPincode(f.pincode)) return setErr("Enter a valid 6 digit pincode");
     if (!f.name.trim() || !f.line1.trim() || f.phone.replace(/\D/g, "").length < 10)
       return setErr("Fill in your name, a 10 digit mobile number and the house or building");
     if (f.city.trim().length < 2 || !f.state) return setErr("Fill in the city and choose the state");
@@ -680,7 +685,7 @@ function AddressForm({
           label="Pincode"
           required
           htmlFor="na-pin"
-          hint={info ? (info.serviceable ? undefined : "Not serviceable yet") : "City and state fill in automatically where we can"}
+          hint={info && !info.serviceable ? "We do not deliver here yet" : undefined}
         >
           <Input id="na-pin" inputMode="numeric" autoComplete="postal-code" value={f.pincode} onChange={setPincode} />
         </Field>

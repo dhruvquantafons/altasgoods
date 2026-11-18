@@ -15,6 +15,7 @@ import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
+import { ServiceabilityService } from "./serviceability.service.js";
 import { ShippingService } from "./shipping/shipping.service.js";
 import { AuditService } from "../admin/audit.service.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
@@ -296,6 +297,20 @@ export class AdminInsightsController {
   @ApiResponse({ status: 200, standardSchema: s.adminRefundList })
   refunds(@Query({ schema: s.adminRefundsQuery }) q: z.infer<typeof s.adminRefundsQuery>) {
     return this.svc.refunds(q);
+  }
+}
+
+@ApiTags("Storefront")
+@Controller("v1/storefront")
+export class StorefrontPincodesController {
+  constructor(@Inject(ServiceabilityService) private readonly serviceability: ServiceabilityService) {}
+
+  /** Whether we deliver to a pincode, whether cash on delivery works there, and any extra days. */
+  @Public()
+  @Get("pincodes/:pin")
+  @ApiResponse({ status: 200, standardSchema: s.pincodeCheckSchema })
+  async check(@Param("pin", { schema: s.pincodeParam }) pin: string) {
+    return { pincode: pin, ...(await this.serviceability.check(pin)) };
   }
 }
 

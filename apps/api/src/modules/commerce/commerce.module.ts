@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Logger, Module } from "@nestjs/common";
 import { LOGISTICS_PROVIDER, PAYMENT_PROVIDER } from "../../common/tokens.js";
 import { env } from "../../config/env.js";
 import { AddressesService } from "./addresses.service.js";
@@ -14,6 +14,7 @@ import {
   LogisticsController,
   OrdersController,
   PaymentsController,
+  StorefrontPincodesController,
 } from "./commerce.controllers.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
 import { OrdersService } from "./orders.service.js";
@@ -23,6 +24,7 @@ import { RefundsService } from "./payments/refunds.service.js";
 import { SandboxPaymentProvider } from "./payments/sandbox.provider.js";
 import { PaymentSweeper } from "./payments/sweeper.js";
 import { QuoteService } from "./quote.service.js";
+import { ServiceabilityService } from "./serviceability.service.js";
 import { ShippingService } from "./shipping/shipping.service.js";
 import { ShiprocketLogisticsProvider } from "./shipping/shiprocket.provider.js";
 import { SimulatedLogisticsProvider } from "./shipping/simulated.provider.js";
@@ -47,6 +49,7 @@ import { OrderWorkflow } from "./workflow.service.js";
     AdminInsightsController,
     AdminPromotionsController,
     StorefrontPromotionsController,
+    StorefrontPincodesController,
     LogisticsController,
     DevController,
     CustomerReturnsController,
@@ -61,6 +64,7 @@ import { OrderWorkflow } from "./workflow.service.js";
     CartService,
     WishlistService,
     QuoteService,
+    ServiceabilityService,
     RefundsService,
     OrderWorkflow,
     PaymentsService,
@@ -90,17 +94,19 @@ import { OrderWorkflow } from "./workflow.service.js";
       useFactory: () => {
         const e = env();
         if (e.LOGISTICS_PROVIDER !== "shiprocket") return new SimulatedLogisticsProvider();
+        if (!e.SHIPROCKET_PICKUP_PINCODE) new Logger("Shiprocket").warn("SHIPROCKET_PICKUP_PINCODE is not set, so pincodes are checked against the admin delivery rules only");
         const [l, b, h] = e.SHIPPING_BOX_CM.split("x").map(Number) as [number, number, number];
         return new ShiprocketLogisticsProvider({
           email: e.SHIPROCKET_EMAIL!,
           password: e.SHIPROCKET_PASSWORD!,
           pickupLocation: e.SHIPROCKET_PICKUP_LOCATION!,
           webhookToken: e.SHIPROCKET_WEBHOOK_TOKEN,
+          pickupPincode: e.SHIPROCKET_PICKUP_PINCODE,
           box: [l, b, h],
         });
       },
     },
   ],
-  exports: [SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, RefundsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
+  exports: [ServiceabilityService, SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, RefundsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
 })
 export class CommerceModule {}

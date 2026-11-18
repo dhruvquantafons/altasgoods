@@ -111,7 +111,7 @@ const wishlistStore = createPersistedStore<string[]>("altasgoods.wishlist.v1", [
 const signedInFlag = createPersistedStore<boolean>("altasgoods.signed-in.v1", false, (raw) => (typeof raw === "boolean" ? raw : null));
 
 const pincodeStore = createPersistedStore<string>("altasgoods.pincode.v1", DEFAULT_PINCODE, (raw) =>
-  typeof raw === "string" && /^[1-8]\d{5}$/.test(raw) ? raw : null,
+  typeof raw === "string" && /^[1-9]\d{5}$/.test(raw) ? raw : null,
 );
 
 export const MAX_QTY = 10;

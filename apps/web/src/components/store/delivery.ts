@@ -48,59 +48,16 @@ export function promiseLabel(days: number, nowMs: number) {
 
 /* ------------------------------ Pincodes ------------------------------ */
 
-export type Zone = "metro" | "regional" | "national" | "special";
-
+/** What the store says about delivering to a pincode; answered by the API (see pincode-lookup.ts). */
 export interface PincodeInfo {
   pincode: string;
-  city: string;
-  state: string;
-  zone: Zone;
   serviceable: boolean;
-  /** extra transit days over the default (Bengaluru) promise */
-  extraDays: number;
   codAvailable: boolean;
+  /** extra days the store adds to the usual promise here */
+  extraDays: number;
+  /** the courier's own estimate in days, when it gave one */
+  etaDays: number | null;
 }
-
-const PREFIXES: Record<string, [city: string, state: string, zone: Zone]> = {
-  "560": ["Bengaluru", "Karnataka", "metro"],
-  "400": ["Mumbai", "Maharashtra", "metro"],
-  "110": ["New Delhi", "Delhi", "metro"],
-  "500": ["Hyderabad", "Telangana", "metro"],
-  "600": ["Chennai", "Tamil Nadu", "metro"],
-  "411": ["Pune", "Maharashtra", "metro"],
-  "700": ["Kolkata", "West Bengal", "metro"],
-  "380": ["Ahmedabad", "Gujarat", "metro"],
-  "122": ["Gurugram", "Haryana", "metro"],
-  "201": ["Noida", "Uttar Pradesh", "metro"],
-  "570": ["Mysuru", "Karnataka", "regional"],
-  "641": ["Coimbatore", "Tamil Nadu", "regional"],
-  "682": ["Kochi", "Kerala", "regional"],
-  "695": ["Thiruvananthapuram", "Kerala", "regional"],
-  "403": ["Panaji", "Goa", "regional"],
-  "302": ["Jaipur", "Rajasthan", "national"],
-  "226": ["Lucknow", "Uttar Pradesh", "national"],
-  "160": ["Chandigarh", "Chandigarh", "national"],
-  "452": ["Indore", "Madhya Pradesh", "national"],
-  "751": ["Bhubaneswar", "Odisha", "national"],
-  "800": ["Patna", "Bihar", "national"],
-  "781": ["Guwahati", "Assam", "special"],
-  "190": ["Srinagar", "Jammu and Kashmir", "special"],
-  "194": ["Leh", "Ladakh", "special"],
-  "744": ["Port Blair", "Andaman and Nicobar Islands", "special"],
-};
-
-const STATE_BY_FIRST_DIGIT: Record<string, string> = {
-  "1": "Delhi NCR and North India",
-  "2": "Uttar Pradesh and Uttarakhand",
-  "3": "Rajasthan and Gujarat",
-  "4": "Maharashtra and Central India",
-  "5": "Andhra Pradesh, Telangana and Karnataka",
-  "6": "Tamil Nadu and Kerala",
-  "7": "East and North East India",
-  "8": "Bihar and Jharkhand",
-};
-
-const EXTRA_DAYS: Record<Zone, number> = { metro: 0, regional: 1, national: 2, special: 5 };
 
 /** States and union territories, for addresses the pincode lookup cannot place. */
 export const INDIAN_STATES = [
@@ -113,36 +70,17 @@ export const INDIAN_STATES = [
 
 export const DEFAULT_PINCODE = "560087";
 
+/** Six digits, not starting with 0: the same rule the API applies. */
 export function isValidPincode(pin: string) {
-  return /^[1-8]\d{5}$/.test(pin);
-}
-
-/** Mock serviceability lookup. Lakshadweep (6825xx) is not yet serviceable. */
-export function lookupPincode(pin: string): PincodeInfo | null {
-  if (!isValidPincode(pin)) return null;
-  const known = PREFIXES[pin.slice(0, 3)];
-  if (pin.startsWith("6825"))
-    return { pincode: pin, city: "Lakshadweep", state: "Lakshadweep", zone: "special", serviceable: false, extraDays: 0, codAvailable: false };
-  if (known) {
-    const [city, state, zone] = known;
-    return { pincode: pin, city, state, zone, serviceable: true, extraDays: EXTRA_DAYS[zone], codAvailable: zone !== "special" };
-  }
-  return {
-    pincode: pin,
-    city: STATE_BY_FIRST_DIGIT[pin[0]!] ?? "India",
-    state: "",
-    zone: "national",
-    serviceable: true,
-    extraDays: EXTRA_DAYS.national + 1,
-    codAvailable: true,
-  };
+  return /^[1-9]\d{5}$/.test(pin);
 }
 
 /** Days until delivery for an offer to a pincode, honouring the 14:00 cutoff. */
 export function promiseDays(baseDays: number, info: PincodeInfo | null, nowMs: number) {
   const hourIst = new Date(nowMs + 5.5 * 3600_000).getUTCHours();
   const afterCutoff = hourIst >= ORDER_CUTOFF_HOUR ? 1 : 0;
-  return Math.max(1, baseDays + (info?.extraDays ?? 0) + afterCutoff);
+  // the area's extra days, or the courier's estimate when that is longer
+  return Math.max(1, Math.max(baseDays + (info?.extraDays ?? 0), info?.etaDays ?? 0) + afterCutoff);
 }
 
 /** Milliseconds left before today's dispatch cutoff, or 0 when it has passed. */

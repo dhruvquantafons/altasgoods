@@ -21,6 +21,8 @@ const schema = z.object({
   SHIPROCKET_PASSWORD: z.string().optional(),
   /** The nickname of the pickup address in Shiprocket (Settings > Pickup Addresses) */
   SHIPROCKET_PICKUP_LOCATION: z.string().optional(),
+  /** Optional: the pincode parcels leave from. Lets Shiprocket check delivery pincodes; the admin rules apply without it */
+  SHIPROCKET_PICKUP_PINCODE: z.string().regex(/^[1-9]\d{5}$/, "Use a 6 digit pincode").optional(),
   /** Optional: the token set on the Shiprocket webhook; tracking is polled either way */
   SHIPROCKET_WEBHOOK_TOKEN: z.string().optional(),
   /** Box size in centimetres, length x breadth x height, used for every parcel */

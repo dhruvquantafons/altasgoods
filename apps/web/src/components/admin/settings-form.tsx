@@ -7,26 +7,31 @@ import { saveSettings, type SettingsInput } from "@/app/actions/admin-system";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/input";
+import { areasToText, parseAreas, type AreasText } from "./delivery-areas";
 import { Switch, useToast } from "@/components/ui/interactive";
 
 /** Amounts are edited in rupees and saved in paise. */
 const toRupees = (p: number) => String(p / 100);
 const toPaise = (r: string) => Math.round(Number(r || 0) * 100);
 
-type Form = Omit<SettingsInput, "delivery" | "cod"> & { delivery: { fee: string; freeFrom: string }; cod: { maxOrder: string } };
+type Form = Omit<SettingsInput, "delivery" | "cod"> & { delivery: { fee: string; freeFrom: string }; areas: AreasText; cod: { maxOrder: string } };
 
 function fromSettings(s: SettingsInput): Form {
   return {
     ...s,
     delivery: { fee: toRupees(s.delivery.feePaise), freeFrom: toRupees(s.delivery.freeFromPaise) },
+    areas: areasToText(s.delivery.areas),
     cod: { maxOrder: toRupees(s.cod.maxOrderPaise) },
   };
 }
 
-function toSettings(f: Form): SettingsInput {
+function toSettings(f: Form, areas: SettingsInput["delivery"]["areas"]): SettingsInput {
   return {
-    ...f,
-    delivery: { feePaise: toPaise(f.delivery.fee), freeFromPaise: toPaise(f.delivery.freeFrom) },
+    company: f.company,
+    grievance: f.grievance,
+    reviews: f.reviews,
+    notice: f.notice,
+    delivery: { feePaise: toPaise(f.delivery.fee), freeFromPaise: toPaise(f.delivery.freeFrom), areas },
     cod: { maxOrderPaise: toPaise(f.cod.maxOrder) },
   };
 }
@@ -84,9 +89,27 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
     </Field>
   );
 
+  const areaField = (key: keyof AreasText, label: string, placeholder: string, hint: string) => (
+    <Field label={label} htmlFor={`st-areas-${key}`} error={err(`delivery.areas.${key}`) ?? Object.entries(errors).find(([p]) => p.startsWith(`delivery.areas.${key}.`))?.[1]} hint={hint}>
+      <Textarea
+        id={`st-areas-${key}`}
+        className="min-h-28 font-mono text-[13px]"
+        value={form.areas[key]}
+        onChange={(e) => setForm((f) => ({ ...f, areas: { ...f.areas, [key]: e.target.value } }))}
+        placeholder={placeholder}
+        aria-invalid={Boolean(err(`delivery.areas.${key}`))}
+      />
+    </Field>
+  );
+
   const save = async () => {
+    const parsed = parseAreas(form.areas);
+    if (!parsed.ok) {
+      setErrors(Object.fromEntries(Object.entries(parsed.errors).map(([k, v]) => [`delivery.areas.${k}`, v])));
+      return toast.show("Fix the delivery areas first");
+    }
     setBusy(true);
-    const r = await saveSettings(toSettings(form));
+    const r = await saveSettings(toSettings(form, parsed.areas));
     setBusy(false);
     if (!r.ok) {
       setErrors(r.fields ?? {});
@@ -105,6 +128,15 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
       <Section title="Delivery" description="What customers pay for delivery. Checked again at checkout.">
         {money("delivery", "fee", "delivery.feePaise", "Delivery fee", "Charged on orders below the free delivery amount")}
         {money("delivery", "freeFrom", "delivery.freeFromPaise", "Free delivery from", "Orders at or above this amount ship free")}
+      </Section>
+
+      <Section
+        title="Delivery areas"
+        description="Where we do not deliver, where cash on delivery is off, and where delivery takes longer. One entry per line: a 6 digit pincode, or the first 2 to 5 digits to cover a whole area. Checked on the product page, the cart and at checkout."
+      >
+        {areaField("blocked", "Do not deliver to", "6825\n744101", "Customers cannot order to these pincodes.")}
+        {areaField("noCod", "No cash on delivery", "79\n190001", "These pincodes can still pay online.")}
+        {areaField("extraDays", "Extra delivery days", "6825 3\n79 4", "Prefix, a space and the days to add (0 to 15). The longest matching prefix wins.")}
       </Section>
 
       <Section title="Cash on delivery">

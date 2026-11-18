@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { Logger } from "@nestjs/common";
 import { ApiError } from "../../../common/errors.js";
 import { fetchText, OutboundFailure, parseJson } from "../../../common/outbound.js";
-import type { Booking, CourierStatus, LogisticsProvider, ShipmentRequest, TrackingUpdate } from "./provider.js";
+import type { Booking, CourierServiceability, CourierStatus, LogisticsProvider, ShipmentRequest, TrackingUpdate } from "./provider.js";
 
 const API = "https://apiv2.shiprocket.in/v1/external";
 /** Shiprocket tokens last 10 days; renew a day early. */
@@ -17,6 +17,8 @@ export interface ShiprocketConfig {
   password: string;
   pickupLocation: string;
   webhookToken?: string;
+  /** where parcels leave from; without it the serviceability check is skipped */
+  pickupPincode?: string;
   /** length, breadth, height in cm */
   box: [number, number, number];
   /** injectable for tests */
@@ -40,6 +42,20 @@ export function courierStatus(raw: string): CourierStatus | null {
   // picked up and moving; "Undelivered" is a failed attempt that goes back out
   if (["PICKED UP", "SHIPPED", "IN TRANSIT", "REACHED AT DESTINATION HUB", "REACHED DESTINATION HUB", "MISROUTED", "DELAYED", "UNDELIVERED", "IN FLIGHT", "IN TRANSIT AT DESTINATION HUB"].includes(s)) return "SHIPPED";
   return null;
+}
+
+interface ShiprocketCourier {
+  estimated_delivery_days?: string | number;
+  etd?: string;
+  cod?: number | string;
+}
+
+/** A courier's estimate in days: its own number, else the days until its etd date. */
+function courierDays(c: ShiprocketCourier, nowMs: number): number | null {
+  const n = Number(c.estimated_delivery_days);
+  if (c.estimated_delivery_days !== undefined && c.estimated_delivery_days !== "" && Number.isFinite(n) && n >= 0) return Math.ceil(n);
+  const at = c.etd ? Date.parse(c.etd) : NaN;
+  return Number.isNaN(at) ? null : Math.max(0, Math.ceil((at - nowMs) / 86_400_000));
 }
 
 const rupees = (paise: number) => Math.round(paise) / 100;
@@ -155,6 +171,31 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
     return { awb, raw, status: courierStatus(raw) };
   }
 
+  /**
+   * Whether Shiprocket's couriers reach a pincode from the pickup pincode, whether
+   * any takes cash on delivery, and the fastest courier's estimate in days.
+   * Null when no pickup pincode is configured. Throws when Shiprocket fails;
+   * the caller decides what that means.
+   * Fields read: data.available_courier_companies[].estimated_delivery_days (or
+   * the date in etd) and .cod (1 when the courier takes cash on delivery). The
+   * list is empty, or Shiprocket answers 404, when nothing serves the pincode.
+   */
+  async serviceability(deliveryPincode: string, weightGrams: number): Promise<CourierServiceability | null> {
+    if (!this.config.pickupPincode) return null;
+    const weight = Math.max(0.1, Math.round(weightGrams / 100) / 10);
+    const query = new URLSearchParams({ pickup_postcode: this.config.pickupPincode, delivery_postcode: deliveryPincode, weight: String(weight), cod: "0" });
+    const res = await this.call<{ data?: { available_courier_companies?: ShiprocketCourier[] } }>("GET", `/courier/serviceability/?${query}`, undefined, false, true);
+    const couriers = res.data?.available_courier_companies ?? [];
+    if (!couriers.length) return { serviceable: false, codAvailable: false, etaDays: null };
+    const days = couriers.map((c) => courierDays(c, this.now())).filter((d): d is number => d !== null);
+    return {
+      serviceable: true,
+      // a courier that does not say either way is not taken as a refusal
+      codAvailable: couriers.some((c) => c.cod === undefined || Number(c.cod) === 1),
+      etaDays: days.length ? Math.min(...days) : null,
+    };
+  }
+
   parseWebhook(body: unknown, headers: Record<string, string | string[] | undefined>): TrackingUpdate | null {
     const expected = this.config.webhookToken;
     const given = String(headers[SHIPROCKET_TOKEN_HEADER] ?? "");
@@ -187,7 +228,7 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
     return json.token;
   }
 
-  private async call<T>(method: "GET" | "POST", path: string, body?: unknown, retried = false): Promise<T> {
+  private async call<T>(method: "GET" | "POST", path: string, body?: unknown, retried = false, notFoundIsAnswer = false): Promise<T> {
     const { res, text } = await this.send(`${method} ${path}`, `${API}${path}`, {
       method,
       headers: { Authorization: `Bearer ${await this.authToken()}`, ...(body ? { "Content-Type": "application/json" } : {}) },
@@ -196,8 +237,9 @@ export class ShiprocketLogisticsProvider implements LogisticsProvider {
     // an expired or revoked token: sign in again once
     if (res.status === 401 && !retried) {
       this.token = undefined;
-      return this.call<T>(method, path, body, true);
+      return this.call<T>(method, path, body, true, notFoundIsAnswer);
     }
+    if (res.status === 404 && notFoundIsAnswer) return {} as T;
     const json = parseJson<T & { message?: string; errors?: Record<string, string[]> }>(text);
     if (!res.ok) {
       const detail = json.errors ? Object.values(json.errors).flat().join(" ") : (json.message ?? "");

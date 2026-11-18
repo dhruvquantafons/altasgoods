@@ -23,7 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/logo";
 import { useCart, usePincode, useWishlist } from "./cart-context";
-import { isValidPincode, lookupPincode } from "./delivery";
+import { isValidPincode } from "./delivery";
 import { NamedIcon } from "./icons";
 import type { AddressLite, NavCategory, Suggestion } from "./types";
 
@@ -426,7 +426,6 @@ export function DeliverTo({ addresses, name, variant = "bar" }: { addresses: Add
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const info = lookupPincode(pincode);
 
   useEffect(() => {
     if (!open) return;
@@ -464,7 +463,7 @@ export function DeliverTo({ addresses, name, variant = "bar" }: { addresses: Add
       >
         <MapPin size={15} strokeWidth={1.9} className="shrink-0 text-ink-500" aria-hidden="true" />
         <span className="truncate">
-          Deliver to {name ? `${name}, ` : ""}<span className="font-semibold text-ink-900">{info?.city ?? "India"} {pincode}</span>
+          Deliver to {name ? `${name}, ` : ""}<span className="font-semibold text-ink-900">{pincode}</span>
         </span>
         <ChevronDown size={14} className="shrink-0 text-ink-400" aria-hidden="true" />
       </button>

@@ -111,6 +111,16 @@ export const quoteSchema = z.object({
   canPlaceOrder: z.boolean(),
 });
 
+export const pincodeParam = z.string().regex(/^[1-9]\d{5}$/, "Enter a valid 6 digit pincode");
+export const pincodeCheckSchema = z.object({
+  pincode: z.string(),
+  serviceable: z.boolean(),
+  codAvailable: z.boolean(),
+  extraDays: z.number().int().describe("Days the store adds to the usual delivery promise here"),
+  etaDays: z.number().int().nullable().describe("The courier's estimate in days, when it gave one"),
+  source: z.enum(["rules", "rules+shiprocket"]),
+});
+
 export const placeOrderBody = quoteBody.extend({ paymentMethod: z.enum(PAYMENT_METHODS) });
 
 /* --------------------------------- Orders -------------------------------- */

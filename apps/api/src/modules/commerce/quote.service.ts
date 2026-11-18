@@ -1,11 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { eq, inArray } from "drizzle-orm";
 import type { Clock } from "../../common/infra.module.js";
-import { CLOCK } from "../../common/tokens.js";
-import type { Tx } from "../../db/client.js";
+import { CLOCK, DB } from "../../common/tokens.js";
+import type { Db, Tx } from "../../db/client.js";
 import { coupons, offers, products, type PaymentMethod } from "../../db/schema.js";
 import { SettingsService } from "../admin/settings.service.js";
 import { SalesService } from "./sales.service.js";
+import { ServiceabilityService, type ServiceabilityResult } from "./serviceability.service.js";
 import { couponDiscount, deliveryFee, promiseDate } from "./pricing.js";
 
 export interface QuoteLineInput {
@@ -18,6 +19,12 @@ export interface QuoteInput {
   lines: QuoteLineInput[];
   couponCode?: string;
   paymentMethod?: PaymentMethod;
+  /**
+   * Where it is going and whether we can deliver there, from `destination()`. Looked up
+   * before any transaction, because it may call the courier. Without it the
+   * quote is for an unknown destination (the cart).
+   */
+  destination?: { pincode: string; area: ServiceabilityResult };
   /** lock offer rows for update (order placement) */
   lock?: boolean;
 }
@@ -28,10 +35,21 @@ export type Quote = Awaited<ReturnType<QuoteService["build"]>>;
 @Injectable()
 export class QuoteService {
   constructor(
+    @Inject(DB) private readonly db: Db,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(SalesService) private readonly sales: SalesService,
+    @Inject(ServiceabilityService) private readonly serviceability: ServiceabilityService,
   ) {}
+
+  /** Whether we deliver these lines to a pincode. May call the courier, so never inside a transaction. */
+  async destination(pincode: string, lines: QuoteLineInput[]) {
+    const ids = [...new Set(lines.map((l) => l.offerId))];
+    const rows = ids.length ? await this.db.select({ id: offers.id, weightGrams: offers.weightGrams }).from(offers).where(inArray(offers.id, ids)) : [];
+    const weight = new Map(rows.map((r) => [r.id, r.weightGrams]));
+    const weightGrams = lines.reduce((a, l) => a + (weight.get(l.offerId) ?? 0) * l.qty, 0);
+    return { pincode, area: await this.serviceability.check(pincode, { weightGrams: weightGrams || undefined }) };
+  }
 
   async build(tx: Tx, input: QuoteInput) {
     const now = this.clock.now();
@@ -69,10 +87,13 @@ export class QuoteService {
     });
 
     // everything ships together from the store, promised by the slowest line
-    const promised = priced.reduce((latest, p) => {
-      const d = promiseDate(now, p.offer.deliveryDays);
-      return d > latest ? d : latest;
-    }, promiseDate(now, 0));
+    // and, for a known destination, slowed by the area's extra days or the courier's longer estimate
+    const dest = input.destination;
+    const slowest = priced.reduce((days, p) => Math.max(days, p.offer.deliveryDays), 0);
+    const promised = promiseDate(now, dest ? Math.max(slowest + dest.area.extraDays, dest.area.etaDays ?? 0) : slowest);
+    if (dest && !dest.area.serviceable) {
+      issues.push({ offerId: priced[0]?.offer.id ?? ids[0] ?? "", code: "PINCODE_UNSERVICEABLE", message: `We don't deliver to ${dest.pincode} yet` });
+    }
     const lines = priced.map((p) => ({
       offerId: p.offer.id,
       productId: p.product.id,
@@ -106,7 +127,9 @@ export class QuoteService {
     const codBlocker = priced.find((p) => !p.offer.codAvailable);
     const cod = codBlocker
       ? { available: false, reason: `Pay on delivery is not available for ${codBlocker.product.title}` }
-      : total > settings.cod.maxOrderPaise
+      : dest && !dest.area.codAvailable
+        ? { available: false, reason: `Pay on delivery is not available at ${dest.pincode}` }
+        : total > settings.cod.maxOrderPaise
         ? { available: false, reason: `Pay on delivery is available for orders up to ₹${(settings.cod.maxOrderPaise / 100).toLocaleString("en-IN")}` }
         : { available: true, reason: null };
     if (input.paymentMethod === "COD" && !cod.available) issues.push({ offerId: priced[0]?.offer.id ?? ids[0] ?? "", code: "COD_UNAVAILABLE", message: cod.reason! });

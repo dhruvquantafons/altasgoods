@@ -1124,6 +1124,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/storefront/pincodes/{pin}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontPincodesController_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/logistics/webhooks/tracking": {
         parameters: {
             query?: never;
@@ -1860,6 +1876,24 @@ export interface operations {
                             feePaise: number;
                             /** @description Orders at or above this subtotal ship free */
                             freeFromPaise: number;
+                            /**
+                             * @default {
+                             *       "blocked": [],
+                             *       "noCod": [],
+                             *       "extraDays": []
+                             *     }
+                             */
+                            areas: {
+                                /** @description Pincodes and prefixes we do not deliver to */
+                                blocked: string[];
+                                /** @description Pincodes and prefixes where cash on delivery is off */
+                                noCod: string[];
+                                /** @description Extra days added to the delivery promise; the longest matching prefix wins */
+                                extraDays: {
+                                    prefix: string;
+                                    days: number;
+                                }[];
+                            };
                         };
                         cod: {
                             /** @description Largest order total that can be paid by cash on delivery */
@@ -1919,6 +1953,24 @@ export interface operations {
                         feePaise: number;
                         /** @description Orders at or above this subtotal ship free */
                         freeFromPaise: number;
+                        /**
+                         * @default {
+                         *       "blocked": [],
+                         *       "noCod": [],
+                         *       "extraDays": []
+                         *     }
+                         */
+                        areas?: {
+                            /** @description Pincodes and prefixes we do not deliver to */
+                            blocked: string[];
+                            /** @description Pincodes and prefixes where cash on delivery is off */
+                            noCod: string[];
+                            /** @description Extra days added to the delivery promise; the longest matching prefix wins */
+                            extraDays: {
+                                prefix: string;
+                                days: number;
+                            }[];
+                        };
                     };
                     cod: {
                         /** @description Largest order total that can be paid by cash on delivery */
@@ -1970,6 +2022,24 @@ export interface operations {
                             feePaise: number;
                             /** @description Orders at or above this subtotal ship free */
                             freeFromPaise: number;
+                            /**
+                             * @default {
+                             *       "blocked": [],
+                             *       "noCod": [],
+                             *       "extraDays": []
+                             *     }
+                             */
+                            areas: {
+                                /** @description Pincodes and prefixes we do not deliver to */
+                                blocked: string[];
+                                /** @description Pincodes and prefixes where cash on delivery is off */
+                                noCod: string[];
+                                /** @description Extra days added to the delivery promise; the longest matching prefix wins */
+                                extraDays: {
+                                    prefix: string;
+                                    days: number;
+                                }[];
+                            };
                         };
                         cod: {
                             /** @description Largest order total that can be paid by cash on delivery */
@@ -6404,6 +6474,37 @@ export interface operations {
                         /** Format: date-time */
                         endsAt: string;
                     }[];
+                };
+            };
+        };
+    };
+    StorefrontPincodesController_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pin: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        pincode: string;
+                        serviceable: boolean;
+                        codAvailable: boolean;
+                        /** @description Days the store adds to the usual delivery promise here */
+                        extraDays: number;
+                        /** @description The courier's estimate in days, when it gave one */
+                        etaDays: number | null;
+                        /** @enum {string} */
+                        source: "rules" | "rules+shiprocket";
+                    };
                 };
             };
         };
