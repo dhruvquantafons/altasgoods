@@ -98,9 +98,8 @@ test("a shopper requests a return with a photo and the store sees it", async ({ 
   await expect(page.getByRole("heading", { name: "Check and submit" })).toBeVisible();
   await page.getByRole("button", { name: "Submit request" }).click();
 
-  const done = page.getByText(/Request RT-\d+ is approved/);
-  await expect(done).toBeVisible();
-  const returnId = (await done.textContent())!.match(/RT-\d+/)![0];
+  // read the id in the same step that sees the message, which does not stay on screen
+  const returnId = await (await page.waitForFunction(() => document.body.innerText.match(/Request (RT-\d+) is approved/)?.[1], undefined, { timeout: 30_000 })).jsonValue();
   const created = await shopper.get<{ status: string; photos: { id: string }[]; comments: string; pickupSlot: string }>(`/v1/me/returns/${returnId}`);
   expect(created).toMatchObject({ status: "PICKUP_SCHEDULED", comments: "The handle came off in the box.", pickupSlot: "9 AM to 12 PM" });
   expect(created.photos).toHaveLength(1);
