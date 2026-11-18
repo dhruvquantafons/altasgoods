@@ -9,6 +9,7 @@ import { LogoMark } from "@/components/brand/logo";
 import { paise } from "@/lib/api/format";
 import type { PaymentDetail } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
+import { payState } from "./pay-state";
 
 interface Props {
   payment: { id: string; status: string; amountPaise: number; failureReason: string | null; method: string; methodCode: string; sessionOpen: boolean };
@@ -80,23 +81,29 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<null | "pay" | "fail" | "retry">(null);
   const [failed, setFailed] = useState(payment.status === "FAILED" ? (payment.failureReason ?? "The payment did not go through") : null);
+  // what the API said after this page paid (or failed) the attempt
+  const [latest, setLatest] = useState<{ paymentStatus: string; orderStatus: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const left = useCountdown(order.paymentDueBy);
-  const expired = left === 0 || order.status === "ABANDONED" || payment.status === "EXPIRED" || payment.status === "CANCELLED";
-  const paid = payment.status === "CAPTURED" || (order.status !== "PAYMENT_PENDING" && order.status !== "PAYMENT_FAILED" && order.status !== "ABANDONED" && order.status !== "CANCELLED");
+  const state = payState({
+    paymentStatus: latest?.paymentStatus ?? payment.status,
+    orderStatus: latest?.orderStatus ?? order.status,
+    sessionOpen: payment.sessionOpen,
+    timeUp: left === 0,
+    failed: !!failed,
+  });
+  const open = state.kind === "pay" || state.kind === "retry";
 
   const settle = (r: Awaited<ReturnType<typeof confirmPayment>>) => {
     if (!r.ok) {
       setBusy(null);
       return setError(r.error);
     }
-    // money that reached an order which had already ended is given back, never confirmed
-    const ended = r.data.orderStatus === "ABANDONED" || r.data.orderStatus === "CANCELLED";
-    if (r.data.status === "CAPTURED" && !ended) return router.replace(`/order/confirmed?id=${order.id}`);
+    const next = payState({ paymentStatus: r.data.status, orderStatus: r.data.orderStatus, sessionOpen: true, timeUp: false, failed: r.data.status === "FAILED" });
+    if (next.kind === "paid") return router.replace(`/order/confirmed?id=${order.id}`);
     setBusy(null);
-    if (ended && (r.data.status === "CAPTURED" || r.data.status === "REFUNDED")) return setError("This order had already expired, so the amount was refunded straight away.");
-    if (r.data.status === "REFUNDED") return setError("This order had already expired, so the amount was refunded straight away.");
-    setFailed(r.data.failureReason ?? "The payment did not go through");
+    setLatest({ paymentStatus: r.data.status, orderStatus: r.data.orderStatus });
+    if (next.kind === "retry") setFailed(r.data.failureReason ?? "The payment did not go through");
   };
 
   const act = async (outcome: "SUCCESS" | "FAILURE") => {
@@ -144,14 +151,11 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
     router.replace(`/checkout/pay/${r.data.paymentId}`);
   };
 
-  // the gateway could not open this payment when the order was placed: start a fresh attempt
-  const unopened = !payment.sessionOpen && (payment.status === "CREATED" || payment.status === "PENDING");
-
   const mm = left === null ? null : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-4 py-10 sm:py-16">
-      {!checkout && !unopened && (
+      {!checkout && (state.kind === "pay" || (state.kind === "retry" && state.reason === "failed")) && (
         <div className="mb-4 flex items-center justify-center gap-2 rounded-full bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-800 ring-1 ring-accent-100">
           <FlaskConical size={14} aria-hidden="true" />
           AltasGoods Pay sandbox: no real money moves
@@ -172,7 +176,7 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
         </div>
 
         <div className="px-6 py-6">
-          <p className="text-xs text-ink-500">Amount to pay</p>
+          <p className="text-xs text-ink-500">{open || state.kind === "expired" ? "Amount to pay" : "Amount"}</p>
           <p className="mt-1 font-display text-[36px] leading-none font-semibold tracking-tight text-ink-900">{paise(payment.amountPaise)}</p>
           <dl className="mt-5 grid grid-cols-2 gap-y-3 text-sm">
             <dt className="text-ink-500">Order</dt>
@@ -186,7 +190,7 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
             <dd className="text-right text-ink-900">{payment.method}</dd>
           </dl>
 
-          {!paid && !expired && mm && (
+          {open && mm && (
             <p className={cn("mt-5 flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-[13px]", left !== null && left < 300 ? "bg-warning-50 text-warning-700" : "bg-ink-50 text-ink-600")}>
               <Clock size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
               <span>
@@ -195,15 +199,15 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
             </p>
           )}
 
-          {failed && !expired && !paid && (
+          {state.kind === "retry" && state.reason === "failed" && (
             <div role="alert" className="mt-5 rounded-xl bg-danger-50 px-3.5 py-3 text-[13px] text-danger-700">
               <p className="flex items-center gap-2 font-semibold">
                 <CircleAlert size={15} aria-hidden="true" /> Payment failed
               </p>
-              <p className="mt-0.5">{failed}. Your items are still reserved; you can try again.</p>
+              <p className="mt-0.5">{failed ?? "The payment did not go through"}. Your items are still reserved; you can try again.</p>
             </div>
           )}
-          {unopened && !failed && !expired && !paid && (
+          {state.kind === "retry" && state.reason === "unopened" && (
             <div role="status" className="mt-5 rounded-xl bg-warning-50 px-3.5 py-3 text-[13px] text-warning-700">
               <p className="flex items-center gap-2 font-semibold">
                 <CircleAlert size={15} aria-hidden="true" /> The payment page did not open
@@ -218,18 +222,40 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
           )}
 
           <div className="mt-6 flex flex-col gap-2">
-            {paid ? (
+            {state.kind === "paid" ? (
               <Link href={`/order/confirmed?id=${order.id}`} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-success-700 text-[15px] font-semibold text-white">
                 <CircleCheck size={18} aria-hidden="true" /> Paid. View your order
               </Link>
-            ) : expired ? (
+            ) : state.kind === "duplicate-refunded" ? (
               <>
-                <p className="text-sm text-ink-600">The time to pay for this order has ended, so the items were released. Nothing was charged.</p>
+                <p role="status" className="rounded-xl bg-success-50 px-3.5 py-3 text-[13px] text-success-700">
+                  Your order is confirmed. This was a second payment for the same order, so we are refunding it in full to where it came from.
+                </p>
+                <Link href={`/account/orders/${order.id}`} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-success-700 text-[15px] font-semibold text-white">
+                  <CircleCheck size={18} aria-hidden="true" /> View your order
+                </Link>
+              </>
+            ) : state.kind === "cancelled-refunded" || state.kind === "cancelled" ? (
+              <>
+                <p role="status" className="text-sm text-ink-600">
+                  {state.kind === "cancelled-refunded" ? "This order was cancelled and refunded. The refund goes back to where you paid from." : "This order was cancelled. Nothing was charged."}
+                </p>
+                <Link href={`/account/orders/${order.id}`} className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700">
+                  View the order
+                </Link>
+              </>
+            ) : state.kind === "expired-refunded" || state.kind === "expired" ? (
+              <>
+                <p className="text-sm text-ink-600">
+                  {state.kind === "expired-refunded"
+                    ? "This order had already expired, so the amount was refunded straight away."
+                    : "The time to pay for this order has ended, so the items were released. Nothing was charged."}
+                </p>
                 <Link href="/cart" className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700">
                   Back to cart
                 </Link>
               </>
-            ) : failed || unopened ? (
+            ) : state.kind === "retry" ? (
               <button type="button" onClick={retry} disabled={!!busy} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-brand-600 text-[15px] font-semibold text-white hover:bg-brand-700 disabled:bg-brand-300">
                 {busy === "retry" && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
                 Try again
