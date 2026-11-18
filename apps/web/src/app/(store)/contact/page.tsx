@@ -6,7 +6,7 @@ import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { currentUser } from "@/lib/api/server";
 import { Fact, Placeholder } from "@/components/store/placeholder";
-import { companyEmail, companyPhone, mailtoHref, PLACEHOLDER_TEXT, realText, telHref } from "@/lib/legal";
+import { callBackAvailable, companyEmail, companyPhone, mailtoHref, PLACEHOLDER_TEXT, realText, telHref } from "@/lib/legal";
 import { getStoreSettings, type StorefrontSettings } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ const channelsFor = (COMPANY: StorefrontSettings["company"]) => [
   {
     icon: PhoneCall,
     title: companyPhone(COMPANY) ? `Call ${companyPhone(COMPANY)}` : "Call us",
-    body: `${companyPhone(COMPANY) ? "Toll free" : "Number to be added by the store"}${realText(COMPANY.customerCareHours) ? `, ${realText(COMPANY.customerCareHours)}` : ""}. Or ask us to call you back, below.`,
+    body: `${companyPhone(COMPANY) ? "Toll free" : "Number to be added by the store"}${realText(COMPANY.customerCareHours) ? `, ${realText(COMPANY.customerCareHours)}` : ""}.${callBackAvailable(COMPANY) ? " Or ask us to call you back, below." : ""}`,
     cta: "Call now",
     href: telHref(COMPANY.customerCare),
   },
@@ -83,7 +83,7 @@ export default async function ContactPage() {
             <PhoneCall size={18} className="text-brand-600" aria-hidden="true" /> Request a call back
           </h2>
           <p className="mt-1 mb-5 text-sm text-ink-500">Tell us your number and a time that suits you. Calls are made <Fact value={COMPANY.customerCareHours} />.</p>
-          <CallbackRequest careNumber={companyPhone(COMPANY) ?? ""} defaultPhone={phone} signedIn={Boolean(user)} />
+          <CallbackRequest careNumber={callBackAvailable(COMPANY) ? companyPhone(COMPANY)! : ""} defaultPhone={phone} signedIn={Boolean(user)} />
         </section>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-[1.4fr_1fr]">

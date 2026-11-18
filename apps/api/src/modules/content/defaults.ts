@@ -251,7 +251,7 @@ export const DEFAULT_PAGES: DefaultPage[] = [
       {
         "id": "retention",
         "heading": "Retention and security",
-        "body": "We keep order and tax records for 8 years as Indian law requires. When you delete your account, those records stay without your name, phone or street address, and we delete other data when it is no longer needed. Data is encrypted in transit and at rest and stored in India."
+        "body": "We keep order and tax records for 8 years as Indian law requires. When you delete your account, those records stay without your name, phone or street address, and we delete other data when it is no longer needed. Our payment gateway's records of each payment, which can include the email and phone number given when paying, are financial records, so we keep them after you delete your account for as long as the law requires. Data is encrypted in transit and at rest and stored in India."
       }
     ]
   },

@@ -46,6 +46,8 @@ export const companyLegalName = (company: { legalName: string }) => realText(com
 export const companyEmail = (company: { email: string }) => realText(company.email);
 /** The customer care number, or null while it is still the placeholder. */
 export const companyPhone = (company: { customerCare: string }) => realText(company.customerCare);
+/** Call backs are taken only once the store has a real customer care number to call from. */
+export const callBackAvailable = (company: { customerCare: string }) => companyPhone(company) !== null;
 export const companyRegisteredOffice = (company: { registeredOffice: string }) => realText(company.registeredOffice);
 
 /** A mailto link, or undefined while the address is a placeholder. */

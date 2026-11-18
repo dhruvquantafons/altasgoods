@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  callBackAvailable,
   companyEmail,
   companyLegalName,
   companyPhone,
@@ -236,5 +237,14 @@ describe("customer care and grievance gating", () => {
     expect(telHref(defaults.grievancePhone)).toBeUndefined();
     expect(mailtoHref("officer@acme.test")).toBe("mailto:officer@acme.test");
     expect(telHref("1800 111 1111")).toBe("tel:18001111111");
+  });
+});
+
+describe("callBackAvailable", () => {
+  it("takes call backs only once the store has a real care number", () => {
+    expect(callBackAvailable({ customerCare: "1800 208 9898" })).toBe(true);
+    expect(callBackAvailable({ customerCare: "" })).toBe(false);
+    expect(callBackAvailable({ customerCare: "  " })).toBe(false);
+    expect(callBackAvailable({ customerCare: "NOT SET" })).toBe(false);
   });
 });

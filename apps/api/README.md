@@ -23,7 +23,7 @@ Razorpay and Shiprocket are switched on in `.env` (`PAYMENTS_PROVIDER`, `LOGISTI
 
 ### Accounts
 
-There are no demo accounts. Shoppers sign up at `/signup` with their name, email and a password. The first Super Admin is made from the command line. After that, a Super Admin invites staff in AltasGoods Control > Staff (temporary password, changed at first sign in):
+There are no demo accounts. Shoppers sign up at `/signup` with their name, email and a password. The first Super Admin is made from the command line. After that, a Super Admin adds staff in AltasGoods Control > Staff, either with an emailed one-time link to choose a password (mode `invite`, 72 hours) or with a temporary password changed at first sign in (mode `password`):
 
 ```bash
 npm run admin:create -- --email you@example.com --name "Your Name"                       # Super Admin
@@ -68,4 +68,4 @@ Tests load `.env` for `TEST_DATABASE_URL` and `REDIS_URL` (anything already in t
 
 ## Not yet built (next phases)
 
-A GST invoice PDF, Shiprocket return pickups, refund status updates from Razorpay, object storage for files, search on OpenSearch, and the logistics console APIs. `/v1/dev/logistics/advance` and `/v1/dev/returns/{id}/advance` simulate courier scans in development (`deliveredDaysAgo` dates a delivery back to test return windows).
+A GST invoice PDF, Shiprocket return pickups, Razorpay refund webhooks (refunds still processing are polled every 15 minutes instead, see `PaymentSweeper`), object storage for files, search on OpenSearch, and the logistics console APIs. `/v1/dev/logistics/advance` and `/v1/dev/returns/{id}/advance` simulate courier scans in development (`deliveredDaysAgo` dates a delivery back to test return windows).

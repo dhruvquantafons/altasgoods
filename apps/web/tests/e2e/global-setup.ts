@@ -32,6 +32,15 @@ export default async function globalSetup() {
   });
   if (!signup.ok && signup.status !== 409) throw new Error(`Could not create the e2e shopper: ${signup.status} ${await signup.text()}`);
 
+  // call backs are taken only once the store has a customer care number to call from
+  const admin = apiAs(await apiSession(ACCOUNTS.staff));
+  const settings = await admin.get<{ company: { customerCare: string }; updatedAt?: unknown; updatedBy?: unknown }>("/v1/admin/settings");
+  if (/not set/i.test(settings.company.customerCare) || !settings.company.customerCare.trim()) {
+    delete settings.updatedAt;
+    delete settings.updatedBy;
+    await admin.put("/v1/admin/settings", { ...settings, company: { ...settings.company, customerCare: "1800 208 9898" } });
+  }
+
   // a contact number (call backs are prefilled with it), an address for checkout, and an order for Care Desk tickets
   const shopper = apiAs(await apiSession(ACCOUNTS.shopper));
   await shopper.patch("/v1/me", { phone: "9845012345" });

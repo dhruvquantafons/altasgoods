@@ -12,6 +12,8 @@ import { api, currentUser } from "@/lib/api/server";
 import { currentTime } from "@/lib/api/support";
 import { Fact } from "@/components/store/placeholder";
 import { getStoreSettings } from "@/lib/store-settings";
+import { callBackAvailable, PLACEHOLDER_TEXT } from "@/lib/legal";
+import { Placeholder } from "@/components/store/placeholder";
 import type { OrderStatus } from "@/lib/status";
 import { UI_TICKET_STATUS } from "@/lib/support-status";
 import { formatPhone, timeAgo } from "@/lib/utils";
@@ -189,7 +191,12 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
               <p className="mt-1.5 text-sm text-brand-100">Average wait right now is under a minute.</p>
               <div className="mt-4 flex flex-col gap-2">
                 <ChatButton orderLabel={focus?.id} firstName={firstName} conversation={chat} variant="secondary" className="w-full" />
-                {user?.phone && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}
+                {user?.phone && callBackAvailable(company) && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}
+                {user?.phone && !callBackAvailable(company) && (
+                  <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-brand-100">
+                    Call backs: <Placeholder>{PLACEHOLDER_TEXT}</Placeholder>
+                  </p>
+                )}
               </div>
             </div>
           </section>

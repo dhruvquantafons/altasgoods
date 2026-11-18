@@ -37,7 +37,7 @@ Two local files hold settings. Both are git ignored, so each developer creates t
 
 | Setting | Notes |
 |---|---|
-| `NODE_ENV` | Required, no default: `development`, `test` or `production`. A missing value stops startup. `npm start` sets `production`. `db:migrate`, `db:seed` and `admin:create` read `.env` too, so on a server set `NODE_ENV=production` for them as well |
+| `NODE_ENV` | Required, no default: `development`, `test` or `production`. A missing value stops startup. `npm start` sets `production`. `db:migrate` and `admin:create` read `.env` too, so on a server set `NODE_ENV=production` for them as well (`db:seed` is for development only and refuses to run in production) |
 | `DATABASE_URL`, `TEST_DATABASE_URL` | Your local Postgres. Tests wipe `TEST_DATABASE_URL` on every run, so never point it at real data |
 | `REDIS_URL` | Any local Redis. Database 5 is used by default |
 | `JWT_SECRET` | 32 characters or more. `openssl rand -base64 48` |
@@ -69,7 +69,7 @@ Note that `.env.example` uses `altasgoods.in` in `EMAIL_FROM` while the configur
 - **The API contract is generated.** After changing an API route or request schema, run `npm run openapi` in `apps/api`, then `npm run api:types` in `apps/web`, and commit both outputs.
 - **Database changes** go in `apps/api/src/db/schema.ts`, then `npm run db:generate` writes a new SQL migration in `src/db/migrations`. There are 25 so far (`0000` to `0024`).
 - **Seeding never touches real services.** `npm run db:seed` and the tests always use the payment sandbox, the simulated courier and console email, whatever `.env` says.
-- **Staff accounts** are made in AltasGoods Control > Staff, where a Super Admin invites people with a temporary password. `npm run admin:create` in `apps/api` is only for the first Super Admin.
+- **Staff accounts** are made in AltasGoods Control > Staff, where a Super Admin adds people in one of two ways: an emailed one-time link to choose their own password (mode `invite`), or a temporary password the admin passes on, which they must change at first sign in (mode `password`). `npm run admin:create` in `apps/api` is only for the first Super Admin.
 - `docs/architecture/` and `docs/research/` hold the original design (workflows, state machines, design tokens). Status names and return rules in the code follow `docs/research/01-marketplace-workflows.md` section 11.
 
 ## Run it
@@ -97,7 +97,7 @@ Out of the box payments use the local sandbox and shipping uses the simulated co
 Everyone signs in with an email and a password. There are no demo accounts:
 
 - **Shoppers** create an account at `/signup`.
-- **Staff** (AltasGoods Control and Care Desk). The first Super Admin is created with `npm run admin:create` in `apps/api`, which asks for the password. After that, a Super Admin invites staff in AltasGoods Control > Staff: pick a role, set a temporary password, and the person must change it at first sign in. Staff sign in at `/login?as=staff` (opening `/admin` takes you there). `admin:create` still takes `--role SUPPORT_AGENT`, `SUPPORT_SPECIALIST` or `SUPPORT_SUPERVISOR`; the default is `SUPER_ADMIN`.
+- **Staff** (AltasGoods Control and Care Desk). The first Super Admin is created with `npm run admin:create` in `apps/api`, which asks for the password. After that, a Super Admin adds staff in AltasGoods Control > Staff: pick a role, then either email them a one-time link to choose their own password (it works once and expires in 72 hours; Resend invite sends a new one), or set a temporary password they must change at first sign in. If the invite email cannot be sent, the staff list shows Invite not sent until a resend goes through. Staff sign in at `/login?as=staff` (opening `/admin` takes you there). `admin:create` still takes `--role SUPPORT_AGENT`, `SUPPORT_SPECIALIST` or `SUPPORT_SUPERVISOR`; the default is `SUPER_ADMIN`.
 - **Forgot password** emails a 6 digit code. In development the email is printed in the API terminal and the code is shown on the page, so no mail server is needed. Production sends through SMTP (see `EMAIL_PROVIDER` in `apps/api/.env.example`) and refuses to start without it.
 
 ## What is real and what is sample data
@@ -198,7 +198,7 @@ Sign up, sign in and reset code limits count per client IP (10 signups per hour,
 - [ ] Legal declarations added to each product
 - [ ] GST rates set (store default, then category or product where they differ)
 - [ ] Delivery areas set in Settings
-- [ ] `NODE_ENV=production` everywhere, including for `db:migrate`, `db:seed` and `admin:create`; strong `JWT_SECRET` and `PAYMENTS_WEBHOOK_SECRET`; `WEB_ORIGIN` set to the real site
+- [ ] `NODE_ENV=production` everywhere, including for `db:migrate` and `admin:create` (`db:seed` is never run in production, and refuses to); strong `JWT_SECRET` and `PAYMENTS_WEBHOOK_SECRET`; `WEB_ORIGIN` set to the real site
 - [ ] Reverse proxy in front of Next.js and `TRUST_PROXY` set to match (see above)
 - [ ] Hosting for the API, web app, Postgres and Redis, with backups; run `npm run db:migrate` on each deploy and create the first Super Admin with `node dist/db/create-admin.js`
 

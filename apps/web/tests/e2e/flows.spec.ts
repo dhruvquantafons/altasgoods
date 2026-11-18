@@ -153,9 +153,12 @@ test("a signed in shopper's call back request reaches the Care Desk", async ({ b
   await shopper.patch("/v1/me", { phone: "9845012345" });
   const ctx = await signedIn(browser, ACCOUNTS.shopper);
   const page = await ctx.newPage();
-  await page.goto("/contact");
   const section = page.locator("#call-back");
-  await expect(section.getByLabel("Mobile number")).toHaveValue("9845012345");
+  // global setup gave the store a care number; the storefront may hold the settings from before it for up to a minute
+  await expect(async () => {
+    await page.goto("/contact");
+    await expect(section.getByLabel("Mobile number")).toHaveValue("9845012345", { timeout: 2000 });
+  }).toPass({ timeout: 75_000 });
   await section.getByLabel("What is it about?").selectOption("A payment");
   await section.getByRole("button", { name: "Request a call back" }).click();
   await expect(section.getByText("Call-back requested")).toBeVisible();
