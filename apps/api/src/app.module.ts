@@ -6,10 +6,11 @@ import { CatalogModule } from "./modules/catalog/catalog.module.js";
 import { CommerceModule } from "./modules/commerce/commerce.module.js";
 import { HealthController } from "./modules/health/health.controller.js";
 import { FilesModule } from "./modules/files/files.module.js";
+import { JobsModule } from "./modules/jobs/jobs.module.js";
 import { SupportModule } from "./modules/support/support.module.js";
 
 @Module({
-  imports: [InfraModule, AdminModule, FilesModule, AuthModule, CatalogModule, CommerceModule, SupportModule],
+  imports: [InfraModule, JobsModule, AdminModule, FilesModule, AuthModule, CatalogModule, CommerceModule, SupportModule],
   controllers: [HealthController],
 })
 export class AppModule {}

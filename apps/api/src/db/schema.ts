@@ -96,6 +96,10 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const REFUND_STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "FAILED"] as const;
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
 
+/** QUEUED waits for its run_after; RUNNING is claimed by a worker; DONE and FAILED are final. */
+export const JOB_STATUSES = ["QUEUED", "RUNNING", "DONE", "FAILED"] as const;
+export type JobStatus = (typeof JOB_STATUSES)[number];
+
 export type Actor = "CUSTOMER" | "SYSTEM" | "PAYMENT" | "LOGISTICS" | "STAFF";
 
 /** AltasGoods Control roles. SUPER_ADMIN passes every staff check. */
@@ -605,10 +609,38 @@ export const refunds = pgTable(
     amountPaise: paise("amount_paise").notNull(),
     status: text("status").notNull().$type<RefundStatus>(),
     reason: text("reason").notNull(),
+    /** the gateway's id for this refund, once the gateway has it */
+    providerRefundId: text("provider_refund_id"),
     completedAt: ts("completed_at"),
     createdAt: createdAt(),
   },
-  (t) => [index("refunds_order_idx").on(t.orderId)],
+  (t) => [index("refunds_order_idx").on(t.orderId), index("refunds_status_idx").on(t.status)],
+);
+
+/* ---------------------------------- Jobs ---------------------------------- */
+
+/**
+ * Durable background work (refunds, emails). A producer inserts the row in
+ * the same transaction as the change that needs it, so the two commit or
+ * roll back together; workers claim due rows with FOR UPDATE SKIP LOCKED.
+ */
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(),
+    payload: jsonb("payload").notNull(),
+    status: text("status").notNull().default("QUEUED").$type<JobStatus>(),
+    /** runs started so far, including one in progress */
+    attempts: integer("attempts").notNull().default(0),
+    runAfter: ts("run_after").notNull().defaultNow(),
+    /** when the current run was claimed; a RUNNING job claimed long ago is taken over */
+    lockedAt: ts("locked_at"),
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("jobs_due_idx").on(t.status, t.runAfter), check("jobs_status_ck", inList("status", JOB_STATUSES))],
 );
 
 /* ---------------------------------- Files --------------------------------- */
