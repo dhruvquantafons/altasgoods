@@ -4,10 +4,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
 import { offers, orderItems, orders, payments, refunds, returns } from "../src/db/schema.js";
-import { LOGISTICS_PROVIDER } from "../src/common/tokens.js";
+import { LOGISTICS_PROVIDER, REDIS } from "../src/common/tokens.js";
 import { DEFAULT_SETTINGS } from "../src/modules/admin/admin.schemas.js";
 import type { Booking, ShipmentRequest } from "../src/modules/commerce/shipping/provider.js";
-import { ShippingService } from "../src/modules/commerce/shipping/shipping.service.js";
+import { bookingLockKey, ShippingService } from "../src/modules/commerce/shipping/shipping.service.js";
 import { SimulatedLogisticsProvider } from "../src/modules/commerce/shipping/simulated.provider.js";
 import { createTestApp, DEMO_AGENT, DEMO_CUSTOMER, DEMO_STAFF, runJobs, signIn, type TestContext } from "./helpers.js";
 
@@ -459,6 +459,27 @@ describe("delivery address", () => {
     } finally {
       await saveAreas({ blocked: [], noCod: [], extraDays: [] });
     }
+  });
+});
+
+describe("courier booking lock", () => {
+  it("releases only its own lock, not one a later booking took after it expired", async () => {
+    const redis = t.app.get<symbol, import("ioredis").Redis>(REDIS);
+    const o = await order(["vase-ceramic"]);
+    const key = bookingLockKey(o.ids[0]!);
+    for (const to of ["ACCEPTED", "PACKED"]) await transition([o.ids[0]!], to).expect(200);
+    // the booking runs past its lock's expiry, and a second booking takes the lock meanwhile
+    courier.onBook = async () => {
+      expect(await redis.get(key)).toBeTruthy();
+      await redis.set(key, "second-booking", "PX", 60_000);
+    };
+    try {
+      await transition([o.ids[0]!], "READY_TO_SHIP").expect(200);
+    } finally {
+      courier.onBook = null;
+    }
+    expect(await redis.get(key)).toBe("second-booking");
+    await redis.del(key);
   });
 });
 

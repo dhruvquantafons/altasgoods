@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import type { Redis } from "ioredis";
@@ -41,6 +42,8 @@ export function courierPath(from: OrderItemStatus, to: CourierStatus): OrderItem
 
 /** The Redis key held while a line is being booked with the courier. Its address cannot change meanwhile. */
 export const bookingLockKey = (itemId: string) => `ship:book:${itemId}`;
+/** Deletes KEYS[1] only while it still holds ARGV[1]: a booking releases its own lock, never one taken after it expired. */
+const RELEASE_IF_OURS = `if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) else return 0 end`;
 
 /** The order's address changed after the courier was given it. */
 class AddressChanged extends Error {}
@@ -92,7 +95,8 @@ export class ShippingService {
 
     // one booking at a time per line, so a double click never books two parcels
     const lock = bookingLockKey(itemId);
-    if ((await this.redis.set(lock, "1", "PX", 120_000, "NX")) !== "OK") throw conflict("BOOKING_IN_PROGRESS", "This item is already being booked with the courier");
+    const token = randomUUID();
+    if ((await this.redis.set(lock, token, "PX", 120_000, "NX")) !== "OK") throw conflict("BOOKING_IN_PROGRESS", "This item is already being booked with the courier");
     let created: Booking = {};
     try {
       // waits for an address edit that is committing, so the courier gets the address as it now is
@@ -143,7 +147,7 @@ export class ShippingService {
       }
       throw conflict("ADDRESS_CHANGED", "The delivery address changed while the parcel was being booked, so the booking was called off. Book it again to ship to the new address.");
     } finally {
-      await this.redis.del(lock);
+      await this.redis.eval(RELEASE_IF_OURS, 1, lock, token);
     }
   }
 
