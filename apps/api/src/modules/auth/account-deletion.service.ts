@@ -39,6 +39,8 @@ const IN_FLIGHT: OrderItemStatus[] = ["NEW", "ACCEPTED", "PACKED", "READY_TO_SHI
 const RETURN_ENDED: ReturnStatus[] = ["REJECTED", "COMPLETED", "CANCELLED", "LOST"];
 
 /** The contact details of an address snapshot are replaced; where it went (pincode, city, state) stays for tax and logistics records. */
+/** A UPI id (name@bank) or an email address inside free text. */
+const HANDLE = "[A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+";
 const MASK = JSON.stringify({ name: "Deleted", phone: "Deleted", line1: "Deleted", line2: null, landmark: null });
 
 /**
@@ -48,7 +50,9 @@ const MASK = JSON.stringify({ name: "Deleted", phone: "Deleted", line1: "Deleted
  * - the user row loses its name, email, phone and password, and becomes DELETED;
  * - addresses, cart, wishlist, sessions and uploaded files are dropped;
  * - the contact details on order and return addresses, a return's refund UPI id
- *   and the customer's name on support tickets are masked.
+ *   (also where a return timeline line or a payout note quotes it) and the
+ *   customer's name on support tickets are masked. A payout's reference (the
+ *   bank's UTR) stays: it is the store's record, not the customer's.
  * Support message bodies stay, for dispute history. Pending background jobs hold
  * only ids (refunds), but a job that emails the customer must skip a DELETED user.
  */
@@ -124,15 +128,15 @@ export class AccountDeletionService {
         .update(returns)
         .set({ address: sql`${returns.address} || ${MASK}::jsonb`, refundUpi: sql`case when ${returns.refundUpi} is null then null else 'Deleted' end` })
         .where(eq(returns.userId, userId));
-      // a payout note or timeline line may quote the UPI id
+      // a timeline line or a payout note may quote the UPI id (or an email): any name@handle token goes
       await tx
         .update(returnEvents)
-        .set({ note: sql`regexp_replace(${returnEvents.note}, '[A-Za-z0-9_.-]{2,}@[A-Za-z]{2,}', 'Deleted', 'g')` })
+        .set({ note: sql`regexp_replace(${returnEvents.note}, ${HANDLE}, 'Deleted', 'g')` })
         .where(and(inArray(returnEvents.returnId, myReturns), sql`${returnEvents.note} like '%@%'`));
       await tx
         .update(refunds)
-        .set({ note: "Pay to UPI (removed when the customer deleted their account)" })
-        .where(and(inArray(refunds.orderId, myOrders), sql`${refunds.note} like 'Pay to UPI %'`));
+        .set({ note: sql`regexp_replace(${refunds.note}, ${HANDLE}, 'Deleted', 'g')` })
+        .where(and(inArray(refunds.orderId, myOrders), sql`${refunds.note} like '%@%'`));
 
       await tx.update(supportTickets).set({ customerName: DELETED_NAME }).where(eq(supportTickets.userId, userId));
       await tx.update(supportMessages).set({ author: DELETED_NAME }).where(or(eq(supportMessages.authorId, userId), and(inArray(supportMessages.ticketId, myTickets), eq(supportMessages.kind, "CUSTOMER"))));

@@ -3,8 +3,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
-import { addresses, auditEvents, cartItems, orderItems, orders, returns, reviews, supportEvents, supportMessages, supportTickets, users, wishlistItems } from "../src/db/schema.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
+import { addresses, auditEvents, cartItems, orderItems, orders, refunds, returnEvents, returns, reviews, supportActions, supportEvents, supportMessages, supportTickets, users, wishlistItems } from "../src/db/schema.js";
+import { createTestApp, DEMO_AGENT, DEMO_CUSTOMER, DEMO_STAFF, signIn, signUp, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 let staff: Record<string, string>;
@@ -29,13 +29,17 @@ async function shopperWithDeliveredOrder(email: string, slug = "serum-glow") {
   const { auth, session } = await signUp(t.http, email, "Priya Nair", PASSWORD);
   const userId = session.user.id as string;
   const address = await t.http.post("/v1/me/addresses").set(auth).send({ name: "Priya Nair", phone: "9845012345", line1: "12 MG Road", line2: "Flat 4", city: "Bengaluru", state: "Karnataka", pincode }).expect(201);
+  return { auth, userId, addressId: address.body.id as string, ...(await deliveredOrder(auth, address.body.id, slug)) };
+}
+/** A paid UPI order of one product, ready to ship. */
+async function deliveredOrder(auth: Record<string, string>, addressId: string, slug: string) {
   const p = await t.http.get(`/v1/products/${slug}`).expect(200);
-  const placed = await t.http.post("/v1/orders").set(auth).set("Idempotency-Key", randomUUID()).send({ addressId: address.body.id, paymentMethod: "UPI", lines: [{ offerId: p.body.offerId, qty: 1, variant: "" }] }).expect(201);
+  const placed = await t.http.post("/v1/orders").set(auth).set("Idempotency-Key", randomUUID()).send({ addressId, paymentMethod: "UPI", lines: [{ offerId: p.body.offerId, qty: 1, variant: "" }] }).expect(201);
   await t.http.post(`/v1/payments/${placed.body.payment.id}/sandbox/complete`).set(auth).send({ outcome: "SUCCESS" }).expect(200);
   const orderId = placed.body.order.id as string;
   const [item] = await db.select({ id: orderItems.id }).from(orderItems).where(eq(orderItems.orderId, orderId));
   for (const to of ["ACCEPTED", "PACKED", "READY_TO_SHIP"]) await t.http.post("/v1/admin/order-items/transition").set(staff).send({ ids: [item!.id], to }).expect(200);
-  return { auth, userId, orderId, itemId: item!.id, productId: p.body.id as string, addressId: address.body.id as string };
+  return { orderId, itemId: item!.id, productId: p.body.id as string };
 }
 const deliver = async (itemId: string) => {
   for (const to of ["SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED"]) await t.http.post("/v1/dev/logistics/advance").set(staff).send({ orderItemId: itemId, to }).expect(200);
@@ -186,5 +190,59 @@ describe("DELETE /v1/me", () => {
     const [row] = await db.select({ upi: returns.refundUpi, address: returns.address }).from(returns).where(inArray(returns.orderId, [mine.orderId]));
     expect(row!.upi).toBe("Deleted");
     expect(row!.address).toMatchObject({ name: "Deleted", phone: "Deleted", line1: "Deleted", pincode });
+  });
+
+  it("leaves no UPI id, name or email on a paid bank refund of a return or of the Care Desk", async () => {
+    const UPI = "priya.nair@okicici";
+    const mine = await shopperWithDeliveredOrder("upi.payout@example.com", "speaker-boom");
+    await deliver(mine.itemId);
+    // a bank (UPI) refund of a return, paid by hand with its reference
+    const r = (
+      await t.http
+        .post("/v1/me/returns")
+        .set(mine.auth)
+        .send({ orderItemId: mine.itemId, qty: 1, reasonCode: "DEFECTIVE", reasonLabel: "Item is defective or not working", fault: "STORE", resolution: "REFUND", refundTo: "BANK", refundUpi: UPI, pickupDate: today(), pickupSlot: "10 AM to 1 PM" })
+        .expect(201)
+    ).body;
+    await t.http.post(`/v1/admin/returns/${r.id}/pickup`).set(staff).send({ to: "RECEIVED" }).expect(200);
+    await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: true }).expect(200);
+    await t.http.post(`/v1/admin/returns/${r.id}/refund/mark-paid`).set(staff).send({ reference: "UTR44100291" }).expect(200);
+    // the payout note staff pay from does not copy the UPI id; the return shows it
+    const [payout] = await db.select().from(refunds).where(eq(refunds.orderId, mine.orderId));
+    expect(payout).toMatchObject({ status: "COMPLETED", reference: "UTR44100291" });
+    expect(payout!.note ?? "").not.toContain(UPI);
+    // a payout set aside before that change still quotes it
+    await db.update(refunds).set({ note: `Pay ₹3,499 to ${UPI} by UPI` }).where(eq(refunds.id, payout!.id));
+
+    // a Care Desk refund to the same UPI id on a second order, paid from the Payments page
+    const second = await deliveredOrder(mine.auth, mine.addressId, "tea-assam");
+    await deliver(second.itemId);
+    const ticket = await t.http.post("/v1/me/support/tickets").set(mine.auth).send({ subject: "Tea was stale", category: "Product quality", orderId: second.orderId, body: "Please refund to my UPI." }).expect(201);
+    const agent = (await signIn(t.http, DEMO_AGENT)).auth;
+    await t.http.post(`/v1/support/tickets/${ticket.body.id}/actions`).set(agent).send({ kind: "REFUND", amountPaise: 1_000, destination: "BANK", reason: "damaged", upi: UPI }).expect(200);
+    const [care] = await db.select().from(refunds).where(eq(refunds.orderId, second.orderId));
+    expect(care).toMatchObject({ method: "MANUAL", status: "PENDING" });
+    await t.http.post(`/v1/admin/refunds/${care!.id}/mark-paid`).set(staff).send({ reference: "UTR99001122" }).expect(200);
+    // the rows staff read quoted the UPI id before
+    const before = JSON.stringify([await db.select().from(returnEvents).where(eq(returnEvents.returnId, r.id)), await db.select().from(supportActions).where(eq(supportActions.ticketId, ticket.body.id))]);
+    expect(before).toContain(UPI);
+
+    await ageDelivery(mine.itemId);
+    await ageDelivery(second.itemId);
+    await t.http.delete("/v1/me").set(mine.auth).send({ password: PASSWORD }).expect(204);
+
+    const personal = /priya\.nair@okicici|Priya|Nair|upi\.payout@example\.com/i;
+    const orderIds = [mine.orderId, second.orderId];
+    const left = await db.select({ note: refunds.note, reference: refunds.reference, reason: refunds.reason }).from(refunds).where(inArray(refunds.orderId, orderIds));
+    expect(left).toHaveLength(2);
+    expect(JSON.stringify(left)).not.toMatch(personal);
+    // the bank reference (UTR) is not personal and stays for the books
+    expect(left.map((x) => x.reference).sort()).toEqual(["UTR44100291", "UTR99001122"]);
+    expect(JSON.stringify(await db.select().from(returnEvents).where(eq(returnEvents.returnId, r.id)))).not.toMatch(personal);
+    expect(JSON.stringify(await db.select().from(supportActions).where(eq(supportActions.ticketId, ticket.body.id)))).not.toMatch(personal);
+    expect(JSON.stringify(await db.select().from(returns).where(eq(returns.id, r.id)))).not.toMatch(personal);
+    // what the Payments page and its CSV show
+    const page = await t.http.get("/v1/admin/refunds").set(staff).expect(200);
+    expect(JSON.stringify(page.body)).not.toMatch(personal);
   });
 });

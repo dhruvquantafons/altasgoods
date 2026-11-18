@@ -200,7 +200,8 @@ export class ReturnsService {
         paid: false,
         notify: false,
         orderItemId: r.orderItemId,
-        note: r.refundUpi ? `Pay ${rupees(r.refundAmountPaise)} to ${r.refundUpi} by UPI` : "Pay to the customer's bank account; ask the customer for the details",
+        // the UPI id stays on the return (where staff pay from) and out of the ledger, which outlives an account
+        note: r.refundUpi ? `Pay ${rupees(r.refundAmountPaise)} by UPI to the UPI ID on return ${r.id}` : "Pay to the customer's bank account; ask the customer for the details",
       });
     } catch (e) {
       if (e instanceof ApiError && (e.code === "REFUND_TOO_LARGE" || e.code === "NOT_REFUNDABLE")) {
