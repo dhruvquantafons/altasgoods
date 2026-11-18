@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, count, desc, eq, ilike, inArray, or, sql, sum, type SQL } from "drizzle-orm";
 import type { z } from "zod";
-import { notFound } from "../../common/errors.js";
+import { conflict, notFound } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import type { Db } from "../../db/client.js";
 import { orderItems, orders, supportTickets, users } from "../../db/schema.js";
@@ -101,7 +101,8 @@ export class SupportLookupService {
 
   /** Blocks or unblocks a shopper. A block also ends every session, so it takes effect at once. */
   async setStatus(id: string, status: "ACTIVE" | "BLOCKED") {
-    await this.customer(id);
+    const current = await this.customer(id);
+    if (current.status === "DELETED") throw conflict("ACCOUNT_DELETED", "This customer deleted their account, so it cannot be changed.");
     await this.db.update(users).set({ status }).where(eq(users.id, id));
     if (status === "BLOCKED") await this.tokens.revokeAll(id);
     return this.customer(id);

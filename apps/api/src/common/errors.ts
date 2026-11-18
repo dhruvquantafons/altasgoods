@@ -28,7 +28,7 @@ export class RateLimitError extends ApiError {
 }
 
 export const notFound = (what: string) => new ApiError(404, "NOT_FOUND", `${what} not found`);
-export const forbidden = (message = "You do not have access to this resource") => new ApiError(403, "FORBIDDEN", message);
+export const forbidden = (message = "You do not have access to this resource", code = "FORBIDDEN") => new ApiError(403, code, message);
 export const conflict = (code: string, message: string) => new ApiError(409, code, message);
 export const badRequest = (code: string, message: string) => new ApiError(400, code, message);
 export const unprocessable = (code: string, message: string) => new ApiError(422, code, message);

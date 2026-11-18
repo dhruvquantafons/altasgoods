@@ -4100,6 +4100,43 @@
         "tags": [
           "Auth"
         ]
+      },
+      "delete": {
+        "operationId": "AuthController_deleteAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
       }
     },
     "/v1/me/password": {
@@ -28521,7 +28558,8 @@
                             "type": "string",
                             "enum": [
                               "ACTIVE",
-                              "BLOCKED"
+                              "BLOCKED",
+                              "DELETED"
                             ]
                           },
                           "createdAt": {
@@ -28634,7 +28672,8 @@
                       "type": "string",
                       "enum": [
                         "ACTIVE",
-                        "BLOCKED"
+                        "BLOCKED",
+                        "DELETED"
                       ]
                     },
                     "emailVerified": {
@@ -34648,7 +34687,8 @@
                             "type": "string",
                             "enum": [
                               "ACTIVE",
-                              "BLOCKED"
+                              "BLOCKED",
+                              "DELETED"
                             ]
                           },
                           "createdAt": {
@@ -34761,7 +34801,8 @@
                       "type": "string",
                       "enum": [
                         "ACTIVE",
-                        "BLOCKED"
+                        "BLOCKED",
+                        "DELETED"
                       ]
                     },
                     "emailVerified": {
@@ -35002,7 +35043,8 @@
                       "type": "string",
                       "enum": [
                         "ACTIVE",
-                        "BLOCKED"
+                        "BLOCKED",
+                        "DELETED"
                       ]
                     },
                     "emailVerified": {

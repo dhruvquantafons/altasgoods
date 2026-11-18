@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Patch, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Inject, Patch, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { z } from "zod";
@@ -7,6 +7,7 @@ import { CurrentUser, Public, type AuthUser } from "./auth.guard.js";
 import {
   acceptInviteBody,
   changePasswordBody,
+  deleteAccountBody,
   emailOtpBody,
   emailOtpResponse,
   emailVerifyBody,
@@ -105,6 +106,14 @@ export class AuthController {
   @HttpCode(204)
   async changePassword(@CurrentUser() user: AuthUser, @Body({ schema: changePasswordBody }) body: z.infer<typeof changePasswordBody>) {
     await this.auth.changePassword(user.id, user.sessionId, body);
+  }
+
+  /** Anonymises the signed-in shopper's account (see AccountDeletionService). Needs the password again. */
+  @ApiBearerAuth()
+  @Delete("me")
+  @HttpCode(204)
+  async deleteAccount(@CurrentUser() user: AuthUser, @Body({ schema: deleteAccountBody }) body: z.infer<typeof deleteAccountBody>) {
+    await this.auth.deleteAccount(user.id, body.password);
   }
 
   @ApiBearerAuth()

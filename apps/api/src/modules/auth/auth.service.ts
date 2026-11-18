@@ -5,12 +5,13 @@ import type { Redis } from "ioredis";
 import { devToolsEnabled, env } from "../../config/env.js";
 import type { Db, Tx } from "../../db/client.js";
 import { users } from "../../db/schema.js";
-import { ApiError, conflict, notFound, RateLimitError } from "../../common/errors.js";
+import { ApiError, conflict, forbidden, notFound, RateLimitError } from "../../common/errors.js";
 import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB, EMAIL_PROVIDER, REDIS } from "../../common/tokens.js";
 import type { EmailProvider } from "./email.provider.js";
 import { emailVerificationEmail, passwordChangedEmail, passwordResetEmail } from "./emails.js";
 import { clientKey } from "./client-ip.js";
+import { AccountDeletionService } from "./account-deletion.service.js";
 import { InvitesService } from "./invites.service.js";
 import { decoyHash, hashPassword, verifyPassword } from "./password.js";
 import { TokensService, type Grants } from "./tokens.service.js";
@@ -88,6 +89,7 @@ export class AuthService {
     @Inject(EMAIL_PROVIDER) private readonly email: EmailProvider,
     @Inject(TokensService) private readonly tokens: TokensService,
     @Inject(InvitesService) private readonly invites: InvitesService,
+    @Inject(AccountDeletionService) private readonly deletion: AccountDeletionService,
   ) {}
 
   /** Counts a request against a window (15 minutes unless given) and refuses once it is over the limit. */
@@ -152,7 +154,8 @@ export class AuthService {
     const [user] = await this.db.select().from(users).where(sameEmail(email));
     // an unknown email costs a full hash too, so timing does not reveal which emails have accounts
     const ok = await verifyPassword(input.password, user?.passwordHash ?? (await decoyHash()));
-    if (!user || !user.passwordHash || !ok) {
+    // a deleted account answers like a wrong password, so nothing says an account once existed
+    if (!user || user.status === "DELETED" || !user.passwordHash || !ok) {
       for (const l of limits) await this.count(l.key, l.window);
       throw new ApiError(401, "INVALID_CREDENTIALS", "That email and password do not match. Try again, or reset your password.");
     }
@@ -176,7 +179,7 @@ export class AuthService {
       resendAfterSeconds: RESEND_AFTER_SECONDS,
     };
     const [user] = await this.db.select({ id: users.id, status: users.status }).from(users).where(sameEmail(email));
-    if (!user || user.status === "BLOCKED") return response;
+    if (!user || user.status !== "ACTIVE") return response;
 
     const code = newCode();
     await this.redis.set(`pwreset:${user.id}`, JSON.stringify({ hash: hashCode(`reset:${user.id}`, code), attempts: 0 }), "EX", CODE_TTL_SECONDS);
@@ -188,7 +191,7 @@ export class AuthService {
   async resetPassword(input: { email: string; code: string; password: string }, meta: Meta) {
     const expired = () => new ApiError(400, "OTP_EXPIRED", "This code has expired. Request a new one.");
     const [user] = await this.db.select({ id: users.id, email: users.email, status: users.status }).from(users).where(sameEmail(input.email));
-    if (!user) throw expired();
+    if (!user || user.status === "DELETED") throw expired();
     const key = `pwreset:${user.id}`;
     const raw = await this.redis.get(key);
     if (!raw) throw expired();
@@ -230,7 +233,7 @@ export class AuthService {
    */
   async grants(userId: string, db: Tx = this.db): Promise<Grants> {
     const [user] = await db.select({ staff: users.staffRoles, status: users.status, pwc: users.mustChangePassword }).from(users).where(eq(users.id, userId));
-    if (!user || user.status === "BLOCKED") throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
+    if (!user || user.status !== "ACTIVE") throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
     return { staff: user.staff, pwc: user.pwc };
   }
 
@@ -244,7 +247,7 @@ export class AuthService {
     if (!userId) throw invalid();
     const [user] = await this.db.select({ id: users.id, email: users.email, status: users.status, staff: users.staffRoles }).from(users).where(eq(users.id, userId));
     // removed or disabled since the invite went out
-    if (!user || user.status === "BLOCKED" || !user.staff.length) throw invalid();
+    if (!user || user.status !== "ACTIVE" || !user.staff.length) throw invalid();
     await this.db
       .update(users)
       .set({ passwordHash: await hashPassword(input.password), mustChangePassword: false, emailVerifiedAt: this.clock.now() })
@@ -259,6 +262,7 @@ export class AuthService {
   async me(userId: string) {
     const [user] = await this.db.select().from(users).where(eq(users.id, userId));
     if (!user) throw notFound("User");
+    if (user.status === "DELETED") throw new ApiError(401, "UNAUTHENTICATED", "Please sign in to continue.");
     return {
       id: user.id,
       email: user.email,
@@ -275,21 +279,43 @@ export class AuthService {
   async changePassword(userId: string, sessionId: string, input: { currentPassword: string; newPassword: string }) {
     const [user] = await this.db.select({ email: users.email, passwordHash: users.passwordHash }).from(users).where(eq(users.id, userId));
     if (!user) throw notFound("User");
-    // signed in already, so counted per account: wrong guesses from a stolen session stay slow
-    const failures = `pwchange:fail:${userId}`;
-    const [failed] = await this.peek([{ key: failures, window: WINDOW_SECONDS }]);
-    if (failed! >= PASSWORD_CHANGE_FAILURES_PER_WINDOW) {
-      const wait = await this.secondsLeft(failures, WINDOW_SECONDS);
-      throw new RateLimitError("LOGIN_RATE_LIMITED", `Too many attempts. Please wait ${waitMessage(wait)}, or reset your password.`, wait);
-    }
-    if (!user.passwordHash || !(await verifyPassword(input.currentPassword, user.passwordHash))) {
-      await this.count(failures, WINDOW_SECONDS);
+    if (!(await this.passwordMatches(userId, user.passwordHash, input.currentPassword))) {
       throw new ApiError(400, "PASSWORD_INCORRECT", "Your current password is not right. If you have forgotten it, sign out and use Forgot password.");
     }
     // a password of their own replaces a temporary one
     await this.db.update(users).set({ passwordHash: await hashPassword(input.newPassword), mustChangePassword: false }).where(eq(users.id, userId));
     await this.tokens.revokeOthers(userId, sessionId);
     await this.email.send(passwordChangedEmail(user.email)).catch((e: Error) => this.logger.warn(`Password changed notice not sent: ${e.message}`));
+  }
+
+  /**
+   * Checks a signed-in user's password. Wrong guesses are counted per account
+   * (shared by password change and account deletion), so a stolen session
+   * cannot guess quickly; at the limit the check is refused outright.
+   */
+  private async passwordMatches(userId: string, hash: string | null, password: string) {
+    const failures = `pwchange:fail:${userId}`;
+    const [failed] = await this.peek([{ key: failures, window: WINDOW_SECONDS }]);
+    if (failed! >= PASSWORD_CHANGE_FAILURES_PER_WINDOW) {
+      const wait = await this.secondsLeft(failures, WINDOW_SECONDS);
+      throw new RateLimitError("LOGIN_RATE_LIMITED", `Too many attempts. Please wait ${waitMessage(wait)}, or reset your password.`, wait);
+    }
+    if (hash && (await verifyPassword(password, hash))) return true;
+    await this.count(failures, WINDOW_SECONDS);
+    return false;
+  }
+
+  /**
+   * Deletes (anonymises) a shopper's own account. It takes the password
+   * again, so a borrowed session cannot do it. Staff accounts are removed by
+   * a Super Admin in Staff, never from here.
+   */
+  async deleteAccount(userId: string, password: string) {
+    const [user] = await this.db.select({ passwordHash: users.passwordHash, staff: users.staffRoles }).from(users).where(eq(users.id, userId));
+    if (!user) throw notFound("User");
+    if (user.staff.length) throw conflict("STAFF_ACCOUNT", "Ask a Super Admin to remove your staff access first.");
+    if (!(await this.passwordMatches(userId, user.passwordHash, password))) throw forbidden("That password is not right.", "PASSWORD_INCORRECT");
+    await this.deletion.delete(userId);
   }
 
   signOutOthers(userId: string, sessionId: string) {

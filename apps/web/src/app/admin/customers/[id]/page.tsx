@@ -55,7 +55,7 @@ export default async function AdminCustomerPage(props: PageProps<"/admin/custome
                 Open in Care Desk
               </ButtonLink>
             )}
-            {canEdit(roles, "customers") && <CustomerStatusButton id={c.id} name={name} status={c.status} />}
+            {canEdit(roles, "customers") && c.status !== "DELETED" && <CustomerStatusButton id={c.id} name={name} status={c.status} />}
           </>
         }
       />
@@ -126,7 +126,7 @@ export default async function AdminCustomerPage(props: PageProps<"/admin/custome
               <Mono className="text-[12px]">{c.email}</Mono>
             </KeyRow>
             <KeyRow label="Mobile">{c.phone ? <Mono>{maskPhone(c.phone)}</Mono> : "Not given"}</KeyRow>
-            <KeyRow label="Account">{c.status === "BLOCKED" ? "Blocked" : "Active"}</KeyRow>
+            <KeyRow label="Account">{c.status === "BLOCKED" ? "Blocked" : c.status === "DELETED" ? "Deleted by the customer" : "Active"}</KeyRow>
           </dl>
         </Card>
       </div>

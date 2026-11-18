@@ -350,7 +350,7 @@ export interface paths {
         get: operations["AuthController_me"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["AuthController_deleteAccount"];
         options?: never;
         head?: never;
         patch: operations["AuthController_updateMe"];
@@ -3906,6 +3906,29 @@ export interface operations {
                         createdAt: string;
                     };
                 };
+            };
+        };
+    };
+    AuthController_deleteAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -11319,7 +11342,7 @@ export interface operations {
                             email: string;
                             phone: string | null;
                             /** @enum {string} */
-                            status: "ACTIVE" | "BLOCKED";
+                            status: "ACTIVE" | "BLOCKED" | "DELETED";
                             /** Format: date-time */
                             createdAt: string;
                             orders: number;
@@ -11356,7 +11379,7 @@ export interface operations {
                         email: string;
                         phone: string | null;
                         /** @enum {string} */
-                        status: "ACTIVE" | "BLOCKED";
+                        status: "ACTIVE" | "BLOCKED" | "DELETED";
                         emailVerified: boolean;
                         /** Format: date-time */
                         createdAt: string;
@@ -13028,7 +13051,7 @@ export interface operations {
                             email: string;
                             phone: string | null;
                             /** @enum {string} */
-                            status: "ACTIVE" | "BLOCKED";
+                            status: "ACTIVE" | "BLOCKED" | "DELETED";
                             /** Format: date-time */
                             createdAt: string;
                             orders: number;
@@ -13065,7 +13088,7 @@ export interface operations {
                         email: string;
                         phone: string | null;
                         /** @enum {string} */
-                        status: "ACTIVE" | "BLOCKED";
+                        status: "ACTIVE" | "BLOCKED" | "DELETED";
                         emailVerified: boolean;
                         /** Format: date-time */
                         createdAt: string;
@@ -13133,7 +13156,7 @@ export interface operations {
                         email: string;
                         phone: string | null;
                         /** @enum {string} */
-                        status: "ACTIVE" | "BLOCKED";
+                        status: "ACTIVE" | "BLOCKED" | "DELETED";
                         emailVerified: boolean;
                         /** Format: date-time */
                         createdAt: string;

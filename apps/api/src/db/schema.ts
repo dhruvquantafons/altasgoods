@@ -195,7 +195,9 @@ export const users = pgTable(
     /** Optional contact number; deliveries use the phone on each address */
     phone: text("phone"),
     emailVerifiedAt: ts("email_verified_at"),
-    status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED">(),
+    /** DELETED is an anonymised shopper (see AccountDeletionService): the row stays so orders, returns and reviews keep their owner */
+    status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED" | "DELETED">(),
+    deletedAt: ts("deleted_at"),
     /** AltasGoods Control access; empty for shoppers */
     staffRoles: text("staff_roles")
       .array()

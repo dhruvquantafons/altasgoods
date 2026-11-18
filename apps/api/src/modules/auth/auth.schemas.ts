@@ -70,4 +70,5 @@ export const updateMeBody = z.object({
     .describe("Optional contact number; send null or an empty string to remove it"),
 });
 
+export const deleteAccountBody = z.object({ password: z.string().min(1, "Enter your password").max(128) });
 export const changePasswordBody = z.object({ currentPassword: z.string().min(1, "Enter your current password").max(128), newPassword: password });
