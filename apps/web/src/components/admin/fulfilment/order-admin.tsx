@@ -117,7 +117,7 @@ export function OrderRefund({ order }: { order: Pick<AdminOrder, "id" | "payment
               <Input id="refund-reference" value={reference} maxLength={60} aria-invalid={!!refError} onChange={(e) => setReference(e.target.value)} />
             </Field>
           )}
-          <Field label="Reason" htmlFor="refund-reason" required hint="The customer sees this with the refund">
+          <Field label="Reason" htmlFor="refund-reason" required hint="For the team. The customer sees it as a refund from AltasGoods.">
             <Textarea id="refund-reason" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
           {error && <p className="text-[13px] text-danger-600">{error}</p>}

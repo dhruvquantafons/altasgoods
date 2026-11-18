@@ -15,7 +15,7 @@ import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
 import { cancelBody, orderListQuery, placeOrderBody, quoteBody } from "./commerce.schemas.js";
 import { PaymentsService } from "./payments/payments.service.js";
-import { customerRefundStatus, lineNetPaise } from "./payments/refunds.service.js";
+import { customerRefundReason, customerRefundStatus, lineNetPaise } from "./payments/refunds.service.js";
 import { PAYMENT_WINDOW_MS } from "./pricing.js";
 import { publicQuote, QuoteService } from "./quote.service.js";
 import { CUSTOMER_CANCELLABLE } from "./state.js";
@@ -227,6 +227,9 @@ export class OrdersService {
       this.db.select().from(orderEvents).where(eq(orderEvents.orderId, order.id)).orderBy(asc(orderEvents.id)),
     ]);
     const unpaid = order.status === "PAYMENT_PENDING" || order.status === "PAYMENT_FAILED";
+    // staff notes are internal: a line the store cancelled reads as such, and staff steps show no note
+    const cancelledBy = new Map(events.filter((e) => e.orderItemId && e.toStatus === "CANCELLED").map((e) => [e.orderItemId!, e.actor]));
+    const cancelReason = (item: (typeof items)[number]) => (item.cancelReason && cancelledBy.get(item.id) === "STAFF" ? "Cancelled by the store" : item.cancelReason);
     return {
       id: order.id,
       status: order.status,
@@ -258,15 +261,15 @@ export class OrdersService {
         shippedAt: iso(item.shippedAt),
         deliveredAt: iso(item.deliveredAt),
         cancelledAt: iso(item.cancelledAt),
-        cancelReason: item.cancelReason,
+        cancelReason: cancelReason(item),
         awb: item.awb,
         courier: item.courier,
         trackingUrl: this.shipping.trackingUrl(item.awb, item.shippingProvider),
         canCancel: CUSTOMER_CANCELLABLE.includes(item.status) || (unpaid && item.status === "PENDING"),
       })),
       payments: pays.map((p) => ({ id: p.id, method: p.method, status: p.status, amountPaise: p.amountPaise })),
-      refunds: refundRows.map((r) => ({ id: r.id, amountPaise: r.amountPaise, status: customerRefundStatus(r.status), reason: r.reason, createdAt: r.createdAt.toISOString() })),
-      events: events.map((e) => ({ orderItemId: e.orderItemId, fromStatus: e.fromStatus, toStatus: e.toStatus, actor: e.actor, note: e.note, at: e.createdAt.toISOString() })),
+      refunds: refundRows.map((r) => ({ id: r.id, amountPaise: r.amountPaise, status: customerRefundStatus(r.status), reason: customerRefundReason(r.reason), createdAt: r.createdAt.toISOString() })),
+      events: events.map((e) => ({ orderItemId: e.orderItemId, fromStatus: e.fromStatus, toStatus: e.toStatus, actor: e.actor, note: e.actor === "STAFF" ? null : e.note, at: e.createdAt.toISOString() })),
     };
   }
 

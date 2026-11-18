@@ -336,7 +336,7 @@ export const transitionBody = z.object({
 });
 export const adminRefundBody = z.object({
   amountPaise: z.number().int().min(1).max(100_000_000),
-  reason: z.string().trim().min(3).max(500).describe("Why; the customer sees it with the refund"),
+  reason: z.string().trim().min(3).max(500).describe("Why, for the team; the customer sees \"Refund from AltasGoods\""),
   method: z.enum(REFUND_METHODS).describe("SOURCE goes back through the gateway; MANUAL records money the store already sent by UPI or bank transfer"),
   reference: z
     .string()

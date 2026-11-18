@@ -29,6 +29,29 @@ export const lineNetPaise = (order: Pick<OrderRow, "subtotalPaise" | "couponDisc
   return gross - couponShare;
 };
 
+/**
+ * Reasons the system gives the refunds it makes. The customer sees them with
+ * the refund, so they are fixed wording: a staff note never becomes one.
+ */
+export const REFUND_REASON = {
+  cancelledByCustomer: "Cancelled at your request",
+  cancelledByStore: "Cancelled by the store",
+  lost: "Parcel lost in transit",
+  returnedToStore: "Parcel returned to the store",
+  lateCapture: "Payment received after the order expired",
+  duplicateCapture: "Duplicate payment for an order that was already paid",
+} as const;
+const SYSTEM_REASONS = new Set<string>(Object.values(REFUND_REASON));
+
+/**
+ * A refund's reason as the customer sees it. System reasons, "Return RT-.."
+ * and "Care Desk ticket TK-.." are shown as they are. Anything else was typed
+ * by staff (a goodwill or manual refund from the admin, or a cancellation
+ * note on an older refund) and stays internal.
+ */
+export const customerRefundReason = (reason: string) =>
+  SYSTEM_REASONS.has(reason) || /^Return RT-\d+$/.test(reason) || /^Care Desk ticket TK-\d+$/.test(reason) ? reason : "Refund from AltasGoods";
+
 /** What a customer sees: a refund waiting on the store's check is still on its way. */
 export const customerRefundStatus = (s: RefundRow["status"]) => (s === "NEEDS_ATTENTION" ? "PROCESSING" : s);
 

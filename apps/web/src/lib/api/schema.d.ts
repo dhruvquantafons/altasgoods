@@ -9218,7 +9218,7 @@ export interface operations {
             content: {
                 "application/json": {
                     amountPaise: number;
-                    /** @description Why; the customer sees it with the refund */
+                    /** @description Why, for the team; the customer sees "Refund from AltasGoods" */
                     reason: string;
                     /**
                      * @description SOURCE goes back through the gateway; MANUAL records money the store already sent by UPI or bank transfer

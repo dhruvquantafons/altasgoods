@@ -276,6 +276,42 @@ describe("cancellation and refund emails", () => {
   });
 });
 
+describe("staff notes stay internal", () => {
+  it("shows the customer no part of a staff cancel note: not in the refund, the line or the timeline", async () => {
+    const { orderId, itemId, paymentId } = await place("serum-glow", "UPI");
+    await pay(paymentId);
+    await transition([itemId], "CANCELLED", "internal: suspected fraud");
+    await drain();
+    const detail = (await t.http.get(`/v1/me/orders/${orderId}`).set(shopper).expect(200)).body;
+    expect(detail.refunds).toEqual([expect.objectContaining({ reason: "Cancelled by the store" })]);
+    expect(detail.items[0].cancelReason).toBe("Cancelled by the store");
+    const body = JSON.stringify(detail);
+    for (const part of ["internal", "suspected", "fraud"]) expect(body).not.toContain(part);
+    for (const m of outbox.sent) expect(`${m.text}${m.html}`).not.toContain("fraud");
+    // staff still see the note
+    const admin = (await t.http.get(`/v1/admin/orders/${orderId}`).set(staff).expect(200)).body;
+    expect(JSON.stringify(admin.events)).toContain("internal: suspected fraud");
+  });
+
+  it("shows a staff goodwill refund to the customer with a fixed reason", async () => {
+    const { orderId, paymentId } = await place("serum-glow", "UPI");
+    await pay(paymentId);
+    await t.http.post(`/v1/admin/orders/${orderId}/refunds`).set(staff).send({ amountPaise: 500, reason: "internal: goodwill for a VIP", method: "SOURCE" }).expect(201);
+    const detail = (await t.http.get(`/v1/me/orders/${orderId}`).set(shopper).expect(200)).body;
+    expect(detail.refunds).toEqual([expect.objectContaining({ amountPaise: 500, reason: "Refund from AltasGoods" })]);
+    expect(JSON.stringify(detail)).not.toContain("VIP");
+  });
+
+  it("keeps the customer's own cancel reason", async () => {
+    const { orderId, paymentId } = await place("serum-glow", "UPI");
+    await pay(paymentId);
+    await t.http.post(`/v1/me/orders/${orderId}/cancel`).set(shopper).send({ reason: "Ordered by mistake" }).expect(200);
+    const detail = (await t.http.get(`/v1/me/orders/${orderId}`).set(shopper).expect(200)).body;
+    expect(detail.items[0].cancelReason).toBe("Ordered by mistake");
+    expect(detail.refunds).toEqual([expect.objectContaining({ reason: "Cancelled at your request" })]);
+  });
+});
+
 describe("shipping emails", () => {
   it("sends one shipped email with the tracking link however often the courier repeats the scan", async () => {
     const { orderId, awb } = await readyLine("speaker-boom");

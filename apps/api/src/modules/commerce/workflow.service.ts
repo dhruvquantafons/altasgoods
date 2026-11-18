@@ -7,7 +7,7 @@ import type { Tx } from "../../db/client.js";
 import { offers, orderEvents, orderItems, orders, payments, type Actor, type OrderItemStatus, type OrderStatus } from "../../db/schema.js";
 import { NotificationsService } from "./notifications/notifications.service.js";
 import type { EmailItem } from "./notifications/emails.js";
-import { lineNetPaise, RefundsService } from "./payments/refunds.service.js";
+import { lineNetPaise, REFUND_REASON, RefundsService } from "./payments/refunds.service.js";
 import type { LogisticsProvider } from "./shipping/provider.js";
 import { dispatchByDate } from "./pricing.js";
 import { assertTransition, deriveOrderStatus } from "./state.js";
@@ -102,10 +102,11 @@ export class OrderWorkflow {
     const all = items.map((i) => updated.get(i.id) ?? i);
     // the customer's email for the change says the refund is on its way, so the refund sends no email of its own
     let refundPaise: number | null = null;
-    if (args.to === "CANCELLED") refundPaise = await this.refundCancelled(tx, order, all, [...updated.values()], args.note ?? "Item cancelled");
+    // refund reasons are shown to the customer: fixed wording, never the staff note (which stays on the order event)
+    if (args.to === "CANCELLED") refundPaise = await this.refundCancelled(tx, order, all, [...updated.values()], args.actor === "CUSTOMER" ? REFUND_REASON.cancelledByCustomer : REFUND_REASON.cancelledByStore);
     if (args.to === "LOST" || args.to === "RTO_RECEIVED") {
       // the staff note stays on the order event; the refund says what happened
-      refundPaise = await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? "Parcel lost in transit" : "Parcel returned to the store", args.actorId);
+      refundPaise = await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? REFUND_REASON.lost : REFUND_REASON.returnedToStore, args.actorId);
     }
     if (args.to === "DELIVERED") await this.markCodCollected(tx, order, all);
     const header = await this.recomputeHeader(tx, order, all, args.actor, args.headerOverride);

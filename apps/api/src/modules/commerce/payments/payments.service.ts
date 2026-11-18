@@ -11,7 +11,7 @@ import { PAYMENT_WINDOW_MS } from "../pricing.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import { OrderWorkflow, type OrderRow } from "../workflow.service.js";
 import type { PaymentProvider, ProviderEvent } from "./provider.js";
-import { RefundsService } from "./refunds.service.js";
+import { REFUND_REASON, RefundsService } from "./refunds.service.js";
 import { SANDBOX_SIGNATURE_HEADER, SandboxPaymentProvider, signSandbox } from "./sandbox.provider.js";
 
 /** Who issued a refund, for which line, and a staff-only remark; `notify: false` skips the customer's "refund started" email (a return sends its own). */
@@ -151,7 +151,7 @@ export class PaymentsService {
         if (order.status === "ABANDONED" || order.status === "CANCELLED" || alreadyPaid) {
           // money arrived after the order expired, or twice: give it straight back. The refund
           // job marks this payment (and, for a late capture, the order) REFUNDED once it completes.
-          const reason = alreadyPaid ? "Duplicate payment for an order that was already paid" : "Payment received after the order expired";
+          const reason = alreadyPaid ? REFUND_REASON.duplicateCapture : REFUND_REASON.lateCapture;
           await this.refunds.queue(tx, { paymentId: payment.id, orderId: order.id, amountPaise: payment.amountPaise, reason });
           this.logger.warn(`${alreadyPaid ? "Duplicate" : "Late"} capture on ${order.id}, refund queued`);
           // to the customer this payment is being given back in full (see get())
