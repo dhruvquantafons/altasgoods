@@ -53,26 +53,32 @@ function sniffDelimiter(text: string) {
   return counts.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 }
 
-/** A value as it goes into a CSV cell. Null and undefined are empty. */
-export type CsvValue = string | number | null | undefined;
+/**
+ * A number already formatted for a cell (money as "-12.00"). It is written as
+ * is, never escaped: it came from a number, so it cannot run anything.
+ */
+export class CsvNumber {
+  constructor(readonly text: string) {}
+}
 
-/** A plain number: digits with an optional sign and decimals, such as 1299.00, -12.00 or +919876543210. */
-const PLAIN_NUMBER = /^[+-]?\d+(\.\d+)?$/;
+/** A value as it goes into a CSV cell. Null and undefined are empty. */
+export type CsvValue = string | number | CsvNumber | null | undefined;
 
 /**
  * One cell, RFC 4180 style: wrapped in quotes when it holds a comma, quote,
  * CR or LF, with inner quotes doubled.
  *
- * Formula-injection guard: a text cell that starts with =, +, -, @, a tab or a
- * CR gets a leading apostrophe so a spreadsheet shows it as text instead of
- * running it. Numbers and plain-number strings (-12.00, +919876543210) are
- * left alone, because they cannot run anything and an exported refund of
- * -12.00 must stay a number.
+ * Formula-injection guard: every text cell that starts with =, +, -, @, a tab
+ * or a CR gets a leading apostrophe so a spreadsheet shows it as text instead
+ * of running it. There is no exception for strings that look numeric (a phone
+ * number such as +919876543210 is escaped). Real numbers (`number`) and
+ * `CsvNumber` money values are left alone, so a refund of -12.00 stays a number.
  */
 export function csvField(value: CsvValue): string {
   if (value === null || value === undefined) return "";
+  if (value instanceof CsvNumber) return value.text;
   let text = String(value);
-  if (typeof value === "string" && /^[=+\-@\t\r]/.test(text) && !PLAIN_NUMBER.test(text)) text = `'${text}`;
+  if (typeof value === "string" && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

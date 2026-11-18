@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { csvField, csvRow, parseCsv, toCsv } from "../src/modules/catalog/csv.js";
+import { CsvNumber, csvField, csvRow, parseCsv, toCsv } from "../src/modules/catalog/csv.js";
 import { istDateTime, istDayStart } from "../src/common/time.js";
-import { rupeesCsv } from "../src/modules/admin/exports.format.js";
+import { money, rupeesCsv } from "../src/modules/admin/exports.format.js";
 
 describe("toCsv", () => {
   it("quotes fields with commas, quotes and line breaks, doubling inner quotes", () => {
@@ -26,12 +26,17 @@ describe("toCsv", () => {
     expect(csvField("\rReturn")).toBe('"\'\rReturn"');
   });
 
-  it("does not escape plain numbers, so negative money stays a number", () => {
-    expect(csvField(-12)).toBe("-12");
-    expect(csvField("-12.00")).toBe("-12.00");
-    expect(csvField("1299.00")).toBe("1299.00");
-    expect(csvField("+919876543210")).toBe("+919876543210");
+  it("escapes every text cell that starts with a formula character, numeric-looking or not", () => {
+    expect(csvField("+919876543210")).toBe("'+919876543210");
+    expect(csvField("-12.00")).toBe("'-12.00");
     expect(csvField("-")).toBe("'-");
+  });
+
+  it("leaves real numbers and money values alone, so negative amounts stay numbers", () => {
+    expect(csvField(-12)).toBe("-12");
+    expect(csvField(money(-1200))).toBe("-12.00");
+    expect(csvField(new CsvNumber("1299.00"))).toBe("1299.00");
+    expect(csvField(money(null))).toBe("");
   });
 
   it("round-trips through parseCsv", () => {

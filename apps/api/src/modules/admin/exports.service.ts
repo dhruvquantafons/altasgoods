@@ -15,7 +15,7 @@ import { customerFilters, PLACED, SPENT } from "../support/support-lookup.servic
 import { auditFilters, type AuditActor } from "./audit.service.js";
 import { AuditService } from "./audit.service.js";
 import { EXPORT_QUERIES, type ExportKind } from "./exports.schemas.js";
-import { dateCsv, rupeesCsv } from "./exports.format.js";
+import { dateCsv, money } from "./exports.format.js";
 
 /** How many rows are read from the database (and written to the client) at a time. */
 const BATCH = 1000;
@@ -66,11 +66,11 @@ export const ORDER_COLUMNS: Column<OrderRow>[] = [
   { header: "Payment method", value: (r) => r.o.paymentMethod },
   { header: "Payment status", value: (r) => r.o.paymentStatus },
   { header: "Items", value: (r) => r.items },
-  { header: "Subtotal", value: (r) => rupeesCsv(r.o.subtotalPaise) },
-  { header: "Discount", value: (r) => rupeesCsv(r.o.couponDiscountPaise) },
-  { header: "Delivery fee", value: (r) => rupeesCsv(r.o.deliveryFeePaise) },
-  { header: "Total", value: (r) => rupeesCsv(r.o.totalPaise) },
-  { header: "Refunded", value: (r) => rupeesCsv(r.refunded) },
+  { header: "Subtotal", value: (r) => money(r.o.subtotalPaise) },
+  { header: "Discount", value: (r) => money(r.o.couponDiscountPaise) },
+  { header: "Delivery fee", value: (r) => money(r.o.deliveryFeePaise) },
+  { header: "Total", value: (r) => money(r.o.totalPaise) },
+  { header: "Refunded", value: (r) => money(r.refunded) },
   { header: "Pincode", value: (r) => r.o.address.pincode },
   { header: "City", value: (r) => r.o.address.city },
   { header: "State", value: (r) => r.o.address.state },
@@ -85,8 +85,8 @@ export const ORDER_ITEM_COLUMNS: Column<ItemRow>[] = [
   { header: "SKU", value: (r) => r.sku },
   { header: "Variant", value: (r) => r.item.variant },
   { header: "Qty", value: (r) => r.item.qty },
-  { header: "Unit price", value: (r) => rupeesCsv(r.item.unitPricePaise) },
-  { header: "Line total", value: (r) => rupeesCsv(r.item.unitPricePaise * r.item.qty) },
+  { header: "Unit price", value: (r) => money(r.item.unitPricePaise) },
+  { header: "Line total", value: (r) => money(r.item.unitPricePaise * r.item.qty) },
   { header: "Status", value: (r) => r.item.status },
   { header: "AWB", value: (r) => r.item.awb },
   { header: "Courier", value: (r) => r.item.courier },
@@ -102,7 +102,7 @@ export const PAYMENT_COLUMNS: Column<PaymentRow>[] = [
   { header: "Provider", value: (r) => r.p.provider },
   { header: "Provider ref", value: (r) => r.p.providerRef },
   { header: "Status", value: (r) => r.p.status },
-  { header: "Amount", value: (r) => rupeesCsv(r.p.amountPaise) },
+  { header: "Amount", value: (r) => money(r.p.amountPaise) },
 ];
 
 type RefundRow = { r: typeof refunds.$inferSelect; by: string | null };
@@ -112,7 +112,7 @@ export const REFUND_COLUMNS: Column<RefundRow>[] = [
   { header: "Payment ID", value: (x) => x.r.paymentId },
   { header: "Created at", value: (x) => dateCsv(x.r.createdAt) },
   { header: "Completed at", value: (x) => dateCsv(x.r.completedAt) },
-  { header: "Amount", value: (x) => rupeesCsv(x.r.amountPaise) },
+  { header: "Amount", value: (x) => money(x.r.amountPaise) },
   { header: "Status", value: (x) => x.r.status },
   { header: "Method", value: (x) => x.r.method },
   { header: "Reference", value: (x) => x.r.reference },
@@ -129,7 +129,7 @@ export const CUSTOMER_COLUMNS: Column<CustomerRow>[] = [
   { header: "Status", value: (r) => r.u.status },
   { header: "Joined at", value: (r) => dateCsv(r.u.createdAt) },
   { header: "Orders", value: (r) => r.orders },
-  { header: "Total spent", value: (r) => rupeesCsv(r.spent) },
+  { header: "Total spent", value: (r) => money(r.spent) },
 ];
 
 type AuditRow = typeof auditEvents.$inferSelect;

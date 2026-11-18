@@ -174,3 +174,13 @@ describe("auditing exports", () => {
     expect(pay.body.items[0].summary).toMatch(/^Exported \d+ rows? of payments/);
   });
 });
+
+describe("text that looks like a number", () => {
+  it("escapes a phone number starting with +", async () => {
+    await signUp(t.http, "plus.phone@example.com", "Plus Phone");
+    await t.http.patch("/v1/me").set((await signIn(t.http, "plus.phone@example.com", "a-long-password")).auth).send({ phone: "9876543210" }).expect(200);
+    const r = rows((await get("customers", { q: "plus.phone" }).expect(200)).body)[1]!;
+    const phone = r[HEADERS.customers.indexOf("Phone")]!;
+    expect(phone).toMatch(/^'\+91/);
+  });
+});
