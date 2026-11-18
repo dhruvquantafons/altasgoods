@@ -5,34 +5,9 @@
  * client components receive plain snapshots built at the bottom of this file.
  */
 import type { Brand, Category, Product, Seller } from "../types";
-import { addDays, MOCK_EPOCH, seeded, slugify } from "../utils";
+import { addDays, MOCK_EPOCH, seeded } from "../utils";
 import { coupons } from "./engagement";
 import type { BankOffer, CartProduct, CouponLite, NavCategory, Suggestion, WalletLite } from "@/components/store/types";
-
-/* ------------------------------ Company ------------------------------- */
-
-export const COMPANY = {
-  legalName: "AltasGoods Commerce Private Limited",
-  cin: "U47912KA2025PTC204817",
-  gstin: "29AALCB4821Q1Z6",
-  registeredOffice: "Level 9, Lakeview Square, 14 Residency Road, Ashok Nagar, Bengaluru, Karnataka 560025",
-  customerCare: "1800 210 4455",
-  customerCareHours: "8 am to 10 pm, every day",
-  email: "care@altasgoods.in",
-  website: "www.altasgoods.in",
-};
-
-/** Required by the Consumer Protection (E-Commerce) Rules, 2020. */
-export const GRIEVANCE_OFFICER = {
-  name: "Meenakshi Raghavan",
-  designation: "Grievance Officer, AltasGoods Commerce Private Limited",
-  email: "grievance.officer@altasgoods.in",
-  phone: "+91 80 4718 2200",
-  hours: "Monday to Saturday, 9:30 am to 6:30 pm",
-  address: "Level 9, Lakeview Square, 14 Residency Road, Bengaluru, Karnataka 560025",
-  ackHours: 48,
-  resolutionDays: 30,
-};
 
 /* ----------------------------- Hero slides ---------------------------- */
 
@@ -483,32 +458,6 @@ export function warrantyFor(p: Product) {
   if (cat === "electronics") return "1 year brand warranty";
   if (cat === "appliances") return "2 years comprehensive brand warranty";
   return "No warranty applicable";
-}
-
-function netQuantity(title: string) {
-  const m = title.match(/(\d+(?:\.\d+)?)\s?(g|kg|ml|L)\b/);
-  if (m) return `${m[1]} ${m[2]}`;
-  const set = title.match(/(?:Set|Pack) of (\d+)/i);
-  if (set) return `${set[1]} N`;
-  const pcs = title.match(/(\d+) Pieces/i);
-  if (pcs) return `${pcs[1]} N`;
-  return "1 N";
-}
-
-/** Legal Metrology declarations, shown in full on every PDP. */
-export function legalDeclarations(p: Product) {
-  const brand = p.brandName;
-  const brandSlug = slugify(brand);
-  return [
-    { label: "Generic name", value: p.subcategory.replace(/s$/, "") },
-    { label: "Net quantity", value: netQuantity(p.title) },
-    { label: "M.R.P.", value: `₹${p.mrp.toLocaleString("en-IN")} (inclusive of all taxes)` },
-    { label: "Country of origin", value: p.specs.flatMap((s) => s.items).find((i) => i.label === "Country of origin")?.value ?? "India" },
-    { label: "Manufacturer", value: `${brand} India Private Limited, Plot 42, KIADB Industrial Area, Bengaluru, Karnataka 562114` },
-    { label: "Packer", value: `${COMPANY.legalName}, ${COMPANY.registeredOffice}` },
-    { label: "Importer", value: "Not applicable (made in India)" },
-    { label: "Consumer care", value: `care@${brandSlug}.in, 1800 120 ${String(3000 + brand.length * 37).slice(0, 4)}` },
-  ];
 }
 
 const sellerStreets = ["Unit 4, Commerce House, Station Road", "Plot 18, Industrial Area Phase 1", "B-27, Trade Centre, Ring Road", "12, Warehouse Lane, Industrial Estate", "G-14, Market Complex, Main Road", "Survey 88, Logistics Park Road", "C-56, Business Park, Sector 2", "Door 41, Godown Street", "7, Merchant Arcade, Park Road"];

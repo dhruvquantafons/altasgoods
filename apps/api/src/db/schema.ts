@@ -306,6 +306,8 @@ export const products = pgTable(
     /** GST override in basis points and HSN; null inherits from the category, then the store default */
     gstRateBp: integer("gst_rate_bp"),
     hsn: text("hsn"),
+    /** Legal Metrology declarations the store sets per product; a missing key shows a placeholder on the product page */
+    legal: jsonb("legal").$type<{ manufacturer?: string; packer?: string; importer?: string; consumerCare?: string; countryOfOrigin?: string }>(),
     description: text("description").notNull().default(""),
     highlights: jsonb("highlights").notNull().$type<string[]>().default([]),
     specs: jsonb("specs").notNull().$type<{ group: string; items: { label: string; value: string }[] }[]>().default([]),

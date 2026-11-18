@@ -8,6 +8,7 @@ import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB } from "../../common/tokens.js";
 import { bestSale, salePrice, type LiveSale } from "../commerce/pricing.js";
 import { RESERVED_BRAND, RESERVED_CATEGORY } from "./reserved.js";
+import { normalizeLegal } from "./catalog.schemas.js";
 import type { ProductQuery, ProductSummary } from "./catalog.schemas.js";
 
 export const discountPercent = (price: number, mrp: number) => (mrp > price ? Math.floor(((mrp - price) / mrp) * 100) : 0);
@@ -182,6 +183,7 @@ export class CatalogService {
         description: p.description,
         highlights: p.highlights,
         specs: p.specs,
+        legal: normalizeLegal(p.legal),
         variants: p.variants.map((v) => ({ ...v, values: v.values.map((x) => ({ ...x, available: x.available ?? true })) })),
         rating: p.rating,
         ratingCount: p.ratingCount,
@@ -230,6 +232,7 @@ export class CatalogService {
       description: p!.description,
       highlights: p!.highlights,
       specs: p!.specs,
+      legal: normalizeLegal(p!.legal),
       variants: p!.variants,
       reviewCount: p!.reviewCount,
       soldLast30d: p!.soldLast30d,

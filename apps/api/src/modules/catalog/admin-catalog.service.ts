@@ -10,6 +10,7 @@ import { SettingsService } from "../admin/settings.service.js";
 import { inheritedGst, inheritedView, resolveFrom, type ResolvedGst } from "./gst.js";
 import { sniffMime, type FileStore } from "../files/file-store.js";
 import { RESERVED_BRAND, RESERVED_CATEGORY } from "./reserved.js";
+import { normalizeLegal } from "./catalog.schemas.js";
 import type { adminProductQuery, brandInput, brandPatch, categoryInput, categoryPatch, ProductInput, ProductPatch } from "./admin-catalog.schemas.js";
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -133,6 +134,7 @@ export class AdminCatalogService {
           subcategory: input.subcategory,
           gstRateBp: input.gstRateBp,
           hsn: input.hsn,
+          legal: normalizeLegal(input.legal),
           description: input.description,
           highlights: input.highlights,
           specs: input.specs,
@@ -212,6 +214,7 @@ export class AdminCatalogService {
         .update(products)
         .set({
           ...pick(patch, ["sku", "title", "description", "highlights", "specs", "variants", "images", "tags", "gstRateBp", "hsn"]),
+          ...(patch.legal !== undefined ? { legal: normalizeLegal(patch.legal) } : {}),
           ...next,
           ...(slug ? { slug } : {}),
           ...(patch.active !== undefined ? { listingStatus: patch.active ? "LIVE" : "INACTIVE" } : {}),
@@ -510,6 +513,7 @@ function toAdminProduct(p: Product, o: Offer, inherited: ResolvedGst) {
     brandId: p.brandId,
     gstRateBp: p.gstRateBp,
     hsn: p.hsn,
+    legal: normalizeLegal(p.legal),
     inheritedGst: inheritedView(inherited),
     tags: p.tags as ("bestseller" | "new" | "deal" | "limited")[],
     pricePaise: o.pricePaise,

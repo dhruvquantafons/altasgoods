@@ -8,22 +8,31 @@ export type StorefrontSettings = paths["/v1/storefront/settings"]["get"]["respon
 /** Revalidated when an admin saves Settings (updateTag(SETTINGS_TAG)), and every minute otherwise. */
 export const SETTINGS_TAG = "settings";
 
-/** What the store ran with before Settings existed; used only while the API is unreachable. */
+/** Placeholders, never made-up details; used only while the API is unreachable. */
 const FALLBACK: StorefrontSettings = {
   delivery: { feePaise: 4_000, freeFromPaise: 49_900 },
   cod: { enabled: true, maxOrderPaise: 5_000_000 },
   notice: { enabled: false, message: "" },
   company: {
-    legalName: "AltasGoods Commerce Private Limited",
-    cin: "",
-    gstin: "",
-    registeredOffice: "",
-    customerCare: "",
-    customerCareHours: "",
-    email: "care@altasgoods.in",
-    website: "www.altasgoods.in",
+    legalName: "Your Company Private Limited (not set)",
+    cin: "NOT SET",
+    gstin: "NOT SET",
+    registeredOffice: "Registered office address not set",
+    customerCare: "Not set",
+    customerCareHours: "Not set",
+    email: "care@example.com",
+    website: "https://example.com",
   },
-  grievance: { name: "Grievance Officer", designation: "", email: "grievance.officer@altasgoods.in", phone: "", hours: "", address: "", ackHours: 48, resolutionDays: 30 },
+  grievance: {
+    name: "Grievance Officer (name not set)",
+    designation: "Grievance Officer",
+    email: "grievance@example.com",
+    phone: "Not set",
+    hours: "Not set",
+    address: "Not set",
+    ackHours: 48,
+    resolutionDays: 30,
+  },
 };
 
 export const getStoreSettings = cache(async (): Promise<StorefrontSettings> => {

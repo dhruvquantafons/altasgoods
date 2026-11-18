@@ -57,6 +57,7 @@ function toProduct(p: ApiProduct, brand: Brand | undefined, category: Category |
     highlights: p.highlights,
     description: p.description,
     specs: p.specs,
+    legal: p.legal,
     variants: p.variants,
     offers: [
       {

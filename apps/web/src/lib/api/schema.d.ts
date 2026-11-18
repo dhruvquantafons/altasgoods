@@ -2626,6 +2626,8 @@ export interface operations {
                             ackHours: number;
                             resolutionDays: number;
                         };
+                        /** @description Company and grievance details still at their placeholder values, by name */
+                        placeholders: string[];
                         /** Format: date-time */
                         updatedAt: string | null;
                         updatedBy: string | null;
@@ -2788,6 +2790,8 @@ export interface operations {
                             ackHours: number;
                             resolutionDays: number;
                         };
+                        /** @description Company and grievance details still at their placeholder values, by name */
+                        placeholders: string[];
                         /** Format: date-time */
                         updatedAt: string | null;
                         updatedBy: string | null;
@@ -5713,6 +5717,18 @@ export interface operations {
                                     available: boolean;
                                 }[];
                             }[];
+                            legal: {
+                                /** @description Name and full address of the manufacturer */
+                                manufacturer?: string;
+                                /** @description Name and full address of the packer; the store's own details are used when empty */
+                                packer?: string;
+                                /** @description Name and address of the importer, for imported goods */
+                                importer?: string;
+                                /** @description Consumer care email and phone number for this product */
+                                consumerCare?: string;
+                                /** @description Country of origin, for example India */
+                                countryOfOrigin?: string;
+                            } | null;
                             rating: number;
                             ratingCount: number;
                             reviewCount: number;
@@ -5950,6 +5966,18 @@ export interface operations {
                         lowStock: number | null;
                         codAvailable: boolean;
                         returnWindowDays: number;
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                     };
                 };
             };
@@ -6062,6 +6090,22 @@ export interface operations {
                      * @default null
                      */
                     hsn?: string | null;
+                    /**
+                     * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                     * @default null
+                     */
+                    legal?: {
+                        /** @description Name and full address of the manufacturer */
+                        manufacturer?: string;
+                        /** @description Name and full address of the packer; the store's own details are used when empty */
+                        packer?: string;
+                        /** @description Name and address of the importer, for imported goods */
+                        importer?: string;
+                        /** @description Consumer care email and phone number for this product */
+                        consumerCare?: string;
+                        /** @description Country of origin, for example India */
+                        countryOfOrigin?: string;
+                    } | null;
                     /** @default [] */
                     tags?: ("bestseller" | "new" | "deal" | "limited")[];
                     pricePaise: number;
@@ -6124,6 +6168,22 @@ export interface operations {
                          * @default null
                          */
                         hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6271,6 +6331,22 @@ export interface operations {
                          * @default null
                          */
                         hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6367,6 +6443,19 @@ export interface operations {
                     gstRateBp?: number | null;
                     /** @description Overrides the category's HSN code; null inherits it */
                     hsn?: string | null;
+                    /** @description Legal Metrology declarations shown on the product page; null leaves them as placeholders */
+                    legal?: {
+                        /** @description Name and full address of the manufacturer */
+                        manufacturer?: string;
+                        /** @description Name and full address of the packer; the store's own details are used when empty */
+                        packer?: string;
+                        /** @description Name and address of the importer, for imported goods */
+                        importer?: string;
+                        /** @description Consumer care email and phone number for this product */
+                        consumerCare?: string;
+                        /** @description Country of origin, for example India */
+                        countryOfOrigin?: string;
+                    } | null;
                     tags?: ("bestseller" | "new" | "deal" | "limited")[];
                     pricePaise?: number;
                     mrpPaise?: number;
@@ -6424,6 +6513,22 @@ export interface operations {
                          * @default null
                          */
                         hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6515,6 +6620,22 @@ export interface operations {
                          * @default null
                          */
                         hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -6606,6 +6727,22 @@ export interface operations {
                          * @default null
                          */
                         hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;

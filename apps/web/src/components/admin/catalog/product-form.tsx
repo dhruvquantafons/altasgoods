@@ -51,6 +51,13 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
   const [returnDays, setReturnDays] = useState(String(product?.returnWindowDays ?? 7));
   const [cod, setCod] = useState(product?.codAvailable ?? true);
   const [gst, setGst] = useState<GstDraft>(() => gstDraft(product?.gstRateBp ?? null, product?.hsn ?? null));
+  const [legal, setLegal] = useState({
+    manufacturer: product?.legal?.manufacturer ?? "",
+    packer: product?.legal?.packer ?? "",
+    importer: product?.legal?.importer ?? "",
+    consumerCare: product?.legal?.consumerCare ?? "",
+    countryOfOrigin: product?.legal?.countryOfOrigin ?? "",
+  });
   const [tags, setTags] = useState<string[]>(product?.tags ?? []);
   const [active, setActive] = useState(product?.active ?? true);
   const [specs, setSpecs] = useState<Spec[]>(product?.specs ?? []);
@@ -114,6 +121,7 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
     const input: ProductInput = {
       gstRateBp: taxes.gstRateBp,
       hsn: taxes.hsn,
+      legal: Object.fromEntries(Object.entries(legal).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v)),
       ...(slugChanged ? { slug } : {}),
       title: title.trim(),
       sku: sku.trim(),
@@ -299,6 +307,29 @@ export function ProductForm({ product, categories, brands, canEdit = true }: { p
                   </Button>
                 </div>
               ))}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader title="Legal declarations (Legal Metrology)" description="Shown on the product page. Anything left empty shows as 'To be added by the store'." />
+            <CardBody className="space-y-4">
+              <Field label="Manufacturer" htmlFor="pf-legal-mfr" error={errors["legal.manufacturer"]} hint="Name and full postal address of the manufacturer">
+                <Textarea id="pf-legal-mfr" rows={2} maxLength={300} value={legal.manufacturer} onChange={(e) => setLegal((l) => ({ ...l, manufacturer: e.target.value }))} />
+              </Field>
+              <Field label="Packer" htmlFor="pf-legal-packer" error={errors["legal.packer"]} hint="Name and address of whoever packed it. Empty uses your company details from Settings, once those are filled in">
+                <Textarea id="pf-legal-packer" rows={2} maxLength={300} value={legal.packer} onChange={(e) => setLegal((l) => ({ ...l, packer: e.target.value }))} />
+              </Field>
+              <Field label="Importer" htmlFor="pf-legal-importer" error={errors["legal.importer"]} hint="For imported goods: name and address of the importer. Empty reads 'Not applicable' for goods made in India">
+                <Textarea id="pf-legal-importer" rows={2} maxLength={300} value={legal.importer} onChange={(e) => setLegal((l) => ({ ...l, importer: e.target.value }))} />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Consumer care" htmlFor="pf-legal-care" error={errors["legal.consumerCare"]} hint="Email and phone number a customer can reach about this product">
+                  <Input id="pf-legal-care" maxLength={300} value={legal.consumerCare} onChange={(e) => setLegal((l) => ({ ...l, consumerCare: e.target.value }))} />
+                </Field>
+                <Field label="Country of origin" htmlFor="pf-legal-origin" error={errors["legal.countryOfOrigin"]} hint="For example India">
+                  <Input id="pf-legal-origin" maxLength={300} value={legal.countryOfOrigin} onChange={(e) => setLegal((l) => ({ ...l, countryOfOrigin: e.target.value }))} />
+                </Field>
+              </div>
             </CardBody>
           </Card>
         </div>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { pageQuery, paginated } from "../../common/http.js";
+import { productLegalSchema } from "./catalog.schemas.js";
 import { gstRateBpSchema, hsnSchema } from "./gst.js";
 
 /** Lowercase words joined by hyphens, as used in storefront URLs. */
@@ -42,6 +43,7 @@ const productBase = z.object({
   brandId: z.string().min(1),
   gstRateBp: gstRateBpSchema.nullable().describe("Overrides the category's GST rate; null inherits it"),
   hsn: hsnSchema.nullable().describe("Overrides the category's HSN code; null inherits it"),
+  legal: productLegalSchema.nullable().describe("Legal Metrology declarations shown on the product page; null leaves them as placeholders"),
   tags: z.array(z.enum(PRODUCT_TAGS)).max(4),
   pricePaise: z.number().int().positive(),
   mrpPaise: z.number().int().positive(),
@@ -61,6 +63,7 @@ const productFields = productBase.extend({
   tags: productBase.shape.tags.default([]),
   gstRateBp: productBase.shape.gstRateBp.default(null),
   hsn: productBase.shape.hsn.default(null),
+  legal: productBase.shape.legal.default(null),
   deliveryDays: productBase.shape.deliveryDays.default(3),
   codAvailable: productBase.shape.codAvailable.default(true),
   returnWindowDays: productBase.shape.returnWindowDays.default(7),

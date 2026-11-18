@@ -276,7 +276,7 @@ export const DEFAULT_PAGES: DefaultPage[] = [
       {
         "id": "fraud",
         "heading": "Staying safe from fraud",
-        "body": "- AltasGoods will never ask for your OTP, PIN, CVV or passwords on a call, chat or email\n- Refunds never need you to scan a QR code or approve a UPI collect request\n- Our only customer care number is 1800 210 4455\n- Report a suspicious call or message from Help, then Report fraud"
+        "body": "- AltasGoods will never ask for your OTP, PIN, CVV or passwords on a call, chat or email\n- Refunds never need you to scan a QR code or approve a UPI collect request\n- Our only customer care number is the one on the Contact page\n- Report a suspicious call or message from Help, then Report fraud"
       }
     ]
   },
@@ -714,7 +714,7 @@ export const DEFAULT_ABOUT: AboutDoc = {
     {
       "city": "Bengaluru",
       "note": "Headquarters",
-      "address": "Level 9, Lakeview Square, 14 Residency Road, Ashok Nagar, Bengaluru 560025"
+      "address": "See the Contact page for our registered office"
     },
     {
       "city": "Mumbai",

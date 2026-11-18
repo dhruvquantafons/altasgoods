@@ -1,6 +1,28 @@
 import { z } from "zod";
 import { pageQuery, paginated } from "../../common/http.js";
 
+const legalText = z.string().trim().max(300);
+/** Per-product Legal Metrology declarations; a key left out shows a placeholder on the product page. */
+export const productLegalSchema = z.object({
+  manufacturer: legalText.optional().describe("Name and full address of the manufacturer"),
+  packer: legalText.optional().describe("Name and full address of the packer; the store's own details are used when empty"),
+  importer: legalText.optional().describe("Name and address of the importer, for imported goods"),
+  consumerCare: legalText.optional().describe("Consumer care email and phone number for this product"),
+  countryOfOrigin: legalText.optional().describe("Country of origin, for example India"),
+});
+export type ProductLegal = z.infer<typeof productLegalSchema>;
+
+/** Drops blank values; null when nothing is left. */
+export function normalizeLegal(legal: ProductLegal | null | undefined): ProductLegal | null {
+  if (!legal) return null;
+  const out: ProductLegal = {};
+  for (const k of Object.keys(productLegalSchema.shape) as (keyof ProductLegal)[]) {
+    const v = legal[k]?.trim();
+    if (v) out[k] = v;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 export const SORTS = ["relevance", "popular", "price_asc", "price_desc", "newest", "discount", "rating"] as const;
 
 const csv = z
@@ -78,6 +100,7 @@ export const productDetail = productSummary.extend({
   lowStock: z.number().int().nullable().describe("Units left when 10 or fewer, otherwise null"),
   codAvailable: z.boolean(),
   returnWindowDays: z.number().int(),
+  legal: productLegalSchema.nullable(),
 });
 
 export const categoryNode = z.object({
@@ -108,6 +131,7 @@ export const storefrontProduct = z.object({
   highlights: z.array(z.string()),
   specs: specsSchema,
   variants: variantsSchema,
+  legal: productLegalSchema.nullable(),
   rating: z.number(),
   ratingCount: z.number().int(),
   reviewCount: z.number().int(),

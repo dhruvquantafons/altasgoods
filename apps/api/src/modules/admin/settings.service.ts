@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { DB } from "../../common/tokens.js";
 import type { Db } from "../../db/client.js";
 import { storeSettings, users } from "../../db/schema.js";
-import { DEFAULT_SETTINGS, settingsSchema, type StoreSettings } from "./admin.schemas.js";
+import { DEFAULT_SETTINGS, settingsPlaceholders, settingsSchema, type StoreSettings } from "./admin.schemas.js";
 import { AuditService } from "./audit.service.js";
 
 const ROW = "store";
@@ -56,7 +56,7 @@ export class SettingsService {
       .from(storeSettings)
       .leftJoin(users, eq(users.id, storeSettings.updatedBy))
       .where(eq(storeSettings.id, ROW));
-    return { ...value, updatedAt: row?.updatedAt.toISOString() ?? null, updatedBy: row ? (row.name ?? row.email ?? null) : null };
+    return { ...value, placeholders: settingsPlaceholders(value), updatedAt: row?.updatedAt.toISOString() ?? null, updatedBy: row ? (row.name ?? row.email ?? null) : null };
   }
 
   async update(actorId: string, next: StoreSettings) {

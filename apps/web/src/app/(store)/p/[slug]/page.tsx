@@ -14,6 +14,7 @@ import { Rail, RailItem } from "@/components/store/rail";
 import { ReviewsSection } from "@/components/store/reviews";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { Stars } from "@/components/ui/misc";
+import { Placeholder } from "@/components/store/placeholder";
 import { api, currentUser } from "@/lib/api/server";
 import { getStoreCatalog, redirectedSlug } from "@/lib/store-catalog";
 import { getStoreCoupons } from "@/lib/store-promotions";
@@ -21,12 +22,12 @@ import { getStoreSettings } from "@/lib/store-settings";
 import {
   frequentlyBoughtWith,
   inStock,
-  legalDeclarations,
   returnPolicyFor,
   similarProducts,
   toCartProduct,
   warrantyFor,
 } from "@/lib/mock/store-extra";
+import { legalDeclarations } from "@/lib/legal";
 import type { Product } from "@/lib/types";
 import { cn, formatCompact, formatNumber } from "@/lib/utils";
 
@@ -80,7 +81,8 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const deal = p.sale;
   const policy = returnPolicyFor(p, offer.returnWindowDays);
   const warranty = warrantyFor(p);
-  const legal = legalDeclarations(p);
+  const legal = legalDeclarations(p, COMPANY);
+  const origin = legal.find((l) => l.label === "Country of origin");
   // published reviews; signed in, the API also says whether this customer can review it
   const [reviewData, user] = await Promise.all([
     (await api())
@@ -190,14 +192,16 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               {[
                 { icon: Undo2, label: policy.short },
                 { icon: ShieldCheck, label: warranty },
-                { icon: Globe, label: `Made in ${legal.find((l) => l.label === "Country of origin")?.value}` },
+                origin && !origin.placeholder ? { icon: Globe, label: `Made in ${origin.value}` } : null,
                 { icon: Wrench, label: snapshot.large ? "Free installation" : "GST invoice" },
-              ].map((f) => (
-                <li key={f.label} className="flex flex-col items-center gap-2 rounded-xl bg-ink-50 px-2 py-3 text-center">
-                  <f.icon size={18} strokeWidth={1.8} className="text-ink-600" aria-hidden="true" />
-                  <span className="text-xs leading-snug text-ink-700">{f.label}</span>
-                </li>
-              ))}
+              ]
+                .filter((f) => f !== null)
+                .map((f) => (
+                  <li key={f.label} className="flex flex-col items-center gap-2 rounded-xl bg-ink-50 px-2 py-3 text-center">
+                    <f.icon size={18} strokeWidth={1.8} className="text-ink-600" aria-hidden="true" />
+                    <span className="text-xs leading-snug text-ink-700">{f.label}</span>
+                  </li>
+                ))}
             </ul>
           </div>
 
@@ -265,7 +269,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               {legal.map((l) => (
                 <div key={l.label} className="grid grid-cols-[150px_1fr] gap-4 px-4 py-2.5 sm:grid-cols-[180px_1fr]">
                   <dt className="text-ink-500">{l.label}</dt>
-                  <dd className="text-ink-800">{l.value}</dd>
+                  <dd className="text-ink-800">{l.placeholder ? <Placeholder>{l.value}</Placeholder> : l.value}</dd>
                 </div>
               ))}
             </dl>

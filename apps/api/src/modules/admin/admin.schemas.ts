@@ -68,26 +68,49 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   reviews: { autoPublish: true },
   notice: { enabled: false, message: "" },
   company: {
-    legalName: "AltasGoods Commerce Private Limited",
-    cin: "U47912KA2025PTC204817",
-    gstin: "29AALCB4821Q1Z6",
-    registeredOffice: "Level 9, Lakeview Square, 14 Residency Road, Ashok Nagar, Bengaluru, Karnataka 560025",
-    customerCare: "1800 210 4455",
-    customerCareHours: "8 am to 10 pm, every day",
-    email: "care@altasgoods.in",
-    website: "www.altasgoods.in",
+    legalName: "Your Company Private Limited (not set)",
+    cin: "NOT SET",
+    gstin: "NOT SET",
+    registeredOffice: "Registered office address not set",
+    customerCare: "Not set",
+    customerCareHours: "Not set",
+    email: "care@example.com",
+    website: "https://example.com",
   },
   grievance: {
-    name: "Meenakshi Raghavan",
-    designation: "Grievance Officer, AltasGoods Commerce Private Limited",
-    email: "grievance.officer@altasgoods.in",
-    phone: "+91 80 4718 2200",
-    hours: "Monday to Saturday, 9:30 am to 6:30 pm",
-    address: "Level 9, Lakeview Square, 14 Residency Road, Bengaluru, Karnataka 560025",
+    name: "Grievance Officer (name not set)",
+    designation: "Grievance Officer",
+    email: "grievance@example.com",
+    phone: "Not set",
+    hours: "Not set",
+    address: "Not set",
     ackHours: 48,
     resolutionDays: 30,
   },
 };
+
+const PLACEHOLDER_FIELDS = [
+  ["company", "legalName", "Company legal name"],
+  ["company", "cin", "CIN"],
+  ["company", "gstin", "GSTIN"],
+  ["company", "registeredOffice", "Registered office"],
+  ["company", "customerCare", "Customer care number"],
+  ["company", "customerCareHours", "Customer care hours"],
+  ["company", "email", "Company email"],
+  ["company", "website", "Website"],
+  ["grievance", "name", "Grievance Officer name"],
+  ["grievance", "designation", "Grievance Officer designation"],
+  ["grievance", "email", "Grievance Officer email"],
+  ["grievance", "phone", "Grievance Officer phone"],
+  ["grievance", "hours", "Grievance Officer hours"],
+  ["grievance", "address", "Grievance Officer address"],
+] as const;
+
+/** The company and grievance details still at the placeholder a fresh store starts with, by name. Empty once they are all set. */
+export function settingsPlaceholders(settings: StoreSettings): string[] {
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  return PLACEHOLDER_FIELDS.filter(([group, field]) => same((settings[group] as Record<string, unknown>)[field] as string, (DEFAULT_SETTINGS[group] as Record<string, unknown>)[field] as string)).map(([, , label]) => label);
+}
 
 /** What the storefront may read: everything except internal switches. */
 export const storefrontSettingsSchema = settingsSchema
@@ -95,7 +118,7 @@ export const storefrontSettingsSchema = settingsSchema
   // the pincode rules are answered by the pincode check, not published
   .extend({ delivery: settingsSchema.shape.delivery.pick({ feePaise: true, freeFromPaise: true }) });
 
-export const settingsResponse = settingsSchema.extend({ updatedAt: z.iso.datetime().nullable(), updatedBy: z.string().nullable() });
+export const settingsResponse = settingsSchema.extend({ placeholders: z.array(z.string()).describe("Company and grievance details still at their placeholder values, by name"), updatedAt: z.iso.datetime().nullable(), updatedBy: z.string().nullable() });
 
 export const auditQuery = z.object({
   q: z.string().trim().max(80).optional().describe("Searches the summary"),

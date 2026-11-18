@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, IndianRupee, PackageCheck, ReceiptIndianRupee, RotateCcw, ShoppingCart, TriangleAlert, Truck } from "lucide-react";
+import { PlaceholderBanner } from "@/components/admin/placeholder-banner";
 import { AreaChart } from "@/components/charts/area-chart";
 import { ProductImage } from "@/components/commerce/product-image";
 import { StatusBadge } from "@/components/ui/badge";
@@ -8,16 +9,18 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { loadOverview } from "@/lib/api/admin-system";
+import { loadOverview, loadSettings } from "@/lib/api/admin-system";
 import { paise, uiOrderStatus, uiPaymentMethod } from "@/lib/api/format";
-import { currentUser } from "@/lib/api/server";
+import { canEditArea, currentUser } from "@/lib/api/server";
 import { ORDER_STATUS, PAYMENT_METHOD } from "@/lib/status";
 import { formatDateShort, formatDateTime, formatNumber } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };
 
 export default async function AdminOverview() {
-  const [o, user] = await Promise.all([loadOverview(), currentUser()]);
+  const [o, user, canSettings] = await Promise.all([loadOverview(), currentUser(), canEditArea("settings")]);
+  // only people who can change Settings are told to; a failed read just hides the warning
+  const placeholders = canSettings ? await loadSettings().then((s) => s.placeholders).catch(() => []) : [];
   const chart = o.series.map((d) => ({ label: formatDateShort(d.date), orders: d.orders, revenue: Math.round(d.revenuePaise / 100) }));
   const work = [
     { label: "To accept", value: o.work.toAccept, href: "/admin/orders", icon: ShoppingCart },
@@ -39,6 +42,8 @@ export default async function AdminOverview() {
           </ButtonLink>
         }
       />
+
+      <PlaceholderBanner fields={placeholders} className="mb-6" />
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:gap-4">
         <StatCard label="Sales today" value={paise(o.today.revenuePaise)} icon={IndianRupee} footer={`${formatNumber(o.today.orders)} order${o.today.orders === 1 ? "" : "s"} since midnight`} />

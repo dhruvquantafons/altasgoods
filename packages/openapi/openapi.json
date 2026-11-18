@@ -532,6 +532,13 @@
                       ],
                       "additionalProperties": false
                     },
+                    "placeholders": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Company and grievance details still at their placeholder values, by name"
+                    },
                     "updatedAt": {
                       "nullable": true,
                       "type": "string",
@@ -551,6 +558,7 @@
                     "notice",
                     "company",
                     "grievance",
+                    "placeholders",
                     "updatedAt",
                     "updatedBy"
                   ],
@@ -1107,6 +1115,13 @@
                       ],
                       "additionalProperties": false
                     },
+                    "placeholders": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Company and grievance details still at their placeholder values, by name"
+                    },
                     "updatedAt": {
                       "nullable": true,
                       "type": "string",
@@ -1126,6 +1141,7 @@
                     "notice",
                     "company",
                     "grievance",
+                    "placeholders",
                     "updatedAt",
                     "updatedBy"
                   ],
@@ -8990,6 +9006,38 @@
                               "additionalProperties": false
                             }
                           },
+                          "legal": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "manufacturer": {
+                                "description": "Name and full address of the manufacturer",
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              "packer": {
+                                "description": "Name and full address of the packer; the store's own details are used when empty",
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              "importer": {
+                                "description": "Name and address of the importer, for imported goods",
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              "consumerCare": {
+                                "description": "Consumer care email and phone number for this product",
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              "countryOfOrigin": {
+                                "description": "Country of origin, for example India",
+                                "type": "string",
+                                "maxLength": 300
+                              }
+                            },
+                            "additionalProperties": false
+                          },
                           "rating": {
                             "type": "number"
                           },
@@ -9129,6 +9177,7 @@
                           "highlights",
                           "specs",
                           "variants",
+                          "legal",
                           "rating",
                           "ratingCount",
                           "reviewCount",
@@ -9936,6 +9985,38 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "legal": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "manufacturer": {
+                          "description": "Name and full address of the manufacturer",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "packer": {
+                          "description": "Name and full address of the packer; the store's own details are used when empty",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "importer": {
+                          "description": "Name and address of the importer, for imported goods",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "consumerCare": {
+                          "description": "Consumer care email and phone number for this product",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "countryOfOrigin": {
+                          "description": "Country of origin, for example India",
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -9966,7 +10047,8 @@
                     "soldLast30d",
                     "lowStock",
                     "codAvailable",
-                    "returnWindowDays"
+                    "returnWindowDays",
+                    "legal"
                   ],
                   "additionalProperties": false
                 }
@@ -10375,6 +10457,39 @@
                     "type": "string",
                     "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
                   },
+                  "legal": {
+                    "default": null,
+                    "nullable": true,
+                    "description": "Legal Metrology declarations shown on the product page; null leaves them as placeholders",
+                    "type": "object",
+                    "properties": {
+                      "manufacturer": {
+                        "description": "Name and full address of the manufacturer",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "packer": {
+                        "description": "Name and full address of the packer; the store's own details are used when empty",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "importer": {
+                        "description": "Name and address of the importer, for imported goods",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "consumerCare": {
+                        "description": "Consumer care email and phone number for this product",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "countryOfOrigin": {
+                        "description": "Country of origin, for example India",
+                        "type": "string",
+                        "maxLength": 300
+                      }
+                    }
+                  },
                   "tags": {
                     "default": [],
                     "maxItems": 4,
@@ -10608,6 +10723,40 @@
                       "type": "string",
                       "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
                     },
+                    "legal": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Legal Metrology declarations shown on the product page; null leaves them as placeholders",
+                      "type": "object",
+                      "properties": {
+                        "manufacturer": {
+                          "description": "Name and full address of the manufacturer",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "packer": {
+                          "description": "Name and full address of the packer; the store's own details are used when empty",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "importer": {
+                          "description": "Name and address of the importer, for imported goods",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "consumerCare": {
+                          "description": "Consumer care email and phone number for this product",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "countryOfOrigin": {
+                          "description": "Country of origin, for example India",
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -10737,6 +10886,7 @@
                     "brandId",
                     "gstRateBp",
                     "hsn",
+                    "legal",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -11161,6 +11311,40 @@
                       "type": "string",
                       "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
                     },
+                    "legal": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Legal Metrology declarations shown on the product page; null leaves them as placeholders",
+                      "type": "object",
+                      "properties": {
+                        "manufacturer": {
+                          "description": "Name and full address of the manufacturer",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "packer": {
+                          "description": "Name and full address of the packer; the store's own details are used when empty",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "importer": {
+                          "description": "Name and address of the importer, for imported goods",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "consumerCare": {
+                          "description": "Consumer care email and phone number for this product",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "countryOfOrigin": {
+                          "description": "Country of origin, for example India",
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -11290,6 +11474,7 @@
                     "brandId",
                     "gstRateBp",
                     "hsn",
+                    "legal",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -11493,6 +11678,38 @@
                     "description": "Overrides the category's HSN code; null inherits it",
                     "type": "string",
                     "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
+                  },
+                  "legal": {
+                    "nullable": true,
+                    "description": "Legal Metrology declarations shown on the product page; null leaves them as placeholders",
+                    "type": "object",
+                    "properties": {
+                      "manufacturer": {
+                        "description": "Name and full address of the manufacturer",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "packer": {
+                        "description": "Name and full address of the packer; the store's own details are used when empty",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "importer": {
+                        "description": "Name and address of the importer, for imported goods",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "consumerCare": {
+                        "description": "Consumer care email and phone number for this product",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "countryOfOrigin": {
+                        "description": "Country of origin, for example India",
+                        "type": "string",
+                        "maxLength": 300
+                      }
+                    }
                   },
                   "tags": {
                     "maxItems": 4,
@@ -11711,6 +11928,40 @@
                       "type": "string",
                       "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
                     },
+                    "legal": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Legal Metrology declarations shown on the product page; null leaves them as placeholders",
+                      "type": "object",
+                      "properties": {
+                        "manufacturer": {
+                          "description": "Name and full address of the manufacturer",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "packer": {
+                          "description": "Name and full address of the packer; the store's own details are used when empty",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "importer": {
+                          "description": "Name and address of the importer, for imported goods",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "consumerCare": {
+                          "description": "Consumer care email and phone number for this product",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "countryOfOrigin": {
+                          "description": "Country of origin, for example India",
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -11840,6 +12091,7 @@
                     "brandId",
                     "gstRateBp",
                     "hsn",
+                    "legal",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -12082,6 +12334,40 @@
                       "type": "string",
                       "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
                     },
+                    "legal": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Legal Metrology declarations shown on the product page; null leaves them as placeholders",
+                      "type": "object",
+                      "properties": {
+                        "manufacturer": {
+                          "description": "Name and full address of the manufacturer",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "packer": {
+                          "description": "Name and full address of the packer; the store's own details are used when empty",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "importer": {
+                          "description": "Name and address of the importer, for imported goods",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "consumerCare": {
+                          "description": "Consumer care email and phone number for this product",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "countryOfOrigin": {
+                          "description": "Country of origin, for example India",
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -12211,6 +12497,7 @@
                     "brandId",
                     "gstRateBp",
                     "hsn",
+                    "legal",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
@@ -12425,6 +12712,40 @@
                       "type": "string",
                       "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"
                     },
+                    "legal": {
+                      "default": null,
+                      "nullable": true,
+                      "description": "Legal Metrology declarations shown on the product page; null leaves them as placeholders",
+                      "type": "object",
+                      "properties": {
+                        "manufacturer": {
+                          "description": "Name and full address of the manufacturer",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "packer": {
+                          "description": "Name and full address of the packer; the store's own details are used when empty",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "importer": {
+                          "description": "Name and address of the importer, for imported goods",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "consumerCare": {
+                          "description": "Consumer care email and phone number for this product",
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "countryOfOrigin": {
+                          "description": "Country of origin, for example India",
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "default": [],
                       "maxItems": 4,
@@ -12554,6 +12875,7 @@
                     "brandId",
                     "gstRateBp",
                     "hsn",
+                    "legal",
                     "tags",
                     "pricePaise",
                     "mrpPaise",
