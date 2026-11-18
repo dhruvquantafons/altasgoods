@@ -97,7 +97,7 @@ export class ReturnsService {
     if (kind === "RETURN_APPROVED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, pickupDate: r.pickupDate, pickupSlot: r.pickupSlot } });
     if (kind === "RETURN_REJECTED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, reason: note, afterCheck: from === "QC_FAILED" } });
     if (kind === "RETURN_PICKED_UP") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, refundNow: r.instantRefund && r.resolution === "REFUND" } });
-    if (kind === "RETURN_QC_FAILED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, note } });
+    if (kind === "RETURN_QC_FAILED") await this.notifications.notify(tx, kind, { ...base, data: ids });
     if (kind === "RETURN_REPLACED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, exchangeSize: r.resolution === "EXCHANGE" ? r.exchangeSize : null } });
   }
 

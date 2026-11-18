@@ -232,31 +232,46 @@ describe("order and payment emails", () => {
 });
 
 describe("cancellation and refund emails", () => {
-  it("confirms a customer cancellation, then the refund starting and completing", async () => {
+  it("confirms a customer cancellation with the refund amount, then the refund completing: two emails", async () => {
     const { orderId, paymentId } = await place("serum-glow", "UPI");
     await pay(paymentId);
     await drain();
     outbox.sent = [];
     await t.http.post(`/v1/me/orders/${orderId}/cancel`).set(shopper).send({ reason: "Ordered by mistake" }).expect(200);
     await drain();
-    expect(only(/is cancelled/).text).toContain("As you asked");
-    const started = only(/has started/);
-    expect(started.subject).toMatch(new RegExp(`^Your refund of ₹[\\d,.]+ for order ${orderId} has started$`));
-    expect(started.text).toContain(`${WEB}/account/returns?tab=refunds`);
-    expect(only(/is complete$/).subject).toMatch(new RegExp(`for order ${orderId} is complete$`));
+    const cancelled = only(/is cancelled/);
+    expect(cancelled.text).toContain("As you asked");
+    expect(cancelled.text).toMatch(/A refund of ₹[\d,.]+ is on its way/);
+    const done = only(/is complete$/);
+    expect(done.subject).toMatch(new RegExp(`^Your refund of ₹[\\d,.]+ for order ${orderId} is complete$`));
+    expect(done.text).toContain(`${WEB}/account/returns?tab=refunds`);
+    expect(outbox.sent).toHaveLength(2);
   });
 
-  it("tells the customer the store cancelled an item, with the reason", async () => {
+  it("keeps the refund started email for a refund staff issue from the admin", async () => {
+    const { orderId, paymentId } = await place("serum-glow", "UPI");
+    await pay(paymentId);
+    await drain();
+    outbox.sent = [];
+    await t.http.post(`/v1/admin/orders/${orderId}/refunds`).set(staff).send({ amountPaise: 1000, reason: "Goodwill for the late delivery", method: "SOURCE" }).expect(201);
+    await drain();
+    expect(only(/has started/).subject).toBe(`Your refund of ₹10 for order ${orderId} has started`);
+    expect(only(/is complete$/).subject).toBe(`Your refund of ₹10 for order ${orderId} is complete`);
+  });
+
+  it("tells the customer the store cancelled an item, without the internal note", async () => {
     const { orderId, itemId } = await place("serum-glow", "COD");
     await drain();
     outbox.sent = [];
-    await transition([itemId], "CANCELLED", "Out of stock at the warehouse");
+    await transition([itemId], "CANCELLED", "internal: suspected fraud");
     await drain();
     const m = only(/is cancelled/);
     expect(m.subject).toBe(`Your AltasGoods order ${orderId} is cancelled`);
-    expect(m.text).toContain("we had to cancel");
-    expect(m.text).toContain("Out of stock at the warehouse");
+    expect(m.text).toContain("the store had to cancel");
     expect(m.text).toContain("You have not been charged");
+    // the staff note is internal
+    expect(m.text).not.toContain("suspected fraud");
+    expect(m.html).not.toContain("suspected fraud");
     expect(outbox.sent).toHaveLength(1);
   });
 });
@@ -302,18 +317,22 @@ describe("shipping emails", () => {
     expect(subjects()).toEqual([expect.stringMatching(/was delivered$/)]);
   });
 
-  it("tells the customer a parcel was lost and that a refund has started", async () => {
+  it("tells the customer a parcel was lost, with the refund amount in the same email", async () => {
     const { orderId, itemId, awb } = await readyLine("tablet-slate");
     await scan(awb, "Shipped");
     await drain();
     outbox.sent = [];
-    await transition([itemId], "LOST", "Courier confirmed the parcel is lost");
+    await transition([itemId], "LOST", "internal: courier blamed the hub team");
     await drain();
     const m = only(/An update on your AltasGoods order/);
     expect(m.subject).toBe(`An update on your AltasGoods order ${orderId}`);
     expect(m.text).toContain("lost your parcel");
-    expect(m.text).toContain("refund");
-    only(/has started/);
+    expect(m.text).toMatch(/A refund of ₹[\d,.]+ is on its way/);
+    expect(m.text).not.toContain("hub team");
+    // the lost email carries the refund; only its completion follows
+    expect(subjects().filter((x) => /has started/.test(x))).toEqual([]);
+    only(/is complete$/);
+    expect(outbox.sent).toHaveLength(2);
   });
 });
 
@@ -341,7 +360,7 @@ describe("return emails", () => {
     await drain();
     const approved = only(/is approved/);
     expect(approved.subject).toBe(`Your AltasGoods return ${r.id} is approved`);
-    expect(approved.text).toContain(`${WEB}/account/returns`);
+    expect(approved.text).toContain(`${WEB}/account/returns#${r.id}`);
     expect(approved.text).toContain("10 AM to 1 PM");
 
     await advance(r.id, "PICKED_UP");
@@ -361,7 +380,10 @@ describe("return emails", () => {
     outbox.sent = [];
     await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: false, note: "Water damage inside the case" }).expect(200);
     await drain();
-    expect(only(/did not pass|An update on your AltasGoods return/).text).toContain("Water damage inside the case");
+    const failed = only(/An update on your AltasGoods return/);
+    expect(failed.text).toContain("did not pass our quality check");
+    expect(failed.text).not.toContain("Water damage");
+    expect(failed.text).toContain(`${WEB}/account/returns#${r.id}`);
     outbox.sent = [];
     await t.http.post(`/v1/admin/returns/${r.id}/settle`).set(staff).send({ accept: false, note: "Damage is not covered by the return policy" }).expect(200);
     await drain();

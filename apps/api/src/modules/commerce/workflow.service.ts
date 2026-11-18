@@ -100,14 +100,16 @@ export class OrderWorkflow {
     }
 
     const all = items.map((i) => updated.get(i.id) ?? i);
-    if (args.to === "CANCELLED") await this.refundCancelled(tx, order, all, [...updated.values()], args.note ?? "Item cancelled");
+    // the customer's email for the change says the refund is on its way, so the refund sends no email of its own
+    let refundPaise: number | null = null;
+    if (args.to === "CANCELLED") refundPaise = await this.refundCancelled(tx, order, all, [...updated.values()], args.note ?? "Item cancelled");
     if (args.to === "LOST" || args.to === "RTO_RECEIVED") {
       // the staff note stays on the order event; the refund says what happened
-      await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? "Parcel lost in transit" : "Parcel returned to the store", args.actorId);
+      refundPaise = await this.refundLines(tx, order, [...updated.values()], args.to === "LOST" ? "Parcel lost in transit" : "Parcel returned to the store", args.actorId);
     }
     if (args.to === "DELIVERED") await this.markCodCollected(tx, order, all);
     const header = await this.recomputeHeader(tx, order, all, args.actor, args.headerOverride);
-    if (args.notify !== false) await this.announce(tx, order, all, moved, args, header);
+    if (args.notify !== false) await this.announce(tx, order, all, moved, args, header, refundPaise);
     return [...updated.values()];
   }
 
@@ -120,7 +122,7 @@ export class OrderWorkflow {
    * A parcel back out after a failed attempt, or a line back to delivered
    * after a withdrawn return, sends nothing.
    */
-  private async announce(tx: Tx, order: OrderRow, all: OrderItemRow[], moved: Moved[], args: { to: OrderItemStatus; actor: Actor; note?: string }, header: OrderStatus) {
+  private async announce(tx: Tx, order: OrderRow, all: OrderItemRow[], moved: Moved[], args: { to: OrderItemStatus; actor: Actor }, header: OrderStatus, refundPaise: number | null) {
     if (!moved.length) return;
     const base = { userId: order.userId, orderId: order.id };
     const paidOnline = order.paymentMethod !== "COD" && (order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED");
@@ -150,10 +152,11 @@ export class OrderWorkflow {
           data: {
             orderId: order.id,
             items: moved.map((m) => emailItem(m.item)),
+            // fixed wording only: a staff note is internal and never goes to the customer
             byCustomer: args.actor === "CUSTOMER",
-            reason: args.actor === "CUSTOMER" ? null : (args.note ?? null),
             whole: all.every((i) => i.status === "CANCELLED"),
-            prepaid: paidOnline,
+            refundPaise,
+            paidOnline,
           },
         });
         return;
@@ -178,7 +181,7 @@ export class OrderWorkflow {
       case "LOST":
       case "RTO_RECEIVED":
         for (const p of parcels(moved)) {
-          await this.notifications.notify(tx, args.to === "LOST" ? "PARCEL_LOST" : "PARCEL_RETURNED", { ...base, key: p.key, data: { orderId: order.id, items: p.items.map(emailItem), prepaid: paidOnline } });
+          await this.notifications.notify(tx, args.to === "LOST" ? "PARCEL_LOST" : "PARCEL_RETURNED", { ...base, key: p.key, data: { orderId: order.id, items: p.items.map(emailItem), refundPaise, paidOnline } });
         }
         return;
     }
@@ -212,7 +215,7 @@ export class OrderWorkflow {
    */
   private async refundCancelled(tx: Tx, order: OrderRow, all: OrderItemRow[], cancelled: OrderItemRow[], reason: string) {
     const nothingLeft = all.every((i) => INACTIVE.includes(i.status));
-    await this.refundLines(tx, order, cancelled, reason, undefined, nothingLeft);
+    return this.refundLines(tx, order, cancelled, reason, undefined, nothingLeft);
   }
 
   /**
@@ -220,22 +223,29 @@ export class OrderWorkflow {
    * each line's amount less its coupon share, or everything that is left
    * (delivery fee included) when `everything`. Never more than is left of
    * the payment, even if earlier line refunds rounded up. Unpaid and cash on
-   * delivery orders get nothing back.
+   * delivery orders get nothing back. Returns the amount queued, or null.
+   * The refund sends no "refund started" email: the transition's own email
+   * (cancelled, lost, returned to the store) carries the amount.
    */
-  private async refundLines(tx: Tx, order: OrderRow, lines: OrderItemRow[], reason: string, createdBy?: string, everything = false) {
-    if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") return;
+  private async refundLines(tx: Tx, order: OrderRow, lines: OrderItemRow[], reason: string, createdBy?: string, everything = false): Promise<number | null> {
+    if (order.paymentStatus !== "CAPTURED" && order.paymentStatus !== "PARTIALLY_REFUNDED") return null;
     const limit = await this.refunds.limit(tx, order);
-    if (!limit?.online) return;
+    if (!limit?.online) return null;
     const amount = Math.min(everything ? limit.leftPaise : lines.reduce((a, i) => a + lineNetPaise(order, i), 0), limit.leftPaise);
-    if (amount <= 0) return;
-    await this.refunds.queue(tx, {
-      paymentId: limit.payment.id,
-      orderId: order.id,
-      orderItemId: lines.length === 1 ? lines[0]!.id : null,
-      amountPaise: amount,
-      reason,
-      createdBy: createdBy ?? null,
-    });
+    if (amount <= 0) return null;
+    await this.refunds.queue(
+      tx,
+      {
+        paymentId: limit.payment.id,
+        orderId: order.id,
+        orderItemId: lines.length === 1 ? lines[0]!.id : null,
+        amountPaise: amount,
+        reason,
+        createdBy: createdBy ?? null,
+      },
+      { notify: false },
+    );
+    return amount;
   }
 
   private async markCodCollected(tx: Tx, order: OrderRow, all: OrderItemRow[]) {

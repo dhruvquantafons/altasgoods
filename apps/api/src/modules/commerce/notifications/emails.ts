@@ -20,18 +20,20 @@ export interface NotificationData {
   ORDER_PLACED: { orderId: string; totalPaise: number; paymentMethod: PaymentMethod; items: EmailItem[] };
   PAYMENT_FAILED: { orderId: string; amountPaise: number; payBy: string | null };
   ORDER_ABANDONED: { orderId: string; items: EmailItem[] };
-  ORDER_CANCELLED: { orderId: string; items: EmailItem[]; byCustomer: boolean; reason: string | null; whole: boolean; prepaid: boolean };
+  /** refundPaise: the refund queued for these lines (null when nothing was paid online, or nothing is left to refund) */
+  ORDER_CANCELLED: { orderId: string; items: EmailItem[]; byCustomer: boolean; whole: boolean; refundPaise: number | null; paidOnline: boolean };
   SHIPPED: { orderId: string; items: EmailItem[]; courier: string | null; awb: string | null; trackingUrl: string | null };
   OUT_FOR_DELIVERY: { orderId: string; items: EmailItem[]; trackingUrl: string | null; cod: boolean };
   DELIVERED: { orderId: string; items: EmailItem[] };
-  PARCEL_LOST: { orderId: string; items: EmailItem[]; prepaid: boolean };
-  PARCEL_RETURNED: { orderId: string; items: EmailItem[]; prepaid: boolean };
+  PARCEL_LOST: { orderId: string; items: EmailItem[]; refundPaise: number | null; paidOnline: boolean };
+  PARCEL_RETURNED: { orderId: string; items: EmailItem[]; refundPaise: number | null; paidOnline: boolean };
   REFUND_STARTED: { orderId: string; amountPaise: number; toSource: boolean };
   REFUND_COMPLETED: { orderId: string; amountPaise: number; toSource: boolean };
   RETURN_APPROVED: { returnId: string; orderId: string; title: string; pickupDate: string | null; pickupSlot: string | null };
+  /** reason: the decision note staff write for the customer, which the customer's return page shows too */
   RETURN_REJECTED: { returnId: string; orderId: string; title: string; reason: string | null; afterCheck: boolean };
   RETURN_PICKED_UP: { returnId: string; orderId: string; title: string; refundNow: boolean };
-  RETURN_QC_FAILED: { returnId: string; orderId: string; title: string; note: string | null };
+  RETURN_QC_FAILED: { returnId: string; orderId: string; title: string };
   RETURN_REFUNDED: { returnId: string; orderId: string; title: string; amountPaise: number; toSource: boolean };
   RETURN_REPLACED: { returnId: string; orderId: string; title: string; exchangeSize: string | null };
   CARE_REPLY: { ticketId: string; messageId: number };
@@ -108,7 +110,15 @@ function compose(ctx: EmailContext, d: Draft): EmailMessage {
 }
 
 const orderLink = (ctx: EmailContext, orderId: string, label = "View your order"): EmailLink => ({ href: `${ctx.web}/account/orders/${orderId}`, label });
-const returnsLink = (ctx: EmailContext): EmailLink => ({ href: `${ctx.web}/account/returns`, label: "View your return" });
+/** Each return is a card on the returns page, anchored by its id (there is no page per return). */
+const returnLink = (ctx: EmailContext, returnId: string): EmailLink => ({ href: `${ctx.web}/account/returns#${returnId}`, label: "View your return" });
+/** What happens to the money for lines that will not reach the customer. Fixed wording: staff notes never go into customer emails. */
+const moneyLine = (d: { refundPaise: number | null; paidOnline: boolean }, them: string) =>
+  d.refundPaise
+    ? [`A refund of ${rupees(d.refundPaise)} is on its way to the payment method you used. We will email you when it has been sent.`]
+    : d.paidOnline
+      ? []
+      : [`You have not been charged for ${them}.`];
 const refundsLink = (ctx: EmailContext): EmailLink => ({ href: `${ctx.web}/account/returns?tab=refunds`, label: "View your refunds" });
 
 type Builder<K extends NotificationKind> = (ctx: EmailContext, data: NotificationData[K]) => EmailMessage;
@@ -154,8 +164,8 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
       paragraphs: [
         d.byCustomer
           ? `As you asked, we cancelled ${d.whole ? `order ${d.orderId}` : `${what(d.items)} from order ${d.orderId}`}.`
-          : `We are sorry, we had to cancel ${d.whole ? `order ${d.orderId}` : `${what(d.items)} from order ${d.orderId}`}.${d.reason ? ` Reason: ${d.reason}` : ""}`,
-        d.prepaid ? "Your refund is on its way. We will email you when it has been sent." : "You have not been charged for these items.",
+          : `We are sorry, the store had to cancel ${d.whole ? `order ${d.orderId}` : `${what(d.items)} from order ${d.orderId}`}.`,
+        ...moneyLine(d, d.items.length === 1 ? "it" : "these items"),
       ],
       list: d.items.map(itemLine),
       link: orderLink(ctx, d.orderId),
@@ -196,7 +206,7 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
       title: "Your parcel was lost in transit",
       paragraphs: [
         `We are sorry. The courier has lost your parcel from order ${d.orderId}.`,
-        d.prepaid ? "We have started a full refund for it. We will email you when it has been sent." : "You have not been charged for it.",
+        ...moneyLine(d, "it"),
       ],
       list: d.items.map(itemLine),
       link: orderLink(ctx, d.orderId),
@@ -208,7 +218,7 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
       title: "Your parcel came back to us",
       paragraphs: [
         `The courier could not deliver your parcel from order ${d.orderId} and returned it to us.`,
-        d.prepaid ? "We have started a refund for it. We will email you when it has been sent." : "You have not been charged for it.",
+        ...moneyLine(d, "it"),
       ],
       list: d.items.map(itemLine),
       link: orderLink(ctx, d.orderId),
@@ -244,7 +254,7 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
         `We approved return ${d.returnId} for ${d.title}.`,
         d.pickupDate ? `We will pick it up on ${pickupDay(d.pickupDate)}${d.pickupSlot ? `, ${d.pickupSlot}` : ""}. Please pack the item with its tags and accessories.` : "We will let you know when the pickup is booked. Please pack the item with its tags and accessories.",
       ],
-      link: returnsLink(ctx),
+      link: returnLink(ctx, d.returnId),
     }),
 
   RETURN_REJECTED: (ctx, d) =>
@@ -256,7 +266,7 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
         ...(d.reason ? [`Reason: ${d.reason}`] : []),
         "If you think this is wrong, write to us from Help and support.",
       ],
-      link: returnsLink(ctx),
+      link: returnLink(ctx, d.returnId),
     }),
 
   RETURN_PICKED_UP: (ctx, d) =>
@@ -264,15 +274,15 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
       subject: `We picked up your AltasGoods return ${d.returnId}`,
       title: "Your return was picked up",
       paragraphs: [`We picked up ${d.title} for return ${d.returnId}.`, d.refundNow ? "Your refund has started." : "We will check the item when it reaches us and email you with the outcome."],
-      link: returnsLink(ctx),
+      link: returnLink(ctx, d.returnId),
     }),
 
   RETURN_QC_FAILED: (ctx, d) =>
     compose(ctx, {
       subject: `An update on your AltasGoods return ${d.returnId}`,
       title: "Your returned item did not pass our check",
-      paragraphs: [`We checked ${d.title} from return ${d.returnId} and found a problem.`, ...(d.note ? [`What we found: ${d.note}`] : []), "Our team will review it and contact you about what happens next."],
-      link: returnsLink(ctx),
+      paragraphs: [`Your return ${d.returnId} (${d.title}) did not pass our quality check.`, "Our team will review it and contact you about what happens next. You can see the details on your return."],
+      link: returnLink(ctx, d.returnId),
     }),
 
   RETURN_REFUNDED: (ctx, d) =>
@@ -283,7 +293,7 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
         `We have started a refund of ${rupees(d.amountPaise)} for return ${d.returnId} (${d.title}).`,
         d.toSource ? "It goes back to the payment method you used. We will email you when it has been sent." : "Our team pays it to you directly. We will email you when it has been paid.",
       ],
-      link: refundsLink(ctx),
+      link: returnLink(ctx, d.returnId),
     }),
 
   RETURN_REPLACED: (ctx, d) =>
@@ -291,7 +301,7 @@ const BUILDERS: { [K in NotificationKind]: Builder<K> } = {
       subject: `Your AltasGoods ${d.exchangeSize ? "exchange" : "replacement"} for return ${d.returnId} is on its way`,
       title: d.exchangeSize ? "Your exchange is on its way" : "Your replacement is on its way",
       paragraphs: [d.exchangeSize ? `We are sending ${d.title} in size ${d.exchangeSize} for return ${d.returnId}.` : `We are sending a replacement ${d.title} for return ${d.returnId}.`],
-      link: returnsLink(ctx),
+      link: returnLink(ctx, d.returnId),
     }),
 
   CARE_REPLY: (ctx, d) =>
