@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  companyEmail,
+  companyLegalName,
   isPlaceholderText,
   legalDeclarations,
   PLACEHOLDER_TEXT,
@@ -183,5 +185,16 @@ describe("isPlaceholderText", () => {
       expect(isPlaceholderText(v)).toBe(true);
     for (const v of ["Acme Retail Private Limited", "1 Test Street, Test City"])
       expect(isPlaceholderText(v)).toBe(false);
+  });
+});
+
+describe("companyLegalName and companyEmail", () => {
+  it("give the real value, and null while it is a placeholder", () => {
+    expect(companyLegalName(company)).toBe("Acme Retail Private Limited");
+    expect(companyLegalName(placeholderCompany)).toBeNull();
+    expect(companyLegalName({ legalName: "  " })).toBeNull();
+    expect(companyEmail({ email: "care@acme.test" })).toBe("care@acme.test");
+    expect(companyEmail({ email: "care@example.com" })).toBeNull();
+    expect(companyEmail({ email: "" })).toBeNull();
   });
 });

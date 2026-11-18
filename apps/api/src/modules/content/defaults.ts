@@ -196,7 +196,7 @@ export const DEFAULT_PAGES: DefaultPage[] = [
       {
         "id": "marketplace",
         "heading": "AltasGoods is a marketplace",
-        "body": "AltasGoods is operated by AltasGoods Commerce Private Limited as an e-commerce marketplace. Products are sold by independent sellers. The seller's name, address, rating and return policy are shown on every product page, and each seller issues its own GST invoice."
+        "body": "AltasGoods is operated by the company named on the Contact page, as an e-commerce marketplace. Products are sold by independent sellers. The seller's name, address, rating and return policy are shown on every product page, and each seller issues its own GST invoice."
       },
       {
         "id": "account",
@@ -719,17 +719,17 @@ export const DEFAULT_ABOUT: AboutDoc = {
     {
       "city": "Mumbai",
       "note": "Seller success and partnerships",
-      "address": "6th Floor, Harbour View Centre, Lower Parel, Mumbai 400013"
+      "address": "Address to be added"
     },
     {
       "city": "Gurugram",
       "note": "Operations and logistics",
-      "address": "Tower C, Cyber Greens, DLF Phase 3, Gurugram 122002"
+      "address": "Address to be added"
     },
     {
       "city": "Hyderabad",
       "note": "Care Desk",
-      "address": "Block 4, Orion Tech Park, Hitec City, Hyderabad 500081"
+      "address": "Address to be added"
     }
   ]
 };

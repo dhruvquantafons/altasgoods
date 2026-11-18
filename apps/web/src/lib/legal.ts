@@ -29,10 +29,20 @@ export interface LegalRow {
 
 export const PLACEHOLDER_TEXT = "To be added by the store";
 
-/** True for a blank value or one of the "not set" defaults a fresh store starts with (mirrors settingsPlaceholders in the API). */
+/** True for a blank value or one of the placeholder defaults a fresh store starts with ("not set", example.com); the one definition the web uses, mirroring settingsPlaceholders in the API. */
 export function isPlaceholderText(v: string | null | undefined) {
   const t = (v ?? "").trim();
-  return t === "" || /\bnot set\b/i.test(t);
+  return t === "" || /\bnot set\b/i.test(t) || /(^|[@/.])example\.com\b/i.test(t);
+}
+
+/** The company's legal name, or null while it is still the placeholder; callers then show just the brand. */
+export function companyLegalName(company: { legalName: string }): string | null {
+  return isPlaceholderText(company.legalName) ? null : company.legalName.trim();
+}
+
+/** The company's contact email, or null while it is still the placeholder. */
+export function companyEmail(company: { email: string }): string | null {
+  return isPlaceholderText(company.email) ? null : company.email.trim();
 }
 
 function netQuantity(title: string) {

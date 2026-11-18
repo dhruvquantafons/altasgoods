@@ -1429,16 +1429,6 @@ export const reviewClusters = [
   { id: "CL-112", product: "Veda Naturals 10% Niacinamide Glow Serum", reviews: 22, accounts: 4, signal: "Reviewer addresses match the seller's warehouse pincode", status: "Removed, seller warned" },
 ];
 
-/* ------------------------------ Settings ------------------------------ */
-
-export const platformSettings = {
-  returnWindows: categoryMeta.map((m) => ({ categoryId: m.categoryId, days: m.returnDays, resolution: m.resolution })),
-  cod: { maxOrderValue: 50000, maxUndelivered: 3, pincodeRtoThreshold: 25, refusalsToDisable: 2 },
-  delivery: { freeAbove: 499, fee: 40, platformFee: 0 },
-  grievance: { name: "Meenakshi Raghavan", designation: "Grievance Officer", email: "grievance@altasgoods.in", phone: "+91 80 4718 2200", address: "AltasGoods Technologies Private Limited, 7th Floor, Orion Tech Park, Outer Ring Road, Bengaluru 560103" },
-  maintenance: { enabled: false, message: "Scheduled maintenance on 4 Oct from 2:00 am to 4:00 am. Payments may be slower than usual.", audience: "Everyone" },
-};
-
 /* --------------------------- Payout runs ------------------------------ */
 
 export const payoutRun = {

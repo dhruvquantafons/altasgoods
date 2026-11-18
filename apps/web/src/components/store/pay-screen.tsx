@@ -164,7 +164,6 @@ export function PayScreen({ payment, order, checkout, customer }: Props) {
             <LogoMark className="size-7" />
             <div>
               <p className="text-sm font-semibold text-ink-900">AltasGoods Pay</p>
-              <p className="text-xs text-ink-500">AltasGoods Commerce Private Limited</p>
             </div>
           </div>
           <span className="flex items-center gap-1 text-xs text-ink-500">

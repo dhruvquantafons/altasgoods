@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { sampleSignaturePng } from "../src/db/sample-files.js";
+import * as defaults from "../src/modules/content/defaults.js";
 import { DEFAULT_SETTINGS, settingsPlaceholders } from "../src/modules/admin/admin.schemas.js";
 import { createTestApp, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
 
@@ -124,5 +125,13 @@ describe("placeholder store details", () => {
     expect(text).not.toMatch(/altasgoods|Meenakshi|Lakeview|Bengaluru/i);
     expect(DEFAULT_SETTINGS.company.email).toMatch(/@example\.com$/);
     expect(DEFAULT_SETTINGS.grievance.email).toMatch(/@example\.com$/);
+  });
+
+  it("leave no invented entity name, street address or pincode in the content defaults", () => {
+    expect(JSON.stringify(defaults.DEFAULT_ABOUT.offices)).not.toMatch(/\b\d{6}\b/);
+    for (const office of defaults.DEFAULT_ABOUT.offices) expect(office.address).not.toMatch(/\d/);
+    const all = JSON.stringify(Object.values(defaults));
+    expect(all).not.toMatch(/Commerce Private Limited|Pvt|Lakeview|KIADB|Meenakshi/i);
+    expect(all).not.toMatch(/\b[\w.-]+@altasgoods\.(in|com)\b/i);
   });
 });

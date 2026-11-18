@@ -5,6 +5,7 @@ import { CallbackRequest } from "@/components/store/callback-request";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { currentUser } from "@/lib/api/server";
+import { companyEmail } from "@/lib/legal";
 import { getStoreSettings, type StorefrontSettings } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +18,8 @@ const channelsFor = (COMPANY: StorefrontSettings["company"]) => [
   { icon: Mail, title: COMPANY.email, body: "For anything that needs attachments or a written record. Reply within 24 hours.", cta: "Write to us", href: `mailto:${COMPANY.email}` },
 ];
 
-const teams = [
-  { icon: Newspaper, title: "Press and media", body: "Write to press@altasgoods.in for interviews, data and images.", href: "/press", cta: "Press room" },
+const teamsFor = (company: { email: string }) => [
+  { icon: Newspaper, title: "Press and media", body: companyEmail(company) ? `Write to ${companyEmail(company)} for interviews, data and images.` : "See the Press room for interviews, data and images.", href: "/press", cta: "Press room" },
   { icon: Briefcase, title: "Careers", body: "See open roles and how we hire.", href: "/careers", cta: "Open roles" },
 ];
 
@@ -72,7 +73,7 @@ export default async function ContactPage() {
               Other teams
             </h2>
             <ul className="mt-4 divide-y divide-line">
-              {teams.map((t) => (
+              {teamsFor(COMPANY).map((t) => (
                 <li key={t.title} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-ink-50 text-ink-600">
                     <t.icon size={17} strokeWidth={1.8} aria-hidden="true" />

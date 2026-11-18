@@ -4,13 +4,17 @@ import { Download, Mail } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
+import { Placeholder } from "@/components/store/placeholder";
+import { companyEmail } from "@/lib/legal";
 import { getAbout, getPress } from "@/lib/store-content";
+import { getStoreSettings } from "@/lib/store-settings";
 import { cn, formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Press" };
 
 export default async function PressPage() {
-  const [releases, about] = await Promise.all([getPress(), getAbout()]);
+  const [releases, about, { company }] = await Promise.all([getPress(), getAbout(), getStoreSettings()]);
+  const email = companyEmail(company);
   const [lead, ...rest] = releases;
   return (
     <div className="pb-16 lg:pb-24">
@@ -18,7 +22,7 @@ export default async function PressPage() {
         crumbs={[{ label: "Home", href: "/" }, { label: "Press" }]}
         eyebrow="Press room"
         title="News from AltasGoods"
-        description="Announcements, numbers and resources for journalists. For interviews and data requests, write to press@altasgoods.in."
+        description="Announcements, numbers and resources for journalists. For interviews and data requests, use the media contact on this page."
       />
 
       <div className={cn(STORE_CONTAINER, "mt-10 grid gap-10 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_340px]")}>
@@ -56,10 +60,16 @@ export default async function PressPage() {
           <section className="rounded-2xl border border-line bg-white p-6">
             <h2 className="text-base font-semibold text-ink-900">Media contact</h2>
             <p className="mt-1 text-sm text-ink-500">We reply to journalists within one working day.</p>
-            <a href="mailto:press@altasgoods.in" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:underline">
-              <Mail size={15} aria-hidden="true" />
-              press@altasgoods.in
-            </a>
+            {email ? (
+              <a href={`mailto:${email}`} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:underline">
+                <Mail size={15} aria-hidden="true" />
+                {email}
+              </a>
+            ) : (
+              <p className="mt-4">
+                <Placeholder>Contact to be added by the store</Placeholder>
+              </p>
+            )}
           </section>
 
           <section className="rounded-2xl border border-line bg-white p-6">
@@ -69,10 +79,12 @@ export default async function PressPage() {
               <LogoMark inverted className="size-10 rounded-[9px] ring-1 ring-line" />
             </div>
             <p className="mt-3 text-sm leading-relaxed text-ink-500">Logo files, product photography and leadership photos. Please do not alter the logo or its colours.</p>
-            <a href="mailto:press@altasgoods.in?subject=Media%20kit%20request" className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-line-strong bg-white px-3 text-sm font-medium text-ink-800 hover:bg-ink-50">
+            {email && (
+              <a href={`mailto:${email}?subject=Media%20kit%20request`} className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-line-strong bg-white px-3 text-sm font-medium text-ink-800 hover:bg-ink-50">
               <Download size={15} aria-hidden="true" />
               Request the media kit
             </a>
+            )}
           </section>
 
           <section className="rounded-2xl border border-line bg-white p-6">
