@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 const schema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  /** Required, no default: a forgotten value must fail startup, not quietly run as development. */
+  NODE_ENV: z.enum(["development", "test", "production"], "NODE_ENV must be set to development, test or production"),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().url().default("postgres://localhost:5432/altasgoods_dev"),
   TEST_DATABASE_URL: z.string().url().default("postgres://localhost:5432/altasgoods_test"),
@@ -59,16 +60,15 @@ export type Env = z.infer<typeof schema>;
 
 let cached: Env | undefined;
 
-/** Validated environment. Fails fast at startup with a readable message. */
-export function env(): Env {
-  if (cached) return cached;
+/** Validates a raw environment. Throws a readable message listing every problem. */
+export function parseEnv(raw: Record<string, string | undefined>): Env {
   const parsed = schema.safeParse({
-    ...process.env,
+    ...raw,
     // tests get safe defaults so they never need a .env file
-    ...(process.env.NODE_ENV === "test"
+    ...(raw.NODE_ENV === "test"
       ? {
-          JWT_SECRET: process.env.JWT_SECRET ?? "test-secret-test-secret-test-secret-1234",
-          PAYMENTS_WEBHOOK_SECRET: process.env.PAYMENTS_WEBHOOK_SECRET ?? "test-webhook-secret-1234",
+          JWT_SECRET: raw.JWT_SECRET ?? "test-secret-test-secret-test-secret-1234",
+          PAYMENTS_WEBHOOK_SECRET: raw.PAYMENTS_WEBHOOK_SECRET ?? "test-webhook-secret-1234",
           // tests drive payments through the sandbox, never a live gateway
           PAYMENTS_PROVIDER: "sandbox",
           // and ship through the simulated courier, never a real one
@@ -82,11 +82,19 @@ export function env(): Env {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
-  cached = parsed.data;
+  return parsed.data;
+}
+
+/** Validated environment. Fails fast at startup with a readable message. */
+export function env(): Env {
+  cached ??= parseEnv(process.env);
   return cached;
 }
 
 export const isProduction = () => env().NODE_ENV === "production";
+
+/** One-time codes in API responses and the dev endpoints' extras: development only, never test or production. */
+export const devToolsEnabled = () => env().NODE_ENV === "development";
 
 /**
  * Demo data is made with the payment sandbox and the simulated courier, so

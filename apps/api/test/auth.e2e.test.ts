@@ -69,6 +69,8 @@ describe("forgot password", () => {
     const { session: old } = await signUp(t.http, "forgetful@example.com", "Forgetful", "first-password");
     const r = await t.http.post("/v1/auth/password/forgot").send({ email: "Forgetful@example.com" }).expect(200);
     expect(r.body.email).toBe("f******@example.com");
+    // dev codes are for development only, never test or production
+    expect(r.body).not.toHaveProperty("devCode");
     const code = outbox.codeFor("forgetful@example.com");
     expect(code).toMatch(/^\d{6}$/);
     expect(outbox.sent[0]!.html).toContain(code);

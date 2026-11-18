@@ -536,6 +536,7 @@ export const orderItems = pgTable(
   (t) => [
     index("order_items_order_idx").on(t.orderId),
     index("order_items_status_idx").on(t.status, t.createdAt),
+    index("order_items_awb_idx").on(t.awb, t.shippingProvider),
     check("order_items_qty_ck", sql`${t.qty} between 1 and 10`),
     check("order_items_status_ck", inList("status", ORDER_ITEM_STATUSES)),
   ],
@@ -578,7 +579,7 @@ export const payments = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("payments_order_idx").on(t.orderId), check("payments_status_ck", inList("status", PAYMENT_STATUSES))],
+  (t) => [index("payments_order_idx").on(t.orderId), index("payments_provider_ref_idx").on(t.providerRef), check("payments_status_ck", inList("status", PAYMENT_STATUSES))],
 );
 
 /** Every provider webhook, keyed by the provider's event id so redelivery is a no-op. */

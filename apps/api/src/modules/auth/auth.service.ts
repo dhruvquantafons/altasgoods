@@ -2,7 +2,7 @@ import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { and, eq, ne, sql } from "drizzle-orm";
 import type { Redis } from "ioredis";
-import { env, isProduction } from "../../config/env.js";
+import { devToolsEnabled, env } from "../../config/env.js";
 import type { Db } from "../../db/client.js";
 import { users } from "../../db/schema.js";
 import { ApiError, conflict, notFound } from "../../common/errors.js";
@@ -109,7 +109,7 @@ export class AuthService {
     const code = newCode();
     await this.redis.set(`pwreset:${user.id}`, JSON.stringify({ hash: hashCode(`reset:${user.id}`, code), attempts: 0 }), "EX", CODE_TTL_SECONDS);
     await this.email.send(passwordResetEmail(email, code, CODE_TTL_SECONDS / 60));
-    return { ...response, ...(isProduction() ? {} : { devCode: code }) };
+    return { ...response, ...(devToolsEnabled() ? { devCode: code } : {}) };
   }
 
   /** Checks the emailed code, sets the new password, signs out every other device and signs this one in. */
@@ -209,7 +209,7 @@ export class AuthService {
       email: maskEmail(email),
       expiresAt: new Date(this.clock.now().getTime() + CODE_TTL_SECONDS * 1000).toISOString(),
       resendAfterSeconds: RESEND_AFTER_SECONDS,
-      ...(isProduction() ? {} : { devCode: code }),
+      ...(devToolsEnabled() ? { devCode: code } : {}),
     };
   }
 

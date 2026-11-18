@@ -8,6 +8,7 @@ import { env, isProduction } from "../../../config/env.js";
 import { CLOCK, DB, FILE_STORE } from "../../../common/tokens.js";
 import type { Db, Tx } from "../../../db/client.js";
 import { addresses, customerUploads, offers, orderItems, orders, products, refunds, returnEvents, returns, users, type Actor, type ReturnStatus } from "../../../db/schema.js";
+import type { AuthUser } from "../../auth/auth.guard.js";
 import { sniffMime, type FileStore } from "../../files/file-store.js";
 import { PaymentsService } from "../payments/payments.service.js";
 import { OrderWorkflow } from "../workflow.service.js";
@@ -405,9 +406,12 @@ export class ReturnsService {
   }
 
   /** Stands in for reverse pickup scans until the logistics integration (development only). */
-  async advance(id: string, to: PickupScan) {
+  async advance(id: string, to: PickupScan, user: AuthUser) {
     await this.db.transaction(async (tx) => {
       const r = await this.lock(tx, id);
+      // the return's owner or store operations staff may drive the simulation
+      const ops = user.staff.some((role) => role === "SUPER_ADMIN" || role === "OPS_ADMIN");
+      if (r.userId !== user.id && !ops) throw notFound("Return");
       await this.walkPickup(tx, r, to, "LOGISTICS", null);
     });
     return this.view(id);

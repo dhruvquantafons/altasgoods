@@ -1,0 +1,2 @@
+CREATE INDEX "order_items_awb_idx" ON "order_items" USING btree ("awb","shipping_provider");--> statement-breakpoint
+CREATE INDEX "payments_provider_ref_idx" ON "payments" USING btree ("provider_ref");

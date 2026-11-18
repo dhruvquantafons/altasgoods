@@ -160,8 +160,8 @@ export class DevReturnsController {
   @Post(":id/advance")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
-  advance(@Param("id", returnId) id: string, @Body({ schema: s.advanceBody }) body: z.infer<typeof s.advanceBody>) {
+  advance(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.advanceBody }) body: z.infer<typeof s.advanceBody>) {
     if (isProduction()) throw forbidden("Development endpoints are disabled in production");
-    return this.svc.advance(id, body.to);
+    return this.svc.advance(id, body.to, u);
   }
 }

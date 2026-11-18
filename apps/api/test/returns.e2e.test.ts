@@ -92,6 +92,16 @@ describe("returns", () => {
     expect(order!.paymentStatus).toBe("REFUNDED");
   });
 
+  it("lets only the return's owner or operations staff drive the dev pickup scans", async () => {
+    const { itemId } = await deliveredLine("airfryer-crisp");
+    const created = await t.http.post("/v1/me/returns").set(shopper).send(request(itemId)).expect(201);
+    const other = (await signUp(t.http, `stranger-${randomUUID().slice(0, 8)}@example.com`)).auth;
+    await t.http.post(`/v1/dev/returns/${created.body.id}/advance`).set(other).send({ to: "OUT_FOR_PICKUP" }).expect(404);
+    // unchanged, and the owner can still drive it
+    expect((await t.http.get(`/v1/me/returns/${created.body.id}`).set(shopper).expect(200)).body.status).toBe("PICKUP_SCHEDULED");
+    await t.http.post(`/v1/dev/returns/${created.body.id}/advance`).set(shopper).send({ to: "OUT_FOR_PICKUP" }).expect(200);
+  });
+
   it("refunds low value returns at the doorstep, once", async () => {
     const { itemId } = await deliveredLine("cookware-pan");
     const r = (await t.http.post("/v1/me/returns").set(shopper).send(request(itemId, { reasonCode: "NO_LONGER_NEEDED", reasonLabel: "No longer needed", fault: "CUSTOMER" })).expect(201)).body;
