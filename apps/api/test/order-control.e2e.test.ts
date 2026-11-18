@@ -439,6 +439,27 @@ describe("delivery address", () => {
       await saveAreas({ blocked: [], noCod: [], extraDays: [] });
     }
   });
+
+  it("moves the promised date out for an address that takes longer to reach, and never brings it forward", async () => {
+    const o = await order(["mugs-stone"]);
+    const promised = () => db.select({ promisedBy: orderItems.promisedBy }).from(orderItems).where(eq(orderItems.orderId, o.orderId));
+    const [first] = await promised();
+    await saveAreas({ blocked: [], noCod: [], extraDays: [{ prefix: "7910", days: 3 }] });
+    try {
+      // the new area adds 3 days to the slowest line's delivery days, as a quote there would
+      await t.http.patch(`${A}/orders/${o.orderId}/address`).set(staff).send({ ...address, pincode: "791001" }).expect(200);
+      const [later] = await promised();
+      expect(later!.promisedBy.getTime() - first!.promisedBy.getTime()).toBe(3 * 86_400_000);
+      // back to a nearer pincode: the customer keeps the date they were last given
+      await t.http.patch(`${A}/orders/${o.orderId}/address`).set(staff).send(address).expect(200);
+      expect((await promised())[0]!.promisedBy).toEqual(later!.promisedBy);
+      // the customer sees the new date on their order
+      const mine = await t.http.get(`/v1/me/orders/${o.orderId}`).set(shopper).expect(200);
+      expect(mine.body.items[0].promisedBy).toBe(later!.promisedBy.toISOString());
+    } finally {
+      await saveAreas({ blocked: [], noCod: [], extraDays: [] });
+    }
+  });
 });
 
 describe("internal notes", () => {

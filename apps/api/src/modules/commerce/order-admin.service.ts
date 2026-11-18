@@ -1,13 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 import { conflict, notFound, unprocessable } from "../../common/errors.js";
 import type { Redis } from "ioredis";
 import { DB, REDIS } from "../../common/tokens.js";
 import type { Db } from "../../db/client.js";
-import { orderItems, orderNotes, orders, refunds, users, type AddressSnapshot, type OrderItemStatus } from "../../db/schema.js";
+import { offers, orderItems, orderNotes, orders, refunds, users, type AddressSnapshot, type OrderItemStatus } from "../../db/schema.js";
 import type { adminRefundBody, orderAddressBody } from "./commerce.schemas.js";
 import { PaymentsService } from "./payments/payments.service.js";
+import { promiseDate } from "./pricing.js";
 import { RefundsService } from "./payments/refunds.service.js";
 import { ServiceabilityService } from "./serviceability.service.js";
 import { bookingLockKey } from "./shipping/shipping.service.js";
@@ -96,16 +97,30 @@ export class OrderAdminService {
   /**
    * Corrects the delivery address while the courier does not have the parcel
    * yet. A new pincode must be one we deliver to (and take cash at, for cash
-   * on delivery). Leaves an internal note so the order page shows the change.
+   * on delivery), and each line's promised date is worked out again for it as
+   * a quote there would have (the slowest line plus the area's extra days, or
+   * the courier's estimate, from when the order was placed). The date only
+   * ever moves later. Leaves an internal note so the order page shows the change.
    */
   async updateAddress(actor: { id: string }, orderId: string, body: Address) {
-    const [current] = await this.db.select({ address: orders.address, paymentMethod: orders.paymentMethod }).from(orders).where(eq(orders.id, orderId));
+    const [current] = await this.db.select({ address: orders.address, paymentMethod: orders.paymentMethod, placedAt: orders.placedAt }).from(orders).where(eq(orders.id, orderId));
     if (!current) throw notFound("Order");
     // asked before the lock: it may call the courier
+    let promise: Date | null = null;
     if (body.pincode !== current.address.pincode) {
-      const area = await this.serviceability.check(body.pincode);
+      const lines = await this.db
+        .select({ qty: orderItems.qty, status: orderItems.status, deliveryDays: offers.deliveryDays, weightGrams: offers.weightGrams })
+        .from(orderItems)
+        .innerJoin(offers, eq(offers.id, orderItems.offerId))
+        .where(eq(orderItems.orderId, orderId));
+      const live = lines.filter((l) => l.status !== "CANCELLED");
+      const weightGrams = live.reduce((a, l) => a + l.weightGrams * l.qty, 0);
+      const area = await this.serviceability.check(body.pincode, { weightGrams: weightGrams || undefined });
       if (!area.serviceable) throw unprocessable("PINCODE_UNSERVICEABLE", `We do not deliver to ${body.pincode} yet`);
       if (current.paymentMethod === "COD" && !area.codAvailable) throw unprocessable("COD_UNAVAILABLE", `Cash on delivery is not available at ${body.pincode}, and this order is paid on delivery`);
+      // the date a quote to this pincode would have promised when the order was placed (see QuoteService)
+      const slowest = live.reduce((days, l) => Math.max(days, l.deliveryDays), 0);
+      promise = promiseDate(current.placedAt, Math.max(slowest + area.extraDays, area.etaDays ?? 0));
     }
     const next: AddressSnapshot = {
       name: body.name,
@@ -124,6 +139,10 @@ export class OrderAdminService {
       // checked under the order lock: a booking that starts after this waits for the commit and reads the new address
       for (const i of items) if (await this.redis.exists(bookingLockKey(i.id))) throw conflict("ADDRESS_LOCKED", "The parcel is being booked with the courier right now");
       await tx.update(orders).set({ address: next }).where(eq(orders.id, orderId));
+      // a farther address can push the promised date out; a nearer one never brings it forward, since the
+      // customer was already told the later date and the store plans by it
+      const later = promise ? items.filter((i) => i.status !== "CANCELLED" && i.promisedBy < promise!).map((i) => i.id) : [];
+      if (later.length) await tx.update(orderItems).set({ promisedBy: promise! }).where(inArray(orderItems.id, later));
       if (oneLine(order.address) !== oneLine(next)) {
         await tx.insert(orderNotes).values({ orderId, authorId: actor.id, authorName: await this.nameOf(actor.id), body: `Changed the delivery address from "${oneLine(order.address)}" to "${oneLine(next)}".` });
       }
