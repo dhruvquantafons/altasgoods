@@ -1,6 +1,7 @@
 import { Logger, Module } from "@nestjs/common";
 import { LOGISTICS_PROVIDER, PAYMENT_PROVIDER } from "../../common/tokens.js";
 import { env } from "../../config/env.js";
+import { AuthModule } from "../auth/auth.module.js";
 import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
 import { WishlistService } from "./wishlist.service.js";
@@ -39,8 +40,12 @@ import { ReturnsService } from "./returns/returns.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
 import { OrderAdminService } from "./order-admin.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
+import { EmailNotificationsWorker } from "./notifications/notifications.handler.js";
+import { NotificationsService } from "./notifications/notifications.service.js";
 
 @Module({
+  // for EMAIL_PROVIDER: customer emails are sent from here
+  imports: [AuthModule],
   controllers: [
     AddressesController,
     CartController,
@@ -60,6 +65,8 @@ import { OrderWorkflow } from "./workflow.service.js";
     DevReturnsController,
   ],
   providers: [
+    NotificationsService,
+    EmailNotificationsWorker,
     AdminInsightsService,
     SalesService,
     PromotionsService,
@@ -111,6 +118,6 @@ import { OrderWorkflow } from "./workflow.service.js";
       },
     },
   ],
-  exports: [ServiceabilityService, SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, RefundsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
+  exports: [NotificationsService, ServiceabilityService, SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, RefundsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
 })
 export class CommerceModule {}

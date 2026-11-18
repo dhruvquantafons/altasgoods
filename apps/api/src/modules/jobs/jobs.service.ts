@@ -93,15 +93,22 @@ export class JobsService {
     this.handlers.set(kind, { run: run as JobHandler<unknown>, opts: opts as JobOptions<unknown> });
   }
 
-  /** Inserts a job in the caller's transaction (or directly with the db handle). Returns its id. */
-  async enqueue<P>(tx: Tx, kind: string, payload: P, opts: { runAfter?: Date } = {}) {
-    const [row] = await tx
-      .insert(jobs)
-      .values({ kind, payload: payload as object, runAfter: opts.runAfter ?? this.clock.now() })
-      .returning({ id: jobs.id });
+  /**
+   * Inserts a job in the caller's transaction (or directly with the db handle). Returns its id.
+   * With `dedupeKey`, nothing is inserted (and null is returned) while another job with that key
+   * is QUEUED or RUNNING: a unique partial index decides, so two racing transactions cannot both
+   * queue it. A key whose job is DONE or FAILED can be queued again; the handler checks its own
+   * record of finished work.
+   */
+  enqueue<P>(tx: Tx, kind: string, payload: P, opts?: { runAfter?: Date }): Promise<string>;
+  enqueue<P>(tx: Tx, kind: string, payload: P, opts: { runAfter?: Date; dedupeKey: string }): Promise<string | null>;
+  async enqueue<P>(tx: Tx, kind: string, payload: P, opts: { runAfter?: Date; dedupeKey?: string } = {}): Promise<string | null> {
+    const insert = tx.insert(jobs).values({ kind, payload: payload as object, runAfter: opts.runAfter ?? this.clock.now(), dedupeKey: opts.dedupeKey ?? null });
+    const [row] = await (opts.dedupeKey ? insert.onConflictDoNothing({ target: jobs.dedupeKey, where: sql`status in ('QUEUED', 'RUNNING')` }) : insert).returning({ id: jobs.id });
+    if (!row) return null;
     const scope = this.scopes.getStore();
     if (scope) scope.enqueued = true;
-    return row!.id;
+    return row.id;
   }
 
   /** Runs `fn`; once it settles, kicks the worker if `fn` enqueued anything. Nested scopes join the outer one. */

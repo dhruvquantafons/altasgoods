@@ -706,10 +706,33 @@ export const jobs = pgTable(
     /** when the current run was claimed; a RUNNING job claimed long ago is taken over */
     lockedAt: ts("locked_at"),
     lastError: text("last_error"),
+    /** optional: at most one QUEUED or RUNNING job holds a key, so the same work is never queued twice (customer emails) */
+    dedupeKey: text("dedupe_key"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("jobs_due_idx").on(t.status, t.runAfter), check("jobs_status_ck", inList("status", JOB_STATUSES))],
+  (t) => [
+    index("jobs_due_idx").on(t.status, t.runAfter),
+    check("jobs_status_ck", inList("status", JOB_STATUSES)),
+    uniqueIndex("jobs_dedupe_open_uq").on(t.dedupeKey).where(sql`status in ('QUEUED', 'RUNNING')`),
+  ],
+);
+
+/**
+ * Customer emails that went out, one row per dedupe key (such as
+ * order-placed:<orderId>). The email job checks it before sending and writes
+ * it after, so a job that runs again never sends the same email twice.
+ */
+export const emailLog = pgTable(
+  "email_log",
+  {
+    dedupeKey: text("dedupe_key").primaryKey(),
+    kind: text("kind").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    sentAt: ts("sent_at").notNull().defaultNow(),
+    providerMessageId: text("provider_message_id"),
+  },
+  (t) => [index("email_log_user_idx").on(t.userId)],
 );
 
 /* ---------------------------------- Files --------------------------------- */

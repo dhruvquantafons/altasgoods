@@ -169,6 +169,13 @@
       "when": 1794998892748,
       "tag": "0023_product_legal_details",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795008963603,
+      "tag": "0024_email_notifications",
+      "breakpoints": true
     }
   ]
 }

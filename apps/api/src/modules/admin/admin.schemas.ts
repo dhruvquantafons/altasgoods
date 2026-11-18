@@ -34,6 +34,9 @@ export const settingsSchema = z.object({
     defaultHsn: hsnSchema.nullable().describe("HSN code for products whose category and own settings have none"),
   }),
   reviews: z.object({ autoPublish: z.boolean().describe("Publish customer reviews straight away; otherwise they wait for approval") }),
+  notifications: z.object({
+    customerEmails: z.boolean().describe("Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later"),
+  }),
   notice: z.object({
     enabled: z.boolean(),
     message: z.string().trim().max(200).describe("Shown in a bar at the top of every storefront page while enabled"),
@@ -66,6 +69,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   cod: { enabled: true, maxOrderPaise: 5_000_000 },
   tax: { defaultGstRateBp: 1800, defaultHsn: null },
   reviews: { autoPublish: true },
+  notifications: { customerEmails: true },
   notice: { enabled: false, message: "" },
   company: {
     legalName: "Your Company Private Limited (not set)",
