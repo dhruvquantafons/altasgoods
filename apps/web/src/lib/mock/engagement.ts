@@ -1,6 +1,6 @@
 import type { Coupon, Notification, Review, Ticket } from "../types";
 import type { OrderStatus, TicketPriority, TicketStatus } from "../status";
-import { addDays, between, NOW, pick, seeded } from "../utils";
+import { addDays, between, MOCK_EPOCH, pick, seeded } from "../utils";
 import { products } from "./catalog";
 import { orders } from "./orders";
 
@@ -26,7 +26,7 @@ export const TICKET_RESOLUTION_HOURS: Record<TicketPriority, number> = { urgent:
 
 const agents = ["Revathi S", "Kabir Anand", "Megha Pillai", "Joseph Mathew", "Ayesha Siddiqui"];
 const tr = seeded(2718);
-const clamp = (ms: number) => new Date(Math.min(ms, NOW.getTime() - 5 * 60_000)).toISOString();
+const clamp = (ms: number) => new Date(Math.min(ms, MOCK_EPOCH.getTime() - 5 * 60_000)).toISOString();
 
 export const tickets: Ticket[] = Array.from({ length: 48 }, (_, i) => {
   const [category, subject, body, fits] = ticketTemplates[i % ticketTemplates.length]!;
@@ -39,8 +39,8 @@ export const tickets: Ticket[] = Array.from({ length: 48 }, (_, i) => {
   // active work is recent; resolved and closed tickets go back up to 9 days
   const ageHours = active ? 0.3 + Math.pow(tr(), 1.6) * (priority === "low" ? 96 : 40) : 24 + tr() * 190;
   // the complaint can never predate the order it is about
-  const createdMs = Math.max(NOW.getTime() - ageHours * 3600_000, new Date(order.placedAt).getTime() + 30 * 60_000);
-  const createdAt = new Date(Math.min(createdMs, NOW.getTime() - 10 * 60_000));
+  const createdMs = Math.max(MOCK_EPOCH.getTime() - ageHours * 3600_000, new Date(order.placedAt).getTime() + 30 * 60_000);
+  const createdAt = new Date(Math.min(createdMs, MOCK_EPOCH.getTime() - 10 * 60_000));
   const assignee = status === "open" && tr() < 0.6 ? undefined : pick(tr, agents);
   const via = { chat: "chat", app: "the app", email: "email", phone: "a phone call" }[channel];
   const messages: Ticket["messages"] = [
@@ -93,7 +93,7 @@ export const reviews: Review[] = products.flatMap((p, pi) =>
       rating,
       title,
       body,
-      createdAt: addDays(NOW, -between(rv, 1, 160)).toISOString(),
+      createdAt: addDays(MOCK_EPOCH, -between(rv, 1, 160)).toISOString(),
       verified: rv() > 0.12,
       helpful: between(rv, 0, 240),
       status: (k === 3 && pi % 6 === 0 ? "flagged" : k === 2 && pi % 9 === 0 ? "pending" : "published") as Review["status"],
@@ -120,7 +120,7 @@ export const coupons: Coupon[] = [
 
 /* ---------------------------- Notifications --------------------------- */
 
-const t = (mins: number) => new Date(NOW.getTime() - mins * 60_000).toISOString();
+const t = (mins: number) => new Date(MOCK_EPOCH.getTime() - mins * 60_000).toISOString();
 
 export const adminNotifications: Notification[] = [
   { id: "a-1", kind: "alert", title: "Payment gateway latency high", body: "UPI success rate dipped to 94.1% in the last 15 minutes.", at: t(6), read: false, href: "/admin/payments" },

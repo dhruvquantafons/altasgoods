@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Ban, Check, ClipboardList, PackageCheck, RefreshCw, Truck } from "lucide-react";
+import { Ban, Check, ClipboardList, PackageCheck, PackageSearch, PackageX, RefreshCw, Truck } from "lucide-react";
 import { refreshTracking, simulateCourierScan, transitionOrderItems } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Field, Select, Textarea } from "@/components/ui/input";
@@ -18,6 +18,28 @@ export const NEXT_STEP: Partial<Record<ApiOrderItemStatus, { to: Step; label: st
   PACKED: { to: "READY_TO_SHIP", label: "Ready to ship", done: "Booked with the courier. Print the label; the courier collects it on the next pickup.", icon: ClipboardList },
 };
 
+/** Ends for a parcel that never reached the customer; both need a note for the history. */
+const END = {
+  LOST: {
+    label: "Mark lost",
+    icon: PackageX,
+    title: "Mark this parcel lost",
+    description: "Use this once the courier confirms the parcel is lost. It is not restocked. A prepaid line is refunded to the payment method; cash on delivery was never collected.",
+    field: "What the courier said",
+    confirm: "Mark lost",
+    done: "Marked lost. A prepaid line is being refunded.",
+  },
+  RTO_RECEIVED: {
+    label: "Received back",
+    icon: PackageSearch,
+    title: "Record the parcel back at the store",
+    description: "The item goes back into stock. A prepaid line is refunded to the payment method; cash on delivery was never collected.",
+    field: "The state it came back in",
+    confirm: "Received back",
+    done: "Received back and restocked. A prepaid line is being refunded.",
+  },
+} as const;
+
 const CANCEL_REASONS = ["Out of stock", "Pricing error on the product page", "Damaged in the warehouse", "Cannot deliver to this pincode", "Other"];
 
 /** Fulfilment buttons for one or more lines that share a status, limited to what the API allows. */
@@ -28,15 +50,20 @@ export function LineActions({ orderId, itemIds, status, allowed, size = "sm" }: 
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState(CANCEL_REASONS[0]!);
   const [other, setOther] = useState("");
+  const [ending, setEnding] = useState<keyof typeof END | null>(null);
+  const [endNote, setEndNote] = useState("");
   const step = NEXT_STEP[status];
+  const end = ending ? END[ending] : null;
 
-  async function run(to: Step | "CANCELLED", done: string, note?: string) {
+  async function run(to: Step | "CANCELLED" | keyof typeof END, done: string, note?: string) {
     setBusy(true);
     const r = await transitionOrderItems(itemIds, to, note, orderId);
     setBusy(false);
     if (!r.ok) return toast.show(r.error);
     if (r.data.failed.length) return toast.show(r.data.failed[0]!.error);
     setCancelling(false);
+    setEnding(null);
+    setEndNote("");
     toast.show(done);
     router.refresh();
   }
@@ -49,6 +76,33 @@ export function LineActions({ orderId, itemIds, status, allowed, size = "sm" }: 
           {step.label}
         </Button>
       )}
+      {(["LOST", "RTO_RECEIVED"] as const)
+        .filter((to) => allowed.includes(to))
+        .map((to) => (
+          <Button key={to} size={size} variant="secondary" icon={END[to].icon} disabled={busy} onClick={() => setEnding(to)}>
+            {END[to].label}
+          </Button>
+        ))}
+      <Modal
+        open={!!end}
+        onClose={() => setEnding(null)}
+        title={itemIds.length > 1 && end ? `${end.title} (${itemIds.length} items)` : (end?.title ?? "")}
+        description={end?.description}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEnding(null)}>
+              Back
+            </Button>
+            <Button disabled={busy || endNote.trim().length < 3} onClick={() => ending && end && run(ending, end.done, endNote.trim())}>
+              {end?.confirm}
+            </Button>
+          </>
+        }
+      >
+        <Field label={end?.field ?? "Note"} htmlFor="end-note" required hint="Kept in the order's history, 3 to 500 characters">
+          <Textarea id="end-note" rows={3} maxLength={500} value={endNote} onChange={(e) => setEndNote(e.target.value)} />
+        </Field>
+      </Modal>
       {allowed.includes("CANCELLED") && (
         <Button size={size} variant="ghost" icon={Ban} disabled={busy} onClick={() => setCancelling(true)}>
           Cancel

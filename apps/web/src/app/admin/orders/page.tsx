@@ -3,11 +3,13 @@ import { QueueTable } from "@/components/admin/fulfilment/queue-table";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { hrefWith, sp } from "@/components/admin/helpers";
 import { Pager } from "@/components/admin/pager";
+import { ExportButton } from "@/components/admin/export-button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
 import { loadAdminItems } from "@/lib/api/admin-fulfilment";
+import { canEditArea, canSeeArea } from "@/lib/api/server";
 import type { ApiOrderItemStatus } from "@/lib/api/types";
 
 export const metadata = { title: "Orders" };
@@ -32,7 +34,8 @@ export default async function OrdersPage(props: PageProps<"/admin/orders">) {
   const q = sp(params, "q")?.trim() ?? "";
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
 
-  const data = await loadAdminItems({ status: view.statuses, q, page, pageSize: PAGE_SIZE });
+  const [data, edit, exportable] = await Promise.all([loadAdminItems({ status: view.statuses, q, page, pageSize: PAGE_SIZE }), canEditArea("orders"), canSeeArea("orders")]);
+  const range = { from: sp(params, "from"), to: sp(params, "to") };
   const count = (statuses: ApiOrderItemStatus[]) =>
     statuses.length ? statuses.reduce((n, s) => n + (data.counts[s] ?? 0), 0) : Object.values(data.counts).reduce((n, c) => n + c, 0);
   const current = { view: view.key === VIEWS[0]!.key ? undefined : view.key, q: q || undefined };
@@ -41,7 +44,22 @@ export default async function OrdersPage(props: PageProps<"/admin/orders">) {
 
   return (
     <>
-      <PageHeader title="Orders" description="Accept, pack and hand over every order line. Lines waiting for payment appear once the customer has paid." />
+      <PageHeader
+        title="Orders"
+        description="Accept, pack and hand over every order line. Lines waiting for payment appear once the customer has paid."
+        actions={
+          exportable && (
+            <>
+              <ExportButton kind="orders" filters={{ q, ...range }}>
+                Export orders
+              </ExportButton>
+              <ExportButton kind="order-items" filters={{ q, status: view.statuses, ...range }}>
+                Export items
+              </ExportButton>
+            </>
+          )
+        }
+      />
 
       <TabLinks
         className="mb-5"
@@ -58,7 +76,7 @@ export default async function OrdersPage(props: PageProps<"/admin/orders">) {
           <EmptyState icon={PackageSearch} title={q ? "No orders match this search" : "Nothing here right now"} description={q ? "Try a different order ID or product name." : "New lines show up here as customers order."} />
         ) : (
           // eslint-disable-next-line react-hooks/purity -- request time, read once per render on the server
-          <QueueTable items={data.items} now={Date.now()} />
+          <QueueTable items={data.items} now={Date.now()} canEdit={edit} />
         )}
         <Pager path="/admin/orders" params={current} label="lines" page={data.page} pages={pages} from={from} to={Math.min(data.page * PAGE_SIZE, data.total)} total={data.total} />
       </Card>

@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, Lock, Truck, Undo2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { companyLegalName } from "@/lib/legal";
+import { getStoreSettings } from "@/lib/store-settings";
 
 export const metadata: Metadata = {
   title: { default: "Sign in", template: "%s | AltasGoods" },
@@ -10,7 +12,8 @@ export const metadata: Metadata = {
 
 const TILES = ["headphones-studio", "dress-summer", "vase-ceramic", "sneakers-white", "coffee-maker", "watch-analog"];
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const legalName = companyLegalName((await getStoreSettings()).company);
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-[1.05fr_1fr]">
       <aside className="relative hidden overflow-hidden bg-brand-950 text-white lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
@@ -29,7 +32,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <ul className="mt-6 flex flex-col gap-3 text-[15px] text-brand-100">
             {[
               { icon: Truck, t: "Real delivery dates for your pincode" },
-              { icon: Undo2, t: "Free doorstep returns, refunds in 2 hours to AltasGoods Credits" },
+              { icon: Undo2, t: "Free doorstep pickup on returns, refunds to your original payment method" },
               { icon: BadgeCheck, t: "Every product sold and shipped by AltasGoods" },
             ].map((x) => (
               <li key={x.t} className="flex items-center gap-3">
@@ -53,7 +56,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="w-full max-w-[400px]">{children}</div>
         </div>
         <p className="text-center text-xs text-ink-500">
-          © 2026 AltasGoods Commerce Private Limited.{" "}
+          © 2026 {legalName ?? "AltasGoods"}.{" "}
           <Link href="/policies/terms" className="hover:text-ink-800">
             Terms
           </Link>{" "}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { cancelOrder } from "@/app/actions/store";
+import { cancelOrder, checkBuyAgain } from "@/app/actions/store";
+import { useCart } from "@/components/store/cart-context";
+import { buyAgainMessage } from "@/lib/buy-again";
 import { useState } from "react";
 import { CircleCheck, Download, Info, ShoppingCart, XCircle } from "lucide-react";
 import { ProductImage } from "@/components/commerce/product-image";
@@ -20,7 +22,7 @@ export interface CancelItem {
 }
 
 export interface RefundOption {
-  key: "original" | "credits";
+  key: "original";
   label: string;
   detail: string;
 }
@@ -222,7 +224,7 @@ export function CancelOrderButton({
                   </div>
                 </div>
               )}
-              <p className="mt-3 text-xs text-ink-500">AltasGoods never charges a cancellation fee. Any AltasGoods Credits you used are restored right away.</p>
+              <p className="mt-3 text-xs text-ink-500">AltasGoods never charges a cancellation fee. Any coupon you used is restored right away.</p>
             </fieldset>
           </div>
         )}
@@ -256,13 +258,41 @@ export function InvoiceButton({
   );
 }
 
-/** Adds the item to the cart again (mock: confirms with a toast). */
-export function BuyAgainButton({ title, size = "sm", className }: { title: string; size?: "sm" | "md"; className?: string }) {
+/**
+ * Puts a past order's item back in the cart and opens the cart, once the store confirms the
+ * product is still on sale. A product that was archived, hidden or sold out says so instead.
+ */
+export function BuyAgainButton({
+  productId,
+  variant,
+  title,
+  size = "sm",
+  className,
+}: {
+  productId: string;
+  variant?: string;
+  title: string;
+  size?: "sm" | "md";
+  className?: string;
+}) {
   const toast = useToast();
+  const router = useRouter();
+  const { add } = useCart();
+  const [busy, setBusy] = useState(false);
+
+  async function buyAgain() {
+    setBusy(true);
+    const outcome = await checkBuyAgain(productId);
+    setBusy(false);
+    if (outcome !== "available") return toast.show(buyAgainMessage(title, outcome));
+    add({ productId, variant, qty: 1, silent: true });
+    router.push("/cart");
+  }
+
   return (
     <>
-      <Button size={size} variant="secondary" icon={ShoppingCart} className={className} onClick={() => toast.show(`${title} added to your cart`)}>
-        Buy again
+      <Button size={size} variant="secondary" icon={ShoppingCart} className={className} onClick={buyAgain} disabled={busy}>
+        {busy ? "Checking" : "Buy again"}
       </Button>
       {toast.node}
     </>

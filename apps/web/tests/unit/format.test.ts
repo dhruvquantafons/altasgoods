@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { paise, toPaise, uiItemStatus, uiOrderStatus } from "@/lib/api/format";
+import { paise, rupeeInputToPaise, toPaise, uiItemStatus, uiOrderStatus } from "@/lib/api/format";
 import { ORDER_STATUS, ORDER_TRANSITIONS, ORDER_TRACKING_STEPS } from "@/lib/status";
 import { discountPercent, formatCompact, formatINR, initials, slugify } from "@/lib/utils";
 
@@ -9,6 +9,16 @@ describe("money and numbers", () => {
     expect(formatINR(1499.5, { paise: true })).toBe("₹1,499.50");
     expect(paise(1299900)).toBe("₹12,999");
     expect(toPaise(12.345)).toBe(1235);
+  });
+
+  it("reads a rupee amount typed by staff as exact paise", () => {
+    expect(rupeeInputToPaise("1299")).toBe(129900);
+    expect(rupeeInputToPaise(" 1,24,999.5 ")).toBe(12499950);
+    expect(rupeeInputToPaise("₹12.05")).toBe(1205);
+    expect(rupeeInputToPaise("0.1")).toBe(10);
+    // floats would make 1.15 into 114.99999 paise
+    expect(rupeeInputToPaise("1.15")).toBe(115);
+    for (const bad of ["", "abc", "12.345", "-5", "0", "1e3", "12..5"]) expect([bad, rupeeInputToPaise(bad)]).toEqual([bad, null]);
   });
 
   it("uses lakh and crore for compact figures", () => {

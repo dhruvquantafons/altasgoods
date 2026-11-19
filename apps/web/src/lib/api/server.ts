@@ -1,11 +1,13 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import type { Problem, User } from "./types";
+import { forwardingHeaders } from "./forwarded";
 import { ACCESS_COOKIE, apiUrl, peekClaims } from "./session";
+import { canEdit, canSee, type Area } from "./staff";
 
 /** Error carrying the API's problem details. */
 export class ApiRequestError extends Error {
@@ -36,7 +38,7 @@ export async function proxyFile(path: string) {
     const r = await fetch(`${apiUrl()}${path}`, { headers: await authHeader(), cache: "no-store" });
     if (!r.ok) return new Response(r.status === 404 ? "Not found" : "Not available", { status: r.status === 404 ? 404 : r.status === 403 ? 403 : 502 });
     const headers = new Headers({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" });
-    for (const h of ["content-type", "content-disposition", "content-length"]) {
+    for (const h of ["content-type", "content-disposition", "content-length", "x-export-truncated"]) {
       const v = r.headers.get(h);
       if (v) headers.set(h, v);
     }
@@ -48,6 +50,16 @@ export async function proxyFile(path: string) {
 
 /** Anonymous client for public catalog reads. */
 export const publicApi = () => createClient<paths>({ baseUrl: apiUrl(), cache: "no-store" });
+
+/**
+ * Anonymous client for calls made on the visitor's behalf (sign in, sign up,
+ * password reset, invites): passes on their address and browser (see
+ * lib/api/forwarded.ts), so the API's limits count the visitor, not this
+ * server, and new sessions record where they came from.
+ */
+export async function clientApi() {
+  return createClient<paths>({ baseUrl: apiUrl(), cache: "no-store", headers: forwardingHeaders(await headers()) });
+}
 
 /**
  * Unwraps an openapi-fetch result: returns data, throws ApiRequestError on
@@ -83,4 +95,20 @@ export async function apiAvailable() {
   } catch {
     return false;
   }
+}
+
+/** Whether the signed-in staff member may open this area, and so download its exports. */
+export async function canSeeArea(area: Area) {
+  const user = await currentUser();
+  return !!user && canSee(user.staffRoles, area);
+}
+
+/**
+ * Whether the signed-in staff member may change things in this area (see
+ * AREA_ROLES in lib/api/staff.ts). Server pages pass it to their client
+ * components as `canEdit`, so an Auditor sees no buttons that would fail.
+ */
+export async function canEditArea(area: Area) {
+  const user = await currentUser();
+  return !!user && canEdit(user.staffRoles, area);
 }

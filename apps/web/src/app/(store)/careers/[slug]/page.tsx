@@ -5,17 +5,13 @@ import { ArrowLeft, Briefcase, CalendarDays, MapPin, Users } from "lucide-react"
 import { ApplyForm } from "@/components/store/apply-form";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
-import { getRole, ROLES } from "@/lib/mock/company";
+import { getCareers, getRole } from "@/lib/store-content";
 import { getStoreSettings } from "@/lib/store-settings";
 import { cn, formatDate } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return ROLES.map((r) => ({ slug: r.slug }));
-}
-
 export async function generateMetadata(props: PageProps<"/careers/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  return { title: getRole(slug)?.title ?? "Careers" };
+  return { title: (await getRole(slug))?.title ?? "Careers" };
 }
 
 function List({ title, items }: { title: string; items: string[] }) {
@@ -36,9 +32,9 @@ function List({ title, items }: { title: string; items: string[] }) {
 
 export default async function RolePage(props: PageProps<"/careers/[slug]">) {
   const { slug } = await props.params;
-  const role = getRole(slug);
+  const [role, roles] = await Promise.all([getRole(slug), getCareers()]);
   if (!role) notFound();
-  const others = ROLES.filter((r) => r.slug !== role.slug && r.team === role.team).slice(0, 3);
+  const others = roles.filter((r) => r.slug !== role.slug && r.team === role.team).slice(0, 3);
 
   return (
     <div className="pb-16 lg:pb-24">

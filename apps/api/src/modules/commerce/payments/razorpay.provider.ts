@@ -2,10 +2,13 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { Logger } from "@nestjs/common";
 import { z } from "zod";
 import { ApiError, conflict } from "../../../common/errors.js";
-import type { CheckoutDetails, PaymentProvider, ProviderEvent } from "./provider.js";
+import { fetchText, OutboundFailure, parseJson } from "../../../common/outbound.js";
+import { AmbiguousRefundError, type CheckoutDetails, type PaymentProvider, type ProviderEvent, type ProviderRefund, type RefundState } from "./provider.js";
 
 export const RAZORPAY_SIGNATURE_HEADER = "x-razorpay-signature";
 const API = "https://api.razorpay.com/v1";
+/** Longest we wait for Razorpay on any call. */
+export const RAZORPAY_TIMEOUT_MS = 10_000;
 
 export interface RazorpayConfig {
   keyId: string;
@@ -14,6 +17,7 @@ export interface RazorpayConfig {
   webOrigin: string;
   /** injectable for tests */
   fetch?: typeof fetch;
+  timeoutMs?: number;
 }
 
 /** What Razorpay Checkout hands the browser after a successful payment. */
@@ -31,6 +35,33 @@ interface RazorpayPayment {
   error_description?: string | null;
 }
 
+interface RazorpayRefund {
+  id: string;
+  receipt?: string | null;
+  status: "pending" | "processed" | "failed";
+}
+
+/**
+ * A Razorpay answer with an error status; `upstreamStatus` is what Razorpay
+ * replied. Its 5xx and 429 answers are worth retrying, its other 4xx are not.
+ */
+class RazorpayError extends ApiError {
+  readonly transient: boolean;
+
+  constructor(
+    readonly upstreamStatus: number,
+    message: string,
+  ) {
+    super(502, "PAYMENT_GATEWAY_ERROR", message);
+    this.transient = upstreamStatus >= 500 || upstreamStatus === 429;
+  }
+}
+
+/** How Razorpay words a refund refused because its receipt was used already. */
+const DUPLICATE_RECEIPT = /receipt|duplicate|already exists/i;
+
+const refundState = (status: RazorpayRefund["status"]): RefundState => (status === "processed" ? "COMPLETED" : status === "failed" ? "FAILED" : "PROCESSING");
+
 const hmac = (secret: string, data: string | Buffer) => createHmac("sha256", secret).update(data).digest("hex");
 
 const sameHex = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -46,9 +77,11 @@ export class RazorpayPaymentProvider implements PaymentProvider {
   readonly name = "RAZORPAY" as const;
   private readonly logger = new Logger("Razorpay");
   private readonly fetch: typeof fetch;
+  private readonly timeoutMs: number;
 
   constructor(private readonly config: RazorpayConfig) {
     this.fetch = config.fetch ?? fetch;
+    this.timeoutMs = config.timeoutMs ?? RAZORPAY_TIMEOUT_MS;
   }
 
   async createSession(input: { paymentId: string; orderId: string; amountPaise: number }) {
@@ -118,31 +151,91 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     };
   }
 
-  async refund(input: { providerRef: string; amountPaise: number }) {
-    const { items } = await this.call<{ items: RazorpayPayment[] }>("GET", `/orders/${encodeURIComponent(input.providerRef)}/payments`);
-    const captured = items.find((p) => p.status === "captured" || p.status === "refunded");
+  /**
+   * Refunds part or all of the order's captured payment, tagged with
+   * `receipt` (our refund id). Our protection against refunding twice is the
+   * lookup first: a refund Razorpay already holds with this receipt (made on
+   * an earlier attempt whose answer we lost) is returned instead. The caller
+   * holds the refund row lock, so two attempts never overlap. If Razorpay
+   * rejects the POST with a 400, the receipt is looked up again in case the
+   * refund exists after all; a 400 about the receipt itself that the lookup
+   * cannot match is ambiguous (AmbiguousRefundError), never a refusal.
+   */
+  async refund(input: { providerRef: string; amountPaise: number; receipt: string }): Promise<ProviderRefund> {
+    const captured = await this.capturedPayment(input.providerRef);
     if (!captured) throw conflict("NOT_REFUNDABLE", "Razorpay has no captured payment for this order");
-    const refund = await this.call<{ id: string; status: "pending" | "processed" | "failed" }>("POST", `/payments/${encodeURIComponent(captured.id)}/refund`, {
-      amount: input.amountPaise,
-      speed: "normal",
-    });
-    if (refund.status === "failed") throw conflict("REFUND_FAILED", "Razorpay could not process this refund");
-    return { status: refund.status === "processed" ? ("COMPLETED" as const) : ("PROCESSING" as const) };
+    const earlier = await this.refundByReceipt(captured.id, input.receipt);
+    if (earlier) return { providerRefundId: earlier.id, status: refundState(earlier.status) };
+    let refund: RazorpayRefund;
+    try {
+      refund = await this.call<RazorpayRefund>("POST", `/payments/${encodeURIComponent(captured.id)}/refund`, {
+        amount: input.amountPaise,
+        speed: "normal",
+        receipt: input.receipt,
+        notes: { refundId: input.receipt },
+      });
+    } catch (e) {
+      // a receipt Razorpay has already seen: the refund exists, so report it
+      const raced = e instanceof RazorpayError && e.upstreamStatus === 400 ? await this.refundByReceipt(captured.id, input.receipt) : null;
+      if (!raced) {
+        // Razorpay says the receipt exists but its list does not show it yet: the refund may have been made
+        if (e instanceof RazorpayError && e.upstreamStatus === 400 && DUPLICATE_RECEIPT.test(e.message)) throw new AmbiguousRefundError(e.message);
+        throw e;
+      }
+      refund = raced;
+    }
+    return { providerRefundId: refund.id, status: refundState(refund.status) };
+  }
+
+  async findRefund(input: { providerRef: string; receipt: string }): Promise<ProviderRefund | null> {
+    // without a captured payment there is nothing a refund could have been made against
+    const captured = await this.capturedPayment(input.providerRef);
+    const refund = captured ? await this.refundByReceipt(captured.id, input.receipt) : null;
+    return refund ? { providerRefundId: refund.id, status: refundState(refund.status) } : null;
+  }
+
+  async refundStatus(providerRefundId: string): Promise<RefundState> {
+    const refund = await this.call<RazorpayRefund>("GET", `/refunds/${encodeURIComponent(providerRefundId)}`);
+    return refundState(refund.status);
+  }
+
+  private async capturedPayment(providerRef: string) {
+    const { items } = await this.call<{ items: RazorpayPayment[] }>("GET", `/orders/${encodeURIComponent(providerRef)}/payments`);
+    return items.find((p) => p.status === "captured" || p.status === "refunded") ?? null;
+  }
+
+  private async refundByReceipt(razorpayPaymentId: string, receipt: string) {
+    const { items } = await this.call<{ items?: RazorpayRefund[] }>("GET", `/payments/${encodeURIComponent(razorpayPaymentId)}/refunds?count=100`);
+    return (items ?? []).find((r) => r.receipt === receipt) ?? null;
   }
 
   private async call<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
-    const res = await this.fetch(`${API}${path}`, {
-      method,
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${this.config.keyId}:${this.config.keySecret}`).toString("base64")}`,
-        ...(body ? { "Content-Type": "application/json" } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const json = (await res.json().catch(() => ({}))) as T & { error?: { code?: string; description?: string } };
+    let res: Response;
+    let text: string;
+    try {
+      ({ res, text } = await fetchText(
+        this.fetch,
+        `${API}${path}`,
+        {
+          method,
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${this.config.keyId}:${this.config.keySecret}`).toString("base64")}`,
+            ...(body ? { "Content-Type": "application/json" } : {}),
+          },
+          body: body ? JSON.stringify(body) : undefined,
+        },
+        this.timeoutMs,
+      ));
+    } catch (e) {
+      if (!(e instanceof OutboundFailure)) throw e;
+      this.logger.error(`${method} ${path} ${e.message}`);
+      if (e.timedOut) throw new ApiError(504, "PAYMENT_GATEWAY_TIMEOUT", "The payment gateway took too long to answer. Please try again.");
+      throw new ApiError(502, "PAYMENT_GATEWAY_ERROR", "The payment gateway could not be reached");
+    }
+    const json = parseJson<T & { error?: { code?: string; description?: string } }>(text);
     if (!res.ok) {
       this.logger.error(`${method} ${path} failed with ${res.status}: ${json.error?.code ?? ""} ${json.error?.description ?? ""}`);
-      throw new ApiError(502, "PAYMENT_GATEWAY_ERROR", json.error?.description ?? "The payment gateway could not be reached");
+      throw new RazorpayError(res.status, json.error?.description ?? "The payment gateway could not be reached");
     }
     return json;
   }

@@ -5,34 +5,9 @@
  * client components receive plain snapshots built at the bottom of this file.
  */
 import type { Brand, Category, Product, Seller } from "../types";
-import { addDays, NOW, seeded, slugify } from "../utils";
+import { addDays, MOCK_EPOCH, seeded } from "../utils";
 import { coupons } from "./engagement";
 import type { BankOffer, CartProduct, CouponLite, NavCategory, Suggestion, WalletLite } from "@/components/store/types";
-
-/* ------------------------------ Company ------------------------------- */
-
-export const COMPANY = {
-  legalName: "AltasGoods Commerce Private Limited",
-  cin: "U47912KA2025PTC204817",
-  gstin: "29AALCB4821Q1Z6",
-  registeredOffice: "Level 9, Lakeview Square, 14 Residency Road, Ashok Nagar, Bengaluru, Karnataka 560025",
-  customerCare: "1800 210 4455",
-  customerCareHours: "8 am to 10 pm, every day",
-  email: "care@altasgoods.in",
-  website: "www.altasgoods.in",
-};
-
-/** Required by the Consumer Protection (E-Commerce) Rules, 2020. */
-export const GRIEVANCE_OFFICER = {
-  name: "Meenakshi Raghavan",
-  designation: "Grievance Officer, AltasGoods Commerce Private Limited",
-  email: "grievance.officer@altasgoods.in",
-  phone: "+91 80 4718 2200",
-  hours: "Monday to Saturday, 9:30 am to 6:30 pm",
-  address: "Level 9, Lakeview Square, 14 Residency Road, Bengaluru, Karnataka 560025",
-  ackHours: 48,
-  resolutionDays: 30,
-};
 
 /* ----------------------------- Hero slides ---------------------------- */
 
@@ -141,7 +116,7 @@ export interface DealSlot {
 }
 
 const endOfToday = "2026-10-01T23:59:00+05:30";
-const hoursFromNow = (h: number) => new Date(NOW.getTime() + h * 3600_000).toISOString();
+const hoursFromNow = (h: number) => new Date(MOCK_EPOCH.getTime() + h * 3600_000).toISOString();
 
 export const DEALS_OF_THE_DAY: DealSlot[] = [
   { productId: "p-headphones-studio", kind: "deal_of_the_day", startsAt: "2026-10-01T00:00:00+05:30", endsAt: endOfToday, claimedPct: 64 },
@@ -278,13 +253,6 @@ export const recommendedForYou = (products: Product[]) => {
   const more = [...products].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)).filter((p) => !picked.includes(p));
   return [...picked, ...more].slice(0, 12);
 };
-
-export const BRAND_SPOTLIGHTS = [
-  { brand: "Kestrel", tagline: "Laptops engineered in Bengaluru", productKey: "laptop-air", tone: "bg-[#eef1f6]" },
-  { brand: "Auralis", tagline: "Sound, with nothing in the way", productKey: "headphones-studio", tone: "bg-[#f1efea]" },
-  { brand: "Kiln & Co", tagline: "Handmade stoneware from Khurja", productKey: "vase-ceramic", tone: "bg-[#f4efe8]" },
-  { brand: "Linen & Loom", tagline: "Everyday cotton, honestly made", productKey: "tee-classic", tone: "bg-[#eef0ee]" },
-].map((b) => ({ ...b, slug: slugify(b.brand), image: `/images/products/${b.productKey}.jpg` }));
 
 export function similarProducts(products: Product[], p: Product, n = 10) {
   const sameSub = products.filter((x) => x.id !== p.id && x.subcategory === p.subcategory && isBrowsable(x));
@@ -454,14 +422,14 @@ export function questionsFor(p: Product): Question[] {
     id: `q-${p.slug}-${i}`,
     question: q,
     askedBy: askers[Math.floor(r() * askers.length)]!,
-    askedAt: addDays(NOW, -Math.floor(10 + r() * 120)).toISOString(),
+    askedAt: addDays(MOCK_EPOCH, -Math.floor(10 + r() * 120)).toISOString(),
     votes: Math.floor(4 + r() * 80),
     answers: [
       {
         by: role === "brand" ? `${brand} (brand)` : role === "seller" ? "AltasGoods" : buyerNames[i % buyerNames.length]!,
         role,
         body: a,
-        at: addDays(NOW, -Math.floor(2 + r() * 9)).toISOString(),
+        at: addDays(MOCK_EPOCH, -Math.floor(2 + r() * 9)).toISOString(),
         helpful: Math.floor(r() * 60),
       },
     ],
@@ -492,32 +460,6 @@ export function warrantyFor(p: Product) {
   return "No warranty applicable";
 }
 
-function netQuantity(title: string) {
-  const m = title.match(/(\d+(?:\.\d+)?)\s?(g|kg|ml|L)\b/);
-  if (m) return `${m[1]} ${m[2]}`;
-  const set = title.match(/(?:Set|Pack) of (\d+)/i);
-  if (set) return `${set[1]} N`;
-  const pcs = title.match(/(\d+) Pieces/i);
-  if (pcs) return `${pcs[1]} N`;
-  return "1 N";
-}
-
-/** Legal Metrology declarations, shown in full on every PDP. */
-export function legalDeclarations(p: Product) {
-  const brand = p.brandName;
-  const brandSlug = slugify(brand);
-  return [
-    { label: "Generic name", value: p.subcategory.replace(/s$/, "") },
-    { label: "Net quantity", value: netQuantity(p.title) },
-    { label: "M.R.P.", value: `₹${p.mrp.toLocaleString("en-IN")} (inclusive of all taxes)` },
-    { label: "Country of origin", value: p.specs.flatMap((s) => s.items).find((i) => i.label === "Country of origin")?.value ?? "India" },
-    { label: "Manufacturer", value: `${brand} India Private Limited, Plot 42, KIADB Industrial Area, Bengaluru, Karnataka 562114` },
-    { label: "Packer", value: `${COMPANY.legalName}, ${COMPANY.registeredOffice}` },
-    { label: "Importer", value: "Not applicable (made in India)" },
-    { label: "Consumer care", value: `care@${brandSlug}.in, 1800 120 ${String(3000 + brand.length * 37).slice(0, 4)}` },
-  ];
-}
-
 const sellerStreets = ["Unit 4, Commerce House, Station Road", "Plot 18, Industrial Area Phase 1", "B-27, Trade Centre, Ring Road", "12, Warehouse Lane, Industrial Estate", "G-14, Market Complex, Main Road", "Survey 88, Logistics Park Road", "C-56, Business Park, Sector 2", "Door 41, Godown Street", "7, Merchant Arcade, Park Road"];
 
 export function sellerAddress(s: Seller) {
@@ -528,29 +470,6 @@ export function sellerAddress(s: Seller) {
 export function sellerGrievance(s: Seller) {
   return { name: s.ownerName, email: `grievance@${s.slug}.in`, phone: s.phone };
 }
-
-/* ------------------------------- Help -------------------------------- */
-
-export const HELP_TOPICS = [
-  { icon: "Package", title: "Orders and delivery", body: "Track, change address, delivery OTP and missed deliveries", href: "/account/orders" },
-  { icon: "Undo2", title: "Returns and refunds", body: "Return windows, pickup, refund timelines and status", href: "/policies/returns" },
-  { icon: "XCircle", title: "Cancellations", body: "Cancel before dispatch for a full refund, no fees", href: "/policies/cancellation" },
-  { icon: "CreditCard", title: "Payments and EMI", body: "UPI, cards, EMI, Pay Later and failed payments", href: "/policies/payments" },
-  { icon: "Wallet", title: "AltasGoods Credits and gift cards", body: "Balance, expiry and using credits at checkout", href: "/policies/credits" },
-  { icon: "ShieldCheck", title: "AltasGoods Guarantee", body: "Item not received or not as described", href: "/policies/guarantee" },
-  { icon: "UserRound", title: "Account and privacy", body: "Login, mobile number, data and consent", href: "/policies/account-security" },
-];
-
-export const HELP_FAQS: { id: string; group: string; q: string; a: string }[] = [
-  { id: "cancellation", group: "Cancellations", q: "How do I cancel an order?", a: "Open Your orders, choose the item and select Cancel. Items can be cancelled any time before they are shipped, with a full refund and no cancellation fee. After shipping you can request cancellation and the parcel will return to the seller, or simply refuse it at the door." },
-  { id: "returns", group: "Returns and refunds", q: "What is the return window for my item?", a: "Return windows are counted from the delivery date: 10 days for fashion and furniture, 7 days for home, electronics, mobiles (replacement), books, toys and sports, 7 days for beauty if unopened, and 2 days for grocery. The exact window is shown on the product page and in your order." },
-  { id: "refund-time", group: "Returns and refunds", q: "When will I get my refund?", a: "Refunds to AltasGoods Credits arrive within 2 hours. UPI refunds take 1 to 2 business days, cards and net banking 3 to 5 business days. Cash on delivery orders are refunded to AltasGoods Credits or your bank account via IMPS or UPI." },
-  { id: "payments", group: "Payments", q: "Money was debited but my order failed. What happens now?", a: "If a payment fails after your money is debited, AltasGoods reverses it automatically within 1 business day as required by RBI rules. You do not need to raise a request. If you do not see the reversal, contact us with the transaction reference." },
-  { id: "cod", group: "Payments", q: "Is there an extra charge for cash on delivery?", a: "No. AltasGoods never charges a fee for cash on delivery, a payment handling fee or a platform fee. Pay on delivery is available for orders up to ₹50,000 on serviceable pincodes, and you can pay by cash or UPI QR at the door." },
-  { id: "credits", group: "AltasGoods Credits", q: "Do AltasGoods Credits expire?", a: "Credits from refunds never expire and can be moved back to your bank on request. Goodwill credits expire after 1 year. Gift card balances keep the gift card's 1 year validity." },
-  { id: "guarantee", group: "AltasGoods Guarantee", q: "What does the AltasGoods Guarantee cover?", a: "If an item was not delivered, arrived materially different from its listing, or a refund was not issued, contact the seller first. If it is not resolved in 48 hours, file an AltasGoods Guarantee claim from the order page within 90 days of the latest delivery date." },
-  { id: "account", group: "Account and privacy", q: "How do I download or delete my data?", a: "Go to Account, then Privacy and data. You can download a copy of your data, withdraw consent for promotional messages or request deletion of your account. Open orders or refunds must be completed before deletion." },
-];
 
 /* --------------------------- Sell on AltasGoods --------------------------- */
 

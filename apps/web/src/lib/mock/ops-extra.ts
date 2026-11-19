@@ -1,12 +1,12 @@
 /**
  * Extra mock data for the AltasGoods Hub Console (logistics, FC Console, Rider app
- * preview) and the AltasGoods Care Desk. Deterministic and anchored to NOW like the
+ * preview) and the AltasGoods Care Desk. Deterministic and anchored to MOCK_EPOCH like the
  * rest of the mock layer. Each block mirrors an entity in
  * docs/research/01-marketplace-workflows.md section 12.
  */
 import type { Customer, Order, Shipment, Ticket } from "../types";
 import type { NdrReason, TicketPriority } from "../status";
-import { between, NOW, pick, seeded, sum } from "../utils";
+import { between, MOCK_EPOCH, pick, seeded, sum } from "../utils";
 import { products } from "./catalog";
 import { tickets } from "./engagement";
 import { associates, CURRENT_HUB_ID, hourlyDeliveries, shipments } from "./logistics";
@@ -17,17 +17,17 @@ import { customers, sellers } from "./people";
 /* Time helpers (Asia/Kolkata)                                         */
 /* ================================================================== */
 
-const nowIstMinutes = (NOW.getUTCHours() * 60 + NOW.getUTCMinutes() + 330) % 1440;
+const nowIstMinutes = (MOCK_EPOCH.getUTCHours() * 60 + MOCK_EPOCH.getUTCMinutes() + 330) % 1440;
 
-/** Midnight IST of the NOW day. */
-export const DAY_START = new Date(NOW.getTime() - nowIstMinutes * 60_000);
+/** Midnight IST of the MOCK_EPOCH day. */
+export const DAY_START = new Date(MOCK_EPOCH.getTime() - nowIstMinutes * 60_000);
 
-/** ISO timestamp for a clock time on the NOW day (dayOffset -1 is yesterday). */
+/** ISO timestamp for a clock time on the MOCK_EPOCH day (dayOffset -1 is yesterday). */
 export function istAt(hour: number, minute = 0, dayOffset = 0) {
   return new Date(DAY_START.getTime() + dayOffset * 86_400_000 + (hour * 60 + minute) * 60_000).toISOString();
 }
 
-const minsAgo = (m: number) => new Date(NOW.getTime() - m * 60_000).toISOString();
+const minsAgo = (m: number) => new Date(MOCK_EPOCH.getTime() - m * 60_000).toISOString();
 
 /** Current hour of the day in IST (10 at 10:30 AM). */
 export const NOW_HOUR = Math.floor(nowIstMinutes / 60);
@@ -120,7 +120,7 @@ export const associateProfiles: Record<string, AssociateProfile> = Object.fromEn
       {
         id: a.id,
         vehicleNo: a.vehicle === "van" ? `KA 53 C ${between(r, 1000, 9999)}` : `KA ${pick(r, ["01", "03", "53"])} ${pick(r, ["HN", "JK", "EX", "HW"])} ${between(r, 1000, 9999)}`,
-        joinedAt: new Date(NOW.getTime() - between(r, 90, 1300) * 86_400_000).toISOString(),
+        joinedAt: new Date(MOCK_EPOCH.getTime() - between(r, 90, 1300) * 86_400_000).toISOString(),
         kyc: i === 11 ? "pending" : "verified",
         checkedInAt: a.status === "off_duty" ? undefined : istAt(7, between(r, 18, 58)),
         firstAttemptRate: Math.round((86 + r() * 11) * 10) / 10,
@@ -513,7 +513,7 @@ export const ndrCases: NdrCase[] = [
     .map((s, i) => {
       const plan = ndrResponsePlan[i % ndrResponsePlan.length]!;
       const r = seeded(8800 + i);
-      const last = new Date(NOW.getTime() - plan.ageMins * 60_000);
+      const last = new Date(MOCK_EPOCH.getTime() - plan.ageMins * 60_000);
       const first = new Date(last.getTime() - (s.attempts - 1) * 26 * 3600_000);
       const flagged = plan.response.kind === "disputed";
       return {
@@ -535,7 +535,7 @@ export const ndrCases: NdrCase[] = [
   ...myShipments
     .filter((s) => s.status === "rto_initiated" || s.status === "rto_in_transit")
     .map((s, i) => {
-      const last = new Date(NOW.getTime() - (900 + i * 410) * 60_000);
+      const last = new Date(MOCK_EPOCH.getTime() - (900 + i * 410) * 60_000);
       return {
         id: `NDR-${s.id.slice(-6)}`,
         awb: s.id,
@@ -1213,10 +1213,10 @@ const followUpBody: Record<"open" | "in_progress" | "escalated", string> = {
   escalated: "It has been more than two days now. I need this resolved today or I will raise a formal complaint.",
 };
 
-/** Keeps every entry in the past (shared mock messages can land after NOW for fresh tickets). */
+/** Keeps every entry in the past (shared mock messages can land after MOCK_EPOCH for fresh tickets). */
 function clampToNow(entries: ThreadEntry[]) {
   entries.sort((a, b) => +new Date(a.at) - +new Date(b.at));
-  let limit = NOW.getTime() - 2 * 60_000;
+  let limit = MOCK_EPOCH.getTime() - 2 * 60_000;
   for (let i = entries.length - 1; i >= 0; i--) {
     const at = +new Date(entries[i]!.at);
     if (at > limit) entries[i]!.at = new Date(limit).toISOString();
@@ -1233,12 +1233,12 @@ export function ticketThread(t: Ticket): ThreadEntry[] {
     entries.push({ kind: "note", author: t.assignee ?? CURRENT_AGENT.name, body: notesByCategory[t.category], at: new Date(created + 3.2 * 3600_000).toISOString() });
   }
   if (t.status === "escalated") {
-    entries.push({ kind: "system", author: "AltasGoods", body: "Escalated to the L2 specialist queue: resolution SLA at risk and customer asked for escalation.", at: new Date(Math.min(created + 21 * 3600_000, NOW.getTime() - 3 * 3600_000)).toISOString() });
+    entries.push({ kind: "system", author: "AltasGoods", body: "Escalated to the L2 specialist queue: resolution SLA at risk and customer asked for escalation.", at: new Date(Math.min(created + 21 * 3600_000, MOCK_EPOCH.getTime() - 3 * 3600_000)).toISOString() });
   }
   clampToNow(entries);
   if (t.status === "open" || t.status === "in_progress" || t.status === "escalated") {
     const lastAt = Math.max(...entries.map((e) => +new Date(e.at)));
-    const at = NOW.getTime() - followUpMins(t) * 60_000;
+    const at = MOCK_EPOCH.getTime() - followUpMins(t) * 60_000;
     if (at > lastAt + 30 * 60_000) entries.push({ kind: "customer", author: t.customerName, body: followUpBody[t.status], at: new Date(at).toISOString() });
   }
   return entries.sort((a, b) => +new Date(a.at) - +new Date(b.at));
@@ -1253,7 +1253,7 @@ export function ticketSla(t: Ticket): TicketSla {
   const lastCustomer = [...thread].reverse().find((m) => m.kind === "customer");
   const lastCustomerAt = lastCustomer ? +new Date(lastCustomer.at) : created;
   const due = lastCustomerAt + p.firstResponseMins * 60_000;
-  const minsLeft = Math.round((due - NOW.getTime()) / 60_000);
+  const minsLeft = Math.round((due - MOCK_EPOCH.getTime()) / 60_000);
   const paused = t.status === "awaiting_customer";
   let state: TicketSla["state"];
   if (!isActiveTicket(t)) state = "met";
@@ -1266,7 +1266,7 @@ export function ticketSla(t: Ticket): TicketSla {
     dueAt: new Date(due).toISOString(),
     minsLeft,
     resolutionDueAt: new Date(resolutionDue).toISOString(),
-    resolutionBreached: isActiveTicket(t) && NOW.getTime() > resolutionDue,
+    resolutionBreached: isActiveTicket(t) && MOCK_EPOCH.getTime() > resolutionDue,
     firstResponseDueAt: new Date(created + p.firstResponseMins * 60_000).toISOString(),
     respondedAt: responded,
     paused,
@@ -1569,7 +1569,7 @@ export function shipmentJourney(s: Shipment): ShipmentJourney {
 
   const scans: ScanEvent[] = [];
   const push = (at: Date, title: string, location: string, detail?: string, tone?: ScanEvent["tone"]) => {
-    if (at.getTime() <= NOW.getTime()) scans.push({ at: iso(at), title, location, detail, tone });
+    if (at.getTime() <= MOCK_EPOCH.getTime()) scans.push({ at: iso(at), title, location, detail, tone });
   };
 
   if (reached >= 0) push(created, fulfilled ? "Packed at fulfilment centre, label generated" : "Shipment created by seller, label generated", origin, `Weight ${s.weightKg} kg`);
@@ -1595,7 +1595,7 @@ export function shipmentJourney(s: Shipment): ShipmentJourney {
     const isLast = i === attemptCount - 1;
     const delivered = status === "delivered" && isLast;
     let at = add(ofd, between(r, 50, 200));
-    if (delivered || (status === "ndr" && isLast && ndr)) at = new Date(Math.min(at.getTime(), NOW.getTime() - between(r, 10, 60) * 60_000));
+    if (delivered || (status === "ndr" && isLast && ndr)) at = new Date(Math.min(at.getTime(), MOCK_EPOCH.getTime() - between(r, 10, 60) * 60_000));
     if (status === "ndr" && isLast && ndr) at = new Date(ndr.lastAttemptAt);
     push(ofd, i === 0 ? "Out for delivery" : `Out for delivery, attempt ${i + 1}`, destName, runsheet && isLast ? `${associates.find((a) => a.id === s.associateId)?.name ?? "Associate"}, runsheet ${runsheet.id}` : undefined, "brand");
     const reason = delivered ? undefined : (ndr?.reason ?? s.ndrReason ?? "customer_unavailable");

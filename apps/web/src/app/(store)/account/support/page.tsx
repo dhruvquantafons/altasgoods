@@ -10,6 +10,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { loadAccountOrders } from "@/lib/api/account-orders";
 import { api, currentUser } from "@/lib/api/server";
 import { currentTime } from "@/lib/api/support";
+import { Fact } from "@/components/store/placeholder";
+import { getStoreSettings } from "@/lib/store-settings";
+import { callBackAvailable, PLACEHOLDER_TEXT } from "@/lib/legal";
+import { Placeholder } from "@/components/store/placeholder";
 import type { OrderStatus } from "@/lib/status";
 import { UI_TICKET_STATUS } from "@/lib/support-status";
 import { formatPhone, timeAgo } from "@/lib/utils";
@@ -43,7 +47,7 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const focusId = one(sp.order);
   const topic = one(sp.topic);
-  const [user, myOrders, convs] = await Promise.all([currentUser(), loadAccountOrders(), (async () => (await (await api()).GET("/v1/me/support/tickets")).data ?? [])()]);
+  const [user, myOrders, convs, { company, grievance }] = await Promise.all([currentUser(), loadAccountOrders(), (async () => (await (await api()).GET("/v1/me/support/tickets")).data ?? [])(), getStoreSettings()]);
   const now = currentTime();
   const focus = focusId ? myOrders.find((o) => o.id === focusId) : undefined;
   const recent = [focus, ...myOrders.filter((o) => o.id !== focus?.id)].filter((o): o is NonNullable<typeof o> => Boolean(o)).slice(0, 4);
@@ -187,7 +191,12 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
               <p className="mt-1.5 text-sm text-brand-100">Average wait right now is under a minute.</p>
               <div className="mt-4 flex flex-col gap-2">
                 <ChatButton orderLabel={focus?.id} firstName={firstName} conversation={chat} variant="secondary" className="w-full" />
-                {user?.phone && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}
+                {user?.phone && callBackAvailable(company) && <CallBackButton phone={formatPhone(user.phone)} className="w-full text-white hover:bg-white/10" />}
+                {user?.phone && !callBackAvailable(company) && (
+                  <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-brand-100">
+                    Call backs: <Placeholder>{PLACEHOLDER_TEXT}</Placeholder>
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -223,19 +232,21 @@ export default async function SupportPage(props: PageProps<"/account/support">) 
           </Panel>
 
           <Panel title="Grievance Officer">
-            <p className="text-[13px] leading-relaxed text-ink-600">Not happy with how we handled something? Our Grievance Officer acknowledges within 48 hours and resolves within 30 days.</p>
+            <p className="text-[13px] leading-relaxed text-ink-600">Not happy with how we handled something? Our Grievance Officer acknowledges within {grievance.ackHours} hours and resolves within {grievance.resolutionDays} days.</p>
             <ul className="mt-3 flex flex-col gap-2 text-[13px] text-ink-700">
-              <li className="font-medium text-ink-900">Meera Krishnan</li>
+              <li className="font-medium text-ink-900">
+                <Fact value={grievance.name} />
+              </li>
               <li className="flex items-center gap-2">
                 <Mail size={14} className="text-ink-400" aria-hidden="true" />
-                grievance@altasgoods.in
+                <Fact value={grievance.email} />
               </li>
               <li className="flex items-center gap-2">
                 <PhoneCall size={14} className="text-ink-400" aria-hidden="true" />
-                1800 309 2580, 9 AM to 6 PM
+                <Fact value={grievance.phone} />
               </li>
             </ul>
-            <p className="mt-3 text-xs text-ink-500">AltasGoods Commerce Private Limited, 7th Floor, Lakeview Tech Park, Bengaluru 560103</p>
+            <p className="mt-3 text-xs text-ink-500"><Fact value={company.legalName} />, <Fact value={grievance.address} /></p>
           </Panel>
         </div>
       </div>

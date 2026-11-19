@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Fact } from "@/components/store/placeholder";
+import { companyLegalName } from "@/lib/legal";
 import { Building2, Headset, Mail, Phone, ShieldCheck, Smartphone } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { STORE_CONTAINER } from "./store-header";
@@ -86,13 +88,13 @@ export function StoreFooter({ company, grievance }: FooterProps) {
               <Building2 size={16} strokeWidth={1.8} aria-hidden="true" /> Registered office
             </p>
             <address className="mt-2 text-[13px] leading-relaxed text-brand-200 not-italic">
-              {company.legalName}
+              <Fact value={company.legalName} />
               <br />
-              {company.registeredOffice}
+              <Fact value={company.registeredOffice} />
               <br />
-              CIN {company.cin}
+              CIN <Fact value={company.cin} />
               <br />
-              GSTIN {company.gstin}
+              GSTIN <Fact value={company.gstin} />
             </address>
           </div>
           <div>
@@ -100,14 +102,9 @@ export function StoreFooter({ company, grievance }: FooterProps) {
               <Headset size={16} strokeWidth={1.8} aria-hidden="true" /> Customer care
             </p>
             <p className="mt-2 text-[13px] leading-relaxed text-brand-200">
-              <a href={`tel:${company.customerCare.replace(/\s/g, "")}`} className="text-brand-100 hover:text-white">
-                {company.customerCare}
-              </a>{" "}
-              (toll free), {company.customerCareHours}
+              <Fact value={company.customerCare} link="tel" className="text-brand-100 hover:text-white" /> (toll free), <Fact value={company.customerCareHours} />
               <br />
-              <a href={`mailto:${company.email}`} className="text-brand-100 hover:text-white">
-                {company.email}
-              </a>
+              <Fact value={company.email} link="mailto" className="text-brand-100 hover:text-white" />
             </p>
           </div>
           <div id="grievance-officer">
@@ -115,17 +112,18 @@ export function StoreFooter({ company, grievance }: FooterProps) {
               <ShieldCheck size={16} strokeWidth={1.8} aria-hidden="true" /> Grievance Officer
             </p>
             <p className="mt-2 text-[13px] leading-relaxed text-brand-200">
-              <span className="text-brand-100">{grievance.name}</span>, {grievance.designation}
+              <span className="text-brand-100">
+                <Fact value={grievance.name} />
+              </span>
+              , {grievance.designation}
               <br />
-              <a href={`mailto:${grievance.email}`} className="inline-flex items-center gap-1 text-brand-100 hover:text-white">
-                <Mail size={12} aria-hidden="true" /> {grievance.email}
-              </a>
+              <Mail size={12} className="mr-1 inline" aria-hidden="true" />
+              <Fact value={grievance.email} link="mailto" className="text-brand-100 hover:text-white" />
               <span className="mx-1.5 text-brand-300">·</span>
-              <a href={`tel:${grievance.phone.replace(/\s/g, "")}`} className="inline-flex items-center gap-1 text-brand-100 hover:text-white">
-                <Phone size={12} aria-hidden="true" /> {grievance.phone}
-              </a>
+              <Phone size={12} className="mr-1 inline" aria-hidden="true" />
+              <Fact value={grievance.phone} link="tel" className="text-brand-100 hover:text-white" />
               <br />
-              {grievance.hours}. Complaints are acknowledged within {grievance.ackHours} hours and resolved within one month.
+              <Fact value={grievance.hours} />. Complaints are acknowledged within {grievance.ackHours} hours and resolved within one month.
             </p>
           </div>
         </div>
@@ -141,7 +139,7 @@ export function StoreFooter({ company, grievance }: FooterProps) {
               </span>
             ))}
           </div>
-          <p className="text-xs text-brand-300">© 2026 {company.legalName}. All rights reserved.</p>
+          <p className="text-xs text-brand-300">© 2026 {companyLegalName(company) ?? "AltasGoods"}. All rights reserved.</p>
         </div>
       </div>
     </footer>

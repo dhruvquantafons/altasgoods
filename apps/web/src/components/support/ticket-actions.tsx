@@ -127,6 +127,8 @@ const ACTION_STATUS: Record<string, { label: string; tone: "info" | "success" | 
   INITIATED: { label: "Initiated", tone: "info" },
   PROCESSING: { label: "Processing", tone: "info" },
   COMPLETED: { label: "Refunded", tone: "success" },
+  FAILED: { label: "Refund failed", tone: "danger" },
+  NEEDS_ATTENTION: { label: "Needs attention", tone: "danger" },
   PENDING_APPROVAL: { label: "Awaiting approval", tone: "warning" },
   REJECTED: { label: "Rejected", tone: "danger" },
   CREATED: { label: "Created", tone: "success" },
@@ -153,7 +155,8 @@ export function TicketActions({
   const router = useRouter();
   const [open, setOpen] = useState<Dialog>(null);
   const [amount, setAmount] = useState(String(order?.items[0] ? order.items[0].price * order.items[0].quantity : 0));
-  const [dest, setDest] = useState<"SOURCE" | "CREDITS">("CREDITS");
+  const [dest, setDest] = useState<"SOURCE" | "BANK">(order?.cod ? "BANK" : "SOURCE");
+  const [upi, setUpi] = useState("");
   const [reason, setReason] = useState<"damaged" | "not_delivered" | "wrong" | "late" | "goodwill">("damaged");
   const [itemId, setItemId] = useState(order?.items[0]?.id ?? "");
   const [replaceReason, setReplaceReason] = useState<"damaged" | "defective" | "wrong" | "missing">("damaged");
@@ -169,7 +172,8 @@ export function TicketActions({
 
   const amt = Number(amount) || 0;
   const over = amt > limit;
-  const invalid = amt <= 0 || (order ? amt > order.total : true);
+  const upiOk = /^[\w.-]{2,}@[a-z]{2,}$/i.test(upi);
+  const invalid = amt <= 0 || (order ? amt > order.total : true) || (dest === "BANK" && !upiOk);
   const eligible = guarantee.every((g) => g.ok);
   const replaced = new Set(history.filter((h) => h.kind === "REPLACEMENT").map((h) => String(h.details.itemId)));
 
@@ -285,8 +289,8 @@ export function TicketActions({
                   disabled={invalid || busy}
                   onClick={() =>
                     run(
-                      { kind: "REFUND", amountPaise: Math.round(amt * 100), destination: dest, reason },
-                      over ? `Refund of ${formatINR(amt)} sent for supervisor approval` : `Refund of ${formatINR(amt)} initiated to ${dest === "CREDITS" ? "AltasGoods Credits" : order.cod ? "the verified bank account" : order.paymentLabel}`,
+                      { kind: "REFUND", amountPaise: Math.round(amt * 100), destination: dest, ...(dest === "BANK" ? { upi } : {}), reason },
+                      over ? `Refund of ${formatINR(amt)} sent for supervisor approval` : `Refund of ${formatINR(amt)} initiated to ${dest === "BANK" ? "the customer's UPI ID" : order.paymentLabel}`,
                     )
                   }
                 >
@@ -304,14 +308,21 @@ export function TicketActions({
               <fieldset>
                 <legend className="mb-2 text-[13px] font-medium text-ink-700">Refund to</legend>
                 <div className="flex flex-col gap-2.5">
-                  <Radio name="dest" checked={dest === "CREDITS"} onChange={() => setDest("CREDITS")} label="AltasGoods Credits" description="Under 2 hours. Usable on the next order." />
-                  <Radio
-                    name="dest"
-                    checked={dest === "SOURCE"}
-                    onChange={() => setDest("SOURCE")}
-                    label={order.cod ? "Bank account or UPI ID" : `Original method, ${order.paymentLabel}`}
-                    description={order.cod ? "Verified by penny drop, 1 to 2 business days" : order.paymentLabel.includes("UPI") ? "1 to 2 business days" : "3 to 5 business days"}
-                  />
+                  {!order.cod && (
+                    <Radio
+                      name="dest"
+                      checked={dest === "SOURCE"}
+                      onChange={() => setDest("SOURCE")}
+                      label={`Original method, ${order.paymentLabel}`}
+                      description={order.paymentLabel.includes("UPI") ? "1 to 2 business days" : "3 to 5 business days"}
+                    />
+                  )}
+                  <Radio name="dest" checked={dest === "BANK"} onChange={() => setDest("BANK")} label="UPI ID" description="Paid by hand from the Payments page, 1 to 2 business days" />
+                  {dest === "BANK" && (
+                    <Field label="Customer's UPI ID" htmlFor="rf-upi" error={upi && !upiOk ? "Enter a valid UPI ID, for example name@bank" : undefined}>
+                      <Input id="rf-upi" value={upi} onChange={(e) => setUpi(e.target.value.trim())} placeholder="name@bank" inputMode="email" />
+                    </Field>
+                  )}
                 </div>
               </fieldset>
               <Field label="Reason" htmlFor="rf-reason">

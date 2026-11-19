@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { pageQuery, paginated } from "../../common/http.js";
+import { productLegalSchema } from "./catalog.schemas.js";
+import { gstRateBpSchema, hsnSchema } from "./gst.js";
 
 /** Lowercase words joined by hyphens, as used in storefront URLs. */
 const slug = z
@@ -39,6 +41,9 @@ const productBase = z.object({
   categoryId: z.string().min(1),
   subcategory: text(60).min(1),
   brandId: z.string().min(1),
+  gstRateBp: gstRateBpSchema.nullable().describe("Overrides the category's GST rate; null inherits it"),
+  hsn: hsnSchema.nullable().describe("Overrides the category's HSN code; null inherits it"),
+  legal: productLegalSchema.nullable().describe("Legal Metrology declarations shown on the product page; null leaves them as placeholders"),
   tags: z.array(z.enum(PRODUCT_TAGS)).max(4),
   pricePaise: z.number().int().positive(),
   mrpPaise: z.number().int().positive(),
@@ -56,6 +61,9 @@ const productFields = productBase.extend({
   specs: specs.default([]),
   variants: variants.default([]),
   tags: productBase.shape.tags.default([]),
+  gstRateBp: productBase.shape.gstRateBp.default(null),
+  hsn: productBase.shape.hsn.default(null),
+  legal: productBase.shape.legal.default(null),
   deliveryDays: productBase.shape.deliveryDays.default(3),
   codAvailable: productBase.shape.codAvailable.default(true),
   returnWindowDays: productBase.shape.returnWindowDays.default(7),
@@ -69,16 +77,19 @@ export const productInput = productFields.refine(priceWithinMrp, priceMessage);
 /**
  * Every field optional, built from the fields without defaults: a patch that
  * only changes the stock must leave the description, specs, variants and the
- * rest as they are. The slug and id never change after creation.
+ * rest as they are. The id never changes; the slug can, and the old one then redirects.
  */
-export const productPatch = productBase.omit({ slug: true }).partial().refine(priceWithinMrp, priceMessage);
+export const productPatch = productBase
+  .extend({ slug: slug.min(3, "Use at least 3 characters").describe("Changing it keeps the old address working as a redirect") })
+  .partial()
+  .refine(priceWithinMrp, priceMessage);
 export type ProductInput = z.infer<typeof productInput>;
 export type ProductPatch = z.infer<typeof productPatch>;
 
 export const adminProductQuery = z.object({
   q: z.string().trim().max(100).optional(),
   category: z.string().optional().describe("Category id"),
-  status: z.enum(["active", "inactive", "all"]).default("all"),
+  status: z.enum(["active", "inactive", "archived", "all"]).default("all").describe("all leaves out archived products; inactive is switched off, not archived"),
   stock: z.enum(["out", "low", "all"]).default("all").describe("low is 10 or fewer"),
   ...pageQuery,
 });
@@ -98,12 +109,23 @@ export const adminProductRow = z.object({
   mrpPaise: z.number().int(),
   stock: z.number().int(),
   active: z.boolean(),
+  status: z.enum(["LIVE", "INACTIVE", "ARCHIVED"]),
   updatedAt: z.iso.datetime(),
 });
 export const adminProductList = paginated(adminProductRow);
 
+/** What a product or category is taxed at when it sets nothing itself, and where that comes from. */
+export const inheritedGstSchema = z.object({
+  gstRateBp: z.number().int(),
+  rateFrom: z.string().describe("The category it comes from, or the store default"),
+  hsn: z.string().nullable(),
+  hsnFrom: z.string().nullable(),
+});
+
 export const adminProduct = productFields.required().extend({
+  inheritedGst: inheritedGstSchema,
   id: z.string(),
+  status: z.enum(["LIVE", "INACTIVE", "ARCHIVED"]),
   slug: z.string(),
   rating: z.number(),
   ratingCount: z.number().int(),
@@ -118,6 +140,8 @@ export const categoryInput = z.object({
   icon: text(40).nullable().optional().describe("Lucide icon name for menus"),
   image: imagePath.nullable().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
+  gstRateBp: gstRateBpSchema.nullable().optional().describe("GST rate for the category's products; null inherits the store default"),
+  hsn: hsnSchema.nullable().optional(),
   /** subcategory names; products pick one of these */
   subcategories: z.array(text(60).min(1)).max(40).optional(),
 });
@@ -130,6 +154,9 @@ export const adminCategory = z.object({
   icon: z.string().nullable(),
   image: z.string().nullable(),
   sortOrder: z.number().int(),
+  gstRateBp: z.number().int().nullable(),
+  hsn: z.string().nullable(),
+  inheritedGst: inheritedGstSchema.describe("What its products are taxed at when it sets nothing: the store default"),
   subcategories: z.array(z.object({ id: z.string(), name: z.string(), productCount: z.number().int() })),
   productCount: z.number().int(),
 });
@@ -172,3 +199,5 @@ export const importResult = z.object({
     }),
   ),
 });
+
+export const slugRedirect = z.object({ slug: z.string() });

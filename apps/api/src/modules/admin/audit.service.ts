@@ -19,6 +19,17 @@ export function diff<T extends Record<string, unknown>>(before: T, after: Partia
   return out;
 }
 
+/** Audit log filters, shared with the CSV export. */
+export function auditFilters(q: Pick<z.infer<typeof auditQuery>, "q" | "action" | "entityType" | "entityId" | "actorId">): SQL[] {
+  const filters: SQL[] = [];
+  if (q.q) filters.push(ilike(auditEvents.summary, `%${q.q}%`));
+  if (q.action) filters.push(q.action.includes(".") ? eq(auditEvents.action, q.action) : ilike(auditEvents.action, `${q.action}.%`));
+  if (q.entityType) filters.push(eq(auditEvents.entityType, q.entityType));
+  if (q.entityId) filters.push(eq(auditEvents.entityId, q.entityId));
+  if (q.actorId) filters.push(eq(auditEvents.actorId, q.actorId));
+  return filters;
+}
+
 /**
  * The record of who changed what in AltasGoods Control. Writing an entry
  * never fails the change it describes: a broken log line is logged, not thrown.
@@ -51,12 +62,7 @@ export class AuditService {
   }
 
   async list(q: z.infer<typeof auditQuery>) {
-    const filters: SQL[] = [];
-    if (q.q) filters.push(ilike(auditEvents.summary, `%${q.q}%`));
-    if (q.action) filters.push(q.action.includes(".") ? eq(auditEvents.action, q.action) : ilike(auditEvents.action, `${q.action}.%`));
-    if (q.entityType) filters.push(eq(auditEvents.entityType, q.entityType));
-    if (q.entityId) filters.push(eq(auditEvents.entityId, q.entityId));
-    if (q.actorId) filters.push(eq(auditEvents.actorId, q.actorId));
+    const filters = auditFilters(q);
     const where = filters.length ? and(...filters) : undefined;
     const [rows, [total], actors] = await Promise.all([
       this.db

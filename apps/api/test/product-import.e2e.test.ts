@@ -109,6 +109,14 @@ describe("product import", () => {
     expect(pepper.body).toMatchObject({ active: false, mrpPaise: 45_000 });
   });
 
+  it("does not create a live product in Uncategorised or Unbranded", async () => {
+    const r = await upload("sku,title,category,subcategory,brand,price,stock,status\nRS-LIVE-1,Stray Lamp,Uncategorised,Misc,Hearth,500,2,yes\nRS-LIVE-2,Stray Mug,Home,Lighting,Unbranded,500,2,yes\nRS-OFF-1,Parked Lamp,Uncategorised,Misc,Unbranded,500,2,no\n").expect(201);
+    expect(r.body.summary).toMatchObject({ created: 1, skipped: 2 });
+    expect(r.body.rows[0].errors.join(" ")).toMatch(/real category and brand/);
+    expect(r.body.rows[1].errors.join(" ")).toMatch(/real category and brand/);
+    expect(r.body.rows[2].productId).toBeTruthy();
+  });
+
   it("accepts the template Control offers for download", async () => {
     const template = readFileSync(new globalThis.URL("../../web/public/templates/altasgoods-products-template.csv", import.meta.url), "utf8");
     const r = await upload(template, true).expect(201);

@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { api } from "@/lib/api/server";
+import { clearSession } from "@/lib/api/session";
 import type { Address, User } from "@/lib/api/types";
 import { CATALOG_TAG } from "@/lib/store-catalog";
 
@@ -41,6 +43,19 @@ export async function verifyEmailCode(code: string): Promise<Result<User>> {
 
 export async function changePassword(input: { currentPassword: string; newPassword: string }): Promise<Result<undefined>> {
   return run(async () => (await api()).POST("/v1/me/password", { body: input }), "Could not change your password");
+}
+
+/**
+ * Deletes (anonymises) the signed-in shopper's account with their password. On success the
+ * session cookies are cleared, as on sign out, and they are sent to the goodbye page.
+ */
+export async function deleteAccount(password: string): Promise<Result<undefined>> {
+  const r = await run(async () => (await api()).DELETE("/v1/me", { body: { password } }), "Could not delete your account");
+  if (!r.ok) return r;
+  await clearSession();
+  // redirected here, like sign out: clearing the cookies from an action makes Next re-render the
+  // page the shopper is on, and with no session that render is a redirect the client cannot read
+  redirect("/signed-out?deleted=1");
 }
 
 export async function signOutOtherDevices(): Promise<Result<undefined>> {

@@ -23,14 +23,14 @@ Razorpay and Shiprocket are switched on in `.env` (`PAYMENTS_PROVIDER`, `LOGISTI
 
 ### Accounts
 
-There are no demo accounts. Shoppers sign up at `/signup` with their name, email and a password. Staff accounts are only made from the command line:
+For local development, `npm run db:demo-accounts` creates one sign-in per role, all with the password `Demo@12345` (listed in the root README). It refuses to run when `NODE_ENV=production`. Real shoppers sign up at `/signup` with their name, email and a password. The first Super Admin is made from the command line. After that, a Super Admin adds staff in AltasGoods Control > Staff, either with an emailed one-time link to choose a password (mode `invite`, 72 hours) or with a temporary password changed at first sign in (mode `password`):
 
 ```bash
 npm run admin:create -- --email you@example.com --name "Your Name"                       # Super Admin
 npm run admin:create -- --email agent@example.com --name "Agent" --role SUPPORT_AGENT    # Care Desk L1
 ```
 
-It asks for the password without echoing it (or reads `ADMIN_PASSWORD` where there is no terminal). Run against an existing email, it adds the role and keeps the password unless you type a new one. Roles: `SUPER_ADMIN`, `OPS_ADMIN`, `CATALOG_MANAGER`, `AUDITOR`, `SUPPORT_AGENT` (L1, refunds up to ₹2,000), `SUPPORT_SPECIALIST` (L2, ₹10,000), `SUPPORT_SUPERVISOR`. In production run the built copy: `node dist/db/create-admin.js --email ...`.
+It asks for the password without echoing it (or reads `ADMIN_PASSWORD` where there is no terminal). Run against an existing email, it adds the role and keeps the password unless you type a new one. Roles: `SUPER_ADMIN`, `OPS_ADMIN`, `CATALOG_MANAGER`, `AUDITOR`, `SUPPORT_AGENT` (L1, refunds up to ₹2,000), `SUPPORT_SPECIALIST` (L2, ₹10,000), `SUPPORT_SUPERVISOR`. In production run the built copy: `node dist/db/create-admin.js --email ...`, with `NODE_ENV=production` set (`NODE_ENV` is required and has no default; `npm start` sets it, but `db:migrate`, `db:seed` and `admin:create` read `.env`).
 
 Forgotten passwords are reset with a 6 digit code sent by email. Outside production, `POST /v1/auth/password/forgot` and `POST /v1/me/email/otp` also return the code as `devCode` and the console provider logs the email, so no mail server is needed. Production refuses to start unless `EMAIL_PROVIDER=smtp`.
 
@@ -44,6 +44,7 @@ Forgotten passwords are reset with a 6 digit code sent by email. Outside product
 | `npm run build` / `npm start` | Production build to `dist/` and run |
 | `npm run db:generate` | New SQL migration from schema changes in `src/db/schema.ts` |
 | `npm run admin:create` | Creates a staff account, or gives an existing account a staff role |
+| `npm run db:demo-accounts` | Development only: one demo sign-in per role (password `Demo@12345`). Safe to re-run; refuses in production and is left out of the production build |
 | `npm run openapi` | Writes the contract to `packages/openapi/openapi.json`; then run `npm run api:types` in `apps/web` |
 
 Tests load `.env` for `TEST_DATABASE_URL` and `REDIS_URL` (anything already in the environment wins), and always use the payment sandbox, the simulated courier and the console email provider. Their demo accounts (`src/db/seed-demo.ts`) exist only in the test database.
@@ -52,7 +53,7 @@ Tests load `.env` for `TEST_DATABASE_URL` and `REDIS_URL` (anything already in t
 
 - **Modules:** `auth` (email and password sign in, password reset by emailed code, email verification, sessions, guard, staff roles), `catalog` (categories, brands, products, search, admin catalog management, CSV product import), `commerce` (addresses, cart, quote, orders, fulfilment, payments, shipping, returns), `support` (Care Desk tickets and customer conversations), `files` (the shared file store), `health`.
 - **One store:** AltasGoods sells its own catalog. Products belong to the house seller, and store staff fulfil every order line from the admin panel (accept, pack, ready to ship).
-- **Staff:** `users.staff_roles` holds AltasGoods Control roles (`SUPER_ADMIN`, `OPS_ADMIN`, `CATALOG_MANAGER`, `AUDITOR`, and the Care Desk roles). They travel in the access token and `@StaffOnly(...)` checks them; `SUPER_ADMIN` passes every staff check. There is no API for inviting staff yet: `npm run admin:create` makes staff accounts.
+- **Staff:** `users.staff_roles` holds AltasGoods Control roles (`SUPER_ADMIN`, `OPS_ADMIN`, `CATALOG_MANAGER`, `AUDITOR`, and the Care Desk roles). They travel in the access token and `@StaffOnly(...)` checks them; `SUPER_ADMIN` passes every staff check. Staff are invited through `/v1/admin/staff`; `npm run admin:create` is only for the first Super Admin.
 - **Files:** `FileStore` keeps uploads (product images, return photos, ticket attachments) in Postgres today (object storage later). Uploads are typed by their bytes, not their name, and limited to 4 MB.
 - **Returns:** spec section 11.3. A request inside the return window is approved and its reverse pickup booked straight away; a late request for damage, a defect or a wrong item waits for the store (`PENDING_REVIEW`, 48 hours to approve or reject with a reason), while a late change of mind is refused. Low value returns (up to ₹5,000, not mobiles) are refunded at the doorstep; the rest wait for the store's quality check, where a pass completes the refund or replacement. Photos are uploaded first (`/v1/me/uploads`) and attached to the request. Reverse pickups are not booked with a courier yet: staff book them by hand and record each step with `POST /v1/admin/returns/{id}/pickup` (a later step records the ones in between, and an AWB can be added); in development `/v1/dev/returns/{id}/advance` simulates the scans, and only there is a placeholder AWB issued. A failed check is settled with `POST /v1/admin/returns/{id}/settle`: accept anyway (refund or replacement goes out) or reject and send the item back.
 - **Support:** spec section 11.11 ticket states (`NEW`, `OPEN`, `PENDING_CUSTOMER`, `PENDING_INTERNAL`, `ESCALATED`, `RESOLVED`, `REOPENED`, `CLOSED`) with priority based reply SLAs. Agents reply (visible to the customer), add internal notes (never visible), attach files, assign in bulk and run actions: refunds go back to the original payment through `PaymentsService.refundToSource` within the agent's limit (L1 ₹2,000, L2 ₹10,000); anything above waits for a supervisor, and the maker cannot approve their own request. Every change is written to `support_events`. Customers open conversations and reply from My Account.
@@ -68,4 +69,4 @@ Tests load `.env` for `TEST_DATABASE_URL` and `REDIS_URL` (anything already in t
 
 ## Not yet built (next phases)
 
-Staff invites, change password from My Account and the rest of the admin APIs (customers, coupons, reviews, reports), Shiprocket return pickups and pincode serviceability, refund status updates from Razorpay, object storage for files, search on OpenSearch, and the logistics console APIs. `/v1/dev/logistics/advance` and `/v1/dev/returns/{id}/advance` simulate courier scans in development (`deliveredDaysAgo` dates a delivery back to test return windows).
+A GST invoice PDF, Shiprocket return pickups, Razorpay refund webhooks (refunds still processing are polled every 15 minutes instead, see `PaymentSweeper`), object storage for files, search on OpenSearch, and the logistics console APIs. `/v1/dev/logistics/advance` and `/v1/dev/returns/{id}/advance` simulate courier scans in development (`deliveredDaysAgo` dates a delivery back to test return windows).

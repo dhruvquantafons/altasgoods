@@ -132,6 +132,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffController_list"];
+        put?: never;
+        post: operations["StaffController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StaffController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["StaffController_setRoles"];
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController_disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController_enable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/staff/{id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController_resendInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/exports/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminExportsController_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/signup": {
         parameters: {
             query?: never;
@@ -196,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/invite/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/refresh": {
         parameters: {
             query?: never;
@@ -238,7 +350,7 @@ export interface paths {
         get: operations["AuthController_me"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["AuthController_deleteAccount"];
         options?: never;
         head?: never;
         patch: operations["AuthController_updateMe"];
@@ -308,6 +420,438 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/content/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_pages"];
+        put?: never;
+        post: operations["AdminContentController_createPage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/pages/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderPages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/pages/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removePage"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updatePage"];
+        trace?: never;
+    };
+    "/v1/admin/content/faqs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_faqs"];
+        put?: never;
+        post: operations["AdminContentController_createFaq"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/faqs/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderFaqs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/faqs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeFaq"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateFaq"];
+        trace?: never;
+    };
+    "/v1/admin/content/help-topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_topics"];
+        put?: never;
+        post: operations["AdminContentController_createTopic"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/help-topics/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderTopics"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/help-topics/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeTopic"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateTopic"];
+        trace?: never;
+    };
+    "/v1/admin/content/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_roles"];
+        put?: never;
+        post: operations["AdminContentController_createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/roles/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderRoles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/roles/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeRole"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateRole"];
+        trace?: never;
+    };
+    "/v1/admin/content/press": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_press"];
+        put?: never;
+        post: operations["AdminContentController_createPress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/press/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderPress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/press/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removePress"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updatePress"];
+        trace?: never;
+    };
+    "/v1/admin/content/about": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_about"];
+        put: operations["AdminContentController_saveAbout"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/spotlights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminContentController_spotlights"];
+        put?: never;
+        post: operations["AdminContentController_createSpotlight"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/spotlights/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminContentController_reorderSpotlights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/content/spotlights/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminContentController_removeSpotlight"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminContentController_updateSpotlight"];
+        trace?: never;
+    };
+    "/v1/storefront/content/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_policies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/policies/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_policy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/help": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_help"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/careers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_careers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/careers/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_role"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/press": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_press"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/about": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_about"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/content/brand-spotlights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontContentController_spotlights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/categories": {
         parameters: {
             query?: never;
@@ -332,6 +876,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["CatalogController_storefront"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/products/redirect/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_redirect"];
         put?: never;
         post?: never;
         delete?: never;
@@ -414,10 +974,42 @@ export interface paths {
         get: operations["AdminCatalogController_product"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["AdminCatalogController_deleteProduct"];
         options?: never;
         head?: never;
         patch: operations["AdminCatalogController_updateProduct"];
+        trace?: never;
+    };
+    "/v1/admin/products/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminCatalogController_archiveProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/products/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminCatalogController_restoreProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/admin/categories": {
@@ -948,6 +1540,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/orders/{id}/address": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminOrdersController_address"];
+        trace?: never;
+    };
+    "/v1/admin/orders/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminOrdersController_notes"];
+        put?: never;
+        post: operations["AdminOrdersController_addNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/logistics/status": {
         parameters: {
             query?: never;
@@ -974,6 +1598,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AdminOrdersController_refreshTracking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/orders/{id}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminRefundsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/refunds/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminRefundsController_retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/refunds/{id}/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminRefundsController_markPaid"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1116,6 +1788,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["StorefrontPromotionsController_coupons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefront/pincodes/{pin}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontPincodesController_check"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1374,6 +2062,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AdminReturnsController_settle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/returns/{id}/refund/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminReturnsController_markRefundPaid"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1860,14 +2564,44 @@ export interface operations {
                             feePaise: number;
                             /** @description Orders at or above this subtotal ship free */
                             freeFromPaise: number;
+                            /**
+                             * @default {
+                             *       "blocked": [],
+                             *       "noCod": [],
+                             *       "extraDays": []
+                             *     }
+                             */
+                            areas: {
+                                /** @description Pincodes and prefixes we do not deliver to */
+                                blocked: string[];
+                                /** @description Pincodes and prefixes where cash on delivery is off */
+                                noCod: string[];
+                                /** @description Extra days added to the delivery promise; the longest matching prefix wins */
+                                extraDays: {
+                                    prefix: string;
+                                    days: number;
+                                }[];
+                            };
                         };
                         cod: {
+                            /** @description Off stops cash on delivery for every order */
+                            enabled: boolean;
                             /** @description Largest order total that can be paid by cash on delivery */
                             maxOrderPaise: number;
+                        };
+                        tax: {
+                            /** @description GST rate in basis points for products whose category and own settings have none */
+                            defaultGstRateBp: number;
+                            /** @description HSN code for products whose category and own settings have none */
+                            defaultHsn: string | null;
                         };
                         reviews: {
                             /** @description Publish customer reviews straight away; otherwise they wait for approval */
                             autoPublish: boolean;
+                        };
+                        notifications: {
+                            /** @description Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later */
+                            customerEmails: boolean;
                         };
                         notice: {
                             enabled: boolean;
@@ -1896,6 +2630,8 @@ export interface operations {
                             ackHours: number;
                             resolutionDays: number;
                         };
+                        /** @description Company and grievance details still at their placeholder values, by name */
+                        placeholders: string[];
                         /** Format: date-time */
                         updatedAt: string | null;
                         updatedBy: string | null;
@@ -1919,14 +2655,44 @@ export interface operations {
                         feePaise: number;
                         /** @description Orders at or above this subtotal ship free */
                         freeFromPaise: number;
+                        /**
+                         * @default {
+                         *       "blocked": [],
+                         *       "noCod": [],
+                         *       "extraDays": []
+                         *     }
+                         */
+                        areas?: {
+                            /** @description Pincodes and prefixes we do not deliver to */
+                            blocked: string[];
+                            /** @description Pincodes and prefixes where cash on delivery is off */
+                            noCod: string[];
+                            /** @description Extra days added to the delivery promise; the longest matching prefix wins */
+                            extraDays: {
+                                prefix: string;
+                                days: number;
+                            }[];
+                        };
                     };
                     cod: {
+                        /** @description Off stops cash on delivery for every order */
+                        enabled: boolean;
                         /** @description Largest order total that can be paid by cash on delivery */
                         maxOrderPaise: number;
+                    };
+                    tax: {
+                        /** @description GST rate in basis points for products whose category and own settings have none */
+                        defaultGstRateBp: number;
+                        /** @description HSN code for products whose category and own settings have none */
+                        defaultHsn: string | null;
                     };
                     reviews: {
                         /** @description Publish customer reviews straight away; otherwise they wait for approval */
                         autoPublish: boolean;
+                    };
+                    notifications: {
+                        /** @description Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later */
+                        customerEmails: boolean;
                     };
                     notice: {
                         enabled: boolean;
@@ -1970,14 +2736,44 @@ export interface operations {
                             feePaise: number;
                             /** @description Orders at or above this subtotal ship free */
                             freeFromPaise: number;
+                            /**
+                             * @default {
+                             *       "blocked": [],
+                             *       "noCod": [],
+                             *       "extraDays": []
+                             *     }
+                             */
+                            areas: {
+                                /** @description Pincodes and prefixes we do not deliver to */
+                                blocked: string[];
+                                /** @description Pincodes and prefixes where cash on delivery is off */
+                                noCod: string[];
+                                /** @description Extra days added to the delivery promise; the longest matching prefix wins */
+                                extraDays: {
+                                    prefix: string;
+                                    days: number;
+                                }[];
+                            };
                         };
                         cod: {
+                            /** @description Off stops cash on delivery for every order */
+                            enabled: boolean;
                             /** @description Largest order total that can be paid by cash on delivery */
                             maxOrderPaise: number;
+                        };
+                        tax: {
+                            /** @description GST rate in basis points for products whose category and own settings have none */
+                            defaultGstRateBp: number;
+                            /** @description HSN code for products whose category and own settings have none */
+                            defaultHsn: string | null;
                         };
                         reviews: {
                             /** @description Publish customer reviews straight away; otherwise they wait for approval */
                             autoPublish: boolean;
+                        };
+                        notifications: {
+                            /** @description Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later */
+                            customerEmails: boolean;
                         };
                         notice: {
                             enabled: boolean;
@@ -2006,6 +2802,8 @@ export interface operations {
                             ackHours: number;
                             resolutionDays: number;
                         };
+                        /** @description Company and grievance details still at their placeholder values, by name */
+                        placeholders: string[];
                         /** Format: date-time */
                         updatedAt: string | null;
                         updatedBy: string | null;
@@ -2036,6 +2834,8 @@ export interface operations {
                             freeFromPaise: number;
                         };
                         cod: {
+                            /** @description Off stops cash on delivery for every order */
+                            enabled: boolean;
                             /** @description Largest order total that can be paid by cash on delivery */
                             maxOrderPaise: number;
                         };
@@ -2442,6 +3242,378 @@ export interface operations {
             };
         };
     };
+    StaffController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    StaffController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Email a one-time link to choose a password
+                     * @enum {string}
+                     */
+                    mode: "invite";
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    /** @description AltasGoods Control roles; Super Admin passes every check */
+                    roles: ("SUPER_ADMIN" | "OPS_ADMIN" | "CATALOG_MANAGER" | "AUDITOR" | "SUPPORT_AGENT" | "SUPPORT_SPECIALIST" | "SUPPORT_SUPERVISOR")[];
+                } | {
+                    /**
+                     * @description Set a temporary password to hand over; it must be changed at first sign in
+                     * @enum {string}
+                     */
+                    mode: "password";
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    /** @description AltasGoods Control roles; Super Admin passes every check */
+                    roles: ("SUPER_ADMIN" | "OPS_ADMIN" | "CATALOG_MANAGER" | "AUDITOR" | "SUPPORT_AGENT" | "SUPPORT_SPECIALIST" | "SUPPORT_SUPERVISOR")[];
+                    tempPassword: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        member: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                            roles: string[];
+                            /**
+                             * @description BLOCKED is disabled: cannot sign in
+                             * @enum {string}
+                             */
+                            status: "ACTIVE" | "BLOCKED";
+                            /** @description Holds a temporary password that has not been changed yet */
+                            mustChangePassword: boolean;
+                            /** @description An invite link was sent and has not been used or expired */
+                            invitePending: boolean;
+                            /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                            inviteNotSent: boolean;
+                            /**
+                             * Format: date-time
+                             * @description When they last signed in or their session was renewed
+                             */
+                            lastActiveAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                        /** @description Only when no email really goes out (development, or the console email provider): the link to pass on by hand */
+                        inviteLink?: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StaffController_setRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description AltasGoods Control roles; Super Admin passes every check */
+                    roles: ("SUPER_ADMIN" | "OPS_ADMIN" | "CATALOG_MANAGER" | "AUDITOR" | "SUPPORT_AGENT" | "SUPPORT_SPECIALIST" | "SUPPORT_SUPERVISOR")[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_disable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_enable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                        email: string;
+                        roles: string[];
+                        /**
+                         * @description BLOCKED is disabled: cannot sign in
+                         * @enum {string}
+                         */
+                        status: "ACTIVE" | "BLOCKED";
+                        /** @description Holds a temporary password that has not been changed yet */
+                        mustChangePassword: boolean;
+                        /** @description An invite link was sent and has not been used or expired */
+                        invitePending: boolean;
+                        /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                        inviteNotSent: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When they last signed in or their session was renewed
+                         */
+                        lastActiveAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    StaffController_resendInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        member: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                            email: string;
+                            roles: string[];
+                            /**
+                             * @description BLOCKED is disabled: cannot sign in
+                             * @enum {string}
+                             */
+                            status: "ACTIVE" | "BLOCKED";
+                            /** @description Holds a temporary password that has not been changed yet */
+                            mustChangePassword: boolean;
+                            /** @description An invite link was sent and has not been used or expired */
+                            invitePending: boolean;
+                            /** @description The latest invite email could not be sent, so no link is waiting; resend it */
+                            inviteNotSent: boolean;
+                            /**
+                             * Format: date-time
+                             * @description When they last signed in or their session was renewed
+                             */
+                            lastActiveAt: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                        /** @description Only when no email really goes out */
+                        inviteLink?: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminExportsController_export: {
+        parameters: {
+            query?: {
+                /** @description Search text, as on the matching list page */
+                q?: string;
+                /** @description Status filter, as on the matching list page (order lines take a comma separated list) */
+                status?: string;
+                /** @description Payment method (orders and payments) */
+                method?: string;
+                /** @description Payment provider (payments) */
+                provider?: string;
+                /** @description Audit action or prefix (audit) */
+                action?: string;
+                /** @description Audit entity type (audit) */
+                entityType?: string;
+                /** @description Audit entity id (audit) */
+                entityId?: string;
+                /** @description Audit actor (audit) */
+                actorId?: string;
+                /** @description First day to include (IST), for example 2026-03-01 */
+                from?: string;
+                /** @description Last day to include (IST), inclusive */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file (UTF-8 with a byte order mark, CRLF line endings, money in rupees, times in IST) */
+            200: {
+                headers: {
+                    /** @description true when the file stops at the row cap */
+                    "X-Export-Truncated"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
     AuthController_signup: {
         parameters: {
             query?: never;
@@ -2479,6 +3651,8 @@ export interface operations {
                             emailVerified: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
                             /**
                              * Format: date-time
                              * @description When the account was created
@@ -2527,6 +3701,8 @@ export interface operations {
                             emailVerified: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
                             /**
                              * Format: date-time
                              * @description When the account was created
@@ -2610,6 +3786,58 @@ export interface operations {
                             emailVerified: boolean;
                             /** @description AltasGoods Control roles; empty for shoppers */
                             staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
+                            /**
+                             * Format: date-time
+                             * @description When the account was created
+                             */
+                            createdAt: string;
+                        };
+                        isNewUser: boolean;
+                    };
+                };
+            };
+        };
+    };
+    AuthController_acceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description From the invite link */
+                    token: string;
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accessToken: string;
+                        refreshToken: string;
+                        /** @description Access token lifetime in seconds */
+                        expiresIn: number;
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            name: string | null;
+                            phone: string | null;
+                            emailVerified: boolean;
+                            /** @description AltasGoods Control roles; empty for shoppers */
+                            staffRoles: string[];
+                            /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                            mustChangePassword: boolean;
                             /**
                              * Format: date-time
                              * @description When the account was created
@@ -2697,6 +3925,8 @@ export interface operations {
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                        mustChangePassword: boolean;
                         /**
                          * Format: date-time
                          * @description When the account was created
@@ -2704,6 +3934,29 @@ export interface operations {
                         createdAt: string;
                     };
                 };
+            };
+        };
+    };
+    AuthController_deleteAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2738,6 +3991,8 @@ export interface operations {
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                        mustChangePassword: boolean;
                         /**
                          * Format: date-time
                          * @description When the account was created
@@ -2852,12 +4107,1547 @@ export interface operations {
                         emailVerified: boolean;
                         /** @description AltasGoods Control roles; empty for shoppers */
                         staffRoles: string[];
+                        /** @description A Super Admin set a temporary password; staff routes answer 403 PASSWORD_CHANGE_REQUIRED until POST /v1/me/password */
+                        mustChangePassword: boolean;
                         /**
                          * Format: date-time
                          * @description When the account was created
                          */
                         createdAt: string;
                     };
+                };
+            };
+        };
+    };
+    AdminContentController_pages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slug: string;
+                    /**
+                     * @default policy
+                     * @enum {string}
+                     */
+                    kind?: "policy" | "page";
+                    title: string;
+                    nav: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    sections?: {
+                        /** @description Anchor of the section; made from the heading when left out */
+                        id?: string;
+                        heading: string;
+                        /** @description Markdown. Raw HTML is not shown. */
+                        body: string;
+                    }[];
+                    /** @default [] */
+                    related?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderPages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slugs: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removePage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updatePage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    nav?: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    sections?: {
+                        /** @description Anchor of the section; made from the heading when left out */
+                        id?: string;
+                        heading: string;
+                        /** @description Markdown. Raw HTML is not shown. */
+                        body: string;
+                    }[];
+                    /** @default [] */
+                    related?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        /** @enum {string} */
+                        kind: "policy" | "page";
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: string[];
+                        published: boolean;
+                        sortOrder: number;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @description Name of whoever saved it last */
+                        updatedBy: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_faqs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createFaq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    group: string;
+                    q: string;
+                    /** @description Markdown */
+                    a: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderFaqs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeFaq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateFaq: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    group?: string;
+                    q?: string;
+                    /** @description Markdown */
+                    a?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: string;
+                        q: string;
+                        /** @description Markdown */
+                        a: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_topics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    /** @default  */
+                    body?: string;
+                    icon: string;
+                    href: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderTopics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    /** @default  */
+                    body?: string;
+                    icon?: string;
+                    href?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        /** @default  */
+                        body: string;
+                        icon: string;
+                        href: string;
+                        id: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slug: string;
+                    title: string;
+                    team: string;
+                    location: string;
+                    /**
+                     * @default Full time
+                     * @enum {string}
+                     */
+                    type?: "Full time" | "Contract";
+                    /** @default  */
+                    experience?: string;
+                    posted: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    responsibilities?: string[];
+                    /** @default [] */
+                    requirements?: string[];
+                    /** @default [] */
+                    niceToHave?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slugs: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    team?: string;
+                    location?: string;
+                    /**
+                     * @default Full time
+                     * @enum {string}
+                     */
+                    type?: "Full time" | "Contract";
+                    /** @default  */
+                    experience?: string;
+                    posted?: string;
+                    /** @default  */
+                    summary?: string;
+                    /** @default [] */
+                    responsibilities?: string[];
+                    /** @default [] */
+                    requirements?: string[];
+                    /** @default [] */
+                    niceToHave?: string[];
+                    /** @default true */
+                    published?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                        /** @default true */
+                        published: boolean;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_press: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createPress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slug: string;
+                    date: string;
+                    title: string;
+                    /** @default  */
+                    summary?: string;
+                    category: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderPress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    slugs: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removePress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updatePress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    date?: string;
+                    title?: string;
+                    /** @default  */
+                    summary?: string;
+                    category?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                        sortOrder: number;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_about: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        numbers: {
+                            value: string;
+                            label: string;
+                        }[];
+                        principles: {
+                            title: string;
+                            body: string;
+                        }[];
+                        milestones: {
+                            date: string;
+                            title: string;
+                            body: string;
+                        }[];
+                        offices: {
+                            city: string;
+                            /** @default  */
+                            note: string;
+                            address: string;
+                        }[];
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_saveAbout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    numbers: {
+                        value: string;
+                        label: string;
+                    }[];
+                    principles: {
+                        title: string;
+                        body: string;
+                    }[];
+                    milestones: {
+                        date: string;
+                        title: string;
+                        body: string;
+                    }[];
+                    offices: {
+                        city: string;
+                        /** @default  */
+                        note?: string;
+                        address: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        numbers: {
+                            value: string;
+                            label: string;
+                        }[];
+                        principles: {
+                            title: string;
+                            body: string;
+                        }[];
+                        milestones: {
+                            date: string;
+                            title: string;
+                            body: string;
+                        }[];
+                        offices: {
+                            city: string;
+                            /** @default  */
+                            note: string;
+                            address: string;
+                        }[];
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_spotlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_createSpotlight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    brand: string;
+                    /** @default  */
+                    tagline?: string;
+                    /** @description A product of this brand; the spotlight links to its brand store */
+                    productId: string | null;
+                    /** @default #f1efea */
+                    tone?: string;
+                    image: string;
+                    /** @default true */
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    };
+                };
+            };
+        };
+    };
+    AdminContentController_reorderSpotlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminContentController_removeSpotlight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminContentController_updateSpotlight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    brand?: string;
+                    /** @default  */
+                    tagline?: string;
+                    /** @description A product of this brand; the spotlight links to its brand store */
+                    productId?: string | null;
+                    /** @default #f1efea */
+                    tone?: string;
+                    image?: string;
+                    /** @default true */
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        brand: string;
+                        /** @default  */
+                        tagline: string;
+                        /** @description A product of this brand; the spotlight links to its brand store */
+                        productId: string | null;
+                        /** @default #f1efea */
+                        tone: string;
+                        image: string;
+                        /** @default true */
+                        active: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        sortOrder: number;
+                        productTitle: string | null;
+                        /** @enum {string|null} */
+                        productStatus: "LIVE" | "INACTIVE" | "ARCHIVED" | null;
+                        /** @description Active, and its product is on sale */
+                        showing: boolean;
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_policies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontContentController_policy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        nav: string;
+                        summary: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        sections: {
+                            id: string;
+                            heading: string;
+                            body: string;
+                        }[];
+                        related: {
+                            slug: string;
+                            title: string;
+                            nav: string;
+                            summary: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_help: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        topics: {
+                            title: string;
+                            /** @default  */
+                            body: string;
+                            icon: string;
+                            href: string;
+                            id: string;
+                        }[];
+                        faqs: {
+                            group: string;
+                            q: string;
+                            /** @description Markdown */
+                            a: string;
+                            id: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_careers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontContentController_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        title: string;
+                        team: string;
+                        location: string;
+                        /**
+                         * @default Full time
+                         * @enum {string}
+                         */
+                        type: "Full time" | "Contract";
+                        /** @default  */
+                        experience: string;
+                        posted: string;
+                        /** @default  */
+                        summary: string;
+                        /** @default [] */
+                        responsibilities: string[];
+                        /** @default [] */
+                        requirements: string[];
+                        /** @default [] */
+                        niceToHave: string[];
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_press: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
+                        date: string;
+                        title: string;
+                        /** @default  */
+                        summary: string;
+                        category: string;
+                    }[];
+                };
+            };
+        };
+    };
+    StorefrontContentController_about: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        numbers: {
+                            value: string;
+                            label: string;
+                        }[];
+                        principles: {
+                            title: string;
+                            body: string;
+                        }[];
+                        milestones: {
+                            date: string;
+                            title: string;
+                            body: string;
+                        }[];
+                        offices: {
+                            city: string;
+                            /** @default  */
+                            note: string;
+                            address: string;
+                        }[];
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    StorefrontContentController_spotlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        brand: string;
+                        tagline: string;
+                        tone: string;
+                        image: string;
+                        brandSlug: string;
+                        productSlug: string;
+                    }[];
                 };
             };
         };
@@ -2951,6 +5741,18 @@ export interface operations {
                                     available: boolean;
                                 }[];
                             }[];
+                            legal: {
+                                /** @description Name and full address of the manufacturer */
+                                manufacturer?: string;
+                                /** @description Name and full address of the packer; the store's own details are used when empty */
+                                packer?: string;
+                                /** @description Name and address of the importer, for imported goods */
+                                importer?: string;
+                                /** @description Consumer care email and phone number for this product */
+                                consumerCare?: string;
+                                /** @description Country of origin, for example India */
+                                countryOfOrigin?: string;
+                            } | null;
                             rating: number;
                             ratingCount: number;
                             reviewCount: number;
@@ -2983,6 +5785,29 @@ export interface operations {
                                 returnWindowDays: number;
                             };
                         }[];
+                    };
+                };
+            };
+        };
+    };
+    CatalogController_redirect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        slug: string;
                     };
                 };
             };
@@ -3165,6 +5990,18 @@ export interface operations {
                         lowStock: number | null;
                         codAvailable: boolean;
                         returnWindowDays: number;
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                     };
                 };
             };
@@ -3176,7 +6013,8 @@ export interface operations {
                 q?: string;
                 /** @description Category id */
                 category?: string;
-                status?: "active" | "inactive" | "all";
+                /** @description all leaves out archived products; inactive is switched off, not archived */
+                status?: "active" | "inactive" | "archived" | "all";
                 /** @description low is 10 or fewer */
                 stock?: "out" | "low" | "all";
                 page?: number;
@@ -3213,6 +6051,8 @@ export interface operations {
                             mrpPaise: number;
                             stock: number;
                             active: boolean;
+                            /** @enum {string} */
+                            status: "LIVE" | "INACTIVE" | "ARCHIVED";
                             /** Format: date-time */
                             updatedAt: string;
                         }[];
@@ -3264,6 +6104,32 @@ export interface operations {
                     categoryId: string;
                     subcategory: string;
                     brandId: string;
+                    /**
+                     * @description Overrides the category's GST rate; null inherits it
+                     * @default null
+                     */
+                    gstRateBp?: number | null;
+                    /**
+                     * @description Overrides the category's HSN code; null inherits it
+                     * @default null
+                     */
+                    hsn?: string | null;
+                    /**
+                     * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                     * @default null
+                     */
+                    legal?: {
+                        /** @description Name and full address of the manufacturer */
+                        manufacturer?: string;
+                        /** @description Name and full address of the packer; the store's own details are used when empty */
+                        packer?: string;
+                        /** @description Name and address of the importer, for imported goods */
+                        importer?: string;
+                        /** @description Consumer care email and phone number for this product */
+                        consumerCare?: string;
+                        /** @description Country of origin, for example India */
+                        countryOfOrigin?: string;
+                    } | null;
                     /** @default [] */
                     tags?: ("bestseller" | "new" | "deal" | "limited")[];
                     pricePaise: number;
@@ -3316,6 +6182,32 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -3329,7 +6221,16 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
                         rating: number;
                         ratingCount: number;
                         soldLast30d: number;
@@ -3444,6 +6345,32 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -3457,7 +6384,16 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
                         rating: number;
                         ratingCount: number;
                         soldLast30d: number;
@@ -3467,6 +6403,25 @@ export interface operations {
                         updatedAt: string;
                     };
                 };
+            };
+        };
+    };
+    AdminCatalogController_deleteProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3483,6 +6438,8 @@ export interface operations {
             content: {
                 "application/json": {
                     title?: string;
+                    /** @description Changing it keeps the old address working as a redirect */
+                    slug?: string;
                     sku?: string;
                     description?: string;
                     highlights?: string[];
@@ -3506,6 +6463,23 @@ export interface operations {
                     categoryId?: string;
                     subcategory?: string;
                     brandId?: string;
+                    /** @description Overrides the category's GST rate; null inherits it */
+                    gstRateBp?: number | null;
+                    /** @description Overrides the category's HSN code; null inherits it */
+                    hsn?: string | null;
+                    /** @description Legal Metrology declarations shown on the product page; null leaves them as placeholders */
+                    legal?: {
+                        /** @description Name and full address of the manufacturer */
+                        manufacturer?: string;
+                        /** @description Name and full address of the packer; the store's own details are used when empty */
+                        packer?: string;
+                        /** @description Name and address of the importer, for imported goods */
+                        importer?: string;
+                        /** @description Consumer care email and phone number for this product */
+                        consumerCare?: string;
+                        /** @description Country of origin, for example India */
+                        countryOfOrigin?: string;
+                    } | null;
                     tags?: ("bestseller" | "new" | "deal" | "limited")[];
                     pricePaise?: number;
                     mrpPaise?: number;
@@ -3553,6 +6527,32 @@ export interface operations {
                         categoryId: string;
                         subcategory: string;
                         brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
                         /** @default [] */
                         tags: ("bestseller" | "new" | "deal" | "limited")[];
                         pricePaise: number;
@@ -3566,7 +6566,230 @@ export interface operations {
                         returnWindowDays: number;
                         /** @default true */
                         active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
+                        rating: number;
+                        ratingCount: number;
+                        soldLast30d: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_archiveProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        slug: string;
+                        sku: string;
+                        /** @default  */
+                        description: string;
+                        /** @default [] */
+                        highlights: string[];
+                        /** @default [] */
+                        specs: {
+                            group: string;
+                            items: {
+                                label: string;
+                                value: string;
+                            }[];
+                        }[];
+                        /** @default [] */
+                        variants: {
+                            name: string;
+                            values: {
+                                label: string;
+                                swatch?: string;
+                                /** @default true */
+                                available: boolean;
+                            }[];
+                        }[];
+                        images: string[];
+                        categoryId: string;
+                        subcategory: string;
+                        brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
+                        /** @default [] */
+                        tags: ("bestseller" | "new" | "deal" | "limited")[];
+                        pricePaise: number;
+                        mrpPaise: number;
+                        stock: number;
+                        /** @default 3 */
+                        deliveryDays: number;
+                        /** @default true */
+                        codAvailable: boolean;
+                        /** @default 7 */
+                        returnWindowDays: number;
+                        /** @default true */
+                        active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
+                        id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
+                        rating: number;
+                        ratingCount: number;
+                        soldLast30d: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminCatalogController_restoreProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        slug: string;
+                        sku: string;
+                        /** @default  */
+                        description: string;
+                        /** @default [] */
+                        highlights: string[];
+                        /** @default [] */
+                        specs: {
+                            group: string;
+                            items: {
+                                label: string;
+                                value: string;
+                            }[];
+                        }[];
+                        /** @default [] */
+                        variants: {
+                            name: string;
+                            values: {
+                                label: string;
+                                swatch?: string;
+                                /** @default true */
+                                available: boolean;
+                            }[];
+                        }[];
+                        images: string[];
+                        categoryId: string;
+                        subcategory: string;
+                        brandId: string;
+                        /**
+                         * @description Overrides the category's GST rate; null inherits it
+                         * @default null
+                         */
+                        gstRateBp: number | null;
+                        /**
+                         * @description Overrides the category's HSN code; null inherits it
+                         * @default null
+                         */
+                        hsn: string | null;
+                        /**
+                         * @description Legal Metrology declarations shown on the product page; null leaves them as placeholders
+                         * @default null
+                         */
+                        legal: {
+                            /** @description Name and full address of the manufacturer */
+                            manufacturer?: string;
+                            /** @description Name and full address of the packer; the store's own details are used when empty */
+                            packer?: string;
+                            /** @description Name and address of the importer, for imported goods */
+                            importer?: string;
+                            /** @description Consumer care email and phone number for this product */
+                            consumerCare?: string;
+                            /** @description Country of origin, for example India */
+                            countryOfOrigin?: string;
+                        } | null;
+                        /** @default [] */
+                        tags: ("bestseller" | "new" | "deal" | "limited")[];
+                        pricePaise: number;
+                        mrpPaise: number;
+                        stock: number;
+                        /** @default 3 */
+                        deliveryDays: number;
+                        /** @default true */
+                        codAvailable: boolean;
+                        /** @default 7 */
+                        returnWindowDays: number;
+                        /** @default true */
+                        active: boolean;
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
+                        id: string;
+                        /** @enum {string} */
+                        status: "LIVE" | "INACTIVE" | "ARCHIVED";
                         rating: number;
                         ratingCount: number;
                         soldLast30d: number;
@@ -3600,6 +6823,16 @@ export interface operations {
                         icon: string | null;
                         image: string | null;
                         sortOrder: number;
+                        gstRateBp: number | null;
+                        hsn: string | null;
+                        /** @description What its products are taxed at when it sets nothing: the store default */
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         subcategories: {
                             id: string;
                             name: string;
@@ -3628,6 +6861,9 @@ export interface operations {
                     icon?: string | null;
                     image?: string | null;
                     sortOrder?: number;
+                    /** @description GST rate for the category's products; null inherits the store default */
+                    gstRateBp?: number | null;
+                    hsn?: string | null;
                     subcategories?: string[];
                 };
             };
@@ -3645,6 +6881,16 @@ export interface operations {
                         icon: string | null;
                         image: string | null;
                         sortOrder: number;
+                        gstRateBp: number | null;
+                        hsn: string | null;
+                        /** @description What its products are taxed at when it sets nothing: the store default */
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         subcategories: {
                             id: string;
                             name: string;
@@ -3694,6 +6940,9 @@ export interface operations {
                     icon?: string | null;
                     image?: string | null;
                     sortOrder?: number;
+                    /** @description GST rate for the category's products; null inherits the store default */
+                    gstRateBp?: number | null;
+                    hsn?: string | null;
                     subcategories?: string[];
                 };
             };
@@ -3711,6 +6960,16 @@ export interface operations {
                         icon: string | null;
                         image: string | null;
                         sortOrder: number;
+                        gstRateBp: number | null;
+                        hsn: string | null;
+                        /** @description What its products are taxed at when it sets nothing: the store default */
+                        inheritedGst: {
+                            gstRateBp: number;
+                            /** @description The category it comes from, or the store default */
+                            rateFrom: string;
+                            hsn: string | null;
+                            hsnFrom: string | null;
+                        };
                         subcategories: {
                             id: string;
                             name: string;
@@ -4903,6 +8162,8 @@ export interface operations {
                             couponDiscountPaise: number;
                             deliveryFeePaise: number;
                             totalPaise: number;
+                            /** @description GST included in the prices of the lines that are not cancelled; the delivery fee carries none */
+                            gstIncludedPaise: number;
                             items: {
                                 /** Format: uuid */
                                 id: string;
@@ -4913,6 +8174,10 @@ export interface operations {
                                 qty: number;
                                 unitPricePaise: number;
                                 mrpPaise: number;
+                                /** @description GST rate the line was sold at, in basis points */
+                                gstRateBp: number;
+                                /** @description The GST included in the line's price, after its share of any coupon */
+                                taxPaise: number;
                                 /** @enum {string} */
                                 status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                                 /** Format: date-time */
@@ -5074,6 +8339,8 @@ export interface operations {
                         couponDiscountPaise: number;
                         deliveryFeePaise: number;
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled; the delivery fee carries none */
+                        gstIncludedPaise: number;
                         items: {
                             /** Format: uuid */
                             id: string;
@@ -5084,6 +8351,10 @@ export interface operations {
                             qty: number;
                             unitPricePaise: number;
                             mrpPaise: number;
+                            /** @description GST rate the line was sold at, in basis points */
+                            gstRateBp: number;
+                            /** @description The GST included in the line's price, after its share of any coupon */
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -5186,6 +8457,8 @@ export interface operations {
                         couponDiscountPaise: number;
                         deliveryFeePaise: number;
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled; the delivery fee carries none */
+                        gstIncludedPaise: number;
                         items: {
                             /** Format: uuid */
                             id: string;
@@ -5196,6 +8469,10 @@ export interface operations {
                             qty: number;
                             unitPricePaise: number;
                             mrpPaise: number;
+                            /** @description GST rate the line was sold at, in basis points */
+                            gstRateBp: number;
+                            /** @description The GST included in the line's price, after its share of any coupon */
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -5308,6 +8585,8 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments */
+                        sessionOpen: boolean;
                         /** @description Set when the customer pays in the gateway's own checkout */
                         checkout: {
                             /** @enum {string} */
@@ -5358,6 +8637,8 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments */
+                        sessionOpen: boolean;
                         /** @description Set when the customer pays in the gateway's own checkout */
                         checkout: {
                             /** @enum {string} */
@@ -5409,6 +8690,8 @@ export interface operations {
                         failureReason: string | null;
                         /** @enum {string} */
                         orderStatus: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @description False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments */
+                        sessionOpen: boolean;
                         /** @description Set when the customer pays in the gateway's own checkout */
                         checkout: {
                             /** @enum {string} */
@@ -5489,6 +8772,9 @@ export interface operations {
                             variant: string;
                             qty: number;
                             unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** @enum {string} */
@@ -5549,6 +8835,8 @@ export interface operations {
                         /** @enum {string} */
                         paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled */
+                        gstIncludedPaise: number;
                         shipTo: {
                             name: string;
                             city: string;
@@ -5564,6 +8852,8 @@ export interface operations {
                             city: string;
                             state: string;
                             pincode: string;
+                            /** @description HOME, WORK or OTHER */
+                            type: string;
                         };
                         items: {
                             /** Format: uuid */
@@ -5574,6 +8864,9 @@ export interface operations {
                             variant: string;
                             qty: number;
                             unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -5600,6 +8893,30 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         }[];
+                        addressEditable: boolean;
+                        refunds: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                            /** @enum {string} */
+                            method: "SOURCE" | "MANUAL";
+                            reason: string;
+                            reference: string | null;
+                            note: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            completedAt: string | null;
+                        }[];
+                        refundLimit: {
+                            source: boolean;
+                            maxPaise: number;
+                        };
                     };
                 };
             };
@@ -5617,7 +8934,8 @@ export interface operations {
                 "application/json": {
                     ids: string[];
                     /** @enum {string} */
-                    to: "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "CANCELLED";
+                    to: "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "CANCELLED" | "LOST" | "RTO_RECEIVED";
+                    /** @description Required to cancel, mark lost (LOST) or record a parcel back at the store (RTO_RECEIVED) */
                     reason?: string;
                 };
             };
@@ -5637,6 +8955,204 @@ export interface operations {
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED" | null;
                             error: string | null;
                         }[];
+                    };
+                };
+            };
+        };
+    };
+    AdminOrdersController_address: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    phone: string;
+                    line1: string;
+                    line2?: string;
+                    landmark?: string;
+                    city: string;
+                    state: string;
+                    pincode: string;
+                    /**
+                     * @default HOME
+                     * @enum {string}
+                     */
+                    type?: "HOME" | "WORK" | "OTHER";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** Format: date-time */
+                        placedAt: string;
+                        /** @enum {string} */
+                        status: "PAYMENT_PENDING" | "PAYMENT_FAILED" | "ABANDONED" | "CONFIRMED" | "IN_PROGRESS" | "PARTIALLY_SHIPPED" | "SHIPPED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "CLOSED";
+                        /** @enum {string} */
+                        paymentMethod: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                        /** @enum {string} */
+                        paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
+                        totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled */
+                        gstIncludedPaise: number;
+                        shipTo: {
+                            name: string;
+                            city: string;
+                            state: string;
+                            pincode: string;
+                        };
+                        address: {
+                            name: string;
+                            phone: string;
+                            line1: string;
+                            line2: string | null;
+                            landmark: string | null;
+                            city: string;
+                            state: string;
+                            pincode: string;
+                            /** @description HOME, WORK or OTHER */
+                            type: string;
+                        };
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            productId: string;
+                            title: string;
+                            image: string;
+                            variant: string;
+                            qty: number;
+                            unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
+                            /** Format: date-time */
+                            dispatchBy: string | null;
+                            /** Format: date-time */
+                            promisedBy: string;
+                            awb: string | null;
+                            courier: string | null;
+                            labelUrl: string | null;
+                            trackingStatus: string | null;
+                            /** Format: date-time */
+                            trackedAt: string | null;
+                            trackingUrl: string | null;
+                            simulated: boolean;
+                            allowedActions: ("PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED")[];
+                        }[];
+                        events: {
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            fromStatus: string | null;
+                            toStatus: string;
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        addressEditable: boolean;
+                        refunds: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                            /** @enum {string} */
+                            method: "SOURCE" | "MANUAL";
+                            reason: string;
+                            reference: string | null;
+                            note: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            completedAt: string | null;
+                        }[];
+                        refundLimit: {
+                            source: boolean;
+                            maxPaise: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    AdminOrdersController_notes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        authorId: string | null;
+                        authorName: string;
+                        body: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    AdminOrdersController_addNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        authorId: string | null;
+                        authorName: string;
+                        body: string;
+                        /** Format: date-time */
+                        createdAt: string;
                     };
                 };
             };
@@ -5701,6 +9217,153 @@ export interface operations {
             };
         };
     };
+    AdminRefundsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amountPaise: number;
+                    /** @description Why, for the team; the customer sees "Refund from AltasGoods" */
+                    reason: string;
+                    /**
+                     * @description SOURCE goes back through the gateway; MANUAL records money the store already sent by UPI or bank transfer
+                     * @enum {string}
+                     */
+                    method: "SOURCE" | "MANUAL";
+                    /** @description Required for MANUAL: the UTR or UPI reference of the payout */
+                    reference?: string;
+                    /**
+                     * Format: uuid
+                     * @description The line it is for, if any
+                     */
+                    orderItemId?: string;
+                    /** @description Staff-only remark */
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string | null;
+                        amountPaise: number;
+                        /** @enum {string} */
+                        status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                        /** @enum {string} */
+                        method: "SOURCE" | "MANUAL";
+                        reason: string;
+                        reference: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        completedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminRefundsController_retry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string | null;
+                        amountPaise: number;
+                        /** @enum {string} */
+                        status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                        /** @enum {string} */
+                        method: "SOURCE" | "MANUAL";
+                        reason: string;
+                        reference: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        completedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AdminRefundsController_markPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The UTR or UPI reference of the payout */
+                    reference: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string | null;
+                        amountPaise: number;
+                        /** @enum {string} */
+                        status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                        /** @enum {string} */
+                        method: "SOURCE" | "MANUAL";
+                        reason: string;
+                        reference: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        completedAt: string | null;
+                    };
+                };
+            };
+        };
+    };
     AdminInsightsController_overview: {
         parameters: {
             query?: never;
@@ -5738,6 +9401,8 @@ export interface operations {
                             returnsWaiting: number;
                             refundsPending: number;
                             refundsPendingPaise: number;
+                            /** @description Refunds the gateway could not confirm; check the gateway, then retry */
+                            refundsNeedAttention: number;
                         };
                         /** @description The last 14 days, oldest first */
                         series: {
@@ -5839,7 +9504,7 @@ export interface operations {
     AdminInsightsController_refunds: {
         parameters: {
             query?: {
-                status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+                status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
                 /** @description Order ID or customer email */
                 q?: string;
                 page?: number;
@@ -5863,10 +9528,20 @@ export interface operations {
                             orderId: string;
                             amountPaise: number;
                             /** @enum {string} */
-                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
                             reason: string;
-                            /** @enum {string} */
+                            /**
+                             * @description How the customer paid
+                             * @enum {string}
+                             */
                             method: "UPI" | "CARD" | "NETBANKING" | "EMI" | "PAY_LATER" | "COD";
+                            /**
+                             * @description SOURCE: through the gateway. MANUAL: paid by the store, PENDING until marked paid
+                             * @enum {string}
+                             */
+                            refundMethod: "SOURCE" | "MANUAL";
+                            /** @description The payout's UTR or UPI reference, for a MANUAL refund */
+                            reference: string | null;
                             /** @enum {string} */
                             provider: "SANDBOX" | "RAZORPAY" | "COD";
                             providerRef: string | null;
@@ -6402,6 +10077,37 @@ export interface operations {
             };
         };
     };
+    StorefrontPincodesController_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pin: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        pincode: string;
+                        serviceable: boolean;
+                        codAvailable: boolean;
+                        /** @description Days the store adds to the usual delivery promise here */
+                        extraDays: number;
+                        /** @description The courier's estimate in days, when it gave one */
+                        etaDays: number | null;
+                        /** @enum {string} */
+                        source: "rules" | "rules+shiprocket";
+                    };
+                };
+            };
+        };
+    };
     LogisticsController_webhook: {
         parameters: {
             query?: never;
@@ -6515,8 +10221,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -6576,7 +10287,7 @@ export interface operations {
                     resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
                     exchangeSize?: string;
                     /** @enum {string} */
-                    refundTo?: "SOURCE" | "CREDITS" | "BANK";
+                    refundTo?: "SOURCE" | "BANK";
                     refundUpi?: string;
                     pickupDate: string;
                     pickupSlot: string;
@@ -6622,8 +10333,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -6702,8 +10418,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -6782,8 +10503,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -6869,8 +10595,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7040,8 +10771,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7120,8 +10856,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7207,8 +10948,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7294,8 +11040,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7388,8 +11139,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7475,8 +11231,106 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
+                        refundStatus: string | null;
+                        /** @enum {string} */
+                        status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                        pickupDate: string | null;
+                        pickupSlot: string | null;
+                        address: {
+                            name: string;
+                            city: string;
+                            pincode: string;
+                            line1: string;
+                        };
+                        awb: string | null;
+                        qcNote: string | null;
+                        decisionNote: string | null;
+                        cancellable: boolean;
+                        events: {
+                            /** @enum {string|null} */
+                            fromStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST" | null;
+                            /** @enum {string} */
+                            toStatus: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
+                            actor: string;
+                            note: string | null;
+                            /** Format: date-time */
+                            at: string;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    AdminReturnsController_markRefundPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The UTR or UPI reference of the payout */
+                    reference: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        orderId: string;
+                        /** Format: uuid */
+                        orderItemId: string;
+                        item: {
+                            title: string;
+                            image: string;
+                            variant: string;
+                            unitPricePaise: number;
+                            productId: string;
+                        };
+                        customerName: string;
+                        qty: number;
+                        reasonCode: string;
+                        reasonLabel: string;
+                        /** @enum {string} */
+                        fault: "STORE" | "LOGISTICS" | "CUSTOMER";
+                        comments: string | null;
+                        photos: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @enum {string} */
+                        resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
+                        exchangeSize: string | null;
+                        /** @enum {string|null} */
+                        refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
+                        refundAmountPaise: number;
+                        instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7582,8 +11436,13 @@ export interface operations {
                         exchangeSize: string | null;
                         /** @enum {string|null} */
                         refundTo: "SOURCE" | "CREDITS" | "BANK" | null;
+                        /** @description Where a bank (UPI) refund goes */
+                        refundUpi: string | null;
+                        /** @description The UTR or UPI reference once a bank refund has been paid */
+                        refundReference: string | null;
                         refundAmountPaise: number;
                         instantRefund: boolean;
+                        /** @description INITIATED while a bank refund waits for its payout; staff views show NEEDS_ATTENTION, customers see PROCESSING */
                         refundStatus: string | null;
                         /** @enum {string} */
                         status: "REQUESTED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "PICKUP_SCHEDULED" | "OUT_FOR_PICKUP" | "PICKUP_FAILED" | "PICKED_UP" | "IN_TRANSIT" | "RECEIVED" | "QC_PASSED" | "QC_FAILED" | "COMPLETED" | "CANCELLED" | "LOST";
@@ -7644,7 +11503,7 @@ export interface operations {
                             email: string;
                             phone: string | null;
                             /** @enum {string} */
-                            status: "ACTIVE" | "BLOCKED";
+                            status: "ACTIVE" | "BLOCKED" | "DELETED";
                             /** Format: date-time */
                             createdAt: string;
                             orders: number;
@@ -7681,7 +11540,7 @@ export interface operations {
                         email: string;
                         phone: string | null;
                         /** @enum {string} */
-                        status: "ACTIVE" | "BLOCKED";
+                        status: "ACTIVE" | "BLOCKED" | "DELETED";
                         emailVerified: boolean;
                         /** Format: date-time */
                         createdAt: string;
@@ -7788,6 +11647,8 @@ export interface operations {
                         /** @enum {string} */
                         paymentStatus: "CREATED" | "PENDING" | "AUTHORIZED" | "CAPTURED" | "FAILED" | "EXPIRED" | "CANCELLED" | "PARTIALLY_REFUNDED" | "REFUNDED" | "COD_PENDING" | "COD_COLLECTED";
                         totalPaise: number;
+                        /** @description GST included in the prices of the lines that are not cancelled */
+                        gstIncludedPaise: number;
                         shipTo: {
                             name: string;
                             city: string;
@@ -7803,6 +11664,8 @@ export interface operations {
                             city: string;
                             state: string;
                             pincode: string;
+                            /** @description HOME, WORK or OTHER */
+                            type: string;
                         };
                         items: {
                             /** Format: uuid */
@@ -7813,6 +11676,9 @@ export interface operations {
                             variant: string;
                             qty: number;
                             unitPricePaise: number;
+                            gstRateBp: number;
+                            hsn: string | null;
+                            taxPaise: number;
                             /** @enum {string} */
                             status: "PENDING" | "NEW" | "ACCEPTED" | "PACKED" | "READY_TO_SHIP" | "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLATION_REQUESTED" | "CANCELLED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST" | "RETURN_REQUESTED" | "RETURN_IN_PROGRESS" | "RETURNED" | "REPLACED" | "CLOSED";
                             /** Format: date-time */
@@ -7838,6 +11704,30 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         }[];
+                        addressEditable: boolean;
+                        refunds: {
+                            /** Format: uuid */
+                            id: string;
+                            orderId: string;
+                            /** Format: uuid */
+                            orderItemId: string | null;
+                            amountPaise: number;
+                            /** @enum {string} */
+                            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "NEEDS_ATTENTION";
+                            /** @enum {string} */
+                            method: "SOURCE" | "MANUAL";
+                            reason: string;
+                            reference: string | null;
+                            note: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            completedAt: string | null;
+                        }[];
+                        refundLimit: {
+                            source: boolean;
+                            maxPaise: number;
+                        };
                         customer: {
                             /** Format: uuid */
                             id: string;
@@ -8560,8 +12450,13 @@ export interface operations {
                     /** @enum {string} */
                     kind: "REFUND";
                     amountPaise: number;
-                    /** @enum {string} */
-                    destination: "SOURCE" | "CREDITS";
+                    /**
+                     * @description SOURCE goes back to the payment method; BANK is paid by hand to the UPI id
+                     * @enum {string}
+                     */
+                    destination: "SOURCE" | "BANK";
+                    /** @description Required for BANK */
+                    upi?: string;
                     /** @enum {string} */
                     reason: "damaged" | "not_delivered" | "wrong" | "late" | "goodwill";
                 } | {
@@ -9317,7 +13212,7 @@ export interface operations {
                             email: string;
                             phone: string | null;
                             /** @enum {string} */
-                            status: "ACTIVE" | "BLOCKED";
+                            status: "ACTIVE" | "BLOCKED" | "DELETED";
                             /** Format: date-time */
                             createdAt: string;
                             orders: number;
@@ -9354,7 +13249,7 @@ export interface operations {
                         email: string;
                         phone: string | null;
                         /** @enum {string} */
-                        status: "ACTIVE" | "BLOCKED";
+                        status: "ACTIVE" | "BLOCKED" | "DELETED";
                         emailVerified: boolean;
                         /** Format: date-time */
                         createdAt: string;
@@ -9422,7 +13317,7 @@ export interface operations {
                         email: string;
                         phone: string | null;
                         /** @enum {string} */
-                        status: "ACTIVE" | "BLOCKED";
+                        status: "ACTIVE" | "BLOCKED" | "DELETED";
                         emailVerified: boolean;
                         /** Format: date-time */
                         createdAt: string;

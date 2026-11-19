@@ -12,7 +12,8 @@ type Review = typeof reviews.$inferSelect;
 type Status = Review["status"];
 
 /** "Ananya S." from "Ananya Sharma". */
-const authorName = (name: string | null) => {
+const authorName = (name: string | null, status: string = "ACTIVE") => {
+  if (status === "DELETED") return "Anonymous";
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "AltasGoods customer";
   return parts.length === 1 ? parts[0]! : `${parts[0]} ${parts.at(-1)![0]}.`;
@@ -86,7 +87,7 @@ export class ReviewsService {
     const order = q.sort === "high" ? [desc(reviews.rating), desc(reviews.createdAt)] : q.sort === "low" ? [asc(reviews.rating), desc(reviews.createdAt)] : [desc(reviews.createdAt)];
     const [rows, [total], breakdown, canReview] = await Promise.all([
       this.db
-        .select({ r: reviews, name: users.name })
+        .select({ r: reviews, name: users.name, userStatus: users.status })
         .from(reviews)
         .innerJoin(users, eq(users.id, reviews.userId))
         .where(where)
@@ -99,7 +100,7 @@ export class ReviewsService {
     ]);
     const byStar = new Map(breakdown.map((b) => [b.stars, b.n]));
     return {
-      items: rows.map(({ r, name }) => ({ id: r.id, rating: r.rating, title: r.title, body: r.body, author: authorName(name), verified: true as const, reply: r.reply, createdAt: r.createdAt.toISOString() })),
+      items: rows.map(({ r, name, userStatus }) => ({ id: r.id, rating: r.rating, title: r.title, body: r.body, author: authorName(name, userStatus), verified: true as const, reply: r.reply, createdAt: r.createdAt.toISOString() })),
       total: total?.n ?? 0,
       page: q.page,
       pageSize: q.pageSize,

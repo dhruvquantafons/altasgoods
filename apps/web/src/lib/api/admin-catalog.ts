@@ -5,7 +5,7 @@ import { api, unwrap } from "./server";
 export interface ProductQuery {
   q?: string;
   category?: string;
-  status?: "active" | "inactive" | "all";
+  status?: "active" | "inactive" | "archived" | "all";
   stock?: "out" | "low" | "all";
   page?: number;
   pageSize?: number;

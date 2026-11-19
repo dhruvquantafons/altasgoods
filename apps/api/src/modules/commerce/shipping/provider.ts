@@ -3,6 +3,14 @@ import type { OrderItemStatus } from "../../../db/schema.js";
 /** Item statuses a courier's scans can move a line to. */
 export type CourierStatus = Extract<OrderItemStatus, "SHIPPED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "RTO_IN_TRANSIT" | "RTO_RECEIVED" | "LOST">;
 
+/** What a courier says about delivering to a pincode. */
+export interface CourierServiceability {
+  serviceable: boolean;
+  codAvailable: boolean;
+  /** the fastest courier's estimate in days, when it gave one */
+  etaDays: number | null;
+}
+
 export interface ShipmentRequest {
   /** our unique reference for this parcel; one order line ships as one parcel */
   reference: string;
@@ -39,6 +47,8 @@ export interface TrackingUpdate {
  */
 export interface LogisticsProvider {
   readonly name: "SIMULATED" | "SHIPROCKET";
+  /** where serviceability answers are measured from; part of their cache key */
+  readonly pickupPincode?: string;
   /**
    * Books the parcel, resuming from whatever the earlier attempt saved:
    * creates the courier order, assigns an AWB, schedules pickup, makes the label.
@@ -52,4 +62,9 @@ export interface LogisticsProvider {
   parseWebhook(body: unknown, headers: Record<string, string | string[] | undefined>): TrackingUpdate | null;
   /** A page where the customer can follow the parcel. */
   trackingUrl(awb: string): string | null;
+  /**
+   * Optional: asks the courier whether it reaches a pincode. Null when it cannot
+   * say (not configured); throws when it fails, and callers carry on without it.
+   */
+  serviceability?(deliveryPincode: string, weightGrams: number): Promise<CourierServiceability | null>;
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { pageQuery, paginated } from "../../common/http.js";
-import { ORDER_ITEM_STATUSES, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, REFUND_STATUSES } from "../../db/schema.js";
+import { ORDER_ITEM_STATUSES, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, REFUND_METHODS, REFUND_STATUSES } from "../../db/schema.js";
 import { normalizePhone } from "../auth/phone.js";
 
 /* -------------------------------- Addresses ------------------------------ */
@@ -18,6 +18,8 @@ export const addressBody = z.object({
   isDefault: z.boolean().default(false),
 });
 export const addressPatch = addressBody.partial();
+/** An order's delivery address, as staff correct it: the same fields and checks as a saved address. */
+export const orderAddressBody = addressBody.omit({ isDefault: true });
 export const addressSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -111,6 +113,16 @@ export const quoteSchema = z.object({
   canPlaceOrder: z.boolean(),
 });
 
+export const pincodeParam = z.string().regex(/^[1-9]\d{5}$/, "Enter a valid 6 digit pincode");
+export const pincodeCheckSchema = z.object({
+  pincode: z.string(),
+  serviceable: z.boolean(),
+  codAvailable: z.boolean(),
+  extraDays: z.number().int().describe("Days the store adds to the usual delivery promise here"),
+  etaDays: z.number().int().nullable().describe("The courier's estimate in days, when it gave one"),
+  source: z.enum(["rules", "rules+shiprocket"]),
+});
+
 export const placeOrderBody = quoteBody.extend({ paymentMethod: z.enum(PAYMENT_METHODS) });
 
 /* --------------------------------- Orders -------------------------------- */
@@ -124,6 +136,8 @@ export const orderItemSchema = z.object({
   qty: z.number().int(),
   unitPricePaise: z.number().int(),
   mrpPaise: z.number().int(),
+  gstRateBp: z.number().int().describe("GST rate the line was sold at, in basis points"),
+  taxPaise: z.number().int().describe("The GST included in the line's price, after its share of any coupon"),
   status: z.enum(ORDER_ITEM_STATUSES),
   promisedBy: z.iso.datetime(),
   shippedAt: z.iso.datetime().nullable(),
@@ -177,6 +191,7 @@ export const orderSchema = z.object({
   couponDiscountPaise: z.number().int(),
   deliveryFeePaise: z.number().int(),
   totalPaise: z.number().int(),
+  gstIncludedPaise: z.number().int().describe("GST included in the prices of the lines that are not cancelled; the delivery fee carries none"),
   items: z.array(orderItemSchema),
   payments: z.array(paymentSummary),
   refunds: z.array(z.object({ id: z.uuid(), amountPaise: z.number().int(), status: z.string(), reason: z.string(), createdAt: z.iso.datetime() })),
@@ -215,6 +230,7 @@ export const paymentDetailSchema = paymentSummary.extend({
   provider: z.string(),
   failureReason: z.string().nullable(),
   orderStatus: z.enum(ORDER_STATUSES),
+  sessionOpen: z.boolean().describe("False when the gateway could not open this payment; start a new attempt with POST /v1/me/orders/{id}/payments"),
   checkout: z
     .object({ gateway: z.literal("RAZORPAY"), keyId: z.string(), orderRef: z.string(), currency: z.literal("INR") })
     .nullable()
@@ -243,6 +259,9 @@ export const fulfilmentItemSchema = z.object({
   variant: z.string(),
   qty: z.number().int(),
   unitPricePaise: z.number().int(),
+  gstRateBp: z.number().int(),
+  hsn: z.string().nullable(),
+  taxPaise: z.number().int(),
   status: z.enum(ORDER_ITEM_STATUSES),
   paymentMethod: z.enum(PAYMENT_METHODS),
   shipTo: z.object({ name: z.string(), city: z.string(), pincode: z.string() }),
@@ -261,6 +280,20 @@ export const fulfilmentItemSchema = z.object({
 });
 export const fulfilmentItemList = paginated(fulfilmentItemSchema).extend({ counts: z.record(z.string(), z.number().int()) });
 
+export const adminRefundSchema = z.object({
+  id: z.uuid(),
+  orderId: z.string(),
+  orderItemId: z.uuid().nullable(),
+  amountPaise: z.number().int(),
+  status: z.enum(REFUND_STATUSES),
+  method: z.enum(REFUND_METHODS),
+  reason: z.string(),
+  reference: z.string().nullable(),
+  note: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+  completedAt: z.iso.datetime().nullable(),
+});
+
 export const fulfilmentOrderSchema = z.object({
   id: z.string(),
   placedAt: z.iso.datetime(),
@@ -268,6 +301,7 @@ export const fulfilmentOrderSchema = z.object({
   paymentMethod: z.enum(PAYMENT_METHODS),
   paymentStatus: z.enum(PAYMENT_STATUSES),
   totalPaise: z.number().int(),
+  gstIncludedPaise: z.number().int().describe("GST included in the prices of the lines that are not cancelled"),
   shipTo: z.object({ name: z.string(), city: z.string(), state: z.string(), pincode: z.string() }),
   /** the full delivery address and phone for the shipping label */
   address: z.object({
@@ -279,6 +313,7 @@ export const fulfilmentOrderSchema = z.object({
     city: z.string(),
     state: z.string(),
     pincode: z.string(),
+    type: z.string().describe("HOME, WORK or OTHER"),
   }),
   items: z.array(
     fulfilmentItemSchema.omit({ orderId: true, placedAt: true, paymentMethod: true, shipTo: true }).extend({
@@ -286,13 +321,43 @@ export const fulfilmentOrderSchema = z.object({
     }),
   ),
   events: z.array(orderEventSchema),
+  /** true while no line is ready to ship and none has an AWB */
+  addressEditable: z.boolean(),
+  /** every refund on the order, with its true status */
+  refunds: z.array(adminRefundSchema),
+  /** what a new refund may be: SOURCE needs a captured online payment; maxPaise is the cap for either method */
+  refundLimit: z.object({ source: z.boolean(), maxPaise: z.number().int() }),
 });
 
 export const transitionBody = z.object({
   ids: z.array(z.uuid()).min(1).max(100),
-  to: z.enum(["ACCEPTED", "PACKED", "READY_TO_SHIP", "CANCELLED"]),
-  reason: z.string().trim().min(3).max(200).optional(),
+  to: z.enum(["ACCEPTED", "PACKED", "READY_TO_SHIP", "CANCELLED", "LOST", "RTO_RECEIVED"]),
+  reason: z.string().trim().min(3).max(500).optional().describe("Required to cancel, mark lost (LOST) or record a parcel back at the store (RTO_RECEIVED)"),
 });
+export const adminRefundBody = z.object({
+  amountPaise: z.number().int().min(1).max(100_000_000),
+  reason: z.string().trim().min(3).max(500).describe("Why, for the team; the customer sees \"Refund from AltasGoods\""),
+  method: z.enum(REFUND_METHODS).describe("SOURCE goes back through the gateway; MANUAL records money the store already sent by UPI or bank transfer"),
+  reference: z
+    .string()
+    .trim()
+    .min(4)
+    .max(60)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9 ./_-]*$/, "Use the UTR or UPI reference as the bank shows it")
+    .optional()
+    .describe("Required for MANUAL: the UTR or UPI reference of the payout"),
+  orderItemId: z.uuid().optional().describe("The line it is for, if any"),
+  note: z.string().trim().max(500).optional().describe("Staff-only remark"),
+});
+export const markPaidBody = z.object({
+  reference: adminRefundBody.shape.reference.unwrap().describe("The UTR or UPI reference of the payout"),
+  note: z.string().trim().max(500).optional(),
+});
+
+
+export const orderNoteBody = z.object({ body: z.string().trim().min(1).max(2000) });
+export const orderNoteSchema = z.object({ id: z.uuid(), authorId: z.uuid().nullable(), authorName: z.string(), body: z.string(), createdAt: z.iso.datetime() });
+
 export const transitionResult = z.object({
   results: z.array(z.object({ id: z.uuid(), ok: z.boolean(), status: z.enum(ORDER_ITEM_STATUSES).nullable(), error: z.string().nullable() })),
 });
@@ -329,6 +394,7 @@ export const adminOverviewSchema = z.object({
     returnsWaiting: z.number().int(),
     refundsPending: z.number().int(),
     refundsPendingPaise: z.number().int(),
+    refundsNeedAttention: z.number().int().describe("Refunds the gateway could not confirm; check the gateway, then retry"),
   }),
   series: z.array(z.object({ date: z.string(), orders: z.number().int(), revenuePaise: z.number().int() })).describe("The last 14 days, oldest first"),
   topProducts: z.array(z.object({ productId: z.string(), title: z.string(), image: z.string(), units: z.number().int(), revenuePaise: z.number().int() })),
@@ -397,7 +463,9 @@ export const adminRefundList = z.object({
       amountPaise: z.number().int(),
       status: z.enum(REFUND_STATUSES),
       reason: z.string(),
-      method: z.enum(PAYMENT_METHODS),
+      method: z.enum(PAYMENT_METHODS).describe("How the customer paid"),
+      refundMethod: z.enum(REFUND_METHODS).describe("SOURCE: through the gateway. MANUAL: paid by the store, PENDING until marked paid"),
+      reference: z.string().nullable().describe("The payout's UTR or UPI reference, for a MANUAL refund"),
       provider: z.enum(["SANDBOX", "RAZORPAY", "COD"]),
       providerRef: z.string().nullable(),
       createdAt: z.iso.datetime(),

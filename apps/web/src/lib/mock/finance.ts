@@ -1,6 +1,6 @@
 import type { FeeLine, Settlement } from "../types";
 import type { SettlementStatus } from "../status";
-import { addDays, between, NOW, seeded } from "../utils";
+import { addDays, between, MOCK_EPOCH, seeded } from "../utils";
 import { categories, getProduct } from "./catalog";
 import { sellerOrderLines } from "./orders";
 import { sellers } from "./people";
@@ -143,7 +143,7 @@ export function settlementsForSeller(sellerId: string, cycles = 10): Settlement[
   const feeMix = sumFees(sample);
 
   const runs: Date[] = [];
-  let run = nextRunAfter(nextRunAfter(NOW));
+  let run = nextRunAfter(nextRunAfter(MOCK_EPOCH));
   for (let c = 0; c < cycles; c++) {
     runs.push(run);
     run = previousRun(run);

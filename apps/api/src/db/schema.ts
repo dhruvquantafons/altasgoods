@@ -93,8 +93,26 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const PAYMENT_METHODS = ["UPI", "CARD", "NETBANKING", "EMI", "PAY_LATER", "COD"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const REFUND_STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "FAILED"] as const;
+/**
+ * PENDING waits for the refund job; PROCESSING is with the gateway; FAILED is
+ * definitely not paid (the amount can be refunded again); NEEDS_ATTENTION ran
+ * out of attempts without the gateway confirming either way, so the amount
+ * stays reserved until someone checks it and retries.
+ */
+export const REFUND_STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "FAILED", "NEEDS_ATTENTION"] as const;
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
+
+/**
+ * SOURCE goes back through the gateway (the refund job). MANUAL is money the
+ * store pays itself, by UPI or bank transfer: PENDING until someone records
+ * the payout with its reference, then COMPLETED. Never sent to the gateway.
+ */
+export const REFUND_METHODS = ["SOURCE", "MANUAL"] as const;
+export type RefundMethod = (typeof REFUND_METHODS)[number];
+
+/** QUEUED waits for its run_after; RUNNING is claimed by a worker; DONE and FAILED are final. */
+export const JOB_STATUSES = ["QUEUED", "RUNNING", "DONE", "FAILED"] as const;
+export type JobStatus = (typeof JOB_STATUSES)[number];
 
 export type Actor = "CUSTOMER" | "SYSTEM" | "PAYMENT" | "LOGISTICS" | "STAFF";
 
@@ -177,13 +195,17 @@ export const users = pgTable(
     /** Optional contact number; deliveries use the phone on each address */
     phone: text("phone"),
     emailVerifiedAt: ts("email_verified_at"),
-    status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED">(),
+    /** DELETED is an anonymised shopper (see AccountDeletionService): the row stays so orders, returns and reviews keep their owner */
+    status: text("status").notNull().default("ACTIVE").$type<"ACTIVE" | "BLOCKED" | "DELETED">(),
+    deletedAt: ts("deleted_at"),
     /** AltasGoods Control access; empty for shoppers */
     staffRoles: text("staff_roles")
       .array()
       .notNull()
       .$type<StaffRole[]>()
       .default(sql`'{}'::text[]`),
+    /** Set when a Super Admin gave a temporary password; staff work waits until the owner picks their own */
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -219,6 +241,9 @@ export const categories = pgTable("categories", {
   icon: text("icon"),
   image: text("image"),
   sortOrder: integer("sort_order").notNull().default(0),
+  /** GST rate in basis points (1800 = 18%); null inherits from the parent category, then the store default */
+  gstRateBp: integer("gst_rate_bp"),
+  hsn: text("hsn"),
 });
 
 export const brands = pgTable("brands", {
@@ -278,6 +303,11 @@ export const products = pgTable(
       .notNull()
       .references(() => categories.id),
     subcategory: text("subcategory").notNull(),
+    /** GST override in basis points and HSN; null inherits from the category, then the store default */
+    gstRateBp: integer("gst_rate_bp"),
+    hsn: text("hsn"),
+    /** Legal Metrology declarations the store sets per product; a missing key shows a placeholder on the product page */
+    legal: jsonb("legal").$type<{ manufacturer?: string; packer?: string; importer?: string; consumerCare?: string; countryOfOrigin?: string }>(),
     description: text("description").notNull().default(""),
     highlights: jsonb("highlights").notNull().$type<string[]>().default([]),
     specs: jsonb("specs").notNull().$type<{ group: string; items: { label: string; value: string }[] }[]>().default([]),
@@ -291,7 +321,8 @@ export const products = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
     assured: boolean("assured").notNull().default(false),
-    listingStatus: text("listing_status").notNull().default("LIVE"),
+    /** LIVE and INACTIVE are the admin's on/off switch; ARCHIVED hides the product everywhere and can be restored. */
+    listingStatus: text("listing_status").notNull().default("LIVE").$type<"LIVE" | "INACTIVE" | "ARCHIVED">(),
     soldLast30d: integer("sold_last_30d").notNull().default(0),
     /** title, brand, category and subcategory, maintained by the catalog service */
     searchText: text("search_text").notNull().default(""),
@@ -306,6 +337,15 @@ export const products = pgTable(
     index("products_search_trgm_idx").using("gin", sql`${t.searchText} gin_trgm_ops`),
   ],
 );
+
+/** Old product addresses after a slug change. Each points at the product id, so chains of renames keep working. */
+export const productSlugRedirects = pgTable("product_slug_redirects", {
+  oldSlug: text("old_slug").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  createdAt: createdAt(),
+});
 
 export const offers = pgTable(
   "offers",
@@ -512,6 +552,10 @@ export const orderItems = pgTable(
     qty: integer("qty").notNull(),
     unitPricePaise: paise("unit_price_paise").notNull(),
     mrpPaise: paise("mrp_paise").notNull(),
+    /** the GST rate the line was sold at, in basis points, with its HSN and the GST its price includes */
+    gstRateBp: integer("gst_rate_bp").notNull().default(0),
+    hsn: text("hsn"),
+    taxPaise: integer("tax_paise").notNull().default(0),
     status: text("status").notNull().$type<OrderItemStatus>(),
     dispatchBy: ts("dispatch_by"),
     promisedBy: ts("promised_by").notNull(),
@@ -536,6 +580,7 @@ export const orderItems = pgTable(
   (t) => [
     index("order_items_order_idx").on(t.orderId),
     index("order_items_status_idx").on(t.status, t.createdAt),
+    index("order_items_awb_idx").on(t.awb, t.shippingProvider),
     check("order_items_qty_ck", sql`${t.qty} between 1 and 10`),
     check("order_items_status_ck", inList("status", ORDER_ITEM_STATUSES)),
   ],
@@ -559,6 +604,23 @@ export const orderEvents = pgTable(
   (t) => [index("order_events_order_idx").on(t.orderId, t.createdAt)],
 );
 
+/** Staff-only notes on an order. Never part of any customer response. */
+export const orderNotes = pgTable(
+  "order_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    /** kept as written, so the note still reads well after an account is removed */
+    authorName: text("author_name").notNull(),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("order_notes_order_idx").on(t.orderId, t.createdAt), check("order_notes_body_ck", sql`char_length(${t.body}) between 1 and 2000`)],
+);
+
 /* -------------------------------- Payments ------------------------------- */
 
 export const payments = pgTable(
@@ -578,7 +640,7 @@ export const payments = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("payments_order_idx").on(t.orderId), check("payments_status_ck", inList("status", PAYMENT_STATUSES))],
+  (t) => [index("payments_order_idx").on(t.orderId), index("payments_provider_ref_idx").on(t.providerRef), check("payments_status_ck", inList("status", PAYMENT_STATUSES))],
 );
 
 /** Every provider webhook, keyed by the provider's event id so redelivery is a no-op. */
@@ -604,10 +666,73 @@ export const refunds = pgTable(
     amountPaise: paise("amount_paise").notNull(),
     status: text("status").notNull().$type<RefundStatus>(),
     reason: text("reason").notNull(),
+    /** the gateway's id for this refund, once the gateway has it */
+    providerRefundId: text("provider_refund_id"),
+    method: text("method").notNull().default("SOURCE").$type<RefundMethod>(),
+    /** for a MANUAL refund: the UTR or UPI reference of the payout */
+    reference: text("reference"),
+    /** the staff member who issued it, when one did */
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    /** staff-only remark */
+    note: text("note"),
     completedAt: ts("completed_at"),
     createdAt: createdAt(),
   },
-  (t) => [index("refunds_order_idx").on(t.orderId)],
+  (t) => [
+    index("refunds_order_idx").on(t.orderId),
+    index("refunds_status_idx").on(t.status),
+    check("refunds_status_ck", inList("status", REFUND_STATUSES)),
+    check("refunds_method_ck", inList("method", REFUND_METHODS)),
+  ],
+);
+
+/* ---------------------------------- Jobs ---------------------------------- */
+
+/**
+ * Durable background work (refunds, emails). A producer inserts the row in
+ * the same transaction as the change that needs it, so the two commit or
+ * roll back together; workers claim due rows with FOR UPDATE SKIP LOCKED.
+ */
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(),
+    payload: jsonb("payload").notNull(),
+    status: text("status").notNull().default("QUEUED").$type<JobStatus>(),
+    /** runs started so far, including one in progress */
+    attempts: integer("attempts").notNull().default(0),
+    runAfter: ts("run_after").notNull().defaultNow(),
+    /** when the current run was claimed; a RUNNING job claimed long ago is taken over */
+    lockedAt: ts("locked_at"),
+    lastError: text("last_error"),
+    /** optional: at most one QUEUED or RUNNING job holds a key, so the same work is never queued twice (customer emails) */
+    dedupeKey: text("dedupe_key"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("jobs_due_idx").on(t.status, t.runAfter),
+    check("jobs_status_ck", inList("status", JOB_STATUSES)),
+    uniqueIndex("jobs_dedupe_open_uq").on(t.dedupeKey).where(sql`status in ('QUEUED', 'RUNNING')`),
+  ],
+);
+
+/**
+ * Customer emails that went out, one row per dedupe key (such as
+ * order-placed:<orderId>). The email job checks it before sending and writes
+ * it after, so a job that runs again never sends the same email twice.
+ */
+export const emailLog = pgTable(
+  "email_log",
+  {
+    dedupeKey: text("dedupe_key").primaryKey(),
+    kind: text("kind").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    sentAt: ts("sent_at").notNull().defaultNow(),
+    providerMessageId: text("provider_message_id"),
+  },
+  (t) => [index("email_log_user_idx").on(t.userId)],
 );
 
 /* ---------------------------------- Files --------------------------------- */
@@ -935,3 +1060,110 @@ export const reviews = pgTable(
     check("reviews_rating_ck", sql`${t.rating} between 1 and 5`),
   ],
 );
+
+/* --------------------------- Editable storefront content --------------------------- */
+
+/** One section of a content page. The body is Markdown (no raw HTML). */
+export type ContentSection = { id: string; heading: string; body: string };
+
+/** Policies and other pages written in sections. Edited in AltasGoods Control, Content. */
+export const contentPages = pgTable("content_pages", {
+  slug: text("slug").primaryKey(),
+  kind: text("kind").notNull().default("policy").$type<"policy" | "page">(),
+  title: text("title").notNull(),
+  /** short label for navigation */
+  nav: text("nav").notNull(),
+  summary: text("summary").notNull().default(""),
+  sections: jsonb("sections").notNull().$type<ContentSection[]>().default([]),
+  /** slugs of other pages shown under "Related" */
+  related: text("related")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  published: boolean("published").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: updatedAt(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+export const helpFaqs = pgTable("help_faqs", {
+  id: text("id").primaryKey(),
+  group: text("group").notNull(),
+  q: text("q").notNull(),
+  /** Markdown */
+  a: text("a").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const helpTopics = pgTable("help_topics", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  /** a lucide icon name, drawn by the storefront's NamedIcon */
+  icon: text("icon").notNull(),
+  href: text("href").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const jobRoles = pgTable("job_roles", {
+  slug: text("slug").primaryKey(),
+  title: text("title").notNull(),
+  team: text("team").notNull(),
+  location: text("location").notNull(),
+  type: text("type").notNull().default("Full time"),
+  experience: text("experience").notNull().default(""),
+  /** YYYY-MM-DD */
+  posted: text("posted").notNull(),
+  summary: text("summary").notNull().default(""),
+  responsibilities: text("responsibilities")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  requirements: text("requirements")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  niceToHave: text("nice_to_have")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  published: boolean("published").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const pressReleases = pgTable("press_releases", {
+  slug: text("slug").primaryKey(),
+  /** YYYY-MM-DD */
+  date: text("date").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull().default(""),
+  category: text("category").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+/** The numbers, principles, milestones and offices of the About page: one row, id "about". */
+export type AboutDoc = {
+  numbers: { value: string; label: string }[];
+  principles: { title: string; body: string }[];
+  milestones: { date: string; title: string; body: string }[];
+  offices: { city: string; note: string; address: string }[];
+};
+export const aboutContent = pgTable("about_content", {
+  id: text("id").primaryKey(),
+  doc: jsonb("doc").notNull().$type<AboutDoc>(),
+  updatedAt: updatedAt(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+/** "Brands in the spotlight" on the homepage. Hidden while the product is missing or not LIVE. */
+export const brandSpotlights = pgTable("brand_spotlights", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  brand: text("brand").notNull(),
+  tagline: text("tagline").notNull().default(""),
+  productId: text("product_id").references(() => products.id, { onDelete: "set null" }),
+  /** background colour of the card, as #rrggbb */
+  tone: text("tone").notNull().default("#f1efea"),
+  image: text("image").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+});

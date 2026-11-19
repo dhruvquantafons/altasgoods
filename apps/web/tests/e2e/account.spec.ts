@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signInWithForm, watchErrors } from "./support";
+import { resetRateLimits, signInWithForm, watchErrors } from "./support";
+
+test.beforeEach(resetRateLimits);
 
 /** My Account shows and saves the signed-in shopper's own details. */
 

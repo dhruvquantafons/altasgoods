@@ -6,7 +6,7 @@ import { createDb } from "../src/db/client.js";
 import { offers } from "../src/db/schema.js";
 import { PaymentsService } from "../src/modules/commerce/payments/payments.service.js";
 import { signSandbox } from "../src/modules/commerce/payments/sandbox.provider.js";
-import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_CUSTOMER, DEMO_STAFF, runJobs, signIn, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 let shopper: Record<string, string>;
@@ -123,9 +123,16 @@ describe("prepaid checkout", () => {
     expect(detail.body).toMatchObject({ status: "ABANDONED", paymentStatus: "EXPIRED" });
     expect(await stockOf(o.id)).toBe(stockBefore);
 
-    // a payment that lands after expiry is refunded, never silently kept
-    const late = await t.http.post(`/v1/payments/${placed.body.payment.id}/sandbox/complete`).set(shopper).send({ outcome: "SUCCESS" }).expect(200);
+    // a payment that lands after expiry is refunded, never silently kept: the customer is told so at once
+    const landed = await t.http.post(`/v1/payments/${placed.body.payment.id}/sandbox/complete`).set(shopper).send({ outcome: "SUCCESS" }).expect(200);
+    expect(landed.body).toMatchObject({ status: "REFUNDED", orderStatus: "ABANDONED" });
+    const queued = await t.http.get(`/v1/me/orders/${placed.body.order.id}`).set(shopper).expect(200);
+    expect(queued.body.refunds).toEqual([expect.objectContaining({ amountPaise: queued.body.totalPaise, status: "PENDING", reason: "Payment received after the order expired" })]);
+    await runJobs(t);
+    const late = await t.http.get(`/v1/payments/${placed.body.payment.id}`).set(shopper).expect(200);
     expect(late.body.status).toBe("REFUNDED");
+    const settled = await t.http.get(`/v1/me/orders/${placed.body.order.id}`).set(shopper).expect(200);
+    expect(settled.body).toMatchObject({ status: "ABANDONED", paymentStatus: "REFUNDED", refunds: [expect.objectContaining({ status: "COMPLETED" })] });
   });
 });
 
@@ -157,6 +164,22 @@ describe("webhooks", () => {
     const detail = await t.http.get(`/v1/me/orders/${placed.body.order.id}`).set(shopper).expect(200);
     expect(detail.body.paymentStatus).toBe("CAPTURED");
     expect(detail.body.refunds).toEqual([expect.objectContaining({ amountPaise: detail.body.totalPaise, reason: "Duplicate payment for an order that was already paid" })]);
+
+    // the order is still paid by the second attempt; the duplicate goes back on its own
+    await runJobs(t);
+    const [dup] = await db.query.payments.findMany({ where: (p, { eq: e }) => e(p.id, placed.body.payment.id) });
+    expect(dup!.status).toBe("REFUNDED");
+    expect((await t.http.get(`/v1/me/orders/${placed.body.order.id}`).set(shopper).expect(200)).body.paymentStatus).toBe("CAPTURED");
+
+    // cancelling now refunds the payment that paid, not the duplicate
+    const cancelled = await t.http.post(`/v1/me/orders/${placed.body.order.id}/cancel`).set(shopper).send({ reason: "Changed my mind" }).expect(200);
+    expect(cancelled.body.refunds).toHaveLength(2);
+    await runJobs(t);
+    const pays = await db.query.payments.findMany({ where: (p, { eq: e }) => e(p.orderId, placed.body.order.id) });
+    expect(pays.find((p) => p.id === retry.body.id)!.status).toBe("REFUNDED");
+    const done = await t.http.get(`/v1/me/orders/${placed.body.order.id}`).set(shopper).expect(200);
+    expect(done.body).toMatchObject({ status: "CANCELLED", paymentStatus: "REFUNDED" });
+    expect(done.body.refunds.every((r: { status: string }) => r.status === "COMPLETED")).toBe(true);
   });
 
   it("ignores webhooks for payments that are not ours", async () => {
@@ -249,14 +272,20 @@ describe("cancellation and refunds", () => {
 
     const one = await t.http.post(`/v1/me/orders/${order.id}/cancel`).set(shopper).send({ itemIds: [speaker.id], reason: "Changed my mind" }).expect(200);
     const couponShare = Math.round((order.couponDiscountPaise * speaker.unitPricePaise) / order.subtotalPaise);
-    expect(one.body.refunds[0]).toMatchObject({ amountPaise: speaker.unitPricePaise - couponShare, status: "COMPLETED" });
-    expect(one.body.paymentStatus).toBe("PARTIALLY_REFUNDED");
+    expect(one.body.refunds[0]).toMatchObject({ amountPaise: speaker.unitPricePaise - couponShare, status: "PENDING" });
     expect(await stockOf(b.id)).toBe(stockBefore + 1);
+    await runJobs(t);
+    const partly = await t.http.get(`/v1/me/orders/${order.id}`).set(shopper).expect(200);
+    expect(partly.body.refunds[0]).toMatchObject({ amountPaise: speaker.unitPricePaise - couponShare, status: "COMPLETED" });
+    expect(partly.body.paymentStatus).toBe("PARTIALLY_REFUNDED");
 
     const rest = await t.http.post(`/v1/me/orders/${order.id}/cancel`).set(shopper).send({ reason: "Found it cheaper" }).expect(200);
     const refunded = rest.body.refunds.reduce((s: number, r: { amountPaise: number }) => s + r.amountPaise, 0);
     expect(refunded).toBe(order.totalPaise);
-    expect(rest.body).toMatchObject({ status: "CANCELLED", paymentStatus: "REFUNDED" });
+    await runJobs(t);
+    const all = await t.http.get(`/v1/me/orders/${order.id}`).set(shopper).expect(200);
+    expect(all.body).toMatchObject({ status: "CANCELLED", paymentStatus: "REFUNDED" });
+    expect(all.body.refunds.every((r: { status: string }) => r.status === "COMPLETED")).toBe(true);
   });
 
   it("does not cancel items that have shipped", async () => {

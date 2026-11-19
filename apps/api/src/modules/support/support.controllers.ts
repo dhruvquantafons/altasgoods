@@ -35,12 +35,14 @@ export class AdminCustomersController {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get()
   @ApiResponse({ status: 200, standardSchema: s.customerList })
   list(@Query({ schema: s.customerSearchQuery }) q: z.infer<typeof s.customerSearchQuery>) {
     return this.lookup.customers(q);
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get(":id")
   @ApiResponse({ status: 200, standardSchema: s.customerProfile })
   get(@Param("id", uuidParam) id: string) {

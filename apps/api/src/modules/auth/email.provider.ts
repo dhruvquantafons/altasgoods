@@ -10,7 +10,8 @@ export interface EmailMessage {
 }
 
 export interface EmailProvider {
-  send(message: EmailMessage): Promise<void>;
+  /** Resolves once the message is handed over (with the server's message id when it gives one); throws when it could not be. */
+  send(message: EmailMessage): Promise<{ messageId?: string } | void>;
 }
 
 /** Development provider: writes emails to the log instead of sending them. */
@@ -50,7 +51,8 @@ export class SmtpEmailProvider implements EmailProvider, OnApplicationBootstrap,
 
   async send({ to, subject, text, html }: EmailMessage) {
     try {
-      await this.transport.sendMail({ from: this.config.EMAIL_FROM, to, subject, text, html });
+      const info = await this.transport.sendMail({ from: this.config.EMAIL_FROM, to, subject, text, html });
+      return { messageId: typeof info?.messageId === "string" ? info.messageId : undefined };
     } catch (e) {
       this.logger.error(`Could not send "${subject}" to ${to}: ${(e as Error).message}`);
       throw e;

@@ -10,6 +10,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { sql } from "drizzle-orm";
 import { isProduction } from "../config/env.js";
 import { HOUSE_SELLER_ID } from "../common/house.js";
+import { RESERVED_BRAND, RESERVED_CATEGORY } from "../modules/catalog/reserved.js";
+import { insertDefaultContent } from "../modules/content/ensure-defaults.js";
 import { createDb, type Db } from "./client.js";
 import * as t from "./schema.js";
 
@@ -64,11 +66,12 @@ export async function seed(db: Db) {
   if (isProduction()) throw new Error("Refusing to seed a production database");
   const m = await loadMock();
 
-  await db.execute(sql`truncate table refunds, payment_events, payments, order_events, order_items, orders, cart_items, addresses, coupons,
+  await db.execute(sql`truncate table jobs, email_log, refunds, payment_events, payments, order_notes, order_events, order_items, orders, cart_items, addresses, coupons,
     return_events, returns, customer_uploads,
     support_attachments, support_actions, support_events, support_messages, support_tickets,
     media, files,
     audit_events, store_settings, sales, banners, reviews,
+    content_pages, help_faqs, help_topics, job_roles, press_releases, about_content, brand_spotlights,
     offers, products, seller_members, sellers, brands, categories, sessions, users restart identity cascade`);
   await db.execute(sql`alter sequence order_number_seq restart with 10001`);
   await db.execute(sql`alter sequence support_ticket_seq restart with 60001`);
@@ -81,6 +84,9 @@ export async function seed(db: Db) {
     ]),
   );
   await db.insert(t.brands).values(m.brands.map((b) => ({ id: b.id, slug: b.slug, name: b.name, verified: b.verified })));
+  // where archived products go when their category or brand is deleted
+  await db.insert(t.categories).values({ ...RESERVED_CATEGORY, sortOrder: 9999 });
+  await db.insert(t.brands).values({ ...RESERVED_BRAND });
 
   await db.insert(t.sellers).values({
     id: HOUSE_SELLER_ID,
@@ -116,7 +122,7 @@ export async function seed(db: Db) {
       reviewCount: p.reviewCount,
       tags: p.tags,
       assured: p.assured,
-      listingStatus: p.listingStatus === "suppressed" ? "SUPPRESSED" : "LIVE",
+      listingStatus: p.listingStatus === "suppressed" ? ("INACTIVE" as const) : ("LIVE" as const),
       soldLast30d: p.soldLast30d,
       searchText: `${p.title} ${brandName.get(p.brandId) ?? ""} ${categoryName.get(p.categoryId) ?? ""} ${p.subcategory}`,
       createdAt: new Date(p.createdAt),
@@ -166,6 +172,9 @@ export async function seed(db: Db) {
     ...(store.HERO_SLIDES as Slide[]).map((b, i) => ({ placement: "HERO" as const, eyebrow: b.eyebrow, title: b.title, body: b.body, ctaLabel: b.cta ?? "", href: b.href, image: b.image, alt: b.alt, align: b.align, theme: b.theme ?? "dark", position: b.position ?? "center", sortOrder: i })),
     ...(store.PROMO_TILES as Slide[]).map((b, i) => ({ placement: "PROMO" as const, eyebrow: b.eyebrow, title: b.title, body: b.body, href: b.href, image: b.image, alt: b.alt, align: b.align, sortOrder: i })),
   ]);
+
+  // policies, help, careers, press, about and brand spotlights: the same starting content the API adds at startup
+  await insertDefaultContent(db);
 
   return { products: m.products.length };
 }

@@ -9,6 +9,8 @@ export interface AuthUser {
   id: string;
   sessionId: string;
   staff: string[];
+  /** The account holds a temporary password; staff routes wait until it is changed */
+  mustChangePassword: boolean;
 }
 
 export interface AuthedRequest extends Request {
@@ -42,7 +44,7 @@ export class AuthGuard implements CanActivate {
     if (token) {
       try {
         const claims = await this.tokens.verify(token);
-        req.user = { id: claims.sub, sessionId: claims.sid, staff: claims.staff };
+        req.user = { id: claims.sub, sessionId: claims.sid, staff: claims.staff, mustChangePassword: !!claims.pwc };
       } catch (e) {
         if (!isPublic) throw e;
       }
@@ -52,6 +54,10 @@ export class AuthGuard implements CanActivate {
 
     // method level roles override class level ones
     const roles = this.reflector.getAllAndOverride<StaffRole[] | undefined>(STAFF, targets);
+    // a temporary password is only for signing in and choosing a new one (POST /v1/me/password)
+    if (roles && req.user.mustChangePassword && req.user.staff.length) {
+      throw new ApiError(403, "PASSWORD_CHANGE_REQUIRED", "Choose a new password before using AltasGoods Control. Your temporary password only lets you sign in and change it.");
+    }
     if (roles && !req.user.staff.some((r) => r === "SUPER_ADMIN" || roles.includes(r as StaffRole))) {
       throw forbidden(req.user.staff.length ? "Your AltasGoods Control role does not allow this action." : "This area is for AltasGoods staff.");
     }

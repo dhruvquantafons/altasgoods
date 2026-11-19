@@ -6,10 +6,14 @@ import { ApiError, conflict, notFound, unprocessable } from "../../../common/err
 import type { Clock } from "../../../common/infra.module.js";
 import { env, isProduction } from "../../../config/env.js";
 import { CLOCK, DB, FILE_STORE } from "../../../common/tokens.js";
+import { rupees } from "../../../common/money.js";
 import type { Db, Tx } from "../../../db/client.js";
 import { addresses, customerUploads, offers, orderItems, orders, products, refunds, returnEvents, returns, users, type Actor, type ReturnStatus } from "../../../db/schema.js";
+import type { AuthUser } from "../../auth/auth.guard.js";
 import { sniffMime, type FileStore } from "../../files/file-store.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
 import { PaymentsService } from "../payments/payments.service.js";
+import { customerRefundStatus, RefundsService } from "../payments/refunds.service.js";
 import { OrderWorkflow } from "../workflow.service.js";
 import type { createReturnBody } from "./returns.schemas.js";
 import type { z } from "zod";
@@ -38,6 +42,14 @@ const MOVES: Partial<Record<ReturnStatus, ReturnStatus[]>> = {
   QC_PASSED: ["COMPLETED"],
   QC_FAILED: ["COMPLETED", "REJECTED"],
 };
+/** The customer email each return status sends (see ReturnsService.announce). */
+const RETURN_EMAIL: Partial<Record<ReturnStatus, "RETURN_APPROVED" | "RETURN_REJECTED" | "RETURN_PICKED_UP" | "RETURN_QC_FAILED" | "RETURN_REPLACED">> = {
+  APPROVED: "RETURN_APPROVED",
+  REJECTED: "RETURN_REJECTED",
+  PICKED_UP: "RETURN_PICKED_UP",
+  QC_FAILED: "RETURN_QC_FAILED",
+  COMPLETED: "RETURN_REPLACED",
+};
 /** The reverse pickup, in order. A scan that skips steps walks the return through each one. */
 const PICKUP_PATH: ReturnStatus[] = ["PICKUP_SCHEDULED", "OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"];
 export type PickupScan = "OUT_FOR_PICKUP" | "PICKED_UP" | "PICKUP_FAILED" | "IN_TRANSIT" | "RECEIVED";
@@ -51,6 +63,8 @@ export class ReturnsService {
     @Inject(FILE_STORE) private readonly files: FileStore,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
     @Inject(PaymentsService) private readonly payments: PaymentsService,
+    @Inject(RefundsService) private readonly ledger: RefundsService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   /* ------------------------------ Moves ------------------------------- */
@@ -65,7 +79,41 @@ export class ReturnsService {
       .returning();
     if (!next) throw conflict("STALE_RETURN", "This return changed meanwhile. Reload and try again.");
     await tx.insert(returnEvents).values({ returnId: r.id, fromStatus: r.status, toStatus: to, actor, note, at: now });
+    await this.announce(tx, r.status, next, note);
     return next;
+  }
+
+  /**
+   * The customer's email for a return step: approved, picked up, failed the
+   * check, rejected, or (for a replacement or exchange) completed. A refund
+   * has its own email, sent when resolve() issues it. Once each per return.
+   */
+  private async announce(tx: Tx, from: ReturnStatus, r: Return, note: string | null) {
+    const kind = RETURN_EMAIL[r.status];
+    if (!kind || (kind === "RETURN_REPLACED" && r.resolution === "REFUND")) return;
+    const title = await this.itemTitle(tx, r);
+    const base = { userId: r.userId, orderId: r.orderId, returnId: r.id, key: r.id };
+    const ids = { returnId: r.id, orderId: r.orderId, title };
+    if (kind === "RETURN_APPROVED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, pickupDate: r.pickupDate, pickupSlot: r.pickupSlot } });
+    if (kind === "RETURN_REJECTED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, reason: note, afterCheck: from === "QC_FAILED" } });
+    if (kind === "RETURN_PICKED_UP") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, refundNow: r.instantRefund && r.resolution === "REFUND" } });
+    if (kind === "RETURN_QC_FAILED") await this.notifications.notify(tx, kind, { ...base, data: ids });
+    if (kind === "RETURN_REPLACED") await this.notifications.notify(tx, kind, { ...base, data: { ...ids, exchangeSize: r.resolution === "EXCHANGE" ? r.exchangeSize : null } });
+  }
+
+  private async itemTitle(tx: Tx, r: Return) {
+    const [item] = await tx.select({ title: orderItems.title, variant: orderItems.variant }).from(orderItems).where(eq(orderItems.id, r.orderItemId));
+    return item ? `${item.title}${item.variant ? ` (${item.variant})` : ""}` : "your item";
+  }
+
+  private async announceRefund(tx: Tx, r: Return, toSource: boolean) {
+    await this.notifications.notify(tx, "RETURN_REFUNDED", {
+      userId: r.userId,
+      orderId: r.orderId,
+      returnId: r.id,
+      key: r.id,
+      data: { returnId: r.id, orderId: r.orderId, title: await this.itemTitle(tx, r), amountPaise: r.refundAmountPaise, toSource },
+    });
   }
 
   private async lock(tx: Tx, id: string) {
@@ -113,20 +161,54 @@ export class ReturnsService {
     return r;
   }
 
-  /** Refund (once) or replacement, and the order line follows. */
+  /**
+   * Refund (once) or replacement, and the order line follows. A refund to the
+   * payment method goes to the refund job. A bank (UPI) refund, or any refund
+   * of cash on delivery, is paid by the store by hand: it is set aside now as
+   * a manual refund waiting for its payout (INITIATED until marked paid), so
+   * the amount counts against the order's cap and cannot be refunded twice.
+   * If the cap cannot cover it, the step that resolves the return fails and
+   * says why. Old Credits refunds (no longer offered) stay INITIATED with no ledger row.
+   */
   private async resolve(tx: Tx, r: Return) {
     let next = r;
     if (r.resolution === "REFUND" && !r.refundStatus) {
       const [order] = await tx.select({ method: orders.paymentMethod, paymentStatus: orders.paymentStatus }).from(orders).where(eq(orders.id, r.orderId));
       if (r.refundTo === "SOURCE" && order && order.method !== "COD" && (order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED")) {
-        const refund = await this.payments.refundToSource(tx, r.orderId, r.refundAmountPaise, `Return ${r.id}`);
+        // the return's own email tells the customer, not the generic "refund started" one
+        const refund = await this.payments.refundToSource(tx, r.orderId, r.refundAmountPaise, `Return ${r.id}`, { notify: false });
         [next] = (await tx.update(returns).set({ refundStatus: refund.status, refundId: refund.id }).where(eq(returns.id, r.id)).returning()) as [Return];
+        await this.announceRefund(tx, next, true);
+      } else if (r.refundTo !== "CREDITS") {
+        const refund = await this.reservePayout(tx, r);
+        [next] = (await tx.update(returns).set({ refundStatus: "INITIATED", refundId: refund.id }).where(eq(returns.id, r.id)).returning()) as [Return];
+        await this.announceRefund(tx, next, false);
       } else {
-        // BluBuy Credits and bank transfers for cash on delivery are paid by Finance
+        // Credits cannot be chosen any more; a return that chose them before stays as it was
         [next] = (await tx.update(returns).set({ refundStatus: "INITIATED" }).where(eq(returns.id, r.id)).returning()) as [Return];
       }
     }
     return next;
+  }
+
+  /** Sets a return's manual payout aside on the order's ledger, or fails saying why it does not fit. */
+  private async reservePayout(tx: Tx, r: Return) {
+    try {
+      return await this.payments.refundManually(tx, r.orderId, {
+        amountPaise: r.refundAmountPaise,
+        reason: `Return ${r.id}`,
+        paid: false,
+        notify: false,
+        orderItemId: r.orderItemId,
+        // the UPI id stays on the return (where staff pay from) and out of the ledger, which outlives an account
+        note: r.refundUpi ? `Pay ${rupees(r.refundAmountPaise)} by UPI to the UPI ID on return ${r.id}` : "Pay to the customer's bank account; ask the customer for the details",
+      });
+    } catch (e) {
+      if (e instanceof ApiError && (e.code === "REFUND_TOO_LARGE" || e.code === "NOT_REFUNDABLE")) {
+        throw conflict(e.code, `The ${rupees(r.refundAmountPaise)} refund for return ${r.id} does not fit what is left to refund on order ${r.orderId}. ${e.message}. Check the order's other refunds first.`);
+      }
+      throw e;
+    }
   }
 
   private async finish(tx: Tx, r: Return, actor: Actor) {
@@ -277,7 +359,7 @@ export class ReturnsService {
         image: item?.image ?? null,
         amountPaise: f.amountPaise,
         method,
-        status: f.status,
+        status: customerRefundStatus(f.status),
         createdAt: f.createdAt.toISOString(),
         completedAt: f.completedAt ? f.completedAt.toISOString() : null,
       };
@@ -327,11 +409,47 @@ export class ReturnsService {
       .from(returns)
       .where(wanted?.length ? inArray(returns.status, wanted) : undefined)
       .orderBy(desc(returns.updatedAt));
-    return Promise.all(rows.map((r) => this.view(r.id)));
+    return Promise.all(rows.map((r) => this.view(r.id, { staff: true })));
   }
 
   storeReturn(id: string) {
-    return this.view(id);
+    return this.view(id, { staff: true });
+  }
+
+  /**
+   * Records that the store paid a return's bank (UPI) refund by hand, with the
+   * payout's reference: a MANUAL refund on the order's ledger (capped like any
+   * refund) and the return's refund COMPLETED. Once only: the return row is
+   * locked and must still be waiting. Credits refunds are not paid this way.
+   */
+  async markRefundPaid(id: string, actorId: string, reference: string, note?: string) {
+    await this.db.transaction(async (tx) => {
+      // the refund row before the return, the order the Payments page takes them in (RefundsService.markPaid), so the two never deadlock
+      const [peek] = await tx.select({ refundId: returns.refundId }).from(returns).where(eq(returns.id, id));
+      if (peek?.refundId) await tx.select({ id: refunds.id }).from(refunds).where(eq(refunds.id, peek.refundId)).for("update");
+      const r = await this.lock(tx, id);
+      if (r.resolution !== "REFUND" || r.refundTo === "CREDITS" || r.refundStatus !== "INITIATED") {
+        throw conflict("NOT_AWAITING_PAYOUT", "This return has no bank refund waiting to be paid");
+      }
+      // the payout set aside when the return was resolved; one resolved before that was reserved is recorded now
+      const refundId = r.refundId
+        ? (await this.ledger.markPaid(tx, r.refundId, reference, note || null)).id
+        : (
+            await this.payments.refundManually(tx, r.orderId, {
+              amountPaise: r.refundAmountPaise,
+              reason: `Return ${r.id}`,
+              reference,
+              paid: true,
+              orderItemId: r.orderItemId,
+              createdBy: actorId,
+              note: note || null,
+            })
+          ).id;
+      const now = this.clock.now();
+      await tx.update(returns).set({ refundStatus: "COMPLETED", refundId, updatedAt: now }).where(eq(returns.id, r.id));
+      await tx.insert(returnEvents).values({ returnId: r.id, fromStatus: r.status, toStatus: r.status, actor: "STAFF", note: `Refund of ${rupees(r.refundAmountPaise)} paid${r.refundUpi ? ` to ${r.refundUpi}` : ""}, reference ${reference}`, at: now });
+    });
+    return this.view(id, { staff: true });
   }
 
   /** Out-of-policy requests: the store approves (pickup is booked) or rejects with a reason. */
@@ -405,9 +523,12 @@ export class ReturnsService {
   }
 
   /** Stands in for reverse pickup scans until the logistics integration (development only). */
-  async advance(id: string, to: PickupScan) {
+  async advance(id: string, to: PickupScan, user: AuthUser) {
     await this.db.transaction(async (tx) => {
       const r = await this.lock(tx, id);
+      // the return's owner or store operations staff may drive the simulation
+      const ops = user.staff.some((role) => role === "SUPER_ADMIN" || role === "OPS_ADMIN");
+      if (r.userId !== user.id && !ops) throw notFound("Return");
       await this.walkPickup(tx, r, to, "LOGISTICS", null);
     });
     return this.view(id);
@@ -415,12 +536,19 @@ export class ReturnsService {
 
   /* ------------------------------- View ------------------------------- */
 
-  async view(id: string) {
+  /** A return as its customer sees it, or with `staff` the refund's true status (one needing attention is "Processing" to the customer). */
+  async view(id: string, { staff = false } = {}) {
     const [row] = await this.db
-      .select({ r: returns, item: { title: orderItems.title, image: orderItems.image, variant: orderItems.variant, unitPricePaise: orderItems.unitPricePaise, productId: orderItems.productId }, customer: users.name })
+      .select({
+        r: returns,
+        item: { title: orderItems.title, image: orderItems.image, variant: orderItems.variant, unitPricePaise: orderItems.unitPricePaise, productId: orderItems.productId },
+        customer: users.name,
+        refund: { status: refunds.status, method: refunds.method, reference: refunds.reference },
+      })
       .from(returns)
       .innerJoin(orderItems, eq(orderItems.id, returns.orderItemId))
       .innerJoin(users, eq(users.id, returns.userId))
+      .leftJoin(refunds, eq(refunds.id, returns.refundId))
       .where(eq(returns.id, id));
     if (!row) throw notFound("Return");
     const events = await this.db.select().from(returnEvents).where(eq(returnEvents.returnId, id)).orderBy(returnEvents.at, returnEvents.id);
@@ -441,9 +569,13 @@ export class ReturnsService {
       resolution: r.resolution,
       exchangeSize: r.exchangeSize,
       refundTo: r.refundTo,
+      refundUpi: r.refundUpi,
+      refundReference: row.refund?.reference ?? null,
       refundAmountPaise: r.refundAmountPaise,
       instantRefund: r.instantRefund,
-      refundStatus: r.refundStatus,
+      // a refund to the payment method moves on in the refund job: show where it is now
+      // a manual payout still waiting reads INITIATED, as it always has
+      refundStatus: !row.refund || (row.refund.method === "MANUAL" && row.refund.status === "PENDING") ? r.refundStatus : staff ? row.refund.status : customerRefundStatus(row.refund.status),
       status: r.status,
       pickupDate: r.pickupDate,
       pickupSlot: r.pickupSlot,

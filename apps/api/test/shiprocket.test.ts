@@ -120,3 +120,96 @@ describe("Shiprocket provider", () => {
     expect(p.parseWebhook(body, { "x-api-key": "hook-token" })).toEqual({ awb: "12345", raw: "OUT FOR DELIVERY", status: "OUT_FOR_DELIVERY" });
   });
 });
+
+/** A fetch that only ends when its request is aborted. */
+const hanging = () =>
+  vi.fn(
+    (_url: string, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      }),
+  ) as unknown as typeof fetch;
+
+describe("Shiprocket timeouts", () => {
+  it("gives up on a courier that does not answer, as a 504", async () => {
+    const p = new ShiprocketLogisticsProvider({ ...config, fetch: hanging(), timeoutMs: 50 });
+    await expect(p.track("AWB1")).rejects.toMatchObject({ status: 504, code: "COURIER_TIMEOUT" });
+  }, 2000);
+
+  it("bounds the courier call after signing in too", async () => {
+    const answers = [new Response(JSON.stringify({ token: "tok" }), { status: 200 })];
+    const f = vi.fn((_url: string, init?: RequestInit) =>
+      answers.length
+        ? Promise.resolve(answers.shift()!)
+        : new Promise<Response>((_, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+          }),
+    ) as unknown as typeof fetch;
+    const p = new ShiprocketLogisticsProvider({ ...config, fetch: f, timeoutMs: 50 });
+    await expect(p.cancel({ carrierOrderRef: "111", awb: null })).rejects.toMatchObject({ status: 504, code: "COURIER_TIMEOUT" });
+  }, 2000);
+
+  it("reports a courier it cannot reach as a 502", async () => {
+    const down = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    }) as unknown as typeof fetch;
+    const p = new ShiprocketLogisticsProvider({ ...config, fetch: down });
+    await expect(p.track("AWB1")).rejects.toMatchObject({ status: 502 });
+  });
+});
+
+describe("Shiprocket serviceability", () => {
+  const withPickup = { ...config, pickupPincode: "560001" };
+  const courier = (o: Record<string, unknown>) => ({ courier_name: "Delhivery", estimated_delivery_days: "5", cod: 1, ...o });
+
+  it("asks for the delivery pincode and weight, and reads the fastest courier", async () => {
+    const f = fakeFetch(
+      { token: "tok" },
+      { data: { available_courier_companies: [courier({ estimated_delivery_days: "5" }), courier({ courier_name: "Xpressbees", estimated_delivery_days: 3, cod: 0 })] } },
+    );
+    const p = new ShiprocketLogisticsProvider({ ...withPickup, fetch: f });
+    expect(await p.serviceability("400001", 1200)).toEqual({ serviceable: true, codAvailable: true, etaDays: 3 });
+    const q = sent(f, 1).path;
+    expect(q).toContain("/courier/serviceability/");
+    expect(q).toContain("pickup_postcode=560001");
+    expect(q).toContain("delivery_postcode=400001");
+    expect(q).toContain("weight=1.2");
+  });
+
+  it("says no cash on delivery when no courier takes it", async () => {
+    const f = fakeFetch({ token: "tok" }, { data: { available_courier_companies: [courier({ cod: 0 })] } });
+    const p = new ShiprocketLogisticsProvider({ ...withPickup, fetch: f });
+    expect(await p.serviceability("400001", 500)).toMatchObject({ serviceable: true, codAvailable: false });
+  });
+
+  it("treats an empty list or a 404 as not serviceable", async () => {
+    const empty = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, { data: { available_courier_companies: [] } }) });
+    expect(await empty.serviceability("400001", 500)).toEqual({ serviceable: false, codAvailable: false, etaDays: null });
+    const none = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, { status: 404, body: { message: "No courier serviceability" } }) });
+    expect(await none.serviceability("400001", 500)).toEqual({ serviceable: false, codAvailable: false, etaDays: null });
+  });
+
+  it("counts a 404 as unserviceable only when it says no courier serves the pincode", async () => {
+    const says = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, { status: 404, body: { message: "Sorry, no courier serviceable for this pincode" } }) });
+    expect(await says.serviceability("400001", 500)).toMatchObject({ serviceable: false });
+    for (const body of [{ message: "Not Found" }, { message: "Pickup postcode is invalid" }, {}]) {
+      const p = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, { status: 404, body }) });
+      await expect(p.serviceability("400001", 500)).rejects.toMatchObject({ status: 502 });
+    }
+  });
+
+  it("throws on a 200 that is not a courier list, rather than calling it unserviceable", async () => {
+    for (const body of [{}, { data: {} }, { data: { available_courier_companies: "none" } }]) {
+      const p = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, body) });
+      await expect(p.serviceability("400001", 500)).rejects.toMatchObject({ status: 502 });
+    }
+  });
+
+  it("does nothing without a pickup pincode, and throws on a real failure", async () => {
+    const f = fakeFetch();
+    expect(await new ShiprocketLogisticsProvider({ ...config, fetch: f }).serviceability("400001", 500)).toBeNull();
+    expect(f).not.toHaveBeenCalled();
+    const broken = new ShiprocketLogisticsProvider({ ...withPickup, fetch: fakeFetch({ token: "tok" }, { status: 500, body: { message: "boom" } }) });
+    await expect(broken.serviceability("400001", 500)).rejects.toMatchObject({ status: 502 });
+  });
+});

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { env } from "../src/config/env.js";
 import { createDb } from "../src/db/client.js";
 import { orderItems } from "../src/db/schema.js";
-import { createTestApp, DEMO_AGENT, DEMO_CUSTOMER, DEMO_STAFF, signIn, type TestContext } from "./helpers.js";
+import { createTestApp, DEMO_AGENT, DEMO_CUSTOMER, DEMO_STAFF, runJobs, signIn, type TestContext } from "./helpers.js";
 
 let t: TestContext;
 let shopper: Record<string, string>;
@@ -121,7 +121,11 @@ describe("store returns", () => {
     for (const to of ["OUT_FOR_PICKUP", "PICKED_UP", "IN_TRANSIT", "RECEIVED"]) await t.http.post(`/v1/dev/returns/${r.id}/advance`).set(staff).send({ to }).expect(200);
     const passed = await t.http.post(`/v1/admin/returns/${r.id}/qc`).set(staff).send({ pass: true }).expect(200);
     expect(passed.body.status).toBe("COMPLETED");
-    expect(passed.body.refundStatus).toBe("COMPLETED");
+    // the refund is queued with the decision and sent to the gateway by the refund job
+    expect(passed.body.refundStatus).toBe("PENDING");
+    await runJobs(t);
+    const after = await t.http.get(`/v1/admin/returns/${r.id}`).set(staff).expect(200);
+    expect(after.body.refundStatus).toBe("COMPLETED");
     const [item] = await db.select({ status: orderItems.status }).from(orderItems).where(eq(orderItems.id, itemId));
     expect(item!.status).toBe("RETURNED");
   });

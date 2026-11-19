@@ -1,15 +1,42 @@
 import { z } from "zod";
+import { gstRateBpSchema, hsnSchema } from "../catalog/gst.js";
 
 const rupeesInPaise = z.number().int().min(0).max(100_000_000);
+
+/** A full 6 digit pincode, or the first 2 to 5 digits of a group of them. */
+const areaEntry = z.string().regex(/^\d{2,6}$/, "Use a 6 digit pincode or a 2 to 5 digit prefix");
+
+/** Where the store does not deliver, does not take cash on delivery, or is slower. */
+export const deliveryAreasSchema = z.object({
+  blocked: z.array(areaEntry).max(500).describe("Pincodes and prefixes we do not deliver to"),
+  noCod: z.array(areaEntry).max(500).describe("Pincodes and prefixes where cash on delivery is off"),
+  extraDays: z
+    .array(z.object({ prefix: areaEntry, days: z.number().int().min(0).max(15) }))
+    .max(500)
+    .describe("Extra days added to the delivery promise; the longest matching prefix wins"),
+});
+export type DeliveryAreas = z.infer<typeof deliveryAreasSchema>;
+const NO_AREA_RULES: DeliveryAreas = { blocked: [], noCod: [], extraDays: [] };
 
 /** Store-wide settings. Defaults are what the store ran with before settings existed. */
 export const settingsSchema = z.object({
   delivery: z.object({
     feePaise: rupeesInPaise.describe("Delivery fee for orders below the free delivery threshold"),
     freeFromPaise: rupeesInPaise.describe("Orders at or above this subtotal ship free"),
+    areas: deliveryAreasSchema.default(NO_AREA_RULES),
   }),
-  cod: z.object({ maxOrderPaise: rupeesInPaise.describe("Largest order total that can be paid by cash on delivery") }),
+  cod: z.object({
+    enabled: z.boolean().describe("Off stops cash on delivery for every order"),
+    maxOrderPaise: rupeesInPaise.describe("Largest order total that can be paid by cash on delivery"),
+  }),
+  tax: z.object({
+    defaultGstRateBp: gstRateBpSchema.describe("GST rate in basis points for products whose category and own settings have none"),
+    defaultHsn: hsnSchema.nullable().describe("HSN code for products whose category and own settings have none"),
+  }),
   reviews: z.object({ autoPublish: z.boolean().describe("Publish customer reviews straight away; otherwise they wait for approval") }),
+  notifications: z.object({
+    customerEmails: z.boolean().describe("Email customers about their orders, payments, deliveries, refunds, returns and Care Desk replies. Off pauses them; nothing is sent later"),
+  }),
   notice: z.object({
     enabled: z.boolean(),
     message: z.string().trim().max(200).describe("Shown in a bar at the top of every storefront page while enabled"),
@@ -38,36 +65,64 @@ export const settingsSchema = z.object({
 export type StoreSettings = z.infer<typeof settingsSchema>;
 
 export const DEFAULT_SETTINGS: StoreSettings = {
-  delivery: { feePaise: 4_000, freeFromPaise: 49_900 },
-  cod: { maxOrderPaise: 5_000_000 },
+  delivery: { feePaise: 4_000, freeFromPaise: 49_900, areas: NO_AREA_RULES },
+  cod: { enabled: true, maxOrderPaise: 5_000_000 },
+  tax: { defaultGstRateBp: 1800, defaultHsn: null },
   reviews: { autoPublish: true },
+  notifications: { customerEmails: true },
   notice: { enabled: false, message: "" },
   company: {
-    legalName: "AltasGoods Commerce Private Limited",
-    cin: "U47912KA2025PTC204817",
-    gstin: "29AALCB4821Q1Z6",
-    registeredOffice: "Level 9, Lakeview Square, 14 Residency Road, Ashok Nagar, Bengaluru, Karnataka 560025",
-    customerCare: "1800 210 4455",
-    customerCareHours: "8 am to 10 pm, every day",
-    email: "care@altasgoods.in",
-    website: "www.altasgoods.in",
+    legalName: "Your Company Private Limited (not set)",
+    cin: "NOT SET",
+    gstin: "NOT SET",
+    registeredOffice: "Registered office address not set",
+    customerCare: "Not set",
+    customerCareHours: "Not set",
+    email: "care@example.com",
+    website: "https://example.com",
   },
   grievance: {
-    name: "Meenakshi Raghavan",
-    designation: "Grievance Officer, AltasGoods Commerce Private Limited",
-    email: "grievance.officer@altasgoods.in",
-    phone: "+91 80 4718 2200",
-    hours: "Monday to Saturday, 9:30 am to 6:30 pm",
-    address: "Level 9, Lakeview Square, 14 Residency Road, Bengaluru, Karnataka 560025",
+    name: "Grievance Officer (name not set)",
+    designation: "Grievance Officer",
+    email: "grievance@example.com",
+    phone: "Not set",
+    hours: "Not set",
+    address: "Not set",
     ackHours: 48,
     resolutionDays: 30,
   },
 };
 
-/** What the storefront may read: everything except internal switches. */
-export const storefrontSettingsSchema = settingsSchema.pick({ delivery: true, cod: true, notice: true, company: true, grievance: true });
+const PLACEHOLDER_FIELDS = [
+  ["company", "legalName", "Company legal name"],
+  ["company", "cin", "CIN"],
+  ["company", "gstin", "GSTIN"],
+  ["company", "registeredOffice", "Registered office"],
+  ["company", "customerCare", "Customer care number"],
+  ["company", "customerCareHours", "Customer care hours"],
+  ["company", "email", "Company email"],
+  ["company", "website", "Website"],
+  ["grievance", "name", "Grievance Officer name"],
+  ["grievance", "designation", "Grievance Officer designation"],
+  ["grievance", "email", "Grievance Officer email"],
+  ["grievance", "phone", "Grievance Officer phone"],
+  ["grievance", "hours", "Grievance Officer hours"],
+  ["grievance", "address", "Grievance Officer address"],
+] as const;
 
-export const settingsResponse = settingsSchema.extend({ updatedAt: z.iso.datetime().nullable(), updatedBy: z.string().nullable() });
+/** The company and grievance details still at the placeholder a fresh store starts with, by name. Empty once they are all set. */
+export function settingsPlaceholders(settings: StoreSettings): string[] {
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  return PLACEHOLDER_FIELDS.filter(([group, field]) => same((settings[group] as Record<string, unknown>)[field] as string, (DEFAULT_SETTINGS[group] as Record<string, unknown>)[field] as string)).map(([, , label]) => label);
+}
+
+/** What the storefront may read: everything except internal switches. */
+export const storefrontSettingsSchema = settingsSchema
+  .pick({ delivery: true, cod: true, notice: true, company: true, grievance: true })
+  // the pincode rules are answered by the pincode check, not published
+  .extend({ delivery: settingsSchema.shape.delivery.pick({ feePaise: true, freeFromPaise: true }) });
+
+export const settingsResponse = settingsSchema.extend({ placeholders: z.array(z.string()).describe("Company and grievance details still at their placeholder values, by name"), updatedAt: z.iso.datetime().nullable(), updatedBy: z.string().nullable() });
 
 export const auditQuery = z.object({
   q: z.string().trim().max(80).optional().describe("Searches the summary"),

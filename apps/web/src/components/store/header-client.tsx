@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Heart,
   HelpCircle,
+  LayoutGrid,
   LogOut,
   MapPin,
   Menu,
@@ -23,8 +24,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/logo";
 import { useCart, usePincode, useWishlist } from "./cart-context";
-import { isValidPincode, lookupPincode } from "./delivery";
+import { isValidPincode } from "./delivery";
 import { NamedIcon } from "./icons";
+import { WORKSPACES, type Workspace } from "@/components/shell/workspaces";
 import type { AddressLite, NavCategory, Suggestion } from "./types";
 
 /* ------------------------------- Search --------------------------------- */
@@ -310,6 +312,45 @@ export function WishlistLink() {
 interface Customer {
   signedIn: boolean;
   firstName: string;
+  /** Staff workspaces this person may open (empty for shoppers). */
+  workspaces?: StaffLink[];
+}
+
+export interface StaffLink {
+  key: Workspace["key"] | "portals";
+  href: string;
+}
+
+const STAFF_LINK_META: Record<StaffLink["key"], { name: string; icon: Workspace["icon"] }> = {
+  ...(Object.fromEntries(WORKSPACES.map((w) => [w.key, { name: w.name, icon: w.icon }])) as Record<Workspace["key"], { name: string; icon: Workspace["icon"] }>),
+  portals: { name: "All workspaces", icon: LayoutGrid },
+};
+
+/** Links to AltasGoods Control, Shipping, Care Desk and the launcher, for staff only. */
+function StaffLinks({ links, onNavigate, compact }: { links: StaffLink[]; onNavigate?: () => void; compact?: boolean }) {
+  if (!links.length) return null;
+  return (
+    <div className={cn("border-t border-line", compact ? "mt-1.5 pt-1.5" : "px-2 py-3")}>
+      <p className={cn("text-[11px] font-semibold tracking-[0.06em] text-ink-400 uppercase", compact ? "px-3 pt-1 pb-1" : "px-2 pb-1")}>Workspaces</p>
+      {links.map((l) => {
+        const meta = STAFF_LINK_META[l.key];
+        return (
+          <Link
+            key={l.key}
+            href={l.href}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-lg text-sm text-ink-700 hover:bg-ink-50 hover:text-ink-900",
+              compact ? "px-3 py-2" : "px-2 py-2.5 font-medium text-ink-800",
+            )}
+          >
+            <meta.icon size={17} strokeWidth={1.8} className="shrink-0 text-brand-600" aria-hidden="true" />
+            <span className="flex-1">{meta.name}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
 }
 
 export function AccountMenu({ customer }: { customer: Customer }) {
@@ -404,6 +445,7 @@ export function AccountMenu({ customer }: { customer: Customer }) {
               </li>
             ))}
           </ul>
+          <StaffLinks links={customer.workspaces ?? []} compact onNavigate={() => setOpen(false)} />
           {customer.signedIn && (
             <form action={signOut.bind(null, "/")} className="mt-1.5 border-t border-line pt-1.5">
               <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink-600 hover:bg-ink-50 hover:text-ink-900">
@@ -426,7 +468,6 @@ export function DeliverTo({ addresses, name, variant = "bar" }: { addresses: Add
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const info = lookupPincode(pincode);
 
   useEffect(() => {
     if (!open) return;
@@ -464,7 +505,7 @@ export function DeliverTo({ addresses, name, variant = "bar" }: { addresses: Add
       >
         <MapPin size={15} strokeWidth={1.9} className="shrink-0 text-ink-500" aria-hidden="true" />
         <span className="truncate">
-          Deliver to {name ? `${name}, ` : ""}<span className="font-semibold text-ink-900">{info?.city ?? "India"} {pincode}</span>
+          Deliver to {name ? `${name}, ` : ""}<span className="font-semibold text-ink-900">{pincode}</span>
         </span>
         <ChevronDown size={14} className="shrink-0 text-ink-400" aria-hidden="true" />
       </button>
@@ -615,6 +656,9 @@ export function MobileNav({ categories, customer }: { categories: NavCategory[];
                     {l.label}
                   </Link>
                 ))}
+              </div>
+              <StaffLinks links={customer.workspaces ?? []} onNavigate={() => setOpen(false)} />
+              <div className="border-t border-line px-2 py-3 empty:hidden">
                 {customer.signedIn && (
                   <form action={signOut.bind(null, "/")}>
                     <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-sm text-ink-600 hover:bg-ink-50">

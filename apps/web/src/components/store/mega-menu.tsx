@@ -60,7 +60,7 @@ export function MegaMenu({ categories, dealLabel }: { categories: NavCategory[];
   };
   const stay = () => clearTimeout(timer.current);
 
-  const cat = categories.find((c) => c.slug === active) ?? categories[0]!;
+  const cat = categories.find((c) => c.slug === active) ?? categories[0];
 
   return (
     <div ref={wrapRef} className="relative" onMouseLeave={leave} onMouseEnter={stay}>
@@ -116,7 +116,7 @@ export function MegaMenu({ categories, dealLabel }: { categories: NavCategory[];
         </Link>
       </div>
 
-      {open && (
+      {open && cat && (
         <div
           id="mega-menu-panel"
           className="absolute inset-x-0 top-full z-40 -mt-px overflow-hidden rounded-b-2xl border border-line bg-white shadow-pop animate-fade-in"

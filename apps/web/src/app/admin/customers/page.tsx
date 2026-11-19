@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, UserSearch } from "lucide-react";
+import { ExportButton } from "@/components/admin/export-button";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { sp } from "@/components/admin/helpers";
 import { Pager } from "@/components/admin/pager";
@@ -9,6 +10,7 @@ import { Avatar, EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { loadAdminCustomers } from "@/lib/api/admin-system";
+import { canSeeArea } from "@/lib/api/server";
 import { formatDate } from "@/lib/utils";
 
 export const metadata = { title: "Customers" };
@@ -17,14 +19,18 @@ export default async function CustomersPage(props: PageProps<"/admin/customers">
   const params = await props.searchParams;
   const q = sp(params, "q")?.trim() ?? "";
   const page = Math.max(1, Number(sp(params, "page") ?? 1) || 1);
-  const data = await loadAdminCustomers(q, page);
+  const [data, exportable] = await Promise.all([loadAdminCustomers(q, page), canSeeArea("customers")]);
   const pages = Math.max(1, Math.ceil(data.total / data.pageSize));
   const from = data.total ? (page - 1) * data.pageSize + 1 : 0;
   const current = { q: q || undefined };
 
   return (
     <>
-      <PageHeader title="Customers" description="Everyone with a shopper account, newest first. Staff accounts are not listed." />
+      <PageHeader
+        title="Customers"
+        description="Everyone with a shopper account, newest first. Staff accounts are not listed."
+        actions={exportable && <ExportButton kind="customers" filters={{ q, from: sp(params, "from"), to: sp(params, "to") }} />}
+      />
       <Card>
         <div className="border-b border-line px-5 py-3.5">
           <FilterBar path="/admin/customers" q={q} placeholder="Name, email or mobile number" />

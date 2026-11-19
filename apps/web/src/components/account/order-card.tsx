@@ -6,17 +6,8 @@ import { ButtonLink } from "@/components/ui/button";
 import { CANCEL_REASONS } from "@/lib/mock/account-extra";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn, formatINR, productSlug } from "@/lib/utils";
-import { BuyAgainButton, CancelOrderButton, InvoiceButton, type RefundOption } from "./order-actions";
-import { cancelMode, dateLabel, isActive, itemState, paymentLabel, refundTiming, returnInfo, shortDate, trackIndex } from "./lib";
-
-export function refundOptionsFor(order: Order): RefundOption[] {
-  const m = order.payment.method;
-  if (m === "wallet" || m === "giftcard") return [{ key: "credits", label: "AltasGoods Credits", detail: "Back in your balance in under 2 hours" }];
-  return [
-    { key: "original", label: paymentLabel(m), detail: `Usually ${refundTiming(m).toLowerCase()} after the refund starts` },
-    { key: "credits", label: "AltasGoods Credits", detail: "Instant, usually under 2 hours. Use it on any order" },
-  ];
-}
+import { BuyAgainButton, CancelOrderButton, InvoiceButton } from "./order-actions";
+import { cancelMode, dateLabel, isActive, itemState, refundOptionsFor, returnInfo, shortDate, trackIndex } from "./lib";
 
 /** Plain props for the client cancel dialog. */
 export function cancelProps(order: Order) {
@@ -136,7 +127,7 @@ function OrderItemRow({ order, item, first }: { order: Order; item: OrderItem; f
             Write a review
           </ButtonLink>
         )}
-        {!active && <BuyAgainButton title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />}
+        {!active && <BuyAgainButton productId={item.productId} variant={item.variant} title={item.title.split(/[,(]/)[0]!.trim()} className="sm:w-full" />}
       </div>
     </li>
   );

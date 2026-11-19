@@ -1,6 +1,6 @@
 import type { Address, Order, OrderEvent, OrderItem, Refund, ReturnRequest } from "../types";
 import type { OrderStatus, PaymentMethod, PaymentStatus, RefundStatus, ReturnStatus } from "../status";
-import { addDays, between, NOW, pick, seeded } from "../utils";
+import { addDays, between, MOCK_EPOCH, pick, seeded } from "../utils";
 import { products } from "./catalog";
 import { CURRENT_CUSTOMER, customerAddresses, customers } from "./people";
 
@@ -75,8 +75,8 @@ function buildTimeline(status: OrderStatus, placedAt: Date, city: string): Order
   if (status === "return_requested") tail("return_requested", 120);
   if (status === "returned") { tail("return_requested", 110); tail("returned", 200); }
 
-  // Young orders compress their history so no event lands after NOW.
-  const ageHours = (NOW.getTime() - placedAt.getTime()) / 3600_000;
+  // Young orders compress their history so no event lands after MOCK_EPOCH.
+  const ageHours = (MOCK_EPOCH.getTime() - placedAt.getTime()) / 3600_000;
   const last = raw.at(-1)!.h || 1;
   const scale = last > ageHours * 0.92 ? (ageHours * 0.92) / last : 1;
   return raw.map((e) => ({
@@ -103,7 +103,7 @@ function makeOrder(i: number): Order {
   const isMine = i % 8 === 0;
   const customer = isMine ? CURRENT_CUSTOMER : customers[1 + Math.floor(rand() * (customers.length - 1))]!;
   const ageDays = Math.pow(rand(), 2.1) * 42 + (i < 6 ? 0 : 0.02);
-  const placedAt = new Date(NOW.getTime() - ageDays * 86400_000);
+  const placedAt = new Date(MOCK_EPOCH.getTime() - ageDays * 86400_000);
   const status = statusForAge(ageDays);
   const n = rand() < 0.68 ? 1 : rand() < 0.8 ? 2 : 3;
   const items: OrderItem[] = Array.from({ length: n }, (_, k) => {
@@ -206,7 +206,7 @@ export const returns: ReturnRequest[] = delivered.slice(0, 34).map((o, i) => {
   }
   // a return is requested after delivery but never in the future
   const delivered = new Date(o.deliveredAt ?? o.placedAt);
-  const room = Math.max(0, Math.floor((NOW.getTime() - delivered.getTime()) / 86400_000) - 1);
+  const room = Math.max(0, Math.floor((MOCK_EPOCH.getTime() - delivered.getTime()) / 86400_000) - 1);
   const requestedAt = addDays(delivered, Math.min(between(rr, 1, 5), room));
   return {
     id: `RT-${String(30412 + i * 13)}`,
@@ -221,7 +221,7 @@ export const returns: ReturnRequest[] = delivered.slice(0, 34).map((o, i) => {
     status,
     amount: item.price * item.quantity,
     requestedAt: requestedAt.toISOString(),
-    updatedAt: new Date(Math.min(addDays(requestedAt, between(rr, 0, 4)).getTime(), NOW.getTime() - 3600_000)).toISOString(),
+    updatedAt: new Date(Math.min(addDays(requestedAt, between(rr, 0, 4)).getTime(), MOCK_EPOCH.getTime() - 3600_000)).toISOString(),
   };
 });
 

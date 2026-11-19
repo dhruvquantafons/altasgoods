@@ -89,6 +89,8 @@ export interface Product {
   highlights: string[];
   description: string;
   specs: ProductSpec[];
+  /** Legal Metrology declarations the store set for this product; a missing one shows a placeholder */
+  legal?: import("./legal").ProductLegal | null;
   variants: VariantOption[];
   offers: Offer[];
   /** seller id currently winning the featured offer (buy box) */
@@ -218,6 +220,8 @@ export interface Order {
   shippingFee: number;
   platformFee: number;
   total: number;
+  /** GST inside the prices of the lines not cancelled, in paise; absent for sample data */
+  gstIncludedPaise?: number;
   promisedBy: string;
   deliveredAt?: string;
   timeline: OrderEvent[];

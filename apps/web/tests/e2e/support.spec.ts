@@ -31,9 +31,11 @@ test("an agent's changes to a ticket are saved", async ({ browser }) => {
   // priority
   await page.locator("#t-priority").selectOption("URGENT");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Ticket updated and logged to the audit trail")).toBeVisible();
-  await page.reload();
-  await expect(page.locator("#t-priority")).toHaveValue("URGENT");
+  // the confirmation is short lived, so wait for the saved priority itself
+  await expect(async () => {
+    await page.reload();
+    await expect(page.locator("#t-priority")).toHaveValue("URGENT", { timeout: 1_000 });
+  }).toPass({ timeout: 20_000 });
   await expect(page.getByText("Priority set to Urgent")).toBeVisible();
 
   // internal note, then a reply with an attachment that waits for the customer

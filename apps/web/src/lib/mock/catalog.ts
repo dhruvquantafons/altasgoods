@@ -1,6 +1,6 @@
 import type { Brand, Category, Offer, Product, ProductSpec, VariantOption } from "../types";
 import type { ListingStatus } from "../status";
-import { between, NOW, addDays, seeded, slugify } from "../utils";
+import { between, MOCK_EPOCH, addDays, seeded, slugify } from "../utils";
 
 /* ----------------------------- Categories ----------------------------- */
 
@@ -242,7 +242,7 @@ export const products: Product[] = seeds.map((s, i) => {
     stock,
     soldLast30d: Math.round(s.count * (0.03 + rand() * 0.05)),
     listingStatus: stock === 0 ? "out_of_stock" : statusCycle[i % statusCycle.length]!,
-    createdAt: addDays(NOW, -between(rand, 20, 600)).toISOString(),
+    createdAt: addDays(MOCK_EPOCH, -between(rand, 20, 600)).toISOString(),
   };
 });
 

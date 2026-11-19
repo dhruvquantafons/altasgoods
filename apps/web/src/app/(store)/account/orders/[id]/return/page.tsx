@@ -116,7 +116,8 @@ export default async function ReturnPage(props: PageProps<"/account/orders/[id]/
             label: PAYMENT_METHOD[method],
             timing: refundTiming(method),
             isCod: method === "cod",
-            creditsOnly: method === "wallet" || method === "giftcard",
+            // nothing was paid through the gateway, so the money goes to a UPI ID
+            bankOnly: method === "cod" || method === "wallet" || method === "giftcard",
           }}
         />
       ) : (

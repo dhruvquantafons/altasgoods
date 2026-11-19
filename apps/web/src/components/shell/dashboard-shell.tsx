@@ -9,6 +9,7 @@ import { Logo } from "@/components/brand/logo";
 import { Avatar, Kbd } from "@/components/ui/misc";
 import { Popover } from "@/components/ui/interactive";
 import type { Notification } from "@/lib/types";
+import { useNow } from "@/components/now-provider";
 import { cn, timeAgo } from "@/lib/utils";
 import { signOut } from "@/app/actions/auth";
 import { WORKSPACES, type Workspace } from "./workspaces";
@@ -95,7 +96,8 @@ function WorkspaceSwitcher({ current }: { current: Workspace }) {
   return (
     <Popover
       align="start"
-      className="w-72"
+      // the sidebar's scroll area clips anything wider than itself, so the menu takes the switcher's width
+      className="w-full min-w-0"
       trigger={(open) => (
         <button
           className={cn(
@@ -125,9 +127,9 @@ function WorkspaceSwitcher({ current }: { current: Workspace }) {
               onClick={close}
               className={cn("flex items-center gap-3 rounded-lg px-2.5 py-2 hover:bg-ink-50", w.key === current.key && "bg-ink-50")}
             >
-              <w.icon size={17} strokeWidth={1.8} className="text-ink-500" aria-hidden="true" />
-              <span className="min-w-0">
-                <span className="block text-[13px] font-medium text-ink-900">{w.name}</span>
+              <w.icon size={17} strokeWidth={1.8} className="shrink-0 text-ink-500" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-medium text-ink-900">{w.name}</span>
                 <span className="block truncate text-[11px] text-ink-500">{w.description}</span>
               </span>
             </Link>
@@ -145,6 +147,7 @@ function WorkspaceSwitcher({ current }: { current: Workspace }) {
 }
 
 function Notifications({ items }: { items: Notification[] }) {
+  const now = useNow(60_000);
   const unread = items.filter((n) => !n.read).length;
   return (
     <Popover
@@ -170,7 +173,7 @@ function Notifications({ items }: { items: Notification[] }) {
                   <span className="min-w-0">
                     <span className="block text-[13px] font-medium text-ink-900">{n.title}</span>
                     <span className="mt-0.5 block text-xs text-ink-500">{n.body}</span>
-                    <span className="mt-1 block text-[11px] text-ink-400">{timeAgo(n.at)}</span>
+                    <span className="mt-1 block text-[11px] text-ink-400">{timeAgo(n.at, now)}</span>
                   </span>
                 </>
               );

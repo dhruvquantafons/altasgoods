@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, count, desc, eq, ilike, inArray, or, sql, sum, type SQL } from "drizzle-orm";
 import type { z } from "zod";
-import { notFound } from "../../common/errors.js";
+import { conflict, notFound } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import type { Db } from "../../db/client.js";
 import { orderItems, orders, supportTickets, users } from "../../db/schema.js";
@@ -11,9 +11,19 @@ import { ACTIVE_STATUSES } from "./support.rules.js";
 import type { customerSearchQuery, orderSearchQuery } from "./support.schemas.js";
 
 /** Orders that went through: what counts towards a customer's order count. */
-const PLACED = sql`${orders.status} not in ('PAYMENT_PENDING', 'PAYMENT_FAILED', 'ABANDONED')`;
+export const PLACED = sql`${orders.status} not in ('PAYMENT_PENDING', 'PAYMENT_FAILED', 'ABANDONED')`;
 /** What the customer actually spent: placed orders that were not cancelled. */
-const SPENT = sql`${orders.status} not in ('PAYMENT_PENDING', 'PAYMENT_FAILED', 'ABANDONED', 'CANCELLED')`;
+export const SPENT = sql`${orders.status} not in ('PAYMENT_PENDING', 'PAYMENT_FAILED', 'ABANDONED', 'CANCELLED')`;
+
+/** Shopper list filters (staff accounts are left out). Shared with the CSV export. */
+export function customerFilters(q: Pick<z.infer<typeof customerSearchQuery>, "q">): SQL[] {
+  const filters: SQL[] = [sql`cardinality(${users.staffRoles}) = 0`];
+  if (q.q) {
+    const like = `%${q.q}%`;
+    filters.push(or(ilike(users.name, like), ilike(users.email, like), ilike(users.phone, `%${q.q.replace(/\D/g, "") || q.q}%`))!);
+  }
+  return filters;
+}
 
 /**
  * What the Care Desk needs to help a customer: find them, see their orders,
@@ -29,12 +39,7 @@ export class SupportLookupService {
 
   /** Shoppers by name, email or phone, newest first. Staff accounts are left out. */
   async customers(q: z.infer<typeof customerSearchQuery>) {
-    const filters: SQL[] = [sql`cardinality(${users.staffRoles}) = 0`];
-    if (q.q) {
-      const like = `%${q.q}%`;
-      filters.push(or(ilike(users.name, like), ilike(users.email, like), ilike(users.phone, `%${q.q.replace(/\D/g, "") || q.q}%`))!);
-    }
-    const where = and(...filters);
+    const where = and(...customerFilters(q));
     const [rows, [total]] = await Promise.all([
       this.db
         .select({ id: users.id, name: users.name, email: users.email, phone: users.phone, status: users.status, createdAt: users.createdAt })
@@ -96,7 +101,8 @@ export class SupportLookupService {
 
   /** Blocks or unblocks a shopper. A block also ends every session, so it takes effect at once. */
   async setStatus(id: string, status: "ACTIVE" | "BLOCKED") {
-    await this.customer(id);
+    const current = await this.customer(id);
+    if (current.status === "DELETED") throw conflict("ACCOUNT_DELETED", "This customer deleted their account, so it cannot be changed.");
     await this.db.update(users).set({ status }).where(eq(users.id, id));
     if (status === "BLOCKED") await this.tokens.revokeAll(id);
     return this.customer(id);

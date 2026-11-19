@@ -3,29 +3,20 @@ import Link from "next/link";
 import Form from "next/form";
 import { ChevronDown, Clock, Headset, LogIn, Mail, MessageCircle, PhoneCall, Scale, Search, ShieldCheck } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
+import { Fact, Placeholder } from "@/components/store/placeholder";
+import { companyEmail, companyLegalName, companyPhone, mailtoHref, PLACEHOLDER_TEXT, realText, telHref } from "@/lib/legal";
+import { Prose } from "@/components/store/prose";
 import { NamedIcon } from "@/components/store/icons";
 import { formatDayMonth } from "@/components/store/delivery";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { loadMyOrders, toUiOrder } from "@/lib/api/account-orders";
 import { currentUser } from "@/lib/api/server";
-import { HELP_FAQS, HELP_TOPICS } from "@/lib/mock/store-extra";
+import { getHelpContent, getStorePolicies } from "@/lib/store-content";
 import { getStoreSettings } from "@/lib/store-settings";
 import { ORDER_STATUS } from "@/lib/status";
 import { cn, formatINR } from "@/lib/utils";
 
 export const metadata = { title: "Help centre" };
-
-const RETURN_WINDOWS = [
-  ["Fashion: apparel, footwear, bags, watches, eyewear", "10 days", "Refund, replacement or exchange"],
-  ["Furniture and large home", "10 days", "Refund or replacement"],
-  ["Home decor, furnishing, kitchen", "7 days", "Refund or replacement"],
-  ["Mobiles, tablets, laptops", "7 days", "Replacement only"],
-  ["Electronics and small appliances", "7 days", "Replacement only"],
-  ["Large appliances", "10 days", "Replacement after technician visit"],
-  ["Books, toys, sports, stationery", "7 days", "Replacement only"],
-  ["Beauty and personal care", "7 days", "Refund if unopened and sealed"],
-  ["Grocery and packaged food", "2 days", "Refund for damaged, expired or wrong"],
-];
 
 function issuesFor(status: string) {
   if (["delivered"].includes(status)) return ["Return or replace", "Item damaged or missing", "Get invoice"];
@@ -35,7 +26,7 @@ function issuesFor(status: string) {
 }
 
 export default async function HelpPage(props: PageProps<"/help">) {
-  const { company: COMPANY, grievance: GRIEVANCE_OFFICER } = await getStoreSettings();
+  const [{ company: COMPANY, grievance: GRIEVANCE_OFFICER }, { topics: HELP_TOPICS, faqs: HELP_FAQS }, policies] = await Promise.all([getStoreSettings(), getHelpContent(), getStorePolicies()]);
   const sp = await props.searchParams;
   const q = (typeof sp.q === "string" ? sp.q : "").trim();
   const faqs = q ? HELP_FAQS.filter((f) => `${f.q} ${f.a} ${f.group}`.toLowerCase().includes(q.toLowerCase())) : HELP_FAQS;
@@ -125,7 +116,7 @@ export default async function HelpPage(props: PageProps<"/help">) {
             </h2>
             <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {HELP_TOPICS.map((t) => (
-                <li key={t.title}>
+                <li key={t.id}>
                   <Link href={t.href} className="group flex h-full gap-3.5 rounded-2xl border border-line p-4 transition-colors hover:border-ink-300">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
                       <NamedIcon name={t.icon} size={19} />
@@ -163,7 +154,7 @@ export default async function HelpPage(props: PageProps<"/help">) {
                       </span>
                       <ChevronDown size={18} className="shrink-0 text-ink-400 transition-transform group-open:rotate-180" aria-hidden="true" />
                     </summary>
-                    <p className="pb-5 text-sm leading-relaxed text-ink-600">{f.a}</p>
+                    <Prose markdown={f.a} className="pb-5 [&_p]:text-sm [&_p]:text-ink-600" />
                   </details>
                 ))}
                 {faqs.length === 0 && <p className="px-5 py-8 text-sm text-ink-500">No articles match. Try different words or contact us below.</p>}
@@ -176,54 +167,11 @@ export default async function HelpPage(props: PageProps<"/help">) {
                 Policies
               </h2>
               <div className="mt-4 flex flex-col gap-4">
-                <article id="returns" className="scroll-mt-28 rounded-2xl border border-line p-5 lg:p-6">
-                  <h3 className="text-base font-semibold text-ink-900">Returns and refunds</h3>
-                  <p className="mt-1 text-sm text-ink-600">Windows are counted from the delivery date. Doorstep pickup is free.</p>
-                  <div className="mt-4 overflow-x-auto rounded-xl border border-line">
-                    <table className="w-full text-left text-[13px]">
-                      <thead className="bg-ink-50 text-xs text-ink-500">
-                        <tr>
-                          <th className="px-4 py-2.5 font-medium">Category</th>
-                          <th className="px-4 py-2.5 font-medium">Window</th>
-                          <th className="px-4 py-2.5 font-medium">Resolution</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line">
-                        {RETURN_WINDOWS.map(([c, w, r]) => (
-                          <tr key={c}>
-                            <td className="px-4 py-2.5 text-ink-800">{c}</td>
-                            <td className="px-4 py-2.5 whitespace-nowrap text-ink-900 tabular-nums">{w}</td>
-                            <td className="px-4 py-2.5 text-ink-600">{r}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-                    Innerwear, hygiene products, opened consumables, personalised items and gift cards are not returnable, but damaged, defective or wrong items can always be
-                    reported within 7 days.
-                  </p>
-                  <Link href="/policies/returns" className="mt-3 inline-flex text-[13px] font-semibold text-brand-700 hover:underline">
-                    Read the full returns policy
-                  </Link>
-                </article>
-                {[
-                  { id: "shipping", title: "Shipping and delivery", body: "Orders confirmed before 2 pm count from the same day. Delivery is free for orders of ₹499 or more, otherwise ₹40 per order, always shown before you pay. Promise dates are calculated for your pincode and shown on every product." },
-                  { id: "cancellation", title: "Cancellation", body: "Cancel any item before it ships for a full refund and no fee. Once shipped, you can request cancellation and the parcel returns to us, or refuse it at the door. Prepaid refunds start within 1 hour, and AltasGoods Credits are restored immediately." },
-                  { id: "payments", title: "Payments", body: "Pay by UPI, credit or debit card, net banking, EMI, AltasGoods Pay Later, AltasGoods Credits and gift cards, or pay on delivery for orders up to ₹50,000. Card numbers are never stored by AltasGoods; saved cards are tokenised by our payment partner. Failed payments are reversed automatically within 1 business day." },
-                  { id: "credits", title: "AltasGoods Credits and gift cards", body: "Refund credits never expire and can be moved back to your bank. Gift cards are valid for 1 year from activation and cannot be reloaded or encashed. Both can be used on any order at checkout." },
-                  { id: "guarantee", title: "AltasGoods Guarantee", body: "If an item does not arrive, arrives materially different, or a refund is not issued, open a return or contact us first. If it is not resolved within 48 hours, file a claim from the order page within 90 days of the latest promised delivery date and AltasGoods decides." },
-                  { id: "terms", title: "Terms of use", body: "AltasGoods is operated by AltasGoods Commerce Private Limited, which sells and ships every product on the store. Prices include GST, and we issue one tax invoice for each order." },
-                  { id: "privacy", title: "Privacy", body: "We collect only what we need to deliver your orders and keep your account safe, under the Digital Personal Data Protection Act, 2023. Promotional messages need your consent, which you can withdraw any time. Download or delete your data from Account, then Privacy and data." },
-                  { id: "account", title: "Account and sign in", body: "Sign in with your mobile number and a one-time password. Changing your mobile number needs codes sent to both the old and new numbers. AltasGoods will never ask for your OTP, PIN or card details on a call." },
-                ].map((p) => (
-                  <article key={p.id} id={p.id} className="scroll-mt-28 rounded-2xl border border-line p-5 lg:p-6">
-                    <h3 className="text-base font-semibold text-ink-900">{p.title}</h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-ink-600">{p.body}</p>
-                    <Link
-                      href={`/policies/${p.id === "account" ? "account-security" : p.id}`}
-                      className="mt-3 inline-flex text-[13px] font-semibold text-brand-700 hover:underline"
-                    >
+                {policies.map((p) => (
+                  <article key={p.slug} id={p.slug} className="scroll-mt-28 rounded-2xl border border-line p-5 lg:p-6">
+                    <h3 className="text-base font-semibold text-ink-900">{p.nav}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-600">{p.summary}</p>
+                    <Link href={`/policies/${p.slug}`} className="mt-3 inline-flex text-[13px] font-semibold text-brand-700 hover:underline">
                       Read the full policy
                     </Link>
                   </article>
@@ -237,7 +185,7 @@ export default async function HelpPage(props: PageProps<"/help">) {
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
                 AltasGoods is a calmer Indian store built in Bengaluru, selling and shipping every product itself. Our promise: honest prices,
-                real delivery dates and no hidden charges. {COMPANY.legalName}, CIN {COMPANY.cin}.
+                real delivery dates and no hidden charges. {companyLegalName(COMPANY) ? `${companyLegalName(COMPANY)}${realText(COMPANY.cin) ? `, CIN ${realText(COMPANY.cin)}` : ""}.` : ""}
               </p>
               <Link href="/about" className="mt-3 inline-flex text-[13px] font-semibold text-brand-700 hover:underline">
                 More about AltasGoods
@@ -256,9 +204,11 @@ export default async function HelpPage(props: PageProps<"/help">) {
                 {[
                   { icon: MessageCircle, title: "Chat with us", body: "Typical reply in 2 minutes", href: "/contact" },
                   { icon: PhoneCall, title: "Request a call back", body: "Pick a time, we call you", href: "/contact#call-back" },
-                  { icon: Headset, title: `Call ${COMPANY.customerCare}`, body: `Toll free, ${COMPANY.customerCareHours}`, href: `tel:${COMPANY.customerCare.replace(/\s/g, "")}` },
-                  { icon: Mail, title: COMPANY.email, body: "Reply within 24 hours", href: `mailto:${COMPANY.email}` },
-                ].map((c) => (
+                  companyPhone(COMPANY) ? { icon: Headset, title: `Call ${companyPhone(COMPANY)}`, body: `Toll free${realText(COMPANY.customerCareHours) ? `, ${realText(COMPANY.customerCareHours)}` : ""}`, href: telHref(COMPANY.customerCare)! } : null,
+                  companyEmail(COMPANY) ? { icon: Mail, title: companyEmail(COMPANY)!, body: "Reply within 24 hours", href: mailtoHref(COMPANY.email)! } : null,
+                ]
+                  .filter((c) => c !== null)
+                  .map((c) => (
                   <li key={c.title}>
                     <a href={c.href} className="flex items-center gap-3 rounded-xl border border-line p-3 transition-colors hover:border-ink-300">
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-ink-50 text-ink-700">
@@ -271,6 +221,11 @@ export default async function HelpPage(props: PageProps<"/help">) {
                     </a>
                   </li>
                 ))}
+                {(!companyPhone(COMPANY) || !companyEmail(COMPANY)) && (
+                  <li className="rounded-xl border border-dashed border-line p-3 text-[13px] text-ink-600">
+                    Phone and email: <Placeholder>{PLACEHOLDER_TEXT}</Placeholder>
+                  </li>
+                )}
               </ul>
             </section>
 
@@ -284,27 +239,33 @@ export default async function HelpPage(props: PageProps<"/help">) {
               <dl className="mt-4 flex flex-col gap-2.5 text-[13px]">
                 <div>
                   <dt className="text-ink-500">Grievance Officer</dt>
-                  <dd className="font-semibold text-ink-900">{GRIEVANCE_OFFICER.name}</dd>
+                  <dd className="font-semibold text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.name} />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Email</dt>
                   <dd>
-                    <a href={`mailto:${GRIEVANCE_OFFICER.email}`} className="font-medium text-brand-700 hover:underline">
-                      {GRIEVANCE_OFFICER.email}
-                    </a>
+                    <Fact value={GRIEVANCE_OFFICER.email} link="mailto" className="font-medium text-brand-700 hover:underline" />
                   </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Phone</dt>
-                  <dd className="text-ink-900">{GRIEVANCE_OFFICER.phone}</dd>
+                  <dd className="text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.phone} link="tel" />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Address</dt>
-                  <dd className="text-ink-900">{GRIEVANCE_OFFICER.address}</dd>
+                  <dd className="text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.address} />
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-ink-500">Hours</dt>
-                  <dd className="text-ink-900">{GRIEVANCE_OFFICER.hours}</dd>
+                  <dd className="text-ink-900">
+                    <Fact value={GRIEVANCE_OFFICER.hours} />
+                  </dd>
                 </div>
               </dl>
               <ul className="mt-4 flex flex-col gap-2 border-t border-brand-100 pt-4 text-[13px] text-ink-700">

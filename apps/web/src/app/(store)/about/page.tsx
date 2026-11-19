@@ -1,10 +1,11 @@
 import Image from "next/image";
+import { Fact } from "@/components/store/placeholder";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Building2, CalendarClock, HeartHandshake, Scale, Sparkles } from "lucide-react";
 import { InfoHero } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
-import { ABOUT_MILESTONES, ABOUT_NUMBERS, ABOUT_PRINCIPLES, OFFICES } from "@/lib/mock/company";
+import { getAbout } from "@/lib/store-content";
 import { getStoreSettings } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "About AltasGoods" };
 const principleIcons = [Scale, CalendarClock, HeartHandshake, Sparkles];
 
 export default async function AboutPage() {
-  const { company: COMPANY } = await getStoreSettings();
+  const [{ company: COMPANY }, about] = await Promise.all([getStoreSettings(), getAbout()]);
   return (
     <div className="pb-16 lg:pb-24">
       <InfoHero
@@ -25,7 +26,7 @@ export default async function AboutPage() {
 
       <div className={cn(STORE_CONTAINER, "mt-10 lg:mt-14")}>
         <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {ABOUT_NUMBERS.map((n) => (
+          {about.numbers.map((n) => (
             <div key={n.label} className="rounded-2xl border border-line bg-white p-6">
               <dd className="font-display text-3xl font-semibold tracking-tight text-ink-900">{n.value}</dd>
               <dt className="mt-1 text-sm text-ink-500">{n.label}</dt>
@@ -59,8 +60,8 @@ export default async function AboutPage() {
             What we stand for
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {ABOUT_PRINCIPLES.map((p, i) => {
-              const Icon = principleIcons[i]!;
+            {about.principles.map((p, i) => {
+              const Icon = principleIcons[i % principleIcons.length]!;
               return (
                 <div key={p.title} className="rounded-2xl border border-line bg-white p-6">
                   <span className="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
@@ -79,7 +80,7 @@ export default async function AboutPage() {
             Our journey so far
           </h2>
           <ol className="mt-8 grid gap-6 border-l border-line pl-6 lg:grid-cols-5 lg:gap-4 lg:border-t lg:border-l-0 lg:pt-6 lg:pl-0">
-            {ABOUT_MILESTONES.map((m) => (
+            {about.milestones.map((m) => (
               <li key={m.title} className="relative">
                 <span className="absolute top-1.5 -left-[29px] size-2.5 rounded-full bg-brand-600 ring-4 ring-white lg:-top-[30px] lg:left-0" aria-hidden="true" />
                 <p className="text-[13px] font-semibold text-brand-700">{m.date}</p>
@@ -95,17 +96,17 @@ export default async function AboutPage() {
             Where we work
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {OFFICES.map((o) => (
+            {about.offices.map((o) => (
               <div key={o.city} className="rounded-2xl border border-line bg-white p-6">
                 <Building2 size={19} strokeWidth={1.8} className="text-ink-400" aria-hidden="true" />
                 <p className="mt-4 text-[15px] font-semibold text-ink-900">{o.city}</p>
-                <p className="text-[13px] font-medium text-brand-700">{o.note}</p>
+                {o.note && <p className="text-[13px] font-medium text-brand-700">{o.note}</p>}
                 <p className="mt-2 text-sm leading-relaxed text-ink-500">{o.address}</p>
               </div>
             ))}
           </div>
           <p className="mt-6 text-[13px] text-ink-500">
-            {COMPANY.legalName}, CIN {COMPANY.cin}, GSTIN {COMPANY.gstin}. Registered office: {COMPANY.registeredOffice}.
+            <Fact value={COMPANY.legalName} />, CIN <Fact value={COMPANY.cin} />, GSTIN <Fact value={COMPANY.gstin} />. Registered office: <Fact value={COMPANY.registeredOffice} />.
           </p>
         </section>
 

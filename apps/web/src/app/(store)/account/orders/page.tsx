@@ -9,8 +9,9 @@ import { EmptyState } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabLinks } from "@/components/ui/tabs";
 import { loadAccountOrders } from "@/lib/api/account-orders";
+import { serverNow } from "@/lib/clock";
 import type { Order } from "@/lib/types";
-import { cn, NOW } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Your orders" };
 
@@ -37,14 +38,14 @@ const PAGE_SIZE = 8;
 // returns are not in the API yet
 const withReturns = new Set<string>();
 
-function inRange(o: Order, range: RangeKey) {
+function inRange(o: Order, range: RangeKey, now: number) {
   const t = new Date(o.placedAt).getTime();
   const year = Number(new Intl.DateTimeFormat("en-IN", { year: "numeric", timeZone: "Asia/Kolkata" }).format(new Date(o.placedAt)));
   switch (range) {
     case "30d":
-      return NOW.getTime() - t <= 30 * 86400_000;
+      return now - t <= 30 * 86400_000;
     case "3m":
-      return NOW.getTime() - t <= 92 * 86400_000;
+      return now - t <= 92 * 86400_000;
     case "2026":
     case "2025":
       return year === Number(range);
@@ -82,7 +83,8 @@ export default async function OrdersPage(props: PageProps<"/account/orders">) {
   const status = (STATUSES.find((s) => s.key === one(sp.status))?.key ?? "all") as StatusKey;
 
   const orders = await loadAccountOrders();
-  const base = orders.filter((o) => inRange(o, range) && matches(o, q));
+  const now = serverNow();
+  const base = orders.filter((o) => inRange(o, range, now) && matches(o, q));
   const filtered = base.filter((o) => inStatus(o, status));
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const page = Math.min(pages, Math.max(1, Number(one(sp.page)) || 1));

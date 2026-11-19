@@ -7,27 +7,37 @@ import { saveSettings, type SettingsInput } from "@/app/actions/admin-system";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/input";
+import { gstDraft, GstFields, gstFromDraft, type GstDraft } from "./gst-fields";
+import { areasToText, parseAreas, type AreasText } from "./delivery-areas";
 import { Switch, useToast } from "@/components/ui/interactive";
+import { cn } from "@/lib/utils";
 
 /** Amounts are edited in rupees and saved in paise. */
 const toRupees = (p: number) => String(p / 100);
 const toPaise = (r: string) => Math.round(Number(r || 0) * 100);
 
-type Form = Omit<SettingsInput, "delivery" | "cod"> & { delivery: { fee: string; freeFrom: string }; cod: { maxOrder: string } };
+type Form = Omit<SettingsInput, "delivery" | "cod" | "tax"> & { delivery: { fee: string; freeFrom: string }; areas: AreasText; cod: { enabled: boolean; maxOrder: string }; tax: GstDraft };
 
 function fromSettings(s: SettingsInput): Form {
   return {
     ...s,
     delivery: { fee: toRupees(s.delivery.feePaise), freeFrom: toRupees(s.delivery.freeFromPaise) },
-    cod: { maxOrder: toRupees(s.cod.maxOrderPaise) },
+    areas: areasToText(s.delivery.areas),
+    cod: { enabled: s.cod.enabled, maxOrder: toRupees(s.cod.maxOrderPaise) },
+    tax: gstDraft(s.tax.defaultGstRateBp, s.tax.defaultHsn),
   };
 }
 
-function toSettings(f: Form): SettingsInput {
+function toSettings(f: Form, areas: SettingsInput["delivery"]["areas"], tax: { gstRateBp: number | null; hsn: string | null }): SettingsInput {
   return {
-    ...f,
-    delivery: { feePaise: toPaise(f.delivery.fee), freeFromPaise: toPaise(f.delivery.freeFrom) },
-    cod: { maxOrderPaise: toPaise(f.cod.maxOrder) },
+    company: f.company,
+    grievance: f.grievance,
+    reviews: f.reviews,
+    notifications: f.notifications,
+    notice: f.notice,
+    delivery: { feePaise: toPaise(f.delivery.fee), freeFromPaise: toPaise(f.delivery.freeFrom), areas },
+    cod: { enabled: f.cod.enabled, maxOrderPaise: toPaise(f.cod.maxOrder) },
+    tax: { defaultGstRateBp: tax.gstRateBp ?? 1800, defaultHsn: tax.hsn },
   };
 }
 
@@ -41,7 +51,8 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 /** Store-wide settings. Saving takes effect on the storefront and at checkout straight away. */
-export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; savedNote?: string }) {
+/** With canEdit false (an Auditor) the settings show read only, with no save bar. */
+export function SettingsForm({ initial, savedNote, canEdit = true }: { initial: SettingsInput; savedNote?: string; canEdit?: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState<Form>(() => fromSettings(initial));
   const [saved, setSaved] = useState(() => JSON.stringify(fromSettings(initial)));
@@ -84,9 +95,32 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
     </Field>
   );
 
+  const areaField = (key: keyof AreasText, label: string, placeholder: string, hint: string) => (
+    <Field label={label} htmlFor={`st-areas-${key}`} error={err(`delivery.areas.${key}`) ?? Object.entries(errors).find(([p]) => p.startsWith(`delivery.areas.${key}.`))?.[1]} hint={hint}>
+      <Textarea
+        id={`st-areas-${key}`}
+        className="min-h-28 font-mono text-[13px]"
+        value={form.areas[key]}
+        onChange={(e) => setForm((f) => ({ ...f, areas: { ...f.areas, [key]: e.target.value } }))}
+        placeholder={placeholder}
+        aria-invalid={Boolean(err(`delivery.areas.${key}`))}
+      />
+    </Field>
+  );
+
   const save = async () => {
+    const parsed = parseAreas(form.areas);
+    if (!parsed.ok) {
+      setErrors(Object.fromEntries(Object.entries(parsed.errors).map(([k, v]) => [`delivery.areas.${k}`, v])));
+      return toast.show("Fix the delivery areas first");
+    }
+    const tax = gstFromDraft(form.tax, { allowInherit: false });
+    if (!tax.ok) {
+      setErrors({ "tax.defaultGstRateBp": tax.error });
+      return toast.show(tax.error);
+    }
     setBusy(true);
-    const r = await saveSettings(toSettings(form));
+    const r = await saveSettings(toSettings(form, parsed.areas, tax));
     setBusy(false);
     if (!r.ok) {
       setErrors(r.fields ?? {});
@@ -101,14 +135,39 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
+    // a disabled fieldset turns every field in it off at once
+    <fieldset disabled={!canEdit} className="flex min-w-0 flex-col gap-6 pb-24">
       <Section title="Delivery" description="What customers pay for delivery. Checked again at checkout.">
         {money("delivery", "fee", "delivery.feePaise", "Delivery fee", "Charged on orders below the free delivery amount")}
         {money("delivery", "freeFrom", "delivery.freeFromPaise", "Free delivery from", "Orders at or above this amount ship free")}
       </Section>
 
-      <Section title="Cash on delivery">
+      <Section
+        title="Delivery areas"
+        description="Where we do not deliver, where cash on delivery is off, and where delivery takes longer. One entry per line: a 6 digit pincode, or the first 2 to 5 digits to cover a whole area. Checked on the product page, the cart and at checkout."
+      >
+        {areaField("blocked", "Do not deliver to", "6825\n744101", "Customers cannot order to these pincodes.")}
+        {areaField("noCod", "No cash on delivery", "79\n190001", "These pincodes can still pay online.")}
+        {areaField("extraDays", "Extra delivery days", "6825 3\n79 4", "Prefix, a space and the days to add (0 to 15). The longest matching prefix wins.")}
+      </Section>
+
+      <Section title="Cash on delivery" description="Switching it off stops cash on delivery for every order at once. Prepaid orders are not affected.">
+        <div className="sm:col-span-2">
+          <Switch
+            checked={form.cod.enabled}
+            onChange={(v) => set("cod", "enabled", v)}
+            label="Accept cash on delivery"
+            description="When off, checkout hides the option and says it is switched off."
+          />
+        </div>
         {money("cod", "maxOrder", "cod.maxOrderPaise", "Largest cash on delivery order", "Above this total, customers must pay online")}
+      </Section>
+
+      <Section
+        title="Tax (GST)"
+        description="Prices include GST. A product uses its own rate, else its category's, else this one. Each order line keeps the rate it was sold at. Delivery fees are not taxed here."
+      >
+        <GstFields idPrefix="st-tax" value={form.tax} onChange={(tax) => setForm((f) => ({ ...f, tax }))} rateError={err("tax.defaultGstRateBp")} hsnError={err("tax.defaultHsn")} />
       </Section>
 
       <Section title="Reviews">
@@ -118,6 +177,17 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
             onChange={(v) => set("reviews", "autoPublish", v)}
             label="Publish reviews straight away"
             description="When off, new customer reviews wait in Reviews until someone approves them."
+          />
+        </div>
+      </Section>
+
+      <Section title="Customer emails">
+        <div className="sm:col-span-2">
+          <Switch
+            checked={form.notifications.customerEmails}
+            onChange={(v) => set("notifications", "customerEmails", v)}
+            label="Email customers about their orders"
+            description="Order confirmations, payment problems, shipping and delivery updates, cancellations, refunds, returns and Care Desk replies. When off, none are sent, and they are not sent later. Sign in and password emails always go out."
           />
         </div>
       </Section>
@@ -153,7 +223,7 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
         {text("grievance", "resolutionDays", "Resolve complaints within (days)", { type: "number" })}
       </Section>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur lg:left-64">
+      <div className={cn("fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur lg:left-64", !canEdit && "hidden")}>
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <p className="text-[13px] text-ink-500">{dirty ? "You have unsaved changes." : (savedNote ?? "All changes saved.")}</p>
           <div className="flex gap-2">
@@ -169,6 +239,6 @@ export function SettingsForm({ initial, savedNote }: { initial: SettingsInput; s
         </div>
       </div>
       {toast.node}
-    </div>
+    </fieldset>
   );
 }

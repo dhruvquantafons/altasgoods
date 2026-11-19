@@ -52,3 +52,38 @@ function sniffDelimiter(text: string) {
   const counts = [",", ";", "\t"].map((d) => [d, header.split(d).length] as const);
   return counts.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 }
+
+/**
+ * A number already formatted for a cell (money as "-12.00"). It is written as
+ * is, never escaped: it came from a number, so it cannot run anything.
+ */
+export class CsvNumber {
+  constructor(readonly text: string) {}
+}
+
+/** A value as it goes into a CSV cell. Null and undefined are empty. */
+export type CsvValue = string | number | CsvNumber | null | undefined;
+
+/**
+ * One cell, RFC 4180 style: wrapped in quotes when it holds a comma, quote,
+ * CR or LF, with inner quotes doubled.
+ *
+ * Formula-injection guard: every text cell that starts with =, +, -, @, a tab
+ * or a CR gets a leading apostrophe so a spreadsheet shows it as text instead
+ * of running it. There is no exception for strings that look numeric (a phone
+ * number such as +919876543210 is escaped). Real numbers (`number`) and
+ * `CsvNumber` money values are left alone, so a refund of -12.00 stays a number.
+ */
+export function csvField(value: CsvValue): string {
+  if (value === null || value === undefined) return "";
+  if (value instanceof CsvNumber) return value.text;
+  let text = String(value);
+  if (typeof value === "string" && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/** One CSV line, CRLF terminated. */
+export const csvRow = (values: readonly CsvValue[]): string => `${values.map(csvField).join(",")}\r\n`;
+
+/** Whole rows to CSV text (CRLF line endings, no byte order mark). */
+export const toCsv = (rows: readonly (readonly CsvValue[])[]): string => rows.map(csvRow).join("");

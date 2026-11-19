@@ -93,12 +93,14 @@ export class AdminReturnsController {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get()
   @ApiResponse({ status: 200, standardSchema: z.array(s.returnSchema) })
   list(@Query({ schema: s.returnListQuery }) q: z.infer<typeof s.returnListQuery>) {
     return this.svc.storeReturns(q.status);
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get(":id")
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
   get(@Param("id", returnId) id: string) {
@@ -143,6 +145,17 @@ export class AdminReturnsController {
     return r;
   }
 
+  /** Records that the store paid a bank (UPI) refund by hand, with the payout's reference. Once only. */
+  @Post(":id/refund/mark-paid")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: s.returnSchema })
+  async markRefundPaid(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.markPaidBody }) body: z.infer<typeof s.markPaidBody>) {
+    const r = await this.svc.markRefundPaid(id, u.id, body.reference, body.note);
+    await this.audit.log(u, "refund.mark_paid", { type: "return", id }, `Marked the bank refund of return ${id} paid, reference ${body.reference}`);
+    return r;
+  }
+
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get(":id/photos/:photoId")
   @ApiProduces("image/png", "image/jpeg")
   async photo(@Param("id", returnId) id: string, @Param("photoId", uuidParam) photoId: string, @Res() res: Response) {
@@ -160,8 +173,8 @@ export class DevReturnsController {
   @Post(":id/advance")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: s.returnSchema })
-  advance(@Param("id", returnId) id: string, @Body({ schema: s.advanceBody }) body: z.infer<typeof s.advanceBody>) {
+  advance(@CurrentUser() u: AuthUser, @Param("id", returnId) id: string, @Body({ schema: s.advanceBody }) body: z.infer<typeof s.advanceBody>) {
     if (isProduction()) throw forbidden("Development endpoints are disabled in production");
-    return this.svc.advance(id, body.to);
+    return this.svc.advance(id, body.to, u);
   }
 }

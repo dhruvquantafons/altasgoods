@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Building2, Check, ChevronRight, Globe, ShieldCheck, Undo2, Wrench } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/page-header";
 import { formatDayMonthYear } from "@/components/store/delivery";
@@ -14,19 +14,20 @@ import { Rail, RailItem } from "@/components/store/rail";
 import { ReviewsSection } from "@/components/store/reviews";
 import { STORE_CONTAINER } from "@/components/store/store-header";
 import { Stars } from "@/components/ui/misc";
+import { Fact, Placeholder } from "@/components/store/placeholder";
 import { api, currentUser } from "@/lib/api/server";
-import { getStoreCatalog } from "@/lib/store-catalog";
+import { getStoreCatalog, redirectedSlug } from "@/lib/store-catalog";
 import { getStoreCoupons } from "@/lib/store-promotions";
 import { getStoreSettings } from "@/lib/store-settings";
 import {
   frequentlyBoughtWith,
   inStock,
-  legalDeclarations,
   returnPolicyFor,
   similarProducts,
   toCartProduct,
   warrantyFor,
 } from "@/lib/mock/store-extra";
+import { legalDeclarations } from "@/lib/legal";
 import type { Product } from "@/lib/types";
 import { cn, formatCompact, formatNumber } from "@/lib/utils";
 
@@ -66,7 +67,12 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const { slug } = await props.params;
   const catalog = await getStoreCatalog();
   const p = catalog.product(slug);
-  if (!p) notFound();
+  if (!p) {
+    // a product whose address was changed: send old links to the new one
+    const moved = catalog.available ? await redirectedSlug(slug) : null;
+    if (moved && moved !== slug) permanentRedirect(`/p/${moved}`);
+    notFound();
+  }
 
   const brand = { name: p.brandName, slug: p.brandSlug };
   const cat = { name: p.categoryName, slug: p.categorySlug };
@@ -75,7 +81,8 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const deal = p.sale;
   const policy = returnPolicyFor(p, offer.returnWindowDays);
   const warranty = warrantyFor(p);
-  const legal = legalDeclarations(p);
+  const legal = legalDeclarations(p, COMPANY);
+  const origin = legal.find((l) => l.label === "Country of origin");
   // published reviews; signed in, the API also says whether this customer can review it
   const [reviewData, user] = await Promise.all([
     (await api())
@@ -185,14 +192,16 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               {[
                 { icon: Undo2, label: policy.short },
                 { icon: ShieldCheck, label: warranty },
-                { icon: Globe, label: `Made in ${legal.find((l) => l.label === "Country of origin")?.value}` },
+                origin && !origin.placeholder ? { icon: Globe, label: `Made in ${origin.value}` } : null,
                 { icon: Wrench, label: snapshot.large ? "Free installation" : "GST invoice" },
-              ].map((f) => (
-                <li key={f.label} className="flex flex-col items-center gap-2 rounded-xl bg-ink-50 px-2 py-3 text-center">
-                  <f.icon size={18} strokeWidth={1.8} className="text-ink-600" aria-hidden="true" />
-                  <span className="text-xs leading-snug text-ink-700">{f.label}</span>
-                </li>
-              ))}
+              ]
+                .filter((f) => f !== null)
+                .map((f) => (
+                  <li key={f.label} className="flex flex-col items-center gap-2 rounded-xl bg-ink-50 px-2 py-3 text-center">
+                    <f.icon size={18} strokeWidth={1.8} className="text-ink-600" aria-hidden="true" />
+                    <span className="text-xs leading-snug text-ink-700">{f.label}</span>
+                  </li>
+                ))}
             </ul>
           </div>
 
@@ -260,7 +269,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
               {legal.map((l) => (
                 <div key={l.label} className="grid grid-cols-[150px_1fr] gap-4 px-4 py-2.5 sm:grid-cols-[180px_1fr]">
                   <dt className="text-ink-500">{l.label}</dt>
-                  <dd className="text-ink-800">{l.value}</dd>
+                  <dd className="text-ink-800">{l.placeholder ? <Placeholder>{l.value}</Placeholder> : l.value}</dd>
                 </div>
               ))}
             </dl>
@@ -301,7 +310,7 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <p className="mt-2 text-sm font-medium text-ink-900">{policy.short}</p>
           <p className="mt-1 text-sm leading-relaxed text-ink-600">{policy.detail}</p>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-            Damaged, defective or wrong items can always be reported within the window or 7 days, whichever is longer. Refunds to AltasGoods Credits arrive within 2 hours.
+            Damaged, defective or wrong items can always be reported within the window or 7 days, whichever is longer. Refunds go back to your original payment method.
           </p>
           <Link href="/policies/returns" className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-700 hover:underline">
             Returns policy <ChevronRight size={14} aria-hidden="true" />
@@ -329,25 +338,33 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
           <dl className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed">
             <div>
               <dt className="inline text-ink-500">Legal name: </dt>
-              <dd className="inline text-ink-800">{COMPANY.legalName}</dd>
+              <dd className="inline text-ink-800">
+                <Fact value={COMPANY.legalName} />
+              </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Address: </dt>
-              <dd className="inline text-ink-800">{COMPANY.registeredOffice}</dd>
+              <dd className="inline text-ink-800">
+                <Fact value={COMPANY.registeredOffice} />
+              </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Customer care: </dt>
-              <dd className="inline text-ink-800">{COMPANY.customerCare}</dd>
+              <dd className="inline text-ink-800">
+                <Fact value={COMPANY.customerCare} />
+              </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">Grievance officer: </dt>
               <dd className="inline text-ink-800">
-                {GRIEVANCE_OFFICER.name}, {GRIEVANCE_OFFICER.email}
+                <Fact value={GRIEVANCE_OFFICER.name} />, <Fact value={GRIEVANCE_OFFICER.email} />
               </dd>
             </div>
             <div>
               <dt className="inline text-ink-500">GSTIN: </dt>
-              <dd className="inline font-mono text-xs text-ink-800">{COMPANY.gstin}</dd>
+              <dd className="inline font-mono text-xs text-ink-800">
+                <Fact value={COMPANY.gstin} />
+              </dd>
             </div>
           </dl>
         </div>

@@ -57,6 +57,7 @@ function toProduct(p: ApiProduct, brand: Brand | undefined, category: Category |
     highlights: p.highlights,
     description: p.description,
     specs: p.specs,
+    legal: p.legal,
     variants: p.variants,
     offers: [
       {
@@ -119,3 +120,14 @@ export const getStoreCatalog = cache(async (): Promise<StoreCatalog> => {
     return build({ products: [], categories: [], brands: [] }, false);
   }
 });
+
+/** The current address of a product whose slug was changed, or null when `slug` is not an old address. */
+export async function redirectedSlug(slug: string): Promise<string | null> {
+  try {
+    const r = await fetch(`${apiUrl()}/v1/storefront/products/redirect/${encodeURIComponent(slug)}`, { next: { tags: [CATALOG_TAG], revalidate: 60 } });
+    if (!r.ok) return null;
+    return ((await r.json()) as { slug: string }).slug;
+  } catch {
+    return null;
+  }
+}

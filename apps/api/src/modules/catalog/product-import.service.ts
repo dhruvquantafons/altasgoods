@@ -9,6 +9,8 @@ import { offers, products } from "../../db/schema.js";
 import { imagePath, PRODUCT_TAGS, productInput, productPatch, type importResult, type ProductInput, type ProductPatch } from "./admin-catalog.schemas.js";
 import { AdminCatalogService, slugify } from "./admin-catalog.service.js";
 import { parseCsv } from "./csv.js";
+import { percentToBp } from "./gst.js";
+import type { ProductLegal } from "./catalog.schemas.js";
 import { downloadImage } from "./remote-image.js";
 
 export const MAX_IMPORT_ROWS = 1000;
@@ -29,7 +31,7 @@ const FIELDS = {
   sku: ["sku", "sku code", "sku id", "product code", "item code", "code", "article number"],
   category: ["category", "category name", "department", "collection"],
   subcategory: ["subcategory", "sub category", "subcategory name", "type", "product type"],
-  brand: ["brand", "brand name", "manufacturer", "make", "vendor"],
+  brand: ["brand", "brand name", "make", "vendor"],
   price: ["price", "selling price", "sale price", "our price", "offer price", "unit price"],
   mrp: ["mrp", "max retail price", "maximum retail price", "list price", "original price", "compare at price", "regular price"],
   stock: ["stock", "quantity", "qty", "inventory", "stock quantity", "available quantity", "units"],
@@ -39,6 +41,13 @@ const FIELDS = {
   deliveryDays: ["delivery days", "delivery time", "shipping days", "dispatch days"],
   codAvailable: ["cod", "cod available", "cash on delivery"],
   returnWindowDays: ["return days", "return window", "return window days", "returns"],
+  gstRate: ["gst rate", "gst", "gst percent", "gst %", "gst rate %", "tax rate", "gst percentage"],
+  hsn: ["hsn", "hsn code", "hsn sac", "hsn sac code"],
+  manufacturer: ["manufacturer", "manufacturer name and address", "manufactured by"],
+  packer: ["packer", "packer name and address", "packed by"],
+  importer: ["importer", "importer name and address", "imported by"],
+  consumerCare: ["consumer care", "consumer care details", "customer care details", "consumer care contact"],
+  countryOfOrigin: ["country of origin", "made in"],
   active: ["active", "status", "on sale", "published", "visible", "enabled"],
 } as const;
 type Field = keyof typeof FIELDS;
@@ -59,6 +68,9 @@ const LABELS: Record<string, string> = {
   deliveryDays: "Delivery days",
   codAvailable: "COD",
   returnWindowDays: "Return days",
+  gstRateBp: "GST rate",
+  hsn: "HSN",
+  legal: "Legal declarations",
 };
 
 type Column =
@@ -136,7 +148,10 @@ const splitImages = (v: string) =>
 type ImportResult = z.infer<typeof importResult>;
 type RowResult = ImportResult["rows"][number];
 
+const LEGAL_FIELDS = ["manufacturer", "packer", "importer", "consumerCare", "countryOfOrigin"] as const;
+
 interface Existing {
+  legal: ProductLegal | null;
   id: string;
   sku: string;
   categoryId: string;
@@ -233,6 +248,7 @@ export class ProductImportService {
           brandId: products.brandId,
           pricePaise: offers.pricePaise,
           mrpPaise: offers.mrpPaise,
+          legal: products.legal,
         })
         .from(products)
         .innerJoin(offers, and(eq(offers.productId, products.id), eq(offers.sellerId, HOUSE_SELLER_ID))),
@@ -341,6 +357,19 @@ export class ProductImportService {
         if (b === undefined) errors.push(`${label} "${v}" should be yes or no`);
         else fields[f] = b;
       }
+
+      const gst = get("gstRate");
+      if (gst) {
+        const bp = percentToBp(gst);
+        if (bp === null || bp > 4000) errors.push(`GST rate "${gst}" should be a percentage from 0 to 40, for example 18`);
+        else fields.gstRateBp = bp;
+      }
+      if (get("hsn")) fields.hsn = get("hsn");
+
+      // Legal Metrology columns: blank cells keep what the product already has
+      const legal: ProductLegal = { ...(existing?.legal ?? {}) };
+      for (const k of LEGAL_FIELDS) if (get(k)) legal[k] = get(k);
+      if (LEGAL_FIELDS.some((k) => get(k))) fields.legal = legal;
 
       if (get("description")) fields.description = get("description");
       if (get("highlights")) fields.highlights = splitList(get("highlights"));

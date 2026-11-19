@@ -13,6 +13,24 @@ import type { adminPaymentsQuery, adminRefundsQuery } from "./commerce.schemas.j
 const SOLD = sql`${orders.status} not in ('PAYMENT_PENDING', 'PAYMENT_FAILED', 'ABANDONED', 'CANCELLED')`;
 const DAY = 86_400_000;
 
+/** Payment list filters. Needs the users table joined (the search matches the customer's email). Shared with the CSV export. */
+export function paymentFilters(q: z.infer<typeof adminPaymentsQuery>): SQL[] {
+  const filters: SQL[] = [];
+  if (q.status) filters.push(eq(payments.status, q.status));
+  if (q.method) filters.push(eq(payments.method, q.method));
+  if (q.provider) filters.push(eq(payments.provider, q.provider));
+  if (q.q) filters.push(or(ilike(payments.orderId, `%${q.q}%`), ilike(payments.providerRef, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+  return filters;
+}
+
+/** Refund list filters. Needs the users table joined. Shared with the CSV export. */
+export function refundFilters(q: z.infer<typeof adminRefundsQuery>): SQL[] {
+  const filters: SQL[] = [];
+  if (q.status) filters.push(eq(refunds.status, q.status));
+  if (q.q) filters.push(or(ilike(refunds.orderId, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+  return filters;
+}
+
 /** The numbers behind AltasGoods Control's overview and payments pages. Read only. */
 @Injectable()
 export class AdminInsightsService {
@@ -34,7 +52,7 @@ export class AdminInsightsService {
 
     const since = new Date(today.getTime() - 13 * DAY);
     const istDay = sql<string>`to_char(${orders.placedAt} at time zone 'Asia/Kolkata', 'YYYY-MM-DD')`;
-    const [seriesRows, work, returnsWaiting, refundsPending, top, latest, lowStock] = await Promise.all([
+    const [seriesRows, work, returnsWaiting, refundsPending, top, latest, lowStock, needAttention] = await Promise.all([
       this.db
         .select({ day: istDay, n: count(), total: sum(orders.totalPaise) })
         .from(orders)
@@ -46,7 +64,7 @@ export class AdminInsightsService {
         .where(inArray(orderItems.status, ["NEW", "ACCEPTED", "PACKED", "READY_TO_SHIP"]))
         .groupBy(orderItems.status),
       this.db.select({ n: count() }).from(returns).where(inArray(returns.status, ["PENDING_REVIEW", "RECEIVED", "QC_FAILED"])),
-      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING"])),
+      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING", "NEEDS_ATTENTION"])),
       this.db
         .select({ productId: orderItems.productId, title: orderItems.title, image: orderItems.image, units: sum(orderItems.qty), revenue: sql<string>`sum(${orderItems.qty} * ${orderItems.unitPricePaise})` })
         .from(orderItems)
@@ -69,6 +87,7 @@ export class AdminInsightsService {
         .where(and(eq(offers.sellerId, HOUSE_SELLER_ID), eq(offers.status, "ACTIVE"), lte(offers.stock, 5), eq(products.listingStatus, "LIVE")))
         .orderBy(offers.stock)
         .limit(8),
+      this.db.select({ n: count() }).from(refunds).where(eq(refunds.status, "NEEDS_ATTENTION")),
     ]);
 
     const byDay = new Map(seriesRows.map((r) => [r.day, r]));
@@ -92,6 +111,7 @@ export class AdminInsightsService {
         returnsWaiting: returnsWaiting[0]?.n ?? 0,
         refundsPending: refundsPending[0]?.n ?? 0,
         refundsPendingPaise: Number(refundsPending[0]?.total ?? 0),
+        refundsNeedAttention: needAttention[0]?.n ?? 0,
       },
       series,
       topProducts: top.map((t) => ({ productId: t.productId, title: t.title, image: t.image, units: Number(t.units ?? 0), revenuePaise: Number(t.revenue ?? 0) })),
@@ -101,11 +121,7 @@ export class AdminInsightsService {
   }
 
   async payments(q: z.infer<typeof adminPaymentsQuery>) {
-    const filters: SQL[] = [];
-    if (q.status) filters.push(eq(payments.status, q.status));
-    if (q.method) filters.push(eq(payments.method, q.method));
-    if (q.provider) filters.push(eq(payments.provider, q.provider));
-    if (q.q) filters.push(or(ilike(payments.orderId, `%${q.q}%`), ilike(payments.providerRef, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+    const filters = paymentFilters(q);
     const where = filters.length ? and(...filters) : undefined;
     const now = this.clock.now();
     const today = istAt(now, 0, 0);
@@ -122,7 +138,7 @@ export class AdminInsightsService {
       this.db.select({ n: count() }).from(payments).innerJoin(orders, eq(orders.id, payments.orderId)).innerJoin(users, eq(users.id, orders.userId)).where(where),
       this.db.select({ n: count(), total: sum(payments.amountPaise) }).from(payments).where(and(gte(payments.capturedAt, today), inArray(payments.status, ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"]))),
       this.db.select({ n: count() }).from(payments).where(and(gte(payments.createdAt, new Date(now.getTime() - DAY)), eq(payments.status, "FAILED"))),
-      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING"])),
+      this.db.select({ n: count(), total: sum(refunds.amountPaise) }).from(refunds).where(inArray(refunds.status, ["PENDING", "PROCESSING", "NEEDS_ATTENTION"])),
     ]);
     return {
       items: rows.map(({ p, name, email, userId }) => ({
@@ -152,9 +168,7 @@ export class AdminInsightsService {
   }
 
   async refunds(q: z.infer<typeof adminRefundsQuery>) {
-    const filters: SQL[] = [];
-    if (q.status) filters.push(eq(refunds.status, q.status));
-    if (q.q) filters.push(or(ilike(refunds.orderId, `%${q.q}%`), ilike(users.email, `%${q.q}%`))!);
+    const filters = refundFilters(q);
     const where = filters.length ? and(...filters) : undefined;
     const base = this.db
       .select({ r: refunds, method: payments.method, provider: payments.provider, providerRef: payments.providerRef, name: users.name, email: users.email, userId: users.id })
@@ -175,6 +189,8 @@ export class AdminInsightsService {
         status: r.status,
         reason: r.reason,
         method,
+        refundMethod: r.method,
+        reference: r.reference,
         provider,
         providerRef,
         createdAt: r.createdAt.toISOString(),

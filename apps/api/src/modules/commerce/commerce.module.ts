@@ -1,6 +1,7 @@
-import { Module } from "@nestjs/common";
+import { Logger, Module } from "@nestjs/common";
 import { LOGISTICS_PROVIDER, PAYMENT_PROVIDER } from "../../common/tokens.js";
 import { env } from "../../config/env.js";
+import { AuthModule } from "../auth/auth.module.js";
 import { AddressesService } from "./addresses.service.js";
 import { CartService } from "./cart.service.js";
 import { WishlistService } from "./wishlist.service.js";
@@ -8,20 +9,24 @@ import {
   AddressesController,
   AdminInsightsController,
   AdminOrdersController,
+  AdminRefundsController,
   CartController,
   DevController,
   WishlistController,
   LogisticsController,
   OrdersController,
   PaymentsController,
+  StorefrontPincodesController,
 } from "./commerce.controllers.js";
 import { DevLogisticsService } from "./dev-logistics.service.js";
 import { OrdersService } from "./orders.service.js";
 import { PaymentsService } from "./payments/payments.service.js";
 import { RazorpayPaymentProvider } from "./payments/razorpay.provider.js";
+import { RefundsService } from "./payments/refunds.service.js";
 import { SandboxPaymentProvider } from "./payments/sandbox.provider.js";
 import { PaymentSweeper } from "./payments/sweeper.js";
 import { QuoteService } from "./quote.service.js";
+import { ServiceabilityService } from "./serviceability.service.js";
 import { ShippingService } from "./shipping/shipping.service.js";
 import { ShiprocketLogisticsProvider } from "./shipping/shiprocket.provider.js";
 import { SimulatedLogisticsProvider } from "./shipping/simulated.provider.js";
@@ -33,9 +38,14 @@ import { PromotionsService } from "./promotions.service.js";
 import { AdminReturnsController, CustomerReturnsController, DevReturnsController } from "./returns/returns.controllers.js";
 import { ReturnsService } from "./returns/returns.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
+import { OrderAdminService } from "./order-admin.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
+import { EmailNotificationsWorker } from "./notifications/notifications.handler.js";
+import { NotificationsService } from "./notifications/notifications.service.js";
 
 @Module({
+  // for EMAIL_PROVIDER: customer emails are sent from here
+  imports: [AuthModule],
   controllers: [
     AddressesController,
     CartController,
@@ -43,9 +53,11 @@ import { OrderWorkflow } from "./workflow.service.js";
     OrdersController,
     PaymentsController,
     AdminOrdersController,
+    AdminRefundsController,
     AdminInsightsController,
     AdminPromotionsController,
     StorefrontPromotionsController,
+    StorefrontPincodesController,
     LogisticsController,
     DevController,
     CustomerReturnsController,
@@ -53,6 +65,8 @@ import { OrderWorkflow } from "./workflow.service.js";
     DevReturnsController,
   ],
   providers: [
+    NotificationsService,
+    EmailNotificationsWorker,
     AdminInsightsService,
     SalesService,
     PromotionsService,
@@ -60,10 +74,13 @@ import { OrderWorkflow } from "./workflow.service.js";
     CartService,
     WishlistService,
     QuoteService,
+    ServiceabilityService,
+    RefundsService,
     OrderWorkflow,
     PaymentsService,
     OrdersService,
     FulfilmentService,
+    OrderAdminService,
     DevLogisticsService,
     ReturnsService,
     PaymentSweeper,
@@ -88,17 +105,19 @@ import { OrderWorkflow } from "./workflow.service.js";
       useFactory: () => {
         const e = env();
         if (e.LOGISTICS_PROVIDER !== "shiprocket") return new SimulatedLogisticsProvider();
+        if (!e.SHIPROCKET_PICKUP_PINCODE) new Logger("Shiprocket").warn("SHIPROCKET_PICKUP_PINCODE is not set, so pincodes are checked against the admin delivery rules only");
         const [l, b, h] = e.SHIPPING_BOX_CM.split("x").map(Number) as [number, number, number];
         return new ShiprocketLogisticsProvider({
           email: e.SHIPROCKET_EMAIL!,
           password: e.SHIPROCKET_PASSWORD!,
           pickupLocation: e.SHIPROCKET_PICKUP_LOCATION!,
           webhookToken: e.SHIPROCKET_WEBHOOK_TOKEN,
+          pickupPincode: e.SHIPROCKET_PICKUP_PINCODE,
           box: [l, b, h],
         });
       },
     },
   ],
-  exports: [SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
+  exports: [NotificationsService, ServiceabilityService, SalesService, ShippingService, ReturnsService, OrdersService, PaymentsService, RefundsService, FulfilmentService, OrderWorkflow, CartService, AddressesService],
 })
 export class CommerceModule {}

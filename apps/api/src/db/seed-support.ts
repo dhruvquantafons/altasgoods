@@ -55,7 +55,7 @@ export async function seedSupport(db: Db, owners: { email: string; id: string }[
   const getOrder = orderMod.getOrder as (id: string) => MockOrder | undefined;
   const customers = people.customers as { id: string; name: string }[];
   const paymentLabel = status.PAYMENT_METHOD as Record<string, string>;
-  const demoNow = (utils.NOW as Date).getTime();
+  const demoNow = (utils.MOCK_EPOCH as Date).getTime();
   const shift = Date.now() - demoNow;
   const at = (iso: string) => new Date(new Date(iso).getTime() + shift);
 

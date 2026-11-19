@@ -1,4 +1,4 @@
-import { addDays, NOW, seeded } from "../utils";
+import { addDays, MOCK_EPOCH, seeded } from "../utils";
 
 /** AltasGoods Big Days festive sale window used to shape the series. */
 export const SALE_EVENT = {
@@ -24,7 +24,7 @@ export interface PlatformDay {
 
 /** 90 days of marketplace-wide metrics, ending today. */
 export const platformDaily: PlatformDay[] = Array.from({ length: 90 }, (_, i) => {
-  const d = addDays(NOW, i - 89);
+  const d = addDays(MOCK_EPOCH, i - 89);
   const r = seeded(i + 7)();
   const weekday = d.getDay();
   const weekend = weekday === 0 || weekday === 6 ? 1.12 : 1;
@@ -58,7 +58,7 @@ export interface SellerDay {
 
 /** 30 days of metrics for the current seller (Apex Retail). */
 export const sellerDaily: SellerDay[] = Array.from({ length: 30 }, (_, i) => {
-  const d = addDays(NOW, i - 29);
+  const d = addDays(MOCK_EPOCH, i - 29);
   const r = seeded(i + 300)();
   const sale = isSaleDay(d) ? 2.3 + r * 0.5 : 1;
   const pageViews = Math.round(21000 * (0.9 + r * 0.25) * (isSaleDay(d) ? 1.9 : 1));

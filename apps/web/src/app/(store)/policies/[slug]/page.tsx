@@ -3,23 +3,19 @@ import { notFound } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { HelpBand, InfoHero, PolicyArticle, PolicyCard, PolicyNav } from "@/components/store/info-page";
 import { STORE_CONTAINER } from "@/components/store/store-header";
-import { getPolicy, POLICIES } from "@/lib/mock/company";
+import { getStorePolicies, getStorePolicy } from "@/lib/store-content";
 import { cn, formatDate } from "@/lib/utils";
-
-export function generateStaticParams() {
-  return POLICIES.map((p) => ({ slug: p.slug }));
-}
 
 export async function generateMetadata(props: PageProps<"/policies/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  return { title: getPolicy(slug)?.title ?? "Policy" };
+  return { title: (await getStorePolicy(slug))?.title ?? "Policy" };
 }
 
 export default async function PolicyPage(props: PageProps<"/policies/[slug]">) {
   const { slug } = await props.params;
-  const policy = getPolicy(slug);
+  const [policy, policies] = await Promise.all([getStorePolicy(slug), getStorePolicies()]);
   if (!policy) notFound();
-  const related = policy.related.map((s) => getPolicy(s)).filter((p) => p !== undefined);
+  const related = policy.related;
 
   return (
     <div className="pb-16 lg:pb-24">
@@ -30,14 +26,14 @@ export default async function PolicyPage(props: PageProps<"/policies/[slug]">) {
       >
         <p className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-ink-500">
           <CalendarDays size={14} aria-hidden="true" />
-          Last updated {formatDate(policy.updated)}
+          Last updated {formatDate(policy.updatedAt)}
         </p>
       </InfoHero>
 
       <div className={cn(STORE_CONTAINER, "mt-10 grid gap-10 lg:mt-14 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_200px]")}>
         <aside className="hidden lg:block">
           <div className="sticky top-28">
-            <PolicyNav active={policy.slug} />
+            <PolicyNav active={policy.slug} policies={policies} />
           </div>
         </aside>
 
@@ -58,7 +54,7 @@ export default async function PolicyPage(props: PageProps<"/policies/[slug]">) {
           )}
 
           <div className="mt-12 lg:hidden">
-            <PolicyNav active={policy.slug} />
+            <PolicyNav active={policy.slug} policies={policies} />
           </div>
 
           <div className="mt-12">

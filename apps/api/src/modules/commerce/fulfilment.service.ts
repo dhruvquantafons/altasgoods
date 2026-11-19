@@ -2,10 +2,13 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, inArray, ne, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../../db/client.js";
-import { orderEvents, orderItems, orders, type OrderItemStatus } from "../../db/schema.js";
+import { orderEvents, orderItems, orders, refunds, type OrderItemStatus } from "../../db/schema.js";
 import { ApiError, notFound } from "../../common/errors.js";
 import { DB } from "../../common/tokens.js";
 import { fulfilmentItemsQuery, transitionBody } from "./commerce.schemas.js";
+import { gstIncluded } from "../catalog/gst.js";
+import { addressEditable, refundView } from "./order-admin.service.js";
+import { RefundsService } from "./payments/refunds.service.js";
 import { ITEM_TRANSITIONS } from "./state.js";
 import { ShippingService } from "./shipping/shipping.service.js";
 import { OrderWorkflow } from "./workflow.service.js";
@@ -17,6 +20,23 @@ const pick = (a: { name: string; phone: string; line1: string; city: string; sta
 /** What store staff may do next with a line. */
 const allowedActions = (status: OrderItemStatus) => (ITEM_TRANSITIONS[status] ?? []).filter((r) => r.actors.includes("STAFF")).map((r) => r.to);
 
+/** Moves that need a note from staff, and what to ask for. */
+const NOTE_REQUIRED: Partial<Record<OrderItemStatus, string>> = {
+  CANCELLED: "Give a reason when cancelling an order",
+  LOST: "Note what the courier said about the lost parcel",
+  RTO_RECEIVED: "Note the state the parcel came back in",
+};
+
+/** Order line filters for the fulfilment queue. Lines still waiting for the customer's payment are left out. Shared with the CSV export. */
+export function itemFilters(query: Pick<z.infer<typeof fulfilmentItemsQuery>, "q" | "status">): { base: SQL[]; where: SQL | undefined } {
+  const base: SQL[] = [ne(orderItems.status, "PENDING")];
+  if (query.q) {
+    const like = `%${query.q}%`;
+    base.push(or(sql`${orderItems.orderId} ilike ${like}`, sql`${orderItems.title} ilike ${like}`, sql`${orderItems.awb} ilike ${like}`)!);
+  }
+  return { base, where: and(...base, ...(query.status.length ? [inArray(orderItems.status, query.status)] : [])) };
+}
+
 /** The store's fulfilment queue: staff accept, pack and hand over every order line. */
 @Injectable()
 export class FulfilmentService {
@@ -24,16 +44,11 @@ export class FulfilmentService {
     @Inject(DB) private readonly db: Db,
     @Inject(OrderWorkflow) private readonly workflow: OrderWorkflow,
     @Inject(ShippingService) private readonly shipping: ShippingService,
+    @Inject(RefundsService) private readonly refunds: RefundsService,
   ) {}
 
   async list(query: z.infer<typeof fulfilmentItemsQuery>) {
-    // lines still waiting for the customer's payment are not ready to fulfil
-    const base: SQL[] = [ne(orderItems.status, "PENDING")];
-    if (query.q) {
-      const like = `%${query.q}%`;
-      base.push(or(sql`${orderItems.orderId} ilike ${like}`, sql`${orderItems.title} ilike ${like}`, sql`${orderItems.awb} ilike ${like}`)!);
-    }
-    const where = and(...base, ...(query.status.length ? [inArray(orderItems.status, query.status)] : []));
+    const { base, where } = itemFilters(query);
 
     const [rows, [total], counts] = await Promise.all([
       this.db
@@ -63,6 +78,9 @@ export class FulfilmentService {
         variant: item.variant,
         qty: item.qty,
         unitPricePaise: item.unitPricePaise,
+        gstRateBp: item.gstRateBp,
+        hsn: item.hsn,
+        taxPaise: item.taxPaise,
         status: item.status,
         paymentMethod: order.paymentMethod,
         shipTo: { name: order.address.name, city: order.address.city, pincode: order.address.pincode },
@@ -89,7 +107,12 @@ export class FulfilmentService {
     const items = order ? await this.db.select().from(orderItems).where(and(eq(orderItems.orderId, orderId), ...(includeUnpaid ? [] : [ne(orderItems.status, "PENDING")]))) : [];
     if (!order || !items.length) throw notFound("Order");
     const ids = items.map((i) => i.id);
-    const events = await this.db.select().from(orderEvents).where(and(eq(orderEvents.orderId, orderId), inArray(orderEvents.orderItemId, ids))).orderBy(asc(orderEvents.id));
+    const [events, refundRows, limit, all] = await Promise.all([
+      this.db.select().from(orderEvents).where(and(eq(orderEvents.orderId, orderId), inArray(orderEvents.orderItemId, ids))).orderBy(asc(orderEvents.id)),
+      this.db.select().from(refunds).where(eq(refunds.orderId, orderId)).orderBy(desc(refunds.createdAt)),
+      this.refunds.limit(this.db, order),
+      includeUnpaid ? items : this.db.select({ status: orderItems.status, awb: orderItems.awb, carrierOrderRef: orderItems.carrierOrderRef, shipmentRef: orderItems.shipmentRef }).from(orderItems).where(eq(orderItems.orderId, orderId)),
+    ]);
     return {
       id: order.id,
       placedAt: order.placedAt.toISOString(),
@@ -97,8 +120,9 @@ export class FulfilmentService {
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       totalPaise: order.totalPaise,
+      gstIncludedPaise: gstIncluded(items),
       shipTo: { name: order.address.name, city: order.address.city, state: order.address.state, pincode: order.address.pincode },
-      address: { ...pick(order.address), line2: order.address.line2 ?? null, landmark: order.address.landmark ?? null },
+      address: { ...pick(order.address), line2: order.address.line2 ?? null, landmark: order.address.landmark ?? null, type: order.address.type ?? "HOME" },
       items: items.map((i) => ({
         id: i.id,
         productId: i.productId,
@@ -107,6 +131,9 @@ export class FulfilmentService {
         variant: i.variant,
         qty: i.qty,
         unitPricePaise: i.unitPricePaise,
+        gstRateBp: i.gstRateBp,
+        hsn: i.hsn,
+        taxPaise: i.taxPaise,
         status: i.status,
         dispatchBy: iso(i.dispatchBy),
         promisedBy: i.promisedBy.toISOString(),
@@ -120,12 +147,16 @@ export class FulfilmentService {
         allowedActions: allowedActions(i.status),
       })),
       events: events.map((e) => ({ orderItemId: e.orderItemId, fromStatus: e.fromStatus, toStatus: e.toStatus, actor: e.actor, note: e.note, at: e.createdAt.toISOString() })),
+      addressEditable: addressEditable(all),
+      refunds: refundRows.map(refundView),
+      refundLimit: { source: !!limit?.online && (order.paymentStatus === "CAPTURED" || order.paymentStatus === "PARTIALLY_REFUNDED"), maxPaise: Math.max(limit?.leftPaise ?? 0, 0) },
     };
   }
 
   /** Bulk transition; each line succeeds or fails on its own and reports why. */
   async transition(userId: string, body: z.infer<typeof transitionBody>) {
-    if (body.to === "CANCELLED" && !body.reason) throw new ApiError(422, "REASON_REQUIRED", "Give a reason when cancelling an order");
+    const ask = NOTE_REQUIRED[body.to];
+    if (ask && !body.reason) throw new ApiError(422, "REASON_REQUIRED", ask);
     const owned = await this.db.select({ id: orderItems.id, orderId: orderItems.orderId }).from(orderItems).where(inArray(orderItems.id, body.ids));
     const byId = new Map(owned.map((o) => [o.id, o.orderId]));
 

@@ -1,7 +1,17 @@
 import { Mail } from "lucide-react";
+import { Placeholder } from "@/components/store/placeholder";
+import { companyEmail, PLACEHOLDER_TEXT } from "@/lib/legal";
 
 /** Applications go by email to the store's contact address; nothing is collected on the site. */
-export function ApplyForm({ roleTitle, email }: { roleTitle: string; email: string }) {
+export function ApplyForm({ roleTitle, email: raw }: { roleTitle: string; email: string }) {
+  const email = companyEmail({ email: raw });
+  if (!email)
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm leading-relaxed text-ink-600">The email address for applications is not set up yet.</p>
+        <Placeholder>{PLACEHOLDER_TEXT}</Placeholder>
+      </div>
+    );
   const href = `mailto:${email}?subject=${encodeURIComponent(`Application: ${roleTitle}`)}`;
   return (
     <div className="flex flex-col gap-3">

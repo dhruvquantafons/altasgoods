@@ -6,6 +6,8 @@ import { CircleCheck, LogIn, PhoneCall } from "lucide-react";
 import { startConversation } from "@/app/actions/support";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
+import { Placeholder } from "@/components/store/placeholder";
+import { PLACEHOLDER_TEXT } from "@/lib/legal";
 
 const SLOTS = ["In the next 15 minutes", "Within the next 2 hours", "This evening, 6 pm to 10 pm", "Tomorrow morning, 8 am to 12 pm", "Tomorrow afternoon, 12 pm to 4 pm"];
 const TOPICS = ["An order", "A return or refund", "A payment", "Your account", "Something else"];
@@ -13,7 +15,10 @@ const CATEGORY: Record<string, "Delivery" | "Return and refund" | "Payment" | "A
 
 const pretty = (digits: string) => `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
 
-/** Call-back request: a phone number and a time that suits the customer, raised as a phone ticket for the Care Desk. */
+/**
+ * Call-back request: a phone number and a time that suits the customer, raised as a phone ticket for the Care Desk.
+ * `careNumber` is empty while the store's customer care number is a placeholder: then no request is taken.
+ */
 export function CallbackRequest({ careNumber, defaultPhone = "", signedIn }: { careNumber: string; defaultPhone?: string; signedIn: boolean }) {
   const id = useId();
   const [phone, setPhone] = useState(defaultPhone);
@@ -22,6 +27,17 @@ export function CallbackRequest({ careNumber, defaultPhone = "", signedIn }: { c
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [booked, setBooked] = useState<{ phone: string; slot: string; topic: string; ticket: string } | null>(null);
+
+  // nobody can call back before the store has a number to call from
+  if (!careNumber)
+    return (
+      <div className="flex flex-col gap-2 text-sm text-ink-600">
+        <p>Call backs start once the store adds its customer care number. Until then, chat with us or write to us.</p>
+        <p>
+          <Placeholder>{PLACEHOLDER_TEXT}</Placeholder>
+        </p>
+      </div>
+    );
 
   // requests are tickets on the customer's account, so the Care Desk knows who to call
   if (!signedIn)

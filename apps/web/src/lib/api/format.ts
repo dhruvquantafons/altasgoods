@@ -11,6 +11,17 @@ export const paiseExact = (p: number) => formatINR(p / 100, { paise: p % 100 !==
 export const toPaise = (rupees: number) => Math.round(rupees * 100);
 
 /**
+ * A positive rupee amount typed by staff ("1,299", "₹12.50") as exact paise,
+ * read digit by digit so no float rounding creeps in. Null when it is not one.
+ */
+export function rupeeInputToPaise(input: string): number | null {
+  const m = /^(\d+)(?:\.(\d{1,2}))?$/.exec(input.trim().replace(/^₹\s*/, "").replace(/,/g, ""));
+  if (!m) return null;
+  const value = Number(m[1]) * 100 + Number((m[2] ?? "").padEnd(2, "0"));
+  return value > 0 && Number.isSafeInteger(value) ? value : null;
+}
+
+/**
  * Canonical API item statuses (spec section 11) to the UI status keys used by
  * StatusBadge and ORDER_STATUS in lib/status.ts.
  */

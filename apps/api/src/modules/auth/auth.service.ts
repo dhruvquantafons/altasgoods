@@ -2,14 +2,17 @@ import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { and, eq, ne, sql } from "drizzle-orm";
 import type { Redis } from "ioredis";
-import { env, isProduction } from "../../config/env.js";
-import type { Db } from "../../db/client.js";
+import { devToolsEnabled, env } from "../../config/env.js";
+import type { Db, Tx } from "../../db/client.js";
 import { users } from "../../db/schema.js";
-import { ApiError, conflict, notFound } from "../../common/errors.js";
+import { ApiError, conflict, forbidden, notFound, RateLimitError } from "../../common/errors.js";
 import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB, EMAIL_PROVIDER, REDIS } from "../../common/tokens.js";
 import type { EmailProvider } from "./email.provider.js";
 import { emailVerificationEmail, passwordChangedEmail, passwordResetEmail } from "./emails.js";
+import { clientKey } from "./client-ip.js";
+import { AccountDeletionService } from "./account-deletion.service.js";
+import { InvitesService } from "./invites.service.js";
 import { decoyHash, hashPassword, verifyPassword } from "./password.js";
 import { TokensService, type Grants } from "./tokens.service.js";
 
@@ -17,8 +20,52 @@ const CODE_TTL_SECONDS = 10 * 60;
 const CODE_MAX_ATTEMPTS = 5;
 const CODE_REQUESTS_PER_WINDOW = 5;
 const WINDOW_SECONDS = 15 * 60;
+const HOUR_SECONDS = 3600;
 const RESEND_AFTER_SECONDS = 30;
-const LOGIN_FAILURES_PER_WINDOW = 10;
+const PASSWORD_CHANGE_FAILURES_PER_WINDOW = 10;
+
+/**
+ * Wrong passwords are counted three ways, all checked before the password is:
+ * - per email and client address (10 per 15 minutes): the lock a guesser hits,
+ *   which leaves the owner, signing in from anywhere else, alone;
+ * - per client address across emails (30 per 15 minutes): one address trying
+ *   many accounts;
+ * - per email from every address (100 per hour): a safety valve against a guess
+ *   spread over many addresses. It is far above what an owner mistyping ever
+ *   reaches, so casual abuse cannot lock them out, yet it keeps a distributed
+ *   attack on one account to a crawl.
+ * Unknown emails count the same as real ones, so the answers never reveal
+ * which emails have accounts. A correct password clears only its own email and
+ * address pair.
+ */
+const loginLimits = (email: string, ip: string) => [
+  { key: `login:fail:${email}:${ip}`, max: 10, window: WINDOW_SECONDS },
+  { key: `login:fail-ip:${ip}`, max: 30, window: WINDOW_SECONDS },
+  { key: `login:fail:${email}`, max: 100, window: HOUR_SECONDS },
+];
+const SIGNUPS_PER_HOUR_PER_IP = 10;
+const CODE_REQUESTS_PER_HOUR_PER_IP = 20;
+
+/** INCR, then EXPIRE whenever the key has none (new, or left without one by a crash): atomic in Redis. */
+const COUNT_SCRIPT = `
+local count = redis.call("INCR", KEYS[1])
+if redis.call("TTL", KEYS[1]) < 0 then redis.call("EXPIRE", KEYS[1], ARGV[1]) end
+return count`;
+
+/** GET for each key (KEYS[i], window ARGV[i]); a key that exists without an expiry gets its window. */
+const PEEK_SCRIPT = `
+local out = {}
+for i, key in ipairs(KEYS) do
+  local v = redis.call("GET", key)
+  if v and redis.call("TTL", key) == -1 then redis.call("EXPIRE", key, ARGV[i]) end
+  out[i] = v or false
+end
+return out`;
+
+const waitMessage = (seconds: number) => {
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+};
 
 const hashCode = (challengeId: string, code: string) => createHash("sha256").update(`${challengeId}:${code}:${env().JWT_SECRET}`).digest("hex");
 const newCode = () => String(randomInt(0, 1_000_000)).padStart(6, "0");
@@ -41,13 +88,40 @@ export class AuthService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(EMAIL_PROVIDER) private readonly email: EmailProvider,
     @Inject(TokensService) private readonly tokens: TokensService,
+    @Inject(InvitesService) private readonly invites: InvitesService,
+    @Inject(AccountDeletionService) private readonly deletion: AccountDeletionService,
   ) {}
 
-  /** Counts a request against a 15 minute window and refuses once it is over the limit. */
-  private async limit(key: string, max: number, message: string, code = "RATE_LIMITED") {
-    const count = await this.redis.incr(key);
-    if (count === 1) await this.redis.expire(key, WINDOW_SECONDS);
-    if (count > max) throw new ApiError(429, code, message);
+  /** Counts a request against a window (15 minutes unless given) and refuses once it is over the limit. */
+  private async limit(key: string, max: number, message: string, code = "RATE_LIMITED", window = WINDOW_SECONDS) {
+    const count = await this.count(key, window);
+    if (count > max) throw new RateLimitError(code, message, await this.secondsLeft(key, window));
+  }
+
+  /** Adds one and makes sure the key expires, in one step, so a crash in between cannot leave a lock that never lifts. */
+  private async count(key: string, window: number) {
+    return Number(await this.redis.eval(COUNT_SCRIPT, 1, key, window));
+  }
+
+  private async secondsLeft(key: string, window: number) {
+    const ttl = await this.redis.ttl(key);
+    return ttl > 0 ? ttl : window;
+  }
+
+  /** Reads limit counts, giving any key found without an expiry its window again (self healing). */
+  private async peek(limits: { key: string; window: number }[]) {
+    const counts = (await this.redis.eval(PEEK_SCRIPT, limits.length, ...limits.map((l) => l.key), ...limits.map((l) => l.window))) as (string | null)[];
+    return counts.map(Number);
+  }
+
+  /** Refuses a sign in attempt while any of its failure counts is at its limit. */
+  private async assertLoginAllowed(limits: ReturnType<typeof loginLimits>) {
+    const counts = await this.peek(limits);
+    let wait = 0;
+    for (const [i, l] of limits.entries()) {
+      if (Number(counts[i]) >= l.max) wait = Math.max(wait, await this.secondsLeft(l.key, l.window));
+    }
+    if (wait) throw new RateLimitError("LOGIN_RATE_LIMITED", `Too many attempts. Please wait ${waitMessage(wait)}, or reset your password.`, wait);
   }
 
   private async session(userId: string, meta: Meta, isNewUser: boolean) {
@@ -57,6 +131,7 @@ export class AuthService {
 
   /** Creates a shopper account. Staff accounts are made with the admin:create script. */
   async signup(input: { name: string; email: string; password: string }, meta: Meta) {
+    await this.limit(`signup:ip:${clientKey(meta.ip)}`, SIGNUPS_PER_HOUR_PER_IP, "Too many accounts made from this network. Please try again later.", "SIGNUP_RATE_LIMITED", HOUR_SECONDS);
     const email = normalizeEmail(input.email);
     const taken = () => conflict("EMAIL_TAKEN", "An account with this email already exists. Sign in, or reset your password.");
     const [existing] = await this.db.select({ id: users.id }).from(users).where(sameEmail(email));
@@ -74,20 +149,19 @@ export class AuthService {
 
   async login(input: { email: string; password: string }, meta: Meta) {
     const email = normalizeEmail(input.email);
-    const failures = `login:fail:${email}`;
-    if (Number(await this.redis.get(failures)) >= LOGIN_FAILURES_PER_WINDOW) {
-      throw new ApiError(429, "LOGIN_RATE_LIMITED", "Too many attempts. Please wait 15 minutes, or reset your password.");
-    }
+    const limits = loginLimits(email, clientKey(meta.ip));
+    await this.assertLoginAllowed(limits);
     const [user] = await this.db.select().from(users).where(sameEmail(email));
     // an unknown email costs a full hash too, so timing does not reveal which emails have accounts
     const ok = await verifyPassword(input.password, user?.passwordHash ?? (await decoyHash()));
-    if (!user || !user.passwordHash || !ok) {
-      const count = await this.redis.incr(failures);
-      if (count === 1) await this.redis.expire(failures, WINDOW_SECONDS);
+    // a deleted account answers like a wrong password, so nothing says an account once existed
+    if (!user || user.status === "DELETED" || !user.passwordHash || !ok) {
+      for (const l of limits) await this.count(l.key, l.window);
       throw new ApiError(401, "INVALID_CREDENTIALS", "That email and password do not match. Try again, or reset your password.");
     }
     if (user.status === "BLOCKED") throw new ApiError(403, "ACCOUNT_BLOCKED", "This account is blocked. Contact AltasGoods support.");
-    await this.redis.del(failures);
+    // only this email and address: a lock another address earned stays
+    await this.redis.del(limits[0]!.key);
     return this.session(user.id, meta, false);
   }
 
@@ -95,8 +169,9 @@ export class AuthService {
    * Emails a code to reset the password. Answers the same whether or not the
    * email has an account, so the form cannot be used to find out who shops here.
    */
-  async requestPasswordReset(rawEmail: string) {
+  async requestPasswordReset(rawEmail: string, meta: Meta) {
     const email = normalizeEmail(rawEmail);
+    await this.limit(`pwreset:req-ip:${clientKey(meta.ip)}`, CODE_REQUESTS_PER_HOUR_PER_IP, "Too many codes requested from this network. Please try again later.", "OTP_RATE_LIMITED", HOUR_SECONDS);
     await this.limit(`pwreset:req:${email}`, CODE_REQUESTS_PER_WINDOW, "Too many codes requested. Please try again in 15 minutes.", "OTP_RATE_LIMITED");
     const response = {
       email: maskEmail(email),
@@ -104,19 +179,19 @@ export class AuthService {
       resendAfterSeconds: RESEND_AFTER_SECONDS,
     };
     const [user] = await this.db.select({ id: users.id, status: users.status }).from(users).where(sameEmail(email));
-    if (!user || user.status === "BLOCKED") return response;
+    if (!user || user.status !== "ACTIVE") return response;
 
     const code = newCode();
     await this.redis.set(`pwreset:${user.id}`, JSON.stringify({ hash: hashCode(`reset:${user.id}`, code), attempts: 0 }), "EX", CODE_TTL_SECONDS);
     await this.email.send(passwordResetEmail(email, code, CODE_TTL_SECONDS / 60));
-    return { ...response, ...(isProduction() ? {} : { devCode: code }) };
+    return { ...response, ...(devToolsEnabled() ? { devCode: code } : {}) };
   }
 
   /** Checks the emailed code, sets the new password, signs out every other device and signs this one in. */
   async resetPassword(input: { email: string; code: string; password: string }, meta: Meta) {
     const expired = () => new ApiError(400, "OTP_EXPIRED", "This code has expired. Request a new one.");
     const [user] = await this.db.select({ id: users.id, email: users.email, status: users.status }).from(users).where(sameEmail(input.email));
-    if (!user) throw expired();
+    if (!user || user.status === "DELETED") throw expired();
     const key = `pwreset:${user.id}`;
     const raw = await this.redis.get(key);
     if (!raw) throw expired();
@@ -130,16 +205,21 @@ export class AuthService {
       throw new ApiError(400, "OTP_INCORRECT", left > 0 ? `That code is not right. ${left} attempts left.` : "Too many wrong attempts. Request a new code.");
     }
     if (user.status === "BLOCKED") throw new ApiError(403, "ACCOUNT_BLOCKED", "This account is blocked. Contact AltasGoods support.");
-    await this.redis.del(key, `login:fail:${normalizeEmail(user.email)}`);
+    // lift the sign in lock on this address, and the per email valve
+    const [here, , everywhere] = loginLimits(normalizeEmail(user.email), clientKey(meta.ip));
+    await this.redis.del(key, here!.key, everywhere!.key);
     // the code proves the address is theirs
-    await this.db.update(users).set({ passwordHash: await hashPassword(input.password), emailVerifiedAt: this.clock.now() }).where(eq(users.id, user.id));
+    await this.db
+      .update(users)
+      .set({ passwordHash: await hashPassword(input.password), emailVerifiedAt: this.clock.now(), mustChangePassword: false })
+      .where(eq(users.id, user.id));
     await this.tokens.revokeAll(user.id);
     await this.email.send(passwordChangedEmail(user.email)).catch((e: Error) => this.logger.warn(`Password changed notice not sent: ${e.message}`));
     return this.session(user.id, meta, false);
   }
 
   async refresh(refreshToken: string, meta: { userAgent?: string; ip?: string }) {
-    const { userId: _userId, ...pair } = await this.tokens.rotate(refreshToken, (id) => this.grants(id), meta);
+    const { userId: _userId, ...pair } = await this.tokens.rotate(refreshToken, (id, db) => this.grants(id, db), meta);
     return pair;
   }
 
@@ -147,15 +227,42 @@ export class AuthService {
     return this.tokens.revoke(refreshToken);
   }
 
-  /** Staff roles, as carried in the access token. */
-  async grants(userId: string): Promise<Grants> {
-    const [user] = await this.db.select({ staff: users.staffRoles }).from(users).where(eq(users.id, userId));
-    return { staff: user?.staff ?? [] };
+  /**
+   * Staff roles and the "password change required" flag, as carried in the
+   * access token. A blocked account gets no new token, so a refresh fails.
+   */
+  async grants(userId: string, db: Tx = this.db): Promise<Grants> {
+    const [user] = await db.select({ staff: users.staffRoles, status: users.status, pwc: users.mustChangePassword }).from(users).where(eq(users.id, userId));
+    if (!user || user.status !== "ACTIVE") throw new ApiError(401, "REFRESH_INVALID", "Please sign in again.");
+    return { staff: user.staff, pwc: user.pwc };
+  }
+
+  /**
+   * Accepts a staff invite: sets the chosen password and signs in. The link
+   * came to their inbox, so it also confirms the email address.
+   */
+  async acceptInvite(input: { token: string; password: string }, meta: Meta) {
+    const invalid = () => new ApiError(400, "INVITE_INVALID", "This invite link has expired or was already used. Ask a Super Admin to send a new one.");
+    const userId = await this.invites.consume(input.token);
+    if (!userId) throw invalid();
+    const [user] = await this.db.select({ id: users.id, email: users.email, status: users.status, staff: users.staffRoles }).from(users).where(eq(users.id, userId));
+    // removed or disabled since the invite went out
+    if (!user || user.status !== "ACTIVE" || !user.staff.length) throw invalid();
+    await this.db
+      .update(users)
+      .set({ passwordHash: await hashPassword(input.password), mustChangePassword: false, emailVerifiedAt: this.clock.now() })
+      .where(eq(users.id, user.id));
+    // any session from before (a shopper made staff, say) ends with the new password
+    await this.tokens.revokeAll(user.id);
+    const [here, , everywhere] = loginLimits(normalizeEmail(user.email), clientKey(meta.ip));
+    await this.redis.del(here!.key, everywhere!.key);
+    return this.session(user.id, meta, false);
   }
 
   async me(userId: string) {
     const [user] = await this.db.select().from(users).where(eq(users.id, userId));
     if (!user) throw notFound("User");
+    if (user.status === "DELETED") throw new ApiError(401, "UNAUTHENTICATED", "Please sign in to continue.");
     return {
       id: user.id,
       email: user.email,
@@ -163,6 +270,7 @@ export class AuthService {
       phone: user.phone,
       emailVerified: !!user.emailVerifiedAt,
       staffRoles: user.staffRoles,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt.toISOString(),
     };
   }
@@ -171,18 +279,43 @@ export class AuthService {
   async changePassword(userId: string, sessionId: string, input: { currentPassword: string; newPassword: string }) {
     const [user] = await this.db.select({ email: users.email, passwordHash: users.passwordHash }).from(users).where(eq(users.id, userId));
     if (!user) throw notFound("User");
-    const failures = `login:fail:${normalizeEmail(user.email)}`;
-    if (Number(await this.redis.get(failures)) >= LOGIN_FAILURES_PER_WINDOW) {
-      throw new ApiError(429, "LOGIN_RATE_LIMITED", "Too many attempts. Please wait 15 minutes, or reset your password.");
-    }
-    if (!user.passwordHash || !(await verifyPassword(input.currentPassword, user.passwordHash))) {
-      const count = await this.redis.incr(failures);
-      if (count === 1) await this.redis.expire(failures, WINDOW_SECONDS);
+    if (!(await this.passwordMatches(userId, user.passwordHash, input.currentPassword))) {
       throw new ApiError(400, "PASSWORD_INCORRECT", "Your current password is not right. If you have forgotten it, sign out and use Forgot password.");
     }
-    await this.db.update(users).set({ passwordHash: await hashPassword(input.newPassword) }).where(eq(users.id, userId));
+    // a password of their own replaces a temporary one
+    await this.db.update(users).set({ passwordHash: await hashPassword(input.newPassword), mustChangePassword: false }).where(eq(users.id, userId));
     await this.tokens.revokeOthers(userId, sessionId);
     await this.email.send(passwordChangedEmail(user.email)).catch((e: Error) => this.logger.warn(`Password changed notice not sent: ${e.message}`));
+  }
+
+  /**
+   * Checks a signed-in user's password. Wrong guesses are counted per account
+   * (shared by password change and account deletion), so a stolen session
+   * cannot guess quickly; at the limit the check is refused outright.
+   */
+  private async passwordMatches(userId: string, hash: string | null, password: string) {
+    const failures = `pwchange:fail:${userId}`;
+    const [failed] = await this.peek([{ key: failures, window: WINDOW_SECONDS }]);
+    if (failed! >= PASSWORD_CHANGE_FAILURES_PER_WINDOW) {
+      const wait = await this.secondsLeft(failures, WINDOW_SECONDS);
+      throw new RateLimitError("LOGIN_RATE_LIMITED", `Too many attempts. Please wait ${waitMessage(wait)}, or reset your password.`, wait);
+    }
+    if (hash && (await verifyPassword(password, hash))) return true;
+    await this.count(failures, WINDOW_SECONDS);
+    return false;
+  }
+
+  /**
+   * Deletes (anonymises) a shopper's own account. It takes the password
+   * again, so a borrowed session cannot do it. Staff accounts are removed by
+   * a Super Admin in Staff, never from here.
+   */
+  async deleteAccount(userId: string, password: string) {
+    const [user] = await this.db.select({ passwordHash: users.passwordHash, staff: users.staffRoles }).from(users).where(eq(users.id, userId));
+    if (!user) throw notFound("User");
+    if (user.staff.length) throw conflict("STAFF_ACCOUNT", "Ask a Super Admin to remove your staff access first.");
+    if (!(await this.passwordMatches(userId, user.passwordHash, password))) throw forbidden("That password is not right.", "PASSWORD_INCORRECT");
+    await this.deletion.delete(userId);
   }
 
   signOutOthers(userId: string, sessionId: string) {
@@ -209,7 +342,7 @@ export class AuthService {
       email: maskEmail(email),
       expiresAt: new Date(this.clock.now().getTime() + CODE_TTL_SECONDS * 1000).toISOString(),
       resendAfterSeconds: RESEND_AFTER_SECONDS,
-      ...(isProduction() ? {} : { devCode: code }),
+      ...(devToolsEnabled() ? { devCode: code } : {}),
     };
   }
 

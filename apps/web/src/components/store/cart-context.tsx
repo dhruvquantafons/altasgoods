@@ -111,7 +111,7 @@ const wishlistStore = createPersistedStore<string[]>("altasgoods.wishlist.v1", [
 const signedInFlag = createPersistedStore<boolean>("altasgoods.signed-in.v1", false, (raw) => (typeof raw === "boolean" ? raw : null));
 
 const pincodeStore = createPersistedStore<string>("altasgoods.pincode.v1", DEFAULT_PINCODE, (raw) =>
-  typeof raw === "string" && /^[1-8]\d{5}$/.test(raw) ? raw : null,
+  typeof raw === "string" && /^[1-9]\d{5}$/.test(raw) ? raw : null,
 );
 
 export const MAX_QTY = 10;
@@ -163,17 +163,21 @@ export function CartProvider({ children, signedIn = false }: { children: ReactNo
   useEffect(() => {
     if (!signedIn || merging.current) return;
     merging.current = true;
-    loadServerCart().then((r) => {
-      if (r.ok) cartStore.write({ ...cartStore.read(), lines: mergeLines(cartStore.read().lines, r.data) });
-      setMerged(true);
-    });
+    loadServerCart()
+      .then((r) => {
+        if (r.ok) cartStore.write({ ...cartStore.read(), lines: mergeLines(cartStore.read().lines, r.data) });
+        setMerged(true);
+      })
+      // the page moved on (signed out, account deleted) before the answer came: nothing to merge
+      .catch(() => undefined);
   }, [signedIn]);
 
   // Then mirror every change to the account, so the app and other devices see it.
   useEffect(() => {
     if (!signedIn || !merged) return;
     const t = setTimeout(() => {
-      syncCart(state.lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant, saved: l.saved })));
+      // best effort: a sync that fires as the shopper signs out (or deletes the account) has nowhere to go
+      syncCart(state.lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant, saved: l.saved }))).catch(() => undefined);
     }, 600);
     return () => clearTimeout(t);
   }, [state.lines, signedIn, merged]);
@@ -185,14 +189,16 @@ export function CartProvider({ children, signedIn = false }: { children: ReactNo
   useEffect(() => {
     if (!signedIn || wishMerging.current) return;
     wishMerging.current = true;
-    loadServerWishlist().then((r) => {
-      if (r.ok) wishlistStore.write([...new Set([...wishlistStore.read(), ...r.data])]);
-      setWishMerged(true);
-    });
+    loadServerWishlist()
+      .then((r) => {
+        if (r.ok) wishlistStore.write([...new Set([...wishlistStore.read(), ...r.data])]);
+        setWishMerged(true);
+      })
+      .catch(() => undefined);
   }, [signedIn]);
   useEffect(() => {
     if (!signedIn || !wishMerged) return;
-    const t = setTimeout(() => syncWishlist(wishlist), 400);
+    const t = setTimeout(() => syncWishlist(wishlist).catch(() => undefined), 400);
     return () => clearTimeout(t);
   }, [wishlist, signedIn, wishMerged]);
 

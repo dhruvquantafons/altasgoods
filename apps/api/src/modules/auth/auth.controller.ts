@@ -1,11 +1,13 @@
-import { Body, Controller, Get, HttpCode, Inject, Patch, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Inject, Patch, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { z } from "zod";
 import { AuthService } from "./auth.service.js";
 import { CurrentUser, Public, type AuthUser } from "./auth.guard.js";
 import {
+  acceptInviteBody,
   changePasswordBody,
+  deleteAccountBody,
   emailOtpBody,
   emailOtpResponse,
   emailVerifyBody,
@@ -21,6 +23,7 @@ import {
   userSchema,
 } from "./auth.schemas.js";
 
+/** req.ip is the client as named by trusted proxies (TRUST_PROXY), the web server among them. */
 const meta = (req: Request) => ({ userAgent: req.headers["user-agent"], ip: req.ip });
 
 @ApiTags("Auth")
@@ -48,8 +51,8 @@ export class AuthController {
   @Post("auth/password/forgot")
   @HttpCode(200)
   @ApiResponse({ status: 200, standardSchema: forgotPasswordResponse })
-  forgotPassword(@Body({ schema: forgotPasswordBody }) body: z.infer<typeof forgotPasswordBody>) {
-    return this.auth.requestPasswordReset(body.email);
+  forgotPassword(@Body({ schema: forgotPasswordBody }) body: z.infer<typeof forgotPasswordBody>, @Req() req: Request) {
+    return this.auth.requestPasswordReset(body.email, meta(req));
   }
 
   @Public()
@@ -58,6 +61,15 @@ export class AuthController {
   @ApiResponse({ status: 200, standardSchema: sessionResponse })
   resetPassword(@Body({ schema: resetPasswordBody }) body: z.infer<typeof resetPasswordBody>, @Req() req: Request) {
     return this.auth.resetPassword(body, meta(req));
+  }
+
+  /** Sets the password of a newly invited staff member and signs them in. */
+  @Public()
+  @Post("auth/invite/accept")
+  @HttpCode(200)
+  @ApiResponse({ status: 200, standardSchema: sessionResponse })
+  acceptInvite(@Body({ schema: acceptInviteBody }) body: z.infer<typeof acceptInviteBody>, @Req() req: Request) {
+    return this.auth.acceptInvite(body, meta(req));
   }
 
   @Public()
@@ -94,6 +106,14 @@ export class AuthController {
   @HttpCode(204)
   async changePassword(@CurrentUser() user: AuthUser, @Body({ schema: changePasswordBody }) body: z.infer<typeof changePasswordBody>) {
     await this.auth.changePassword(user.id, user.sessionId, body);
+  }
+
+  /** Anonymises the signed-in shopper's account (see AccountDeletionService). Needs the password again. */
+  @ApiBearerAuth()
+  @Delete("me")
+  @HttpCode(204)
+  async deleteAccount(@CurrentUser() user: AuthUser, @Body({ schema: deleteAccountBody }) body: z.infer<typeof deleteAccountBody>) {
+    await this.auth.deleteAccount(user.id, body.password);
   }
 
   @ApiBearerAuth()

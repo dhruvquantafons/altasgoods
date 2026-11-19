@@ -22,6 +22,7 @@ export class AdminCatalogController {
     @Inject(ProductImportService) private readonly importer: ProductImportService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("products")
   @ApiResponse({ status: 200, standardSchema: s.adminProductList })
   products(@Query({ schema: s.adminProductQuery }) q: z.infer<typeof s.adminProductQuery>) {
@@ -51,6 +52,7 @@ export class AdminCatalogController {
     return result;
   }
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("products/:id")
   @ApiResponse({ status: 200, standardSchema: s.adminProduct })
   product(@Param("id", idParam) id: string) {
@@ -75,6 +77,33 @@ export class AdminCatalogController {
     return after;
   }
 
+  /** Takes the product off the storefront and pauses its offer. Orders and reviews are kept. */
+  @Post("products/:id/archive")
+  @ApiResponse({ status: 201, standardSchema: s.adminProduct })
+  async archiveProduct(@CurrentUser() u: AuthUser, @Param("id", idParam) id: string) {
+    const p = await this.svc.archiveProduct(id);
+    await this.audit.log(u, "product.archive", { type: "product", id }, `Archived product ${p.title}`);
+    return p;
+  }
+
+  /** Brings an archived product back switched off. */
+  @Post("products/:id/restore")
+  @ApiResponse({ status: 201, standardSchema: s.adminProduct })
+  async restoreProduct(@CurrentUser() u: AuthUser, @Param("id", idParam) id: string) {
+    const p = await this.svc.restoreProduct(id);
+    await this.audit.log(u, "product.restore", { type: "product", id }, `Restored product ${p.title}`);
+    return p;
+  }
+
+  /** Permanently deletes a product that was never ordered; 409 PRODUCT_HAS_ORDERS otherwise (archive it instead). */
+  @Delete("products/:id")
+  @HttpCode(204)
+  async deleteProduct(@CurrentUser() u: AuthUser, @Param("id", idParam) id: string) {
+    const gone = await this.svc.deleteProduct(id);
+    await this.audit.log(u, "product.delete", { type: "product", id }, `Deleted product ${gone.title} (/p/${gone.slug})`);
+  }
+
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("categories")
   @ApiResponse({ status: 200, standardSchema: z.array(s.adminCategory) })
   categories() {
@@ -107,6 +136,7 @@ export class AdminCatalogController {
     await this.audit.log(u, "category.delete", { type: "category", id }, `Deleted category ${before?.name ?? id}`);
   }
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get("brands")
   @ApiResponse({ status: 200, standardSchema: z.array(s.adminBrand) })
   brands() {

@@ -1,15 +1,16 @@
 import { CategoryManager } from "@/components/admin/catalog/category-manager";
 import { PageHeader } from "@/components/ui/page-header";
 import { loadAdminCategories } from "@/lib/api/admin-catalog";
+import { canEditArea } from "@/lib/api/server";
 
 export const metadata = { title: "Categories" };
 
 export default async function CategoriesPage() {
-  const categories = await loadAdminCategories();
+  const [categories, edit] = await Promise.all([loadAdminCategories(), canEditArea("categories")]);
   return (
     <>
       <PageHeader title="Categories" description="How the store is organised: the menu, category pages and search filters. Each product sits in one category and one of its subcategories." />
-      <CategoryManager categories={categories} />
+      <CategoryManager categories={categories} canEdit={edit} />
     </>
   );
 }

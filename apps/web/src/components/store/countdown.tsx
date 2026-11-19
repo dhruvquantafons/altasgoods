@@ -1,53 +1,13 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatCountdown, formatHoursMinutes, formatPromise, formatTime, msToCutoff, NOW_MS, pad, splitDuration } from "./delivery";
+import { useNow } from "@/components/now-provider";
+import { formatCountdown, formatHoursMinutes, formatPromise, formatTime, msToCutoff, pad, splitDuration } from "./delivery";
 
-/* ---------------------------------------------------------------------------
- * One shared ticking clock for every timer on the page. All mock data (deal
- * end times, cutoffs, promise dates) is anchored to the fixed mock NOW, so the
- * clock starts at NOW on the server and during hydration (markup matches) and
- * then runs forward in real seconds. With a live API this returns server time,
- * and end times come from the server, so a reload never extends a deal.
- * ------------------------------------------------------------------------- */
-
-let current = NOW_MS;
-let timer: ReturnType<typeof setInterval> | undefined;
-const subs = new Set<() => void>();
-let loadedAt = 0;
-
-function realNow() {
-  if (!loadedAt) loadedAt = Date.now();
-  return NOW_MS + (Date.now() - loadedAt);
-}
-
-function subscribe(cb: () => void) {
-  subs.add(cb);
-  if (!timer) {
-    const tick = () => {
-      current = realNow();
-      subs.forEach((f) => f());
-    };
-    tick();
-    timer = setInterval(tick, 1000);
-  }
-  return () => {
-    subs.delete(cb);
-    if (!subs.size && timer) {
-      clearInterval(timer);
-      timer = undefined;
-    }
-  };
-}
-
+/** One-second clock for timers. Starts at the server request time, then follows the real clock after mount. */
 export function useClock() {
-  return useSyncExternalStore(
-    subscribe,
-    () => current,
-    () => NOW_MS,
-  );
+  return useNow(1000);
 }
 
 /* ------------------------------- Widgets -------------------------------- */

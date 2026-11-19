@@ -18,7 +18,7 @@ import {
 } from "@/lib/status";
 import { getProduct } from "@/lib/mock";
 import { returnForItem, returnPolicyFor, SECURE_DELIVERY, type AccountReturn, type ReturnPolicy } from "@/lib/mock/account-extra";
-import { formatINR, NOW } from "@/lib/utils";
+import { formatINR } from "@/lib/utils";
 
 /* ------------------------------ Dates (IST) ----------------------------- */
 
@@ -40,15 +40,15 @@ export const timeLabel = (d: string | Date) => fmtTime.format(new Date(d));
 /** "26 Sept, 3:30 pm" */
 export const dateTimeLabel = (d: string | Date) => `${shortDate(d)}, ${timeLabel(d)}`;
 
-const dayKey = (d: string | Date) => fmtKey.format(new Date(d));
+const dayKey = (d: string | Date | number) => fmtKey.format(new Date(d));
 const DAY = 86400_000;
 
-/** "today", "tomorrow" or "Sat, 26 Sept" relative to NOW. */
-export function relativeDay(d: string | Date) {
+/** "today", "tomorrow" or "Sat, 26 Sept" relative to `now` (epoch ms, defaults to the real clock). */
+export function relativeDay(d: string | Date, now: number = Date.now()) {
   const key = dayKey(d);
-  if (key === dayKey(NOW)) return "today";
-  if (key === dayKey(new Date(NOW.getTime() + DAY))) return "tomorrow";
-  if (key === dayKey(new Date(NOW.getTime() - DAY))) return "yesterday";
+  if (key === dayKey(now)) return "today";
+  if (key === dayKey(new Date(now + DAY))) return "tomorrow";
+  if (key === dayKey(new Date(now - DAY))) return "yesterday";
   return dayLabel(d);
 }
 
@@ -56,8 +56,8 @@ export function daysBetween(a: string | Date, b: string | Date) {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / DAY);
 }
 
-export function greeting() {
-  const h = Number(new Intl.DateTimeFormat("en-IN", { hour: "numeric", hourCycle: "h23", timeZone: TZ }).format(NOW));
+export function greeting(now: number = Date.now()) {
+  const h = Number(new Intl.DateTimeFormat("en-IN", { hour: "numeric", hourCycle: "h23", timeZone: TZ }).format(now));
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 }
 
@@ -131,11 +131,11 @@ export interface ItemState {
   ret?: AccountReturn;
 }
 
-function arrivalHeadline(order: Order) {
+export function arrivalHeadline(order: Order, now: number = Date.now()) {
   const promised = new Date(order.promisedBy);
   if (order.status === "out_for_delivery") return `Arriving today by ${timeLabel(promised)}`;
-  if (promised.getTime() < NOW.getTime()) return `Running late, now arriving ${relativeDay(new Date(NOW.getTime() + DAY))}`;
-  const rel = relativeDay(promised);
+  if (promised.getTime() < now) return `Running late, now arriving ${relativeDay(new Date(now + DAY), now)}`;
+  const rel = relativeDay(promised, now);
   return rel === "today" || rel === "tomorrow" ? `Arriving ${rel}` : `Arriving by ${rel}`;
 }
 
@@ -254,8 +254,7 @@ export interface ReturnInfo {
 export function returnInfo(order: Order, item: OrderItem): ReturnInfo {
   const policy = returnPolicyFor(getProduct(item.productId));
   const existing = returnOf(order, item);
-  // live orders are judged against the real clock, sample orders against the demo clock
-  const now = order.returns ? Date.now() : NOW.getTime();
+  const now = Date.now();
   if (existing && existing.status !== "cancelled") return { eligible: false, policy, reason: "A return is already open for this item" };
   if (item.status !== "delivered") return { eligible: false, policy, reason: "Returns open once the item is delivered" };
   const d = deliveredAt(order);
@@ -284,7 +283,7 @@ export function paymentLabel(method: PaymentMethod) {
     case "netbanking":
       return "Net banking";
     case "wallet":
-      return "AltasGoods Credits";
+      return "Wallet balance";
     case "paylater":
       return "Pay Later";
     case "giftcard":
@@ -308,6 +307,11 @@ export function refundTiming(method: PaymentMethod) {
   }
 }
 
+/** Where a cancelled order's money can go: back to the payment it came from. AltasGoods Credits are not offered. */
+export function refundOptionsFor(order: Order): { key: "original"; label: string; detail: string }[] {
+  const m = order.payment.method;
+  return [{ key: "original", label: paymentLabel(m), detail: `Usually ${refundTiming(m).toLowerCase()} after the refund starts` }];
+}
 
 export function shortTitle(title: string) {
   return title.split(/[,(]/)[0]!.trim();

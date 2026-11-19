@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import type { Db } from "../../db/client.js";
 import { products, wishlistItems } from "../../db/schema.js";
 import { DB } from "../../common/tokens.js";
@@ -10,10 +10,12 @@ export class WishlistService {
 
   /** Newest first. */
   async get(userId: string) {
+    // an archived product is gone from the store, so it drops out of the list
     const rows = await this.db
       .select({ productId: wishlistItems.productId })
       .from(wishlistItems)
-      .where(eq(wishlistItems.userId, userId))
+      .innerJoin(products, eq(products.id, wishlistItems.productId))
+      .where(and(eq(wishlistItems.userId, userId), ne(products.listingStatus, "ARCHIVED")))
       .orderBy(desc(wishlistItems.createdAt));
     return { productIds: rows.map((r) => r.productId) };
   }
@@ -22,7 +24,7 @@ export class WishlistService {
   async replace(userId: string, productIds: string[]) {
     const ids = [...new Set(productIds)];
     const known = ids.length
-      ? new Set((await this.db.select({ id: products.id }).from(products).where(inArray(products.id, ids))).map((p) => p.id))
+      ? new Set((await this.db.select({ id: products.id }).from(products).where(and(inArray(products.id, ids), ne(products.listingStatus, "ARCHIVED")))).map((p) => p.id))
       : new Set<string>();
     const keep = ids.filter((id) => known.has(id));
     const now = Date.now();

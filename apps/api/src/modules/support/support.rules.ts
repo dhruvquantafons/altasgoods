@@ -41,4 +41,4 @@ export const PRIORITY_FOR: Record<string, TicketPriority> = {
 };
 
 export const statusLabel = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
-export const rupees = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+export { rupees } from "../../common/money.js";

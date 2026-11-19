@@ -297,9 +297,11 @@ test("a customer reviews a delivered product from its page, and hiding it in the
   const row = page.locator("li", { hasText: title });
   await row.getByRole("button", { name: "Hide" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Hide review" }).click();
-  await expect(page.getByText("Review hidden")).toBeVisible();
-  await pdp.reload();
-  await expect(pdp.locator("#reviews").getByText(title)).toHaveCount(0);
+  // the row leaves the Published list as soon as it is hidden, taking its message with it, so check the storefront
+  await expect(async () => {
+    await pdp.reload();
+    await expect(pdp.locator("#reviews").getByText(title)).toHaveCount(0, { timeout: 1_000 });
+  }).toPass({ timeout: 20_000 });
 
   // and the customer still sees it in their account
   await pdp.goto("/account/reviews");

@@ -1,31 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { forwardingHeaders } from "@/lib/api/forwarded";
+import { adminHome, canSeePath } from "@/lib/api/staff";
 
 /**
  * Optimistic session handling (no database work here):
  * 1. refreshes an expired or expiring access token with the refresh token, and
  *    hands the new token to this same request so Server Components see it;
  * 2. sends signed-out visitors of protected areas to sign in;
- * 3. keeps AltasGoods Control and the Care Desk to staff, and Shipping and
- *    the workspace launcher to admins (Super Admin or Ops Admin).
+ * 3. keeps each staff area to the roles that can see it (AREA_ROLES in
+ *    lib/api/staff.ts): a Catalog Manager only reaches the catalog pages,
+ *    the Care Desk only the Care Desk, Shipping only admins;
+ * 4. sends staff holding a temporary password (the token's pwc claim) to
+ *    change it before any staff area opens.
  * Real authorisation happens in the API on every call.
  */
 const ACCESS = "bb_at";
 const REFRESH = "bb_rt";
 const PROTECTED = [/^\/account(\/|$)/, /^\/checkout(\/|$)/, /^\/order\//, /^\/admin(\/|$)/, /^\/support(\/|$)/, /^\/logistics(\/|$)/, /^\/portals(\/|$)/];
 const STAFF_AREAS = /^\/(admin|support|logistics|portals)(\/|$)/;
-/** areas for admins only: the API behind Shipping needs Ops Admin, and Super Admin passes every check */
-const ADMIN_AREAS = /^\/(logistics|portals)(\/|$)/;
-const isAdmin = (staff: string[]) => staff.includes("SUPER_ADMIN") || staff.includes("OPS_ADMIN");
-const allowed = (path: string, staff: string[]) => (ADMIN_AREAS.test(path) ? isAdmin(staff) : staff.length > 0);
+const allowed = (path: string, staff: string[]) => staff.length > 0 && canSeePath(path, staff);
+/** where a temporary password is changed; outside the staff areas, so it always opens */
+const CHANGE_PASSWORD = "/account/profile?change=1";
 
 const apiUrl = () => process.env.ALTASGOODS_API_URL ?? process.env.BLUBUY_API_URL ?? "http://localhost:4000";
 const cookieBase = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: process.env.NODE_ENV === "production" };
 
-function claims(token?: string): { exp: number; staff: string[] } | null {
+function claims(token?: string): { exp: number; staff: string[]; pwc: boolean } | null {
   if (!token) return null;
   try {
     const p = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8"));
-    return { exp: Number(p.exp), staff: p.staff ?? [] };
+    return { exp: Number(p.exp), staff: p.staff ?? [], pwc: p.pwc === true };
   } catch {
     return null;
   }
@@ -40,13 +44,15 @@ export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const current = claims(access);
   // roles live in the token: refresh once when a staff area needs one the token lacks,
-  // so someone given a staff role since sign in gets straight in
-  const lacksGrant = !!current && STAFF_AREAS.test(path) && !allowed(path, current.staff);
+  // so someone given a staff role since sign in gets straight in; likewise once a
+  // temporary password was changed, the next token no longer says so
+  const lacksGrant = !!current && STAFF_AREAS.test(path) && (!allowed(path, current.staff) || current.pwc);
   if ((!current || current.exp * 1000 < Date.now() + 30_000 || lacksGrant) && refresh) {
     try {
       const r = await fetch(`${apiUrl()}/v1/auth/refresh`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        // the session records the visitor's browser and address, not this server's
+        headers: { ...forwardingHeaders(req.headers), "content-type": "application/json" },
         body: JSON.stringify({ refreshToken: refresh }),
         signal: AbortSignal.timeout(3000),
       });
@@ -74,6 +80,11 @@ export async function proxy(req: NextRequest) {
     url.searchParams.set("next", path + req.nextUrl.search);
     if (STAFF_AREAS.test(path)) url.searchParams.set("as", "staff");
     res = NextResponse.redirect(url);
+  } else if (signedIn && STAFF_AREAS.test(path) && session!.pwc && session!.staff.length) {
+    res = NextResponse.redirect(new URL(CHANGE_PASSWORD, req.url));
+  } else if (signedIn && /^\/admin(\/|$)/.test(path) && !allowed(path, session!.staff) && adminHome(session!.staff)) {
+    // a page of AltasGoods Control their roles do not cover: their own starting page instead
+    res = NextResponse.redirect(new URL(adminHome(session!.staff)!, req.url));
   } else if (signedIn && STAFF_AREAS.test(path) && !allowed(path, session!.staff)) {
     const url = new URL("/login", req.url);
     url.searchParams.set("next", path + req.nextUrl.search);

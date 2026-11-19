@@ -20,10 +20,10 @@ const STAFF_ALLOWED: Partial<Record<ApiOrderItemStatus, ApiOrderItemStatus[]>> =
   READY_TO_SHIP: ["CANCELLED"],
 };
 
-/** The fulfilment queue: one row per order line, with bulk actions for lines in the same status. */
-export function QueueTable({ items, now }: { items: AdminItem[]; now: number }) {
+/** The fulfilment queue: one row per order line, with bulk actions for lines in the same status (not for read-only roles). */
+export function QueueTable({ items, now, canEdit = true }: { items: AdminItem[]; now: number; canEdit?: boolean }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const actionable = items.filter((i) => STAFF_ALLOWED[i.status]);
+  const actionable = canEdit ? items.filter((i) => STAFF_ALLOWED[i.status]) : [];
   const chosen = items.filter((i) => selected.has(i.id));
   const statuses = new Set(chosen.map((i) => i.status));
   const shared = statuses.size === 1 ? chosen[0]!.status : null;
@@ -56,14 +56,16 @@ export function QueueTable({ items, now }: { items: AdminItem[]; now: number }) 
         <Table>
           <THead className="border-t-0">
             <TR>
-              <TH className="w-10">
-                <Checkbox
-                  aria-label="Select every open line"
-                  checked={allChosen}
-                  disabled={!actionable.length}
-                  onChange={() => setSelected(allChosen ? new Set() : new Set(actionable.map((i) => i.id)))}
-                />
-              </TH>
+              {canEdit && (
+                <TH className="w-10">
+                  <Checkbox
+                    aria-label="Select every open line"
+                    checked={allChosen}
+                    disabled={!actionable.length}
+                    onChange={() => setSelected(allChosen ? new Set() : new Set(actionable.map((i) => i.id)))}
+                  />
+                </TH>
+              )}
               <TH>Item</TH>
               <TH className="hidden md:table-cell">Order</TH>
               <TH className="hidden lg:table-cell">Ship to</TH>
@@ -77,9 +79,11 @@ export function QueueTable({ items, now }: { items: AdminItem[]; now: number }) 
               const late = !!i.dispatchBy && STAFF_ALLOWED[i.status] && Date.parse(i.dispatchBy) < now;
               return (
                 <TR key={i.id}>
-                  <TD>
-                    <Checkbox aria-label={`Select ${i.title}`} checked={selected.has(i.id)} disabled={!STAFF_ALLOWED[i.status]} onChange={() => toggle(i.id)} />
-                  </TD>
+                  {canEdit && (
+                    <TD>
+                      <Checkbox aria-label={`Select ${i.title}`} checked={selected.has(i.id)} disabled={!STAFF_ALLOWED[i.status]} onChange={() => toggle(i.id)} />
+                    </TD>
+                  )}
                   <TD>
                     <div className="flex max-w-[320px] items-center gap-2.5">
                       <ProductImage src={i.image} alt="" size={38} rounded="md" />

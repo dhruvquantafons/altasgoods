@@ -1,12 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, eq, gt, lte, sql, type SQL } from "drizzle-orm";
 import type { Db } from "../../db/client.js";
-import { brands, categories, offers, products, sales } from "../../db/schema.js";
+import { brands, categories, offers, productSlugRedirects, products, sales } from "../../db/schema.js";
 import { notFound } from "../../common/errors.js";
 import { HOUSE_SELLER_ID } from "../../common/house.js";
 import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB } from "../../common/tokens.js";
 import { bestSale, salePrice, type LiveSale } from "../commerce/pricing.js";
+import { RESERVED_BRAND, RESERVED_CATEGORY } from "./reserved.js";
+import { normalizeLegal } from "./catalog.schemas.js";
 import type { ProductQuery, ProductSummary } from "./catalog.schemas.js";
 
 export const discountPercent = (price: number, mrp: number) => (mrp > price ? Math.floor(((mrp - price) / mrp) * 100) : 0);
@@ -49,7 +51,7 @@ export class CatalogService {
     );
     const countBy = new Map(counts.rows.map((r) => [r.category_id, Number(r.n)]));
     return rows
-      .filter((c) => !c.parentId)
+      .filter((c) => !c.parentId && c.id !== RESERVED_CATEGORY.id)
       .map((c) => ({
         id: c.id,
         slug: c.slug,
@@ -164,9 +166,9 @@ export class CatalogService {
     const saleFor = (p: { id: string; categoryId: string }) => bestSale(live as LiveSale[], p);
     return {
       categories: cats
-        .filter((c) => !c.parentId)
+        .filter((c) => !c.parentId && c.id !== RESERVED_CATEGORY.id)
         .map((c) => ({ id: c.id, slug: c.slug, name: c.name, icon: c.icon, image: c.image, children: cats.filter((x) => x.parentId === c.id).map((x) => ({ id: x.id, slug: x.slug, name: x.name })) })),
-      brands: brandRows.map((b) => ({ id: b.id, slug: b.slug, name: b.name })),
+      brands: brandRows.filter((b) => b.id !== RESERVED_BRAND.id).map((b) => ({ id: b.id, slug: b.slug, name: b.name })),
       products: rows.map(({ product: p, offer: o }) => {
         const sale = saleFor(p);
         return {
@@ -181,6 +183,7 @@ export class CatalogService {
         description: p.description,
         highlights: p.highlights,
         specs: p.specs,
+        legal: normalizeLegal(p.legal),
         variants: p.variants.map((v) => ({ ...v, values: v.values.map((x) => ({ ...x, available: x.available ?? true })) })),
         rating: p.rating,
         ratingCount: p.ratingCount,
@@ -206,6 +209,18 @@ export class CatalogService {
     };
   }
 
+  /** The current address of a product that was renamed, if that product is on sale. */
+  async redirectFor(oldSlug: string) {
+    const [row] = await this.db
+      .select({ slug: products.slug })
+      .from(productSlugRedirects)
+      .innerJoin(products, eq(products.id, productSlugRedirects.productId))
+      .innerJoin(offers, and(eq(offers.productId, products.id), eq(offers.sellerId, HOUSE_SELLER_ID), eq(offers.status, "ACTIVE")))
+      .where(and(eq(productSlugRedirects.oldSlug, oldSlug), eq(products.listingStatus, "LIVE")));
+    if (!row) throw notFound("Product");
+    return { slug: row.slug };
+  }
+
   async productDetail(idOrSlug: string) {
     const list = await this.search({ ids: [idOrSlug], sort: "relevance", page: 1, pageSize: 1, brand: [], assured: false, inStock: false });
     const summary = list.items[0];
@@ -217,6 +232,7 @@ export class CatalogService {
       description: p!.description,
       highlights: p!.highlights,
       specs: p!.specs,
+      legal: normalizeLegal(p!.legal),
       variants: p!.variants,
       reviewCount: p!.reviewCount,
       soldLast30d: p!.soldLast30d,

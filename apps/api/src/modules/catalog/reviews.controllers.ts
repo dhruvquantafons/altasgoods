@@ -67,6 +67,7 @@ export class AdminReviewsController {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get()
   @ApiResponse({ status: 200, standardSchema: s.adminReviewList })
   list(@Query({ schema: s.adminReviewsQuery }) q: z.infer<typeof s.adminReviewsQuery>) {

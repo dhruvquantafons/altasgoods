@@ -37,3 +37,6 @@ export const loadBanners = async () => unwrap(await (await api()).GET("/v1/admin
 export type AdminReviewList = paths["/v1/admin/reviews"]["get"]["responses"][200]["content"]["application/json"];
 type ReviewsQuery = NonNullable<paths["/v1/admin/reviews"]["get"]["parameters"]["query"]>;
 export const loadAdminReviews = async (query: Partial<ReviewsQuery>) => unwrap(await (await api()).GET("/v1/admin/reviews", { params: { query: query as ReviewsQuery } }));
+
+export type StaffMember = paths["/v1/admin/staff"]["get"]["responses"][200]["content"]["application/json"][number];
+export const loadStaff = async () => unwrap(await (await api()).GET("/v1/admin/staff"));

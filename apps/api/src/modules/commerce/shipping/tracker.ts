@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnApplicationShutdown } from "@nestjs/common";
 import { env } from "../../../config/env.js";
+import { JobsService } from "../../jobs/jobs.service.js";
 import { ShippingService } from "./shipping.service.js";
 
 const EVERY_MS = 10 * 60_000;
@@ -10,12 +11,16 @@ export class ShipmentTracker implements OnApplicationBootstrap, OnApplicationShu
   private timer?: NodeJS.Timeout;
   private readonly logger = new Logger("ShipmentTracker");
 
-  constructor(@Inject(ShippingService) private readonly shipping: ShippingService) {}
+  constructor(
+    @Inject(ShippingService) private readonly shipping: ShippingService,
+    @Inject(JobsService) private readonly jobs: JobsService,
+  ) {}
 
   onApplicationBootstrap() {
     if (env().NODE_ENV === "test" || this.shipping.providerName === "SIMULATED") return;
     this.timer = setInterval(() => {
-      this.shipping.pollTracking().then(
+      // scans can cancel or return lines, which queues jobs: run them once the poll is done
+      this.jobs.scope(() => this.shipping.pollTracking()).then(
         (n) => n && this.logger.log(`Tracking moved ${n} items`),
         (e) => this.logger.error(e),
       );

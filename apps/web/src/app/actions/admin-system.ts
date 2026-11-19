@@ -11,7 +11,7 @@ import type { paths } from "@/lib/api/schema";
 /** Settings and other store-wide changes in AltasGoods Control. The API checks the role and validates every field. */
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string; fields?: Record<string, string> };
-export type SettingsInput = Omit<AdminSettings, "updatedAt" | "updatedBy">;
+export type SettingsInput = Omit<AdminSettings, "updatedAt" | "updatedBy" | "placeholders">;
 
 const offline = { ok: false as const, error: "AltasGoods is unreachable right now. Please try again in a moment." };
 

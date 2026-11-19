@@ -10,6 +10,7 @@ import type { Db, Tx } from "../../db/client.js";
 import {
   orderItems,
   orders,
+  refunds,
   supportActions,
   supportAttachments,
   supportEvents,
@@ -20,6 +21,7 @@ import {
   type OrderSnapshot,
   type TicketStatus,
 } from "../../db/schema.js";
+import { NotificationsService } from "../commerce/notifications/notifications.service.js";
 import { PaymentsService } from "../commerce/payments/payments.service.js";
 import { sniffMime, type FileStore } from "../files/file-store.js";
 import { ACTIVE_STATUSES, AGENT_TRANSITIONS, agentLevel, APPROVER_ROLES, PRIORITY_FOR, rupees, statusLabel, SUPPORT_ROLES } from "./support.rules.js";
@@ -41,6 +43,7 @@ export class SupportService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(FILE_STORE) private readonly files: FileStore,
     @Inject(PaymentsService) private readonly payments: PaymentsService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   /* ------------------------------ People ------------------------------ */
@@ -174,6 +177,15 @@ export class SupportService {
     ]);
     const lastPublic = [...messages].reverse().find((m) => m.kind === "CUSTOMER" || m.kind === "AGENT");
     const { level, limitPaise } = agentLevel(me.roles);
+    // a refund finishes in the refund job, or when a manual payout is recorded: report where it is now.
+    // Staff see the true status, including a refund the gateway could not confirm (NEEDS_ATTENTION).
+    const refundIds = actions.map((a) => (a.details as { refundId?: string } | null)?.refundId).filter((x): x is string => !!x);
+    const refundRows = refundIds.length ? await this.db.select({ id: refunds.id, status: refunds.status }).from(refunds).where(inArray(refunds.id, refundIds)) : [];
+    const actionStatus = (a: (typeof actions)[number]) => {
+      const refund = refundRows.find((r) => r.id === (a.details as { refundId?: string } | null)?.refundId);
+      if (a.status !== "PROCESSING" || !refund) return a.status;
+      return refund.status === "COMPLETED" || refund.status === "FAILED" || refund.status === "NEEDS_ATTENTION" ? refund.status : "PROCESSING";
+    };
     const approver = me.roles.some((r) => (APPROVER_ROLES as string[]).includes(r));
     return {
       ...this.summary(t, assignee ? (assignee.name ?? assignee.email) : null),
@@ -184,7 +196,7 @@ export class SupportService {
       actions: actions.map((a) => ({
         id: a.id,
         kind: a.kind,
-        status: a.status,
+        status: actionStatus(a),
         orderId: a.orderId,
         amountPaise: a.amountPaise,
         details: a.details,
@@ -290,7 +302,12 @@ export class SupportService {
       const attachments = await this.claimAttachments(tx, id, input.attachmentIds);
       const now = this.clock.now();
       if (input.kind === "REPLY") t = await this.pickUp(tx, t, me);
-      await tx.insert(supportMessages).values({ ticketId: id, kind: input.kind === "REPLY" ? "AGENT" : "NOTE", author: me.name, authorId: me.id, body: input.body, attachments, at: now });
+      const [m] = await tx
+        .insert(supportMessages)
+        .values({ ticketId: id, kind: input.kind === "REPLY" ? "AGENT" : "NOTE", author: me.name, authorId: me.id, body: input.body, attachments, at: now })
+        .returning({ id: supportMessages.id });
+      // the customer hears about replies by email (the text is read when it is sent); internal notes stay internal
+      if (input.kind === "REPLY") await this.notifications.notify(tx, "CARE_REPLY", { userId: t.userId, ticketId: id, key: String(m!.id), data: { ticketId: id, messageId: m!.id } });
       [t] = (await tx
         .update(supportTickets)
         .set({ updatedAt: now, ...(input.kind === "REPLY" && !t.firstResponseAt ? { firstResponseAt: now } : {}) })
@@ -321,7 +338,7 @@ export class SupportService {
         const needsApproval = input.amountPaise > limitPaise;
         const [action] = await tx
           .insert(supportActions)
-          .values({ ...base, status: needsApproval ? "PENDING_APPROVAL" : "INITIATED", amountPaise: input.amountPaise, details: { destination: input.destination, reason: input.reason } })
+          .values({ ...base, status: needsApproval ? "PENDING_APPROVAL" : "INITIATED", amountPaise: input.amountPaise, details: { destination: input.destination, reason: input.reason, ...(input.destination === "BANK" ? { upi: input.upi } : {}) } })
           .returning();
         if (needsApproval) note = `Refund of ${rupees(input.amountPaise)} requested by ${me.name}, above their ${rupees(limitPaise)} limit. Waiting for supervisor approval.`;
         else {
@@ -353,16 +370,31 @@ export class SupportService {
 
   /**
    * Online payments of orders in this database are refunded through the
-   * payment provider straight away. Refunds to AltasGoods Credits, to a bank
-   * account for cash on delivery, and for imported history stay INITIATED
-   * for Finance.
+   * payment provider straight away. A cash on delivery order, and any refund
+   * to a bank (UPI) account, is paid by hand: the refund goes on the order's
+   * ledger as a manual payout waiting to be paid (capped by what was
+   * collected), and Operations records it paid with its reference on the
+   * Payments page. Refunds on imported history stay INITIATED.
+   * Credits are no longer a destination; old actions that chose it only read.
    */
   private async executeRefund(tx: Tx, action: typeof supportActions.$inferSelect, t: Ticket) {
-    const destination = (action.details as { destination?: string }).destination;
+    const { destination, upi } = action.details as { destination?: string; upi?: string };
     const [order] = await tx.select({ id: orders.id, method: orders.paymentMethod }).from(orders).where(eq(orders.id, t.orderId!));
-    const to = destination === "CREDITS" ? "AltasGoods Credits" : t.orderSnapshot?.cod ? "your bank account" : t.orderSnapshot?.paymentLabel ?? "your payment method";
-    if (destination === "SOURCE" && order && order.method !== "COD") {
-      const refund = await this.payments.refundToSource(tx, order.id, action.amountPaise!, `Care Desk ticket ${t.id}`);
+    const toBank = destination === "BANK" || !!t.orderSnapshot?.cod;
+    const to = toBank ? "your bank account" : t.orderSnapshot?.paymentLabel ?? "your payment method";
+    if (order && (destination === "SOURCE" || destination === "BANK")) {
+      const reason = `Care Desk ticket ${t.id}`;
+      const by = { createdBy: action.createdById };
+      const refund =
+        destination === "SOURCE" && order.method !== "COD"
+          ? await this.payments.refundToSource(tx, order.id, action.amountPaise!, reason, by)
+          : await this.payments.refundManually(tx, order.id, {
+              amountPaise: action.amountPaise!,
+              reason,
+              paid: false,
+              note: upi ? `Pay to UPI ${upi}; ticket ${t.id}` : `Pay to the customer's bank account or UPI; the details are on ticket ${t.id}`,
+              ...by,
+            });
       await tx.update(supportActions).set({ status: refund.status === "COMPLETED" ? "COMPLETED" : "PROCESSING", details: { ...action.details, refundId: refund.id } }).where(eq(supportActions.id, action.id));
     }
     await this.system(tx, t.id, `We have initiated a refund of ${rupees(action.amountPaise ?? 0)} to ${to}.`, true);

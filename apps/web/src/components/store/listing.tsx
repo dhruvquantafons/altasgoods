@@ -6,7 +6,7 @@ import type { Product } from "@/lib/types";
 import { DELIVERY_OPTIONS, DISCOUNT_BANDS, inStock, isBrowsable, PRICE_BANDS, RATING_OPTIONS, SORT_OPTIONS } from "@/lib/mock/store-extra";
 import { cn, formatINR, formatNumber } from "@/lib/utils";
 import { Breadcrumbs, type Crumb } from "@/components/ui/page-header";
-import { DEFAULT_PINCODE, lookupPincode, promiseDays } from "./delivery";
+import { promiseDays } from "./delivery";
 import { FilterSheet, SortSelect } from "./listing-client";
 import { featuredOffer, ProductCard } from "./product-card";
 import { percentOff } from "./price";
@@ -82,11 +82,9 @@ export function toQuery(f: Filters, patch: Partial<Filters> = {}) {
 
 /* ------------------------------ Filtering -------------------------------- */
 
-const pin = lookupPincode(DEFAULT_PINCODE);
-
 function derived(p: Product) {
   const o = featuredOffer(p);
-  return { price: o.price, off: percentOff(o.price, o.mrp), days: promiseDays(o.deliveryDays, pin), cod: o.codAvailable, available: inStock(p) };
+  return { price: o.price, off: percentOff(o.price, o.mrp), days: promiseDays(o.deliveryDays, null, Date.now()), cod: o.codAvailable, available: inStock(p) };
 }
 
 type Facet = "cat" | "sub" | "brands" | "price" | "rating" | "discount" | "assured" | "delivery" | "cod" | "avail";

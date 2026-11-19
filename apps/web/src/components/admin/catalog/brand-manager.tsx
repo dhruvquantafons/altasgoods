@@ -13,7 +13,7 @@ import { Table, TableContainer, TBody, TD, TH, THead, TR } from "@/components/ui
 import type { AdminBrand } from "@/lib/api/types";
 
 /** The brands products can be filed under. */
-export function BrandManager({ brands }: { brands: AdminBrand[] }) {
+export function BrandManager({ brands, canEdit = true }: { brands: AdminBrand[]; canEdit?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = useState<{ id: string | null; name: string } | null>(null);
@@ -52,16 +52,18 @@ export function BrandManager({ brands }: { brands: AdminBrand[] }) {
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <Input aria-label="Filter brands" placeholder="Filter brands" inputSize="sm" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-full sm:w-64" />
-          <Button
-            size="sm"
-            icon={Plus}
-            onClick={() => {
-              setError(null);
-              setEditing({ id: null, name: "" });
-            }}
-          >
-            Add brand
-          </Button>
+          {canEdit && (
+            <Button
+              size="sm"
+              icon={Plus}
+              onClick={() => {
+                setError(null);
+                setEditing({ id: null, name: "" });
+              }}
+            >
+              Add brand
+            </Button>
+          )}
         </div>
         {shown.length === 0 ? (
           <EmptyState icon={Tags} title={brands.length ? "No brands match" : "No brands yet"} description={brands.length ? "Try a different name." : "Add the brands you stock."} />
@@ -87,7 +89,7 @@ export function BrandManager({ brands }: { brands: AdminBrand[] }) {
                     <TD align="right" className="tabular-nums">
                       {b.productCount}
                     </TD>
-                    <TD align="right">
+                    <TD align="right" className={canEdit ? undefined : "invisible"}>
                       <Button
                         size="icon-sm"
                         variant="ghost"
@@ -99,17 +101,19 @@ export function BrandManager({ brands }: { brands: AdminBrand[] }) {
                       >
                         <Pencil size={15} />
                       </Button>
-                      <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={`Delete ${b.name}`}
-                        onClick={() => {
-                          setError(null);
-                          setRemoving(b);
-                        }}
-                      >
-                        <Trash2 size={15} />
-                      </Button>
+                      {b.id !== "br-unbranded" && (
+                        <Button
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Delete ${b.name}`}
+                          onClick={() => {
+                            setError(null);
+                            setRemoving(b);
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </Button>
+                      )}
                     </TD>
                   </TR>
                 ))}
@@ -146,7 +150,7 @@ export function BrandManager({ brands }: { brands: AdminBrand[] }) {
         open={!!removing}
         onClose={() => setRemoving(null)}
         title={`Delete ${removing?.name ?? "brand"}?`}
-        description="Brands that products still use cannot be deleted."
+        description="Archived products move to Unbranded. A brand with live or inactive products cannot be deleted: change their brand or archive them first."
         size="sm"
         footer={
           <>

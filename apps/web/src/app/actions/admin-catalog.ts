@@ -51,6 +51,40 @@ export async function setProductActive(id: string, active: boolean): Promise<Res
   }
 }
 
+export async function archiveProduct(id: string): Promise<Result<AdminProduct>> {
+  try {
+    const r = await (await api()).POST("/v1/admin/products/{id}/archive", { params: { path: { id } } });
+    if (!r.data) return problem(r.error, "The product could not be archived");
+    refreshCatalog(`/admin/catalog/${id}`);
+    return { ok: true, data: r.data };
+  } catch {
+    return offline;
+  }
+}
+
+export async function restoreProduct(id: string): Promise<Result<AdminProduct>> {
+  try {
+    const r = await (await api()).POST("/v1/admin/products/{id}/restore", { params: { path: { id } } });
+    if (!r.data) return problem(r.error, "The product could not be restored");
+    refreshCatalog(`/admin/catalog/${id}`);
+    return { ok: true, data: r.data };
+  } catch {
+    return offline;
+  }
+}
+
+/** Permanently deletes a product that was never ordered. */
+export async function deleteProduct(id: string): Promise<Result<null>> {
+  try {
+    const r = await (await api()).DELETE("/v1/admin/products/{id}", { params: { path: { id } } });
+    if (!r.response.ok) return problem(r.error, "The product could not be deleted");
+    refreshCatalog();
+    return { ok: true, data: null };
+  } catch {
+    return offline;
+  }
+}
+
 /** Uploads a product image; the form carries `file`. Returns the path to put in the product's images. */
 export async function uploadProductImage(form: FormData): Promise<Result<{ id: string; url: string }>> {
   const file = form.get("file");

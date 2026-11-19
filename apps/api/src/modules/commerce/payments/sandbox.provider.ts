@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { env } from "../../../config/env.js";
 import { ApiError } from "../../../common/errors.js";
-import type { PaymentProvider, ProviderEvent } from "./provider.js";
+import type { PaymentProvider, ProviderEvent, ProviderRefund, RefundState } from "./provider.js";
 
 export const SANDBOX_SIGNATURE_HEADER = "x-sandbox-signature";
 
@@ -32,8 +32,18 @@ export class SandboxPaymentProvider implements PaymentProvider {
     return body;
   }
 
-  async refund() {
-    return { status: "COMPLETED" as const };
+  /** Sandbox refunds complete at once. */
+  async refund(input: { receipt: string }): Promise<ProviderRefund> {
+    return { providerRefundId: `sbx_rfnd_${input.receipt}`, status: "COMPLETED" };
+  }
+
+  /** Sandbox refunds never fail half way, so there is never one to find. */
+  async findRefund(_input: { providerRef: string; receipt: string }): Promise<ProviderRefund | null> {
+    return null;
+  }
+
+  async refundStatus(): Promise<RefundState> {
+    return "COMPLETED";
   }
 
   /** Builds the event a real gateway would send after the customer acts. */

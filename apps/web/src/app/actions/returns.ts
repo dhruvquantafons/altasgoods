@@ -39,7 +39,7 @@ export async function createReturn(input: {
   photoIds: string[];
   resolution: "REFUND" | "REPLACEMENT" | "EXCHANGE";
   exchangeSize?: string;
-  refundTo?: "SOURCE" | "CREDITS" | "BANK";
+  refundTo?: "SOURCE" | "BANK";
   refundUpi?: string;
   pickupDate: string;
   pickupSlot: string;

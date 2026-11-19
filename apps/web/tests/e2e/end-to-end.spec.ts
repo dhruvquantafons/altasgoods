@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { audited, closeDb, DATABASE_URL, row } from "./db";
-import { ACCOUNTS, API, apiAs, apiSession, deliver, E2E_PASSWORD, paidOrder, signedIn, signInWithForm, watchErrors } from "./support";
+import { ACCOUNTS, API, apiAs, resetRateLimits, apiSession, deliver, E2E_PASSWORD, paidOrder, signedIn, signInWithForm, watchErrors } from "./support";
 
 /**
  * Every admin change, end to end: made in AltasGoods Control or the Care Desk,
@@ -21,6 +21,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 /** A brand new shopper with an address, so one test's account never affects another's. */
 async function newShopper(name: string) {
   const email = `e2e.e2e.${stamp()}.${Math.floor(Math.random() * 1e6)}@altasgoods.test`;
+  await resetRateLimits();
   const r = await fetch(`${API}/v1/auth/signup`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -93,8 +94,8 @@ test("a product added in the admin is stored, sold on the storefront, and its ed
   await page.fill("#pf-hl", "Keeps water cool\nLeak proof lid\nHandmade in Moradabad");
   await page.fill("#pf-stock", "35");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Saved. The store shows the changes now.")).toBeVisible();
-  expect((await row<{ highlights: string[] }>("select highlights from products where id = $1", [id]))!.highlights).toContain("Handmade in Moradabad");
+  // the saved message goes when the form reloads with the saved product, so wait for what is stored instead
+  await expect.poll(async () => (await row<{ highlights: string[] }>("select highlights from products where id = $1", [id]))!.highlights).toContain("Handmade in Moradabad");
   expect((await row<{ stock: number }>("select stock from offers where product_id = $1", [id]))!.stock).toBe(35);
   const edit = await row<{ changes: Record<string, unknown> }>(
     "select changes from audit_events where action = 'product.update' and entity_id = $1 order by created_at desc limit 1",

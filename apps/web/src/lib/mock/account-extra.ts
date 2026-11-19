@@ -1,14 +1,14 @@
 /**
  * Extra mock data for the customer account area ("Your account").
  *
- * Everything here is deterministic and anchored to NOW (1 Oct 2026, 10:30 IST).
+ * Everything here is deterministic and anchored to MOCK_EPOCH (1 Oct 2026, 10:30 IST).
  * Where possible it is derived from the shared mock (myOrders, products) so the
  * account pages stay consistent with the storefront and the consoles. Each export
  * maps to a future API resource (noted beside it).
  */
 import type { Notification, Order, OrderEvent, OrderItem, Product } from "../types";
 import type { PaymentMethod, RefundStatus, ReturnStatus, TicketPriority, TicketStatus } from "../status";
-import { NOW } from "../utils";
+import { MOCK_EPOCH } from "../utils";
 import { getProduct, products } from "./catalog";
 import { customerNotifications } from "./engagement";
 import { myOrders, refunds } from "./orders";
@@ -19,8 +19,8 @@ const DAY = 86400_000;
 
 /** ISO timestamp for an IST wall-clock time, e.g. ist("2026-09-26", "14:05"). */
 const ist = (date: string, time = "10:00") => new Date(`${date}T${time}:00+05:30`).toISOString();
-/** ISO timestamp a number of hours before NOW. */
-const hoursAgo = (h: number) => new Date(NOW.getTime() - h * HOUR).toISOString();
+/** ISO timestamp a number of hours before MOCK_EPOCH. */
+const hoursAgo = (h: number) => new Date(MOCK_EPOCH.getTime() - h * HOUR).toISOString();
 
 /* ------------------------------- Profile ------------------------------- */
 /** GET /v1/me */
@@ -267,7 +267,7 @@ export const CANCEL_REASONS = [
 ];
 
 /** Next pickup slots for a return, skipping Sundays. */
-export function pickupSlots(days = 4, from = NOW.getTime()) {
+export function pickupSlots(days = 4, from: number = Date.now()) {
   const out: { date: string; windows: string[] }[] = [];
   let d = new Date(from + DAY);
   while (out.length < days) {
@@ -747,7 +747,7 @@ export const NOTIFICATION_PREFS: { key: string; label: string; description: stri
 /* ------------------------- Security and privacy ------------------------ */
 
 export const sessions = [
-  { id: "ss-1", device: "Laptop, web browser", platform: "laptop" as const, location: "Bengaluru, Karnataka", ip: "49.207.xx.xx", lastActive: NOW.toISOString(), current: true },
+  { id: "ss-1", device: "Laptop, web browser", platform: "laptop" as const, location: "Bengaluru, Karnataka", ip: "49.207.xx.xx", lastActive: MOCK_EPOCH.toISOString(), current: true },
   { id: "ss-2", device: "Android phone, AltasGoods app", platform: "phone" as const, location: "Bengaluru, Karnataka", ip: "106.51.xx.xx", lastActive: hoursAgo(2), current: false },
   { id: "ss-3", device: "Tablet, AltasGoods app", platform: "tablet" as const, location: "Bengaluru, Karnataka", ip: "49.207.xx.xx", lastActive: hoursAgo(76), current: false },
   { id: "ss-4", device: "Desktop, web browser", platform: "desktop" as const, location: "New Delhi, Delhi", ip: "122.161.xx.xx", lastActive: hoursAgo(24 * 19), current: false },

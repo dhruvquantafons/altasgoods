@@ -1,7 +1,41 @@
+import { isIP } from "node:net";
 import { z } from "zod";
 
+/** What Express's "trust proxy" setting takes: trust everything or nothing, a number of hops, or addresses. */
+export type TrustProxy = boolean | number | string[];
+
+const TRUST_NAMES = new Set(["loopback", "linklocal", "uniquelocal"]);
+
+const validTrustItem = (item: string) => {
+  if (TRUST_NAMES.has(item)) return true;
+  const [addr = "", range, ...rest] = item.split("/");
+  const family = isIP(addr);
+  if (!family || rest.length) return false;
+  if (range === undefined) return true;
+  // a prefix length, or (IPv4) a netmask such as 255.255.0.0
+  if (/^\d+$/.test(range)) return Number(range) <= (family === 4 ? 32 : 128);
+  return family === 4 && isIP(range) === 4;
+};
+
+/**
+ * Reads TRUST_PROXY the way Express understands "trust proxy": "true" or
+ * "false", a number of hops, or a comma list of addresses, CIDR ranges and the
+ * names loopback, linklocal and uniquelocal.
+ */
+export function parseTrustProxy(raw: string): TrustProxy {
+  const value = raw.trim();
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (/^\d+$/.test(value)) return Number(value);
+  const items = value.split(",").map((s) => s.trim());
+  const bad = items.find((i) => !validTrustItem(i));
+  if (bad !== undefined) throw new Error(`"${bad}" is not an address, a CIDR range or one of loopback, linklocal, uniquelocal`);
+  return items;
+}
+
 const schema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  /** Required, no default: a forgotten value must fail startup, not quietly run as development. */
+  NODE_ENV: z.enum(["development", "test", "production"], "NODE_ENV must be set to development, test or production"),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().url().default("postgres://localhost:5432/altasgoods_dev"),
   TEST_DATABASE_URL: z.string().url().default("postgres://localhost:5432/altasgoods_test"),
@@ -9,6 +43,22 @@ const schema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   PAYMENTS_WEBHOOK_SECRET: z.string().min(16),
   WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
+  /**
+   * Which peers may say who the client is through X-Forwarded-For (Express
+   * "trust proxy"). Sign in limits count per client address, so this must
+   * cover the web server, and nothing a shopper can reach directly.
+   */
+  TRUST_PROXY: z
+    .string()
+    .default("loopback")
+    .transform((v, ctx) => {
+      try {
+        return parseTrustProxy(v);
+      } catch (e) {
+        ctx.addIssue({ code: "custom", message: (e as Error).message });
+        return z.NEVER;
+      }
+    }),
   /** Which payment gateway takes online payments: the local sandbox or Razorpay. */
   PAYMENTS_PROVIDER: z.enum(["sandbox", "razorpay"]).default("sandbox"),
   RAZORPAY_KEY_ID: z.string().optional(),
@@ -20,6 +70,8 @@ const schema = z.object({
   SHIPROCKET_PASSWORD: z.string().optional(),
   /** The nickname of the pickup address in Shiprocket (Settings > Pickup Addresses) */
   SHIPROCKET_PICKUP_LOCATION: z.string().optional(),
+  /** Optional: the pincode parcels leave from. Lets Shiprocket check delivery pincodes; the admin rules apply without it */
+  SHIPROCKET_PICKUP_PINCODE: z.string().regex(/^[1-9]\d{5}$/, "Use a 6 digit pincode").optional(),
   /** Optional: the token set on the Shiprocket webhook; tracking is polled either way */
   SHIPROCKET_WEBHOOK_TOKEN: z.string().optional(),
   /** Box size in centimetres, length x breadth x height, used for every parcel */
@@ -59,16 +111,15 @@ export type Env = z.infer<typeof schema>;
 
 let cached: Env | undefined;
 
-/** Validated environment. Fails fast at startup with a readable message. */
-export function env(): Env {
-  if (cached) return cached;
+/** Validates a raw environment. Throws a readable message listing every problem. */
+export function parseEnv(raw: Record<string, string | undefined>): Env {
   const parsed = schema.safeParse({
-    ...process.env,
+    ...raw,
     // tests get safe defaults so they never need a .env file
-    ...(process.env.NODE_ENV === "test"
+    ...(raw.NODE_ENV === "test"
       ? {
-          JWT_SECRET: process.env.JWT_SECRET ?? "test-secret-test-secret-test-secret-1234",
-          PAYMENTS_WEBHOOK_SECRET: process.env.PAYMENTS_WEBHOOK_SECRET ?? "test-webhook-secret-1234",
+          JWT_SECRET: raw.JWT_SECRET ?? "test-secret-test-secret-test-secret-1234",
+          PAYMENTS_WEBHOOK_SECRET: raw.PAYMENTS_WEBHOOK_SECRET ?? "test-webhook-secret-1234",
           // tests drive payments through the sandbox, never a live gateway
           PAYMENTS_PROVIDER: "sandbox",
           // and ship through the simulated courier, never a real one
@@ -82,11 +133,19 @@ export function env(): Env {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
-  cached = parsed.data;
+  return parsed.data;
+}
+
+/** Validated environment. Fails fast at startup with a readable message. */
+export function env(): Env {
+  cached ??= parseEnv(process.env);
   return cached;
 }
 
 export const isProduction = () => env().NODE_ENV === "production";
+
+/** One-time codes in API responses and the dev endpoints' extras: development only, never test or production. */
+export const devToolsEnabled = () => env().NODE_ENV === "development";
 
 /**
  * Demo data is made with the payment sandbox and the simulated courier, so

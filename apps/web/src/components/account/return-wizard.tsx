@@ -128,7 +128,7 @@ export function ReturnWizard({
   reasons: WizardReason[];
   addresses: WizardAddress[];
   slots: WizardSlot[];
-  payment: { label: string; timing: string; isCod: boolean; creditsOnly: boolean };
+  payment: { label: string; timing: string; isCod: boolean; bankOnly: boolean };
 }) {
   const firstEligible = items.find((i) => i.eligible && i.id === initialItemId) ?? items.find((i) => i.eligible);
   const [step, setStep] = useState(0);
@@ -143,7 +143,7 @@ export function ReturnWizard({
   const [created, setCreated] = useState<{ id: string; status: string } | null>(null);
   const [resolution, setResolution] = useState<Resolution | "">("");
   const [size, setSize] = useState("");
-  const [refundTo, setRefundTo] = useState<"original" | "credits" | "bank">(payment.isCod || payment.creditsOnly ? "credits" : "original");
+  const [refundTo, setRefundTo] = useState<"original" | "bank">(payment.bankOnly ? "bank" : "original");
   const [upi, setUpi] = useState("");
   const [addressId, setAddressId] = useState(addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id ?? "");
   const [slotKey, setSlotKey] = useState(slots[0]?.key ?? "");
@@ -198,16 +198,8 @@ export function ReturnWizard({
     setStep(s);
   };
 
-  const refundLabel =
-    refundTo === "credits" ? "AltasGoods Credits" : refundTo === "bank" ? `UPI ID ${upi}` : payment.label;
-  const refundWhen =
-    refundTo === "credits"
-      ? item?.instantRefund
-        ? "Instantly, as soon as the pickup is done"
-        : "Under 2 hours after our quality check"
-      : refundTo === "bank"
-        ? "1 to 2 business days after pickup"
-        : `${payment.timing} after ${item?.instantRefund ? "pickup" : "our quality check"}`;
+  const refundLabel = refundTo === "bank" ? `UPI ID ${upi}` : payment.label;
+  const refundWhen = refundTo === "bank" ? "1 to 2 business days after the quality check" : `${payment.timing} after ${item?.instantRefund ? "pickup" : "our quality check"}`;
 
   async function submit() {
     if (!item || !reason || !resolution || !slot) return;
@@ -224,7 +216,7 @@ export function ReturnWizard({
       photoIds: photos.map((p) => p.id),
       resolution: resolution.toUpperCase() as "REFUND" | "REPLACEMENT" | "EXCHANGE",
       exchangeSize: resolution === "exchange" ? size : undefined,
-      refundTo: resolution === "refund" ? (refundTo === "original" ? "SOURCE" : refundTo === "credits" ? "CREDITS" : "BANK") : undefined,
+      refundTo: resolution === "refund" ? (refundTo === "original" ? "SOURCE" : "BANK") : undefined,
       refundUpi: resolution === "refund" && refundTo === "bank" ? upi : undefined,
       pickupDate: new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date(slot.key)),
       pickupSlot: pickupWindow,
@@ -483,35 +475,27 @@ export function ReturnWizard({
                 <fieldset>
                   <legend className="text-[13px] font-semibold text-ink-900">Where should the refund go?</legend>
                   <div className="mt-3 flex flex-col gap-2.5">
-                    {!payment.isCod && !payment.creditsOnly && (
+                    {!payment.bankOnly && (
                       <Choice name="refund" selected={refundTo === "original"} onSelect={() => setRefundTo("original")}>
-                        <p className="text-[13.5px] font-medium text-ink-900">Original payment method</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[13.5px] font-medium text-ink-900">Original payment method</p>
+                          {item.instantRefund && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-semibold text-success-700">
+                              <Zap size={11} aria-hidden="true" />
+                              Instant
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-0.5 text-xs text-ink-500">
                           {payment.label}. {payment.timing} after {item.instantRefund ? "pickup" : "our quality check"}
                         </p>
                       </Choice>
                     )}
-                    <Choice name="refund" selected={refundTo === "credits"} onSelect={() => setRefundTo("credits")}>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-[13.5px] font-medium text-ink-900">AltasGoods Credits</p>
-                        {item.instantRefund && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-semibold text-success-700">
-                            <Zap size={11} aria-hidden="true" />
-                            Instant
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-xs text-ink-500">
-                        {item.instantRefund ? "Credited the moment the item is picked up." : "Credited within 2 hours of the quality check."} Never expires, and you can move it to your bank later.
-                      </p>
-                    </Choice>
-                    {payment.isCod && (
+                    {payment.bankOnly && (
                       <Choice name="refund" selected={refundTo === "bank"} onSelect={() => setRefundTo("bank")}>
-                        <p className="text-[13.5px] font-medium text-ink-900">UPI ID or bank account</p>
-                        <p className="mt-0.5 text-xs text-ink-500">1 to 2 business days. We verify it with a ₹1 deposit first.</p>
-                        {refundTo === "bank" && (
-                          <Input className="mt-3 max-w-xs" value={upi} onChange={(e) => setUpi(e.target.value)} placeholder="name@bank" aria-label="UPI ID for refund" inputMode="email" />
-                        )}
+                        <p className="text-[13.5px] font-medium text-ink-900">UPI ID</p>
+                        <p className="mt-0.5 text-xs text-ink-500">1 to 2 business days after the quality check. Enter the UPI ID the money should go to.</p>
+                        <Input className="mt-3 max-w-xs" value={upi} onChange={(e) => setUpi(e.target.value)} placeholder="name@bank" aria-label="UPI ID for refund" inputMode="email" />
                       </Choice>
                     )}
                   </div>

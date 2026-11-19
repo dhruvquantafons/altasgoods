@@ -1,0 +1,1 @@
+ALTER TABLE "refunds" ADD CONSTRAINT "refunds_status_ck" CHECK (status in ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'NEEDS_ATTENTION'));

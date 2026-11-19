@@ -18,12 +18,14 @@ export class AdminSystemController {
     @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("audit")
   @ApiResponse({ status: 200, standardSchema: s.auditList })
   auditLog(@Query({ schema: s.auditQuery }) q: z.infer<typeof s.auditQuery>) {
     return this.audit.list(q);
   }
 
+  @StaffOnly("OPS_ADMIN", "AUDITOR")
   @Get("settings")
   @ApiResponse({ status: 200, standardSchema: s.settingsResponse })
   getSettings() {
@@ -48,7 +50,7 @@ export class StorefrontSettingsController {
   @ApiResponse({ status: 200, standardSchema: s.storefrontSettingsSchema })
   async get() {
     const { delivery, cod, notice, company, grievance } = await this.settings.get();
-    return { delivery, cod, notice, company, grievance };
+    return { delivery: { feePaise: delivery.feePaise, freeFromPaise: delivery.freeFromPaise }, cod, notice, company, grievance };
   }
 }
 
@@ -65,6 +67,7 @@ export class AdminBannersController {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  @StaffOnly("OPS_ADMIN", "CATALOG_MANAGER", "AUDITOR")
   @Get()
   @ApiResponse({ status: 200, standardSchema: z.array(b.bannerSchema) })
   list() {
