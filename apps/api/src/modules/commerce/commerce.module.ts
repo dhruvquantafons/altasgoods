@@ -35,6 +35,7 @@ import { AdminInsightsService } from "./admin-insights.service.js";
 import { SalesService } from "./sales.service.js";
 import { AdminPromotionsController, StorefrontPromotionsController } from "./promotions.controllers.js";
 import { PromotionsService } from "./promotions.service.js";
+import { CronController } from "./cron.controller.js";
 import { AdminReturnsController, CustomerReturnsController, DevReturnsController } from "./returns/returns.controllers.js";
 import { ReturnsService } from "./returns/returns.service.js";
 import { FulfilmentService } from "./fulfilment.service.js";
@@ -63,6 +64,7 @@ import { NotificationsService } from "./notifications/notifications.service.js";
     CustomerReturnsController,
     AdminReturnsController,
     DevReturnsController,
+    CronController,
   ],
   providers: [
     NotificationsService,

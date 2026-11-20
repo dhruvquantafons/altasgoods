@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnApplicationShutdown } from "@nestjs/common";
-import { env } from "../../../config/env.js";
+import { env, onVercel } from "../../../config/env.js";
 import { JobsService } from "../../jobs/jobs.service.js";
 import { PaymentsService } from "./payments.service.js";
 import { RefundsService } from "./refunds.service.js";
@@ -25,7 +25,8 @@ export class PaymentSweeper implements OnApplicationBootstrap, OnApplicationShut
   ) {}
 
   onApplicationBootstrap() {
-    if (env().NODE_ENV === "test") return;
+    // on Vercel, Vercel Cron calls /v1/cron/tick instead
+    if (env().NODE_ENV === "test" || onVercel()) return;
     this.timers.push(
       setInterval(async () => {
         try {

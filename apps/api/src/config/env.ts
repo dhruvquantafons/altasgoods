@@ -86,6 +86,8 @@ const schema = z.object({
   SMTP_PASSWORD: z.string().optional(),
   /** The sender shoppers see, for example: AltasGoods <no-reply@altasgoods.in> */
   EMAIL_FROM: z.string().optional(),
+  /** Vercel only: the secret Vercel Cron sends as "Authorization: Bearer <CRON_SECRET>" to /v1/cron/tick. Unset, that endpoint stays closed. */
+  CRON_SECRET: z.string().min(16, "CRON_SECRET must be at least 16 characters").optional(),
 }).superRefine((v, ctx) => {
   if (v.PAYMENTS_PROVIDER === "razorpay") {
     for (const key of ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"] as const) {
@@ -143,6 +145,9 @@ export function env(): Env {
 }
 
 export const isProduction = () => env().NODE_ENV === "production";
+
+/** Running as a Vercel Function: no process outlives a request, so timers are off and Vercel Cron calls /v1/cron/tick instead. */
+export const onVercel = () => !!process.env.VERCEL;
 
 /** One-time codes in API responses and the dev endpoints' extras: development only, never test or production. */
 export const devToolsEnabled = () => env().NODE_ENV === "development";

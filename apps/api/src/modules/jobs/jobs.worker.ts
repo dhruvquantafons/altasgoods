@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, type BeforeApplicationShutdown, type OnApplicationBootstrap } from "@nestjs/common";
-import { env } from "../../config/env.js";
+import { env, onVercel } from "../../config/env.js";
 import { JobsService } from "./jobs.service.js";
 
 /** How often each instance looks for due jobs (kicks make most runs immediate). */
@@ -17,7 +17,8 @@ export class JobsWorker implements OnApplicationBootstrap, BeforeApplicationShut
   constructor(@Inject(JobsService) private readonly jobs: JobsService) {}
 
   onApplicationBootstrap() {
-    if (env().NODE_ENV === "test") return;
+    // tests call JobsService.runDue() directly; on Vercel, Vercel Cron calls /v1/cron/tick
+    if (env().NODE_ENV === "test" || onVercel()) return;
     this.timer = setInterval(() => {
       this.jobs.runDue().catch((e) => this.logger.error(e));
     }, JOBS_POLL_MS);

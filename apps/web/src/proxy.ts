@@ -22,7 +22,13 @@ const allowed = (path: string, staff: string[]) => staff.length > 0 && canSeePat
 /** where a temporary password is changed; outside the staff areas, so it always opens */
 const CHANGE_PASSWORD = "/account/profile?change=1";
 
-const apiUrl = () => process.env.ALTASGOODS_API_URL ?? process.env.BLUBUY_API_URL ?? "http://localhost:4000";
+/**
+ * Where the proxy reaches the API. On Vercel (services mode) ALTASGOODS_API_URL is a binding,
+ * and bindings do not exist in middleware, so the proxy goes through this site's own public
+ * /v1 route instead (vercel.json sends /v1/* to the api service).
+ */
+const apiUrl = (origin: string) =>
+  process.env.ALTASGOODS_API_URL ?? process.env.BLUBUY_API_URL ?? (process.env.VERCEL ? origin : "http://localhost:4000");
 const cookieBase = { httpOnly: true, sameSite: "lax" as const, path: "/", secure: process.env.NODE_ENV === "production" };
 
 function claims(token?: string): { exp: number; staff: string[]; pwc: boolean } | null {
@@ -49,7 +55,7 @@ export async function proxy(req: NextRequest) {
   const lacksGrant = !!current && STAFF_AREAS.test(path) && (!allowed(path, current.staff) || current.pwc);
   if ((!current || current.exp * 1000 < Date.now() + 30_000 || lacksGrant) && refresh) {
     try {
-      const r = await fetch(`${apiUrl()}/v1/auth/refresh`, {
+      const r = await fetch(`${apiUrl(req.nextUrl.origin)}/v1/auth/refresh`, {
         method: "POST",
         // the session records the visitor's browser and address, not this server's
         headers: { ...forwardingHeaders(req.headers), "content-type": "application/json" },

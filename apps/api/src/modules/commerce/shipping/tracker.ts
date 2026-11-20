@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnApplicationShutdown } from "@nestjs/common";
-import { env } from "../../../config/env.js";
+import { env, onVercel } from "../../../config/env.js";
 import { JobsService } from "../../jobs/jobs.service.js";
 import { ShippingService } from "./shipping.service.js";
 
@@ -17,7 +17,8 @@ export class ShipmentTracker implements OnApplicationBootstrap, OnApplicationShu
   ) {}
 
   onApplicationBootstrap() {
-    if (env().NODE_ENV === "test" || this.shipping.providerName === "SIMULATED") return;
+    // on Vercel, Vercel Cron calls /v1/cron/tick instead
+    if (env().NODE_ENV === "test" || onVercel() || this.shipping.providerName === "SIMULATED") return;
     this.timer = setInterval(() => {
       // scans can cancel or return lines, which queues jobs: run them once the poll is done
       this.jobs.scope(() => this.shipping.pollTracking()).then(
