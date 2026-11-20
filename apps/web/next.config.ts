@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   experimental: { serverActions: { bodySizeLimit: "5mb" } },
   // only bundled sample photos and uploaded product images, never with a query string
   images: {
+    // On Vercel (services mode) the /_next/image optimizer answers 404, so images are served as-is there.
+    unoptimized: !!process.env.VERCEL,
     localPatterns: [
       { pathname: "/images/**", search: "" },
       { pathname: "/media/**", search: "" },
