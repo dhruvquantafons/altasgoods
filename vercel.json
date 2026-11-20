@@ -3,17 +3,41 @@
   "services": {
     "api": {
       "root": "apps/api",
-      "framework": "nestjs"
+      "framework": "nestjs",
+      "entrypoint": "vercel-server.mjs",
+      "buildCommand": "npm run build:vercel"
     },
     "web": {
       "root": "apps/web",
       "framework": "nextjs",
-      "bindings": [{ "type": "service", "service": "api", "format": "url", "env": "ALTASGOODS_API_URL" }]
+      "bindings": [
+        {
+          "type": "service",
+          "service": "api",
+          "format": "url",
+          "env": "ALTASGOODS_API_URL"
+        }
+      ]
     }
   },
   "rewrites": [
-    { "source": "/v1/(.*)", "destination": { "service": "api" } },
-    { "source": "/(.*)", "destination": { "service": "web" } }
+    {
+      "source": "/v1/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "web"
+      }
+    }
   ],
-  "crons": [{ "path": "/v1/cron/tick", "schedule": "0 3 * * *" }]
+  "crons": [
+    {
+      "path": "/v1/cron/tick",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }
