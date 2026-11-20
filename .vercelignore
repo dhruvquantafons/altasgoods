@@ -1,0 +1,9 @@
+# local-only files never uploaded by `vercel deploy`
+**/node_modules
+**/.next
+**/dist
+**/.env*
+**/playwright-report
+**/test-results
+.superpowers
+.vercel
