@@ -1,9 +1,10 @@
+import { waitUntil } from "@vercel/functions";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { and, asc, eq, inArray, lt, lte, or, sql } from "drizzle-orm";
 import type { Clock } from "../../common/infra.module.js";
 import { CLOCK, DB } from "../../common/tokens.js";
-import { env } from "../../config/env.js";
+import { env, onVercel } from "../../config/env.js";
 import type { Db, Tx } from "../../db/client.js";
 import { jobs } from "../../db/schema.js";
 
@@ -135,12 +136,19 @@ export class JobsService {
   kick() {
     if (!this.autoKick || this.kickPending) return;
     this.kickPending = true;
-    setImmediate(() => {
+    const run = () => {
       this.kickPending = false;
       // switched off since (the app is shutting down)
-      if (!this.autoKick) return;
-      this.runDue().catch((e) => this.logger.error(e));
-    });
+      if (!this.autoKick) return Promise.resolve();
+      return this.runDue().then(
+        () => undefined,
+        (e) => this.logger.error(e),
+      );
+    };
+    // On Vercel the function may be frozen once the response is sent, so the run is
+    // handed to waitUntil, which keeps it alive until the queued work is done.
+    if (onVercel()) waitUntil(Promise.resolve().then(run));
+    else setImmediate(run);
   }
 
   /** Claims and runs up to `limit` due jobs. Returns how many it ran. */
